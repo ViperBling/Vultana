@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "Utilities/GLFWindow.hpp"
+#include "Utilities/AssetsManager.hpp"
 
 int main()
 {
