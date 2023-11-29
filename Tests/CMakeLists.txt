@@ -1,3 +1,6 @@
+include_directories(${PROJECT_SOURCE_DIR}/Framework)
+
 add_executable(FirstTest FirstTest.cpp)
-target_link_libraries(FirstTest PUBLIC Utilities)
-target_include_directories(FirstTest PUBLIC ${CMAKE_SOURCE_DIR}/Utilities)
+target_link_libraries(FirstTest Utilities)
+
+target_include_directories(FirstTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)

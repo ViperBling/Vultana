@@ -1,3 +1,12 @@
 #pragma once
 
-#include <string>
+#include <iostream>
+#include <assimp/Importer.hpp>
+
+namespace Vultana
+{
+    class Scene
+    {
+
+    };
+}
