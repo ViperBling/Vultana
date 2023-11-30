@@ -1,18 +1,21 @@
 set(SourcePath ${PROJECT_SOURCE_DIR}/Framework)
+set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
 find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED FATAL_ERROR)
 find_package(glm CONFIG REQUIRED)
 
-message(STATUS "Found Vulkan: ${Vulkan_INCLUDE_DIRS}")
+file(GLOB_RECURSE Window_Src ${SourcePath}/Windows/*.cpp)
+file(GLOB_RECURSE Scene_Src ${SourcePath}/Scene/*.cpp)
 
-set(UTILITIES_SOURCE
-    ${SourcePath}/Utilities/AssetsManager.cpp
-    ${SourcePath}/Utilities/GLFWindow.cpp)
+add_library(FrameworkLib STATIC 
+    ${Window_Src} 
+    ${Scene_Src}
+)
 
-add_library(Utilities STATIC ${UTILITIES_SOURCE})
-target_link_libraries(Utilities PUBLIC
+target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath})
+target_link_libraries(FrameworkLib PUBLIC
     assimp::assimp
     glfw
     glm::glm)

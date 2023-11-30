@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 
-#include "Math.hpp"
-#include "KeyCodes.hpp"
+#include "Utilities/Math.hpp"
+#include "Utilities/KeyCodes.hpp"
 
 struct GLFWwindow;
 

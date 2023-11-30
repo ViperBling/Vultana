@@ -1,0 +1,25 @@
+#pragma once
+
+#include <iostream>
+
+
+#include "Primitive.hpp"
+
+namespace Vultana::Scene
+{
+    class StaticMesh : public IPrimitive
+    {
+    public:
+        StaticMesh(const std::string& name);
+        ~StaticMesh();
+
+        virtual bool Create() override;
+        virtual void Tick(float deltaTime) override;
+        virtual void Render() override;
+
+    private:
+        std::string& mName;
+        Vector3 mCenter = { 0.0f, 0.0f, 0.0f };
+        float mRadius = 0.0f;
+    };
+} // namespace Vultana::Scene
