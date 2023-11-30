@@ -1,7 +1,8 @@
 #include <iostream>
 
-#include "Utilities/GLFWindow.hpp"
-#include "Utilities/AssetsManager.hpp"
+#include "Windows/GLFWindow.hpp"
+#include "Scene/ModelLoader.hpp"
+#include "Scene/World.hpp"
 
 int main()
 {
@@ -10,6 +11,8 @@ int main()
     wndCI.Size = { 1280, 720 };
 
     Vultana::Window window(wndCI);
+
+    Vultana::Scene::World world;
 
     while (!window.ShouldClose())
     {
