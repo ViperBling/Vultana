@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "RHIDefines.hpp"
+#include "RHICommon.hpp"
 
 namespace Vultana::RHI
 {
