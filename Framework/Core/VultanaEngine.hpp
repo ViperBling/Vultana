@@ -1,8 +1,9 @@
 #pragma once
 
-#include <iostream>
-
 #include "Scene/World.hpp"
+#include "Renderer/Renderer.hpp"
+
+#include <iostream>
 
 namespace Vultana
 {
@@ -16,11 +17,14 @@ namespace Vultana
         void Tick();
 
         Scene::World* GetWorld() const { return mpWorld.get(); }
+        Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
+
         void* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
 
     private:
         std::unique_ptr<Scene::World> mpWorld;
+        std::unique_ptr<Renderer::RendererBase> mpRenderer;
 
         void* mWndHandle;
         uint64_t mLastFrameTime = 0;

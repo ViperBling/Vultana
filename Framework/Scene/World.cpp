@@ -1,13 +1,19 @@
 #include "World.hpp"
+#include "Renderer/Renderer.hpp"
+#include "Core/VultanaEngine.hpp"
 
 #include <atomic>
 
 #include <tinyxml2/tinyxml2.h>
 
+using namespace Vultana;
+
 namespace Vultana::Scene
 {
     World::World()
     {
+        Renderer::RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
+
         mpCamera = std::make_unique<Camera>();
     }
 
@@ -18,6 +24,8 @@ namespace Vultana::Scene
     void World::Tick(float deltaTime)
     {
         mpCamera->Tick(deltaTime);
+
+        Renderer::RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
 
         for (auto it = mPrimitives.begin(); it != mPrimitives.end(); ++it)
         {
@@ -30,7 +38,7 @@ namespace Vultana::Scene
 
         for (auto it = mPrimitives.begin(); it != mPrimitives.end(); ++it)
         {
-            (*it)->Render();
+            (*it)->Render(pRender);
         }
     }
 

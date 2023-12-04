@@ -14,7 +14,10 @@ namespace Vultana
     void Engine::Init(void *windowHandle, uint32_t width, uint32_t height)
     {
         mpWorld = std::make_unique<Scene::World>();
+
         mWndHandle = windowHandle;
+
+        mpRenderer = std::make_unique<Renderer::RendererBase>();
 
         stm_setup();
     }
@@ -22,6 +25,7 @@ namespace Vultana
     void Engine::Shutdown()
     {
         mpWorld.reset();
+        mpRenderer.reset();
     }
 
     void Engine::Tick()
@@ -29,5 +33,6 @@ namespace Vultana
         mFrameTime = (float)stm_sec(stm_laptime(&mLastFrameTime));
 
         mpWorld->Tick(mFrameTime);
+        mpRenderer->RenderFrame();
     }
 }

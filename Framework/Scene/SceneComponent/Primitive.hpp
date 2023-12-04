@@ -1,8 +1,9 @@
 #pragma once
 
-#include <vector>
-
 #include "Utilities/Math.hpp"
+#include "Renderer/Renderer.hpp"
+
+#include <vector>
 
 namespace Vultana::Scene
 {
@@ -13,7 +14,7 @@ namespace Vultana::Scene
 
         virtual bool Create() = 0;
         virtual void Tick(float deltaTime) = 0;
-        virtual void Render() {};
+        virtual void Render(Renderer::RendererBase* pRenderer) {};
 
         virtual Vector3 GetPosition() const { return mPosition; }
         virtual void SetPosition(const Vector3& position) { mPosition = position; }

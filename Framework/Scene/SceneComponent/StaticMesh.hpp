@@ -15,7 +15,7 @@ namespace Vultana::Scene
 
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
-        virtual void Render() override;
+        virtual void Render(Renderer::RendererBase* pRenderer) override;
 
     private:
         std::string& mName;
