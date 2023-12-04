@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <span>
 
 namespace Vultana::RHI
 {
@@ -168,5 +167,9 @@ namespace Vultana::RHI
                lhs.Usage == rhs.Usage;
     }
 
-    
+    struct RHIDeviceInfo
+    {
+        RHIRenderBackend Backend = RHIRenderBackend::Vulkan;
+        uint32_t MaxFrameLag = 3;
+    };
 }
