@@ -13,10 +13,10 @@ int main()
     wndCI.Position = { 100, 100 };
     wndCI.Size = { 1280, 720 };
 
-    Window window(wndCI);
+    GLFWindow window(wndCI);
     Scene::World world;
 
-    Engine::GetEngineInstance()->Init(window.GetNativeHandle(), wndCI.Size.x, wndCI.Size.y);
+    Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
 
     while (!window.ShouldClose())
     {

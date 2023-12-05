@@ -2,6 +2,7 @@
 
 #include "Scene/World.hpp"
 #include "Renderer/Renderer.hpp"
+#include "Windows/GLFWindow.hpp"
 
 #include <iostream>
 

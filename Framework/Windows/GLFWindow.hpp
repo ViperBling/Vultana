@@ -6,6 +6,7 @@
 
 #include "Utilities/Math.hpp"
 #include "Utilities/KeyCodes.hpp"
+#include "Renderer/Renderer.hpp"
 
 struct GLFWwindow;
 
@@ -27,18 +28,18 @@ namespace Vultana
         const char* Title = "Vultana";
     };
 
-    class Window
+    class GLFWindow
     {
     public:
         GLFWwindow* GetNativeHandle() const { return this->mHwnd; }
         std::vector<const char*> GetRequiredExtensions() const;
 
-        Window(const WindowCreateInfo& options);
-        Window(const Window&) = delete;
-        Window& operator=(const Window&) = delete;
-        Window(Window&& other) noexcept;
-        Window& operator=(Window&& other) noexcept;
-        ~Window();
+        GLFWindow(const WindowCreateInfo& options);
+        GLFWindow(const GLFWindow&) = delete;
+        GLFWindow& operator=(const GLFWindow&) = delete;
+        GLFWindow(GLFWindow&& other) noexcept;
+        GLFWindow& operator=(GLFWindow&& other) noexcept;
+        ~GLFWindow();
 
         void PollEvents() const;
         bool ShouldClose() const;
@@ -65,18 +66,19 @@ namespace Vultana
         float GetTimeSinceCreation() const;
         void SetTimeSinceCreation(float time);
 
-        void OnResize(std::function<void(Window&, Vector2)> callback);
-        void OnKeyChanged(std::function<void(Window&, KeyCode, bool)> callback);
-        void OnMouseChanged(std::function<void(Window&, MouseButton, bool)> callback);
+        void OnResize(std::function<void(GLFWindow&, Vector2)> callback);
+        void OnKeyChanged(std::function<void(GLFWindow&, KeyCode, bool)> callback);
+        void OnMouseChanged(std::function<void(GLFWindow&, MouseButton, bool)> callback);
 
         // const WindowSurface& CreateWindowSurface(const VulkanContext& context);
+        void CreateWindowSurface(Renderer::RendererBase* renderer);
 
         void SetContext(GLFWwindow* window);
 
     private:
         GLFWwindow* mHwnd = nullptr;
-        std::function<void(Window&, Vector2)> mOnResize;
-        std::function<void(Window&, KeyCode, bool)> mOnKeyChanged;
-        std::function<void(Window&, MouseButton, bool)> mOnMouseChanged;
+        std::function<void(GLFWindow&, Vector2)> mOnResize;
+        std::function<void(GLFWindow&, KeyCode, bool)> mOnKeyChanged;
+        std::function<void(GLFWindow&, MouseButton, bool)> mOnMouseChanged;
     };
 }
