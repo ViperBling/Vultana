@@ -18,6 +18,8 @@ namespace Vultana
         mWndHandle = windowHandle;
 
         mpRenderer = std::make_unique<Renderer::RendererBase>();
+        mpRenderer->Init();
+        static_cast<GLFWindow*>(mWndHandle)->CreateWindowSurface(mpRenderer.get());
 
         stm_setup();
     }
