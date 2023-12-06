@@ -13,21 +13,21 @@ namespace Vultana
     public:
         static Engine* GetEngineInstance();
 
-        void Init(void* windowHandle, uint32_t width, uint32_t height);
+        void Init(GLFWindow* windowHandle, uint32_t width, uint32_t height);
         void Shutdown();
         void Tick();
 
-        Scene::World* GetWorld() const { return mpWorld.get(); }
-        Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
+        World* GetWorld() const { return mpWorld.get(); }
+        RendererBase* GetRenderer() const { return mpRenderer.get(); }
 
-        void* GetWindowHandle() const { return mWndHandle; }
+        GLFWindow* GetWindowHandle() const { return mWndHandle.get(); }
         float GetDeltaTime() const { return mFrameTime; }
 
     private:
-        std::unique_ptr<Scene::World> mpWorld;
-        std::unique_ptr<Renderer::RendererBase> mpRenderer;
+        std::unique_ptr<World> mpWorld;
+        std::unique_ptr<RendererBase> mpRenderer;
+        std::unique_ptr<GLFWindow> mWndHandle;
 
-        void* mWndHandle;
         uint64_t mLastFrameTime = 0;
         float mFrameTime = 0.0f;
     };

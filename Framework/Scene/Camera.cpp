@@ -1,6 +1,6 @@
 #include "Camera.hpp"
 
-namespace Vultana::Scene
+namespace Vultana
 {
     void Camera::Tick(float deltaTime)
     {

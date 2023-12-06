@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace Vultana::RHI
+namespace Vultana
 {
     class RHIBuffer;
     class RHITexture;
@@ -13,6 +13,15 @@ namespace Vultana::RHI
     static const uint32_t RHI_MAX_IN_FLIGHT_FRAMES = 3;
     static const uint32_t RHI_MAX_ROOT_CONSTANT = 8;
     static const uint32_t RHI_MAX_CBV_BINDINGS = 3;
+
+    enum class RHIDeviceType
+    {
+        CPU = 0,
+        DISCRETE_GPU,
+        INTEGRATED_GPU,
+        VIRTUAL_GPU,
+        OTHER,
+    };
 
     enum class RHIRenderBackend
     {

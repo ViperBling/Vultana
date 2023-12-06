@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace Vultana::Scene
+namespace Vultana
 {
     class IPrimitive
     {
@@ -14,7 +14,7 @@ namespace Vultana::Scene
 
         virtual bool Create() = 0;
         virtual void Tick(float deltaTime) = 0;
-        virtual void Render(Renderer::RendererBase* pRenderer) {};
+        virtual void Render(RendererBase* pRenderer) {};
 
         virtual Vector3 GetPosition() const { return mPosition; }
         virtual void SetPosition(const Vector3& position) { mPosition = position; }

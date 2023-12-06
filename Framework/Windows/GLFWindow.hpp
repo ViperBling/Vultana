@@ -31,15 +31,15 @@ namespace Vultana
     class GLFWindow
     {
     public:
-        GLFWwindow* GetNativeHandle() const { return this->mHwnd; }
-        std::vector<const char*> GetRequiredExtensions() const;
-
         GLFWindow(const WindowCreateInfo& options);
         GLFWindow(const GLFWindow&) = delete;
         GLFWindow& operator=(const GLFWindow&) = delete;
         GLFWindow(GLFWindow&& other) noexcept;
         GLFWindow& operator=(GLFWindow&& other) noexcept;
         ~GLFWindow();
+
+        GLFWwindow* GetNativeHandle() const { return this->mHwnd; }
+        std::vector<const char*> GetRequiredExtensions() const;
 
         void PollEvents() const;
         bool ShouldClose() const;
@@ -71,8 +71,8 @@ namespace Vultana
         void OnMouseChanged(std::function<void(GLFWindow&, MouseButton, bool)> callback);
 
         // const WindowSurface& CreateWindowSurface(const VulkanContext& context);
-        void CreateWindowSurface(Renderer::RendererBase* renderer);
-
+        
+        
         void SetContext(GLFWwindow* window);
 
     private:
@@ -81,4 +81,7 @@ namespace Vultana
         std::function<void(GLFWindow&, KeyCode, bool)> mOnKeyChanged;
         std::function<void(GLFWindow&, MouseButton, bool)> mOnMouseChanged;
     };
+
+    void CreateWindowSurface(const vk::Instance& instance, void* windowHandle, vk::SurfaceKHR& surface);
+    bool CheckVulkanSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
 }

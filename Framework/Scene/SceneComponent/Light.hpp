@@ -2,7 +2,7 @@
 
 #include "Primitive.hpp"
 
-namespace Vultana::Scene
+namespace Vultana
 {
     class ILight : public IPrimitive
     {

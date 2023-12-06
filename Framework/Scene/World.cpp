@@ -8,11 +8,11 @@
 
 using namespace Vultana;
 
-namespace Vultana::Scene
+namespace Vultana
 {
     World::World()
     {
-        Renderer::RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
+        RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
 
         mpCamera = std::make_unique<Camera>();
     }
@@ -25,7 +25,7 @@ namespace Vultana::Scene
     {
         mpCamera->Tick(deltaTime);
 
-        Renderer::RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
+        RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
 
         for (auto it = mPrimitives.begin(); it != mPrimitives.end(); ++it)
         {

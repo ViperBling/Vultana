@@ -2,7 +2,7 @@
 
 #include "Utilities/Math.hpp"
 
-namespace Vultana::Scene
+namespace Vultana
 {
     class Camera
     {

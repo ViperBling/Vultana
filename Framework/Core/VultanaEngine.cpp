@@ -11,15 +11,14 @@ namespace Vultana
         return &engine;
     }
 
-    void Engine::Init(void *windowHandle, uint32_t width, uint32_t height)
+    void Engine::Init(GLFWindow* windowHandle, uint32_t width, uint32_t height)
     {
-        mpWorld = std::make_unique<Scene::World>();
+        mpWorld = std::make_unique<World>();
 
-        mWndHandle = windowHandle;
+        mWndHandle = std::unique_ptr<GLFWindow>(windowHandle);
 
-        mpRenderer = std::make_unique<Renderer::RendererBase>();
-        mpRenderer->Init();
-        static_cast<GLFWindow*>(mWndHandle)->CreateWindowSurface(mpRenderer.get());
+        mpRenderer = std::make_unique<RendererBase>();
+        mpRenderer->Init(mWndHandle.get());
 
         stm_setup();
     }

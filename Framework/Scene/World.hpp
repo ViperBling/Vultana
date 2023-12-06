@@ -9,7 +9,7 @@ namespace tinyxml2
     class XMLElement;
 }
 
-namespace Vultana::Scene
+namespace Vultana
 {
     class World
     {

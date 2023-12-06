@@ -2,7 +2,7 @@
 
 #include "RHIResource.hpp"
 
-namespace Vultana::RHI
+namespace Vultana
 {
     class RHIBuffer : public RHIResource
     {
