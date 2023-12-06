@@ -8,6 +8,25 @@
 
 namespace Vultana
 {
+    inline void DefaultCallback(const std::string&) {}
+    inline void InfoCallbackFunc(const std::string& message)
+    {
+        std::cout << "[INFO Renderer] : " << message << std::endl;
+    }
+    inline void ErrorCallbackFunc(const std::string& message)
+    {
+        std::cout << "[ERROR Renderer] : " << message << std::endl;
+    }
+
+    struct RendererCreateInfo
+    {
+        std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
+        std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
+        std::vector<const char*> Extensions;
+        std::vector<const char*> ValidationLayers;
+        const char* ApplicationName = "Vultana";
+    };
+
     class GLFWindow;
     
     class RendererBase
