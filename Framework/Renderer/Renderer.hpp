@@ -6,6 +6,9 @@
 #include <iostream>
 #include <vulkan/vulkan.hpp>
 
+struct VmaAllocator_T;
+using VmaAllocator = VmaAllocator_T*;
+
 namespace Vultana
 {
     inline void DefaultCallback(const std::string&) {}
@@ -20,6 +23,7 @@ namespace Vultana
 
     struct RendererCreateInfo
     {
+        RHIDeviceType DeviceType = RHIDeviceType::DISCRETE_GPU;
         std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
         std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
         std::vector<const char*> Extensions;
@@ -32,10 +36,11 @@ namespace Vultana
     class RendererBase
     {
     public:
-        RendererBase() = default;
+        RendererBase(const RendererCreateInfo& createInfo);
         virtual ~RendererBase();
 
-        void Init(void* windowHandle, uint32_t width, uint32_t height);
+        void Init(const vk::SurfaceKHR& surface, RendererCreateInfo& createInfo);
+        void RecreateSwapchian(uint32_t width, uint32_t height);
         void RenderFrame();
 
         VkInstance GetInstance() const { return mInstance; }
@@ -43,57 +48,40 @@ namespace Vultana
         VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
 
     private:
-        void CreateInstance();
-        void SetupDebugMessenger();
-        void PickPhysicalDevice();
-        void CreateLogicalDevice();
-        void RecreateSwapchain();
-        void CreateRenderPass();
-        void CreateGraphicsPipeline();
-        void CreateFramebuffers();
-        void CreateCommandPool();
-        void CreateCommandBuffers();
-        void CreateSyncObjects();
-
-        void CleanupSwapchain();
-        
-        bool CheckValidationLayerSupport();
-
-    private:
-        GLFWindow* mWndHandle;
         vk::Instance mInstance;
+        vk::SurfaceKHR mSurface;
+        vk::SurfaceFormatKHR mSurfaceFormat;
+        vk::PresentModeKHR mPresentMode;
+        vk::Extent2D mSurfaceExtent;
+        uint32_t mPresentImageCount = 0;
+
         vk::PhysicalDevice mPhysicalDevice;
+        vk::PhysicalDeviceProperties mPDProps;
+
         vk::Device mDevice;
-        vk::Queue mGraphicsQueue;
+        vk::Queue mQueue;
+        vk::Semaphore mImageAvailableSemaphore;
+        vk::Semaphore mRenderFinishedSemaphore;
+        vk::Fence mImmdiateFence;
+        vk::CommandPool mCommandPool;
+        vk::CommandBuffer mCommandBuffer;
+
+        vk::SwapchainKHR mSwapchain;
         vk::DebugUtilsMessengerEXT mDebugMessenger;
         vk::DispatchLoaderDynamic mDynamicLoader;
 
-        vk::SurfaceKHR mSurface;
-        vk::SwapchainKHR mSwapchain;
-        vk::SurfaceFormatKHR mSurfaceFormat;
-        vk::Extent2D mSurfaceExtent;
-        vk::PresentModeKHR mPresentMode;
-        uint32_t mPresentImageCount = 0;
+        VmaAllocator mAllocator;
+        
         std::vector<vk::Image> mSwapchainImages;
         std::vector<vk::ImageView> mSwapchainImageViews;
-        vk::Queue mPresentQueue;
 
         vk::RenderPass mRenderPass;
         vk::PipelineLayout mPipelineLayout;
         vk::Pipeline mGraphicsPipeline;
 
-        std::vector<vk::Framebuffer> mSwapchainFramebuffers;
-        vk::CommandPool mCommandPool;
-
-        std::vector<vk::CommandBuffer> mCommandBuffers;
-        std::vector<vk::Semaphore> mImageAvailableSemaphores;
-        std::vector<vk::Semaphore> mRenderFinishedSemaphores;
-        std::vector<vk::Fence> mInFlightFences;
+        std::vector<vk::Framebuffer> mFramebuffers;
 
         uint32_t mQueueFamilyIndex;
-
-        size_t mWidth;
-        size_t mHeight;
 
         size_t mCurrentFrame = 0;
         bool mFramebufferResized = false;
