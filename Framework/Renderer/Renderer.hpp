@@ -16,7 +16,7 @@ namespace Vultana
         RendererBase() = default;
         virtual ~RendererBase();
 
-        void Init(void* windowHandle);
+        void Init(void* windowHandle, uint32_t width, uint32_t height);
         void RenderFrame();
 
         VkInstance GetInstance() const { return mInstance; }
@@ -28,8 +28,7 @@ namespace Vultana
         void SetupDebugMessenger();
         void PickPhysicalDevice();
         void CreateLogicalDevice();
-        void CreateSwapchain();
-        void CreateImageViews();
+        void RecreateSwapchain();
         void CreateRenderPass();
         void CreateGraphicsPipeline();
         void CreateFramebuffers();
@@ -38,8 +37,7 @@ namespace Vultana
         void CreateSyncObjects();
 
         void CleanupSwapchain();
-        void RecreateSwapchain();
-
+        
         bool CheckValidationLayerSupport();
 
     private:
@@ -53,8 +51,10 @@ namespace Vultana
 
         vk::SurfaceKHR mSurface;
         vk::SwapchainKHR mSwapchain;
-        vk::Format mSwapchainImageFormat;
-        vk::Extent2D mSwapchainExtent;
+        vk::SurfaceFormatKHR mSurfaceFormat;
+        vk::Extent2D mSurfaceExtent;
+        vk::PresentModeKHR mPresentMode;
+        uint32_t mPresentImageCount = 0;
         std::vector<vk::Image> mSwapchainImages;
         std::vector<vk::ImageView> mSwapchainImageViews;
         vk::Queue mPresentQueue;
@@ -72,6 +72,9 @@ namespace Vultana
         std::vector<vk::Fence> mInFlightFences;
 
         uint32_t mQueueFamilyIndex;
+
+        size_t mWidth;
+        size_t mHeight;
 
         size_t mCurrentFrame = 0;
         bool mFramebufferResized = false;

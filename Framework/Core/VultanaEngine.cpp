@@ -18,7 +18,7 @@ namespace Vultana
         mWndHandle = std::unique_ptr<GLFWindow>(windowHandle);
 
         mpRenderer = std::make_unique<RendererBase>();
-        mpRenderer->Init(mWndHandle.get());
+        mpRenderer->Init(mWndHandle.get(), width, height);
 
         stm_setup();
     }
