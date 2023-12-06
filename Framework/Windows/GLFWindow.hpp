@@ -84,4 +84,9 @@ namespace Vultana
 
     void CreateWindowSurface(const vk::Instance& instance, void* windowHandle, vk::SurfaceKHR& surface);
     bool CheckVulkanSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
+
+    inline void WindowErrorCallback(const std::string& msg)
+    {
+        std::cerr << "[ERROR Window] : " << msg << std::endl;
+    }
 }
