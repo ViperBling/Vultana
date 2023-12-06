@@ -14,7 +14,6 @@ int main()
     wndCI.Size = { 1280, 720 };
 
     GLFWindow window(wndCI);
-    window.GetRequiredExtensions();
     World world;
 
     Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
