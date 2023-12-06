@@ -56,7 +56,7 @@ namespace Vultana
         });
     }
 
-    GLFWindow::GLFWindow(GLFWindow &&other) noexcept
+    GLFWindow::GLFWindow(GLFWindow&& other) noexcept
     {
         this->mHwnd = other.mHwnd;
         this->mOnResize = std::move(other.mOnResize);
@@ -198,15 +198,24 @@ namespace Vultana
     //     return CreateVulkanSurface(this->mHwnd, context);
     // }
 
-    void GLFWindow::CreateWindowSurface(Renderer::RendererBase* renderer)
-    {
-        auto surface = renderer->GetSurface();
-        glfwCreateWindowSurface(renderer->GetInstance(), this->mHwnd, nullptr, &surface);
-    }
-
     void GLFWindow::SetContext(GLFWwindow *window)
     {
         this->mHwnd = window;
         glfwMakeContextCurrent(window);
+    }
+
+    void CreateWindowSurface(const vk::Instance& instance, void* windowHandle, vk::SurfaceKHR& surface)
+    {
+        auto res = glfwCreateWindowSurface(instance, (GLFWwindow*)windowHandle, nullptr, (VkSurfaceKHR*)&surface);
+        std::cout << res << std::endl;
+        if (res != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create window surface");
+        }
+    }
+
+    bool CheckVulkanSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex)
+    {
+        return glfwGetPhysicalDevicePresentationSupport(instance, physicalDevice, familyQueueIndex) == GLFW_TRUE;
     }
 }

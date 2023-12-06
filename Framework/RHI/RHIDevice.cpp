@@ -1,7 +1,7 @@
 #include "RHIDevice.hpp"
 #include "Vulkan/VKDevice.hpp"
 
-namespace Vultana::RHI
+namespace Vultana
 {
     RHIDevice* CreateRHIDevice(const RHIDeviceInfo &deviceInfo)
     {
@@ -9,7 +9,7 @@ namespace Vultana::RHI
 
         switch (deviceInfo.Backend)
         {
-        case RHI::RHIRenderBackend::Vulkan:
+        case RHIRenderBackend::Vulkan:
             pDevice = new VKDevice(deviceInfo);
             if (!(VKDevice*)pDevice->Init())
             {

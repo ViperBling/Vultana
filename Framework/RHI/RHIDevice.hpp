@@ -2,7 +2,7 @@
 
 #include "RHICommon.hpp"
 
-namespace Vultana::RHI
+namespace Vultana
 {
     class RHIDevice
     {

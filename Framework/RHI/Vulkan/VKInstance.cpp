@@ -1,6 +1,6 @@
 #include "VKInstance.hpp"
 
-namespace Vultana::RHI
+namespace Vultana
 {
 
 } // namespace Vultana::RHI

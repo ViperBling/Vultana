@@ -6,26 +6,26 @@
 #include <iostream>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana::Renderer
+namespace Vultana
 {
+    class GLFWindow;
+    
     class RendererBase
     {
-        friend class Window;
-
     public:
         RendererBase() = default;
         virtual ~RendererBase();
 
-        void Init();
-        void ConnectSurface(void* windowHandle);
+        void Init(void* windowHandle);
         void RenderFrame();
 
         VkInstance GetInstance() const { return mInstance; }
         VkSurfaceKHR GetSurface() const { return mSurface; }
+        VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
 
     private:
-        void InitVulkan();
         void CreateInstance();
+        void SetupDebugMessenger();
         void PickPhysicalDevice();
         void CreateLogicalDevice();
         void CreateSwapchain();
@@ -38,14 +38,18 @@ namespace Vultana::Renderer
         void CreateSyncObjects();
 
         void CleanupSwapchain();
+        void RecreateSwapchain();
 
         bool CheckValidationLayerSupport();
 
     private:
+        GLFWindow* mWndHandle;
         vk::Instance mInstance;
         vk::PhysicalDevice mPhysicalDevice;
         vk::Device mDevice;
         vk::Queue mGraphicsQueue;
+        vk::DebugUtilsMessengerEXT mDebugMessenger;
+        vk::DispatchLoaderDynamic mDynamicLoader;
 
         vk::SurfaceKHR mSurface;
         vk::SwapchainKHR mSwapchain;
@@ -66,6 +70,8 @@ namespace Vultana::Renderer
         std::vector<vk::Semaphore> mImageAvailableSemaphores;
         std::vector<vk::Semaphore> mRenderFinishedSemaphores;
         std::vector<vk::Fence> mInFlightFences;
+
+        uint32_t mQueueFamilyIndex;
 
         size_t mCurrentFrame = 0;
         bool mFramebufferResized = false;

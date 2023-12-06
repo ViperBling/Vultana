@@ -3,9 +3,7 @@
 
 #include "VKDevice.hpp"
 
-using namespace Vultana;
-
-namespace Vultana::RHI
+namespace Vultana
 {
     VKDevice::VKDevice(const RHIDeviceInfo &deviceInfo)
     {

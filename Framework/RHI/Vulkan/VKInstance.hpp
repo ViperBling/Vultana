@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana::RHI
+namespace Vultana
 {
     class VKInstance
     {

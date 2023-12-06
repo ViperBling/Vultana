@@ -10,7 +10,7 @@ struct VmaAllocation_T;
 using VmaAllocator = VmaAllocator_T*;
 using VmaAllocation = VmaAllocation_T*;
 
-namespace Vultana::RHI
+namespace Vultana
 {
     class VKDevice : public RHIDevice
     {
