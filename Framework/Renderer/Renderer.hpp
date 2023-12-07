@@ -4,6 +4,7 @@
 #include "RHI/RHIDevice.hpp"
 
 #include <iostream>
+#include <functional>
 #include <vulkan/vulkan.hpp>
 
 struct VmaAllocator_T;
@@ -27,6 +28,7 @@ namespace Vultana
         std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
         std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
         std::vector<const char*> Extensions;
+        std::vector<const char*> DeviceExtensions;
         std::vector<const char*> ValidationLayers;
         const char* ApplicationName = "Vultana";
     };
@@ -74,12 +76,11 @@ namespace Vultana
         
         std::vector<vk::Image> mSwapchainImages;
         std::vector<vk::ImageView> mSwapchainImageViews;
+        std::vector<vk::Framebuffer> mFramebuffers;
 
         vk::RenderPass mRenderPass;
         vk::PipelineLayout mPipelineLayout;
         vk::Pipeline mGraphicsPipeline;
-
-        std::vector<vk::Framebuffer> mFramebuffers;
 
         uint32_t mQueueFamilyIndex;
 

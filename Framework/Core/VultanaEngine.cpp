@@ -17,8 +17,14 @@ namespace Vultana
 
         mWndHandle = std::unique_ptr<GLFWindow>(windowHandle);
 
-        mpRenderer = std::make_unique<RendererBase>();
-        mpRenderer->Init(mWndHandle.get(), width, height);
+        RendererCreateInfo rendererCI;
+        rendererCI.Extensions = mWndHandle->GetRequiredExtensions();
+        rendererCI.ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
+        rendererCI.ApplicationName = "Vultana";
+        rendererCI.DeviceType = RHIDeviceType::DISCRETE_GPU;
+
+        mpRenderer = std::make_unique<RendererBase>(rendererCI);
+        mpRenderer->Init(mWndHandle->CreateWindowSurface(*mpRenderer), rendererCI);
 
         stm_setup();
     }
