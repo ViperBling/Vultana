@@ -50,6 +50,11 @@ namespace Vultana
         VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
 
     private:
+        void CreateRenderPass();
+        void CreatePipeline();
+        void CreateFramebuffer();
+
+    private:
         vk::Instance mInstance;
         vk::SurfaceKHR mSurface;
         vk::SurfaceFormatKHR mSurfaceFormat;

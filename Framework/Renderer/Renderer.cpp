@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <algorithm>
+#include <fstream>
 
 #include <vk_mem_alloc.h>
 
@@ -23,6 +24,25 @@ namespace Vultana
             #endif
         }
         return VK_FALSE;
+    }
+
+    static std::vector<char> readFiles(const std::string& filename)
+    {
+        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Failed to open file!" + filename);
+        }
+
+        size_t fileSize = (size_t)file.tellg();
+        std::vector<char> buffer(fileSize);
+
+        file.seekg(0);
+        file.read(buffer.data(), fileSize);
+        file.close();
+
+        return buffer;
     }
 
     void CheckRequestedLayers(const RendererCreateInfo& createInfo)
@@ -306,6 +326,56 @@ namespace Vultana
     }
 
     void RendererBase::RenderFrame()
+    {
+
+    }
+
+    void RendererBase::CreateRenderPass()
+    {
+        // Render Pass
+        vk::AttachmentDescription colorAttach {};
+        colorAttach.setFormat(mSurfaceFormat.format);
+        colorAttach.setSamples(vk::SampleCountFlagBits::e1);
+        colorAttach.setLoadOp(vk::AttachmentLoadOp::eClear);
+        colorAttach.setStoreOp(vk::AttachmentStoreOp::eStore);
+        colorAttach.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
+        colorAttach.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
+        colorAttach.setInitialLayout(vk::ImageLayout::eUndefined);
+        colorAttach.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+        vk::AttachmentReference colorAttachRef {};
+        colorAttachRef.setAttachment(0);
+        colorAttachRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+        vk::SubpassDescription subpass {};
+        subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
+        subpass.setColorAttachments(colorAttachRef);
+
+        vk::SubpassDependency dependency {};
+        dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL);
+        dependency.setDstSubpass(0);
+        dependency.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+        dependency.setSrcAccessMask({});
+        dependency.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+        dependency.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
+
+        vk::RenderPassCreateInfo renderPassCI {};
+        renderPassCI.setAttachments(colorAttach);
+        renderPassCI.setSubpasses(subpass);
+        renderPassCI.setDependencies(dependency);
+
+        mRenderPass = mDevice.createRenderPass(renderPassCI);
+    }
+
+    void RendererBase::CreatePipeline()
+    {
+        auto vsCode = readFiles("../../Assets/Shaders/Triangle.vert.spv");
+        auto fsCode = readFiles("../../Assets/Shaders/Triangle.frag.spv");
+
+        
+    }
+
+    void RendererBase::CreateFramebuffer()
     {
 
     }
