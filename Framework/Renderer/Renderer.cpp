@@ -9,6 +9,22 @@
 
 namespace Vultana
 {
+    static VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayerCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData) 
+    {
+        std::cerr << pCallbackData->pMessage << std::endl;
+        if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        {
+            #if defined(WIN32)
+            __debugbreak();
+            #endif
+        }
+        return VK_FALSE;
+    }
+
     void CheckRequestedLayers(const RendererCreateInfo& createInfo)
     {
         createInfo.InfoCallback("Enumerating requested layers:");
@@ -63,7 +79,7 @@ namespace Vultana
         {
             if ((property.queueCount > 0) &&
                 (device.getSurfaceSupportKHR(index, surface)) &&
-                (CheckVulkanSupport(instance, device, index)) &&
+                (CheckVulkanPresentationSupport(instance, device, index)) &&
                 (property.queueFlags & vk::QueueFlagBits::eGraphics) &&
                 (property.queueFlags & vk::QueueFlagBits::eCompute))
             {
@@ -164,11 +180,129 @@ namespace Vultana
         }
 
         // Surface Present Info
+        auto presentModes = mPhysicalDevice.getSurfacePresentModesKHR(mSurface);
+        auto surfaceFormats = mPhysicalDevice.getSurfaceFormatsKHR(mSurface);
+        auto surfaceCapabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
+
+        mPresentMode = vk::PresentModeKHR::eImmediate;
+        if (std::find(presentModes.begin(), presentModes.end(), vk::PresentModeKHR::eMailbox) != presentModes.end())
+        {
+            mPresentMode = vk::PresentModeKHR::eMailbox;
+        }
+        mPresentImageCount = std::max(surfaceCapabilities.maxImageCount, 1u);
+
+        mSurfaceFormat = surfaceFormats.front();
+        for (const auto& fmt : surfaceFormats)
+        {
+            if (fmt.format == vk::Format::eR8G8B8A8Unorm && fmt.format == vk::Format::eB8G8R8A8Unorm)
+            {
+                mSurfaceFormat = fmt;
+                break;
+            }
+        }
+        createInfo.InfoCallback("Selected surface present mode: " + std::string(vk::to_string(mPresentMode)));
+        createInfo.InfoCallback("Selected surface format: " + std::string(vk::to_string(mSurfaceFormat.format)));
+
+        vk::DeviceQueueCreateInfo queueCI {};
+        std::array queuePriorities = {1.0f};
+        queueCI.setQueueFamilyIndex(mQueueFamilyIndex);
+        queueCI.setQueueCount(1);
+
+        auto deviceExtensions = createInfo.DeviceExtensions;
+        deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+        vk::DeviceCreateInfo deviceCI {};
+        deviceCI.setQueueCreateInfos(queueCI);
+        deviceCI.setPEnabledExtensionNames(deviceExtensions);
+
+        mDevice = mPhysicalDevice.createDevice(deviceCI);
+        mQueue = mDevice.getQueue(mQueueFamilyIndex, 0);
+
+        createInfo.InfoCallback("Created Vulkan device.");
+
+        mDynamicLoader.init(mInstance, mDevice);
+
+        vk::DebugUtilsMessengerCreateInfoEXT debugCI {};
+        debugCI.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning);
+        debugCI.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
+        debugCI.setPfnUserCallback(ValidationLayerCallback);
+        mDebugMessenger = mInstance.createDebugUtilsMessengerEXT(debugCI, nullptr, mDynamicLoader);
+
+        VmaAllocatorCreateInfo allocateCI {};
+        allocateCI.physicalDevice = mPhysicalDevice;
+        allocateCI.device = mDevice;
+        allocateCI.instance = mInstance;
+        vmaCreateAllocator(&allocateCI, &mAllocator);
+        createInfo.InfoCallback("Created Vulkan allocator.");
+
+        RecreateSwapchian(surfaceCapabilities.maxImageExtent.width, surfaceCapabilities.maxImageExtent.height);
+        createInfo.InfoCallback("Created Vulkan swapchain.");
+
+        mImageAvailableSemaphore = mDevice.createSemaphore({});
+        mRenderFinishedSemaphore = mDevice.createSemaphore({});
+        mImmdiateFence = mDevice.createFence(vk::FenceCreateInfo{ });
+        
+        vk::CommandPoolCreateInfo commandPoolCI {};
+        commandPoolCI.setQueueFamilyIndex(mQueueFamilyIndex);
+        commandPoolCI.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient);
+        mCommandPool = mDevice.createCommandPool(commandPoolCI);
+
+        vk::CommandBufferAllocateInfo commandBufferAI {};
+        commandBufferAI.setCommandPool(mCommandPool);
+        commandBufferAI.setLevel(vk::CommandBufferLevel::ePrimary);
+        commandBufferAI.setCommandBufferCount(1);
+        mCommandBuffer = mDevice.allocateCommandBuffers(commandBufferAI).front();
+
+        createInfo.InfoCallback("Created Vulkan command pool and command buffer.");
     }
 
     void RendererBase::RecreateSwapchian(uint32_t width, uint32_t height)
     {
+        mDevice.waitIdle();
 
+        auto surfaceCapabilities = mPhysicalDevice.getSurfaceCapabilitiesKHR(mSurface);
+        mSurfaceExtent = vk::Extent2D(
+            std::clamp(width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
+            std::clamp(height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
+        );
+
+        vk::SwapchainCreateInfoKHR swapchainCI {};
+        swapchainCI.setSurface(mSurface);
+        swapchainCI.setMinImageCount(mPresentImageCount);
+        swapchainCI.setImageFormat(mSurfaceFormat.format);
+        swapchainCI.setImageColorSpace(mSurfaceFormat.colorSpace);
+        swapchainCI.setImageExtent(mSurfaceExtent);
+        swapchainCI.setImageArrayLayers(1);
+        swapchainCI.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst);
+        swapchainCI.setImageSharingMode(vk::SharingMode::eExclusive);
+        swapchainCI.setPreTransform(surfaceCapabilities.currentTransform);
+        swapchainCI.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
+        swapchainCI.setPresentMode(mPresentMode);
+        swapchainCI.setClipped(true);
+        swapchainCI.setOldSwapchain(mSwapchain);
+
+        mSwapchain = mDevice.createSwapchainKHR(swapchainCI);
+
+        if (swapchainCI.oldSwapchain)
+        {
+            mDevice.destroySwapchainKHR(swapchainCI.oldSwapchain);
+        }
+
+        auto swapchainImages = mDevice.getSwapchainImagesKHR(mSwapchain);
+        mPresentImageCount = mSwapchainImages.size();
+        mSwapchainImages.clear();
+        mSwapchainImages.reserve(mPresentImageCount);
+        mSwapchainImageViews.resize(mSwapchainImages.size());
+
+        for (size_t i = 0; i < mSwapchainImages.size(); i++)
+        {
+            vk::ImageViewCreateInfo imageViewCI {};
+            imageViewCI.setImage(mSwapchainImages[i]);
+            imageViewCI.setViewType(vk::ImageViewType::e2D);
+            imageViewCI.setFormat(mSurfaceFormat.format);
+            imageViewCI.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+            mSwapchainImageViews[i] = mDevice.createImageView(imageViewCI);
+        }
     }
 
     void RendererBase::RenderFrame()

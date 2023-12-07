@@ -17,6 +17,11 @@ namespace Vultana
         std::cout << message << std::endl;
     }
 
+    struct WindowSurface
+    {
+        vk::SurfaceKHR Surface;
+    };
+
     struct WindowCreateInfo
     {
         bool TransparentFramebuffer = false;
@@ -70,8 +75,7 @@ namespace Vultana
         void OnKeyChanged(std::function<void(GLFWindow&, KeyCode, bool)> callback);
         void OnMouseChanged(std::function<void(GLFWindow&, MouseButton, bool)> callback);
 
-        // const WindowSurface& CreateWindowSurface(const VulkanContext& context);
-        
+        const vk::SurfaceKHR& CreateWindowSurface(const RendererBase &renderer);
         
         void SetContext(GLFWwindow* window);
 
@@ -82,8 +86,8 @@ namespace Vultana
         std::function<void(GLFWindow&, MouseButton, bool)> mOnMouseChanged;
     };
 
-    void CreateWindowSurface(const vk::Instance& instance, void* windowHandle, vk::SurfaceKHR& surface);
-    bool CheckVulkanSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
+    const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow* window, const RendererBase& renderer);
+    bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
 
     inline void WindowErrorCallback(const std::string& msg)
     {

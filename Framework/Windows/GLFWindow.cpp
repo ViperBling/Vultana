@@ -193,10 +193,10 @@ namespace Vultana
         this->mOnMouseChanged = std::move(callback);
     }
 
-    // const WindowSurface &GLFWindow::CreateWindowSurface(const VulkanContext &context)
-    // {
-    //     return CreateVulkanSurface(this->mHwnd, context);
-    // }
+    const vk::SurfaceKHR& GLFWindow::CreateWindowSurface(const RendererBase &renderer)
+    {
+        return CreateVulkanSurface(this->mHwnd, renderer);
+    }
 
     void GLFWindow::SetContext(GLFWwindow *window)
     {
@@ -204,17 +204,14 @@ namespace Vultana
         glfwMakeContextCurrent(window);
     }
 
-    void CreateWindowSurface(const vk::Instance& instance, void* windowHandle, vk::SurfaceKHR& surface)
+    const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, const RendererBase &renderer)
     {
-        auto res = glfwCreateWindowSurface(instance, (GLFWwindow*)windowHandle, nullptr, (VkSurfaceKHR*)&surface);
-        std::cout << res << std::endl;
-        if (res != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create window surface");
-        }
+        static vk::SurfaceKHR surface;
+        (void)glfwCreateWindowSurface(renderer.GetInstance(), window, nullptr, (VkSurfaceKHR*)&surface);
+        return surface;
     }
 
-    bool CheckVulkanSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex)
+    bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex)
     {
         return glfwGetPhysicalDevicePresentationSupport(instance, physicalDevice, familyQueueIndex) == GLFW_TRUE;
     }
