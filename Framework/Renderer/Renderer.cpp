@@ -369,15 +369,101 @@ namespace Vultana
 
     void RendererBase::CreatePipeline()
     {
-        auto vsCode = readFiles("../../Assets/Shaders/Triangle.vert.spv");
-        auto fsCode = readFiles("../../Assets/Shaders/Triangle.frag.spv");
+        auto vsCode = readFiles("../../Assets/Shaders/Generated/Triangle.vert.spv");
+        auto fsCode = readFiles("../../Assets/Shaders/Generated/Triangle.frag.spv");
 
-        
+        vk::ShaderModuleCreateInfo vsCI {};
+        vsCI.pCode = reinterpret_cast<const uint32_t*>(vsCode.data());
+        vsCI.codeSize = vsCode.size();
+
+        vk::ShaderModuleCreateInfo fsCI {};
+        fsCI.pCode = reinterpret_cast<const uint32_t*>(fsCode.data());
+        fsCI.codeSize = fsCode.size();
+
+        vk::ShaderModule vsModule = mDevice.createShaderModule(vsCI);
+        vk::ShaderModule fsModule = mDevice.createShaderModule(fsCI);
+
+        vk::PipelineShaderStageCreateInfo vsStageCI {};
+        vsStageCI.setStage(vk::ShaderStageFlagBits::eVertex);
+        vsStageCI.setModule(vsModule);
+        vsStageCI.setPName("main");
+
+        vk::PipelineShaderStageCreateInfo fsStageCI {};
+        fsStageCI.setStage(vk::ShaderStageFlagBits::eFragment);
+        fsStageCI.setModule(fsModule);
+        fsStageCI.setPName("main");
+
+        vk::PipelineShaderStageCreateInfo shaderStages[] = { vsStageCI, fsStageCI };
+
+        vk::PipelineVertexInputStateCreateInfo viStateCI {};
+        viStateCI.setVertexBindingDescriptions({ });
+        viStateCI.setVertexAttributeDescriptions({ });
+
+        vk::PipelineInputAssemblyStateCreateInfo iaStateCI {};
+        iaStateCI.setTopology(vk::PrimitiveTopology::eTriangleList);
+        iaStateCI.setPrimitiveRestartEnable(false);
+
+        vk::PipelineViewportStateCreateInfo vpStateCI {};
+        vpStateCI.setViewportCount(1);
+        vpStateCI.setScissorCount(1);
+
+        vk::PipelineRasterizationStateCreateInfo rsStateCI {};
+        rsStateCI.setDepthClampEnable(false);
+        rsStateCI.setRasterizerDiscardEnable(false);
+        rsStateCI.setPolygonMode(vk::PolygonMode::eFill);
+        rsStateCI.setLineWidth(1.0f);
+        rsStateCI.setCullMode(vk::CullModeFlagBits::eBack);
+        rsStateCI.setFrontFace(vk::FrontFace::eClockwise);
+        rsStateCI.setDepthBiasEnable(false);
+
+
+        vk::PipelineMultisampleStateCreateInfo msStateCI {};
+        msStateCI.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+        msStateCI.setSampleShadingEnable(false);
+        msStateCI.setMinSampleShading(1.0f);
+        msStateCI.setAlphaToCoverageEnable(false);
+        msStateCI.setAlphaToOneEnable(false);
+
+        vk::PipelineColorBlendAttachmentState cbAttach {};
+        cbAttach.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+        cbAttach.setBlendEnable(false);
+
+        vk::PipelineColorBlendStateCreateInfo cbStateCI {};
+        cbStateCI.setLogicOpEnable(false);
+        cbStateCI.setAttachments(cbAttach);
+
+        std::vector<vk::DynamicState> dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
+        vk::PipelineDynamicStateCreateInfo dynStateCI {};
+        dynStateCI.setDynamicStates(dynamicStates);
+
+        vk::PipelineLayoutCreateInfo layoutCI {};
+        layoutCI.setSetLayouts({ });
+        layoutCI.setPushConstantRanges({ });
+
+        mPipelineLayout = mDevice.createPipelineLayout(layoutCI);
+
+        vk::GraphicsPipelineCreateInfo pipelineCI {};
+        pipelineCI.setStages(shaderStages);
+        pipelineCI.setPVertexInputState(&viStateCI);
+        pipelineCI.setPInputAssemblyState(&iaStateCI);
+        pipelineCI.setPViewportState(&vpStateCI);
+        pipelineCI.setPRasterizationState(&rsStateCI);
+        pipelineCI.setPMultisampleState(&msStateCI);
+        pipelineCI.setPColorBlendState(&cbStateCI);
+        pipelineCI.setPDynamicState(&dynStateCI);
+        pipelineCI.setLayout(mPipelineLayout);
+        pipelineCI.setRenderPass(mRenderPass);
+        pipelineCI.setSubpass(0);
+
+        mGraphicsPipeline = mDevice.createGraphicsPipeline(nullptr, pipelineCI).value;
+
+        mDevice.destroyShaderModule(vsModule);
+        mDevice.destroyShaderModule(fsModule);
     }
 
     void RendererBase::CreateFramebuffer()
     {
-
+        
     }
 
 } // namespace Vultana::Renderer
