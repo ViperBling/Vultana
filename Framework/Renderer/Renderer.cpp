@@ -227,6 +227,7 @@ namespace Vultana
         std::array queuePriorities = {1.0f};
         queueCI.setQueueFamilyIndex(mQueueFamilyIndex);
         queueCI.setQueueCount(1);
+        queueCI.setQueuePriorities(queuePriorities);
 
         auto deviceExtensions = createInfo.DeviceExtensions;
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -274,6 +275,10 @@ namespace Vultana
         mCommandBuffer = mDevice.allocateCommandBuffers(commandBufferAI).front();
 
         createInfo.InfoCallback("Created Vulkan command pool and command buffer.");
+
+        CreateRenderPass();
+        CreatePipeline();
+        CreateFramebuffer();
     }
 
     void RendererBase::RecreateSwapchian(uint32_t width, uint32_t height)
@@ -309,36 +314,20 @@ namespace Vultana
         }
 
         auto swapchainImages = mDevice.getSwapchainImagesKHR(mSwapchain);
-        mPresentImageCount = mSwapchainImages.size();
+        mPresentImageCount = swapchainImages.size();
         mSwapchainImages.clear();
         mSwapchainImages.reserve(mPresentImageCount);
-        mSwapchainImageViews.resize(mSwapchainImages.size());
+        mSwapchainImageViews.resize(swapchainImages.size());
 
         for (size_t i = 0; i < mSwapchainImages.size(); i++)
         {
             vk::ImageViewCreateInfo imageViewCI {};
-            imageViewCI.setImage(mSwapchainImages[i]);
+            imageViewCI.setImage(swapchainImages[i]);
             imageViewCI.setViewType(vk::ImageViewType::e2D);
             imageViewCI.setFormat(mSurfaceFormat.format);
             imageViewCI.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
             mSwapchainImageViews[i] = mDevice.createImageView(imageViewCI);
         }
-
-        mFramebuffers.resize(mSwapchainImages.size());
-
-        for (size_t i = 0; i < mFramebuffers.size(); i++)
-        {
-            vk::FramebufferCreateInfo framebufferCI {};
-            framebufferCI.setRenderPass(mRenderPass);
-            framebufferCI.setAttachments(mSwapchainImageViews[i]);
-            framebufferCI.setWidth(mSurfaceExtent.width);
-            framebufferCI.setHeight(mSurfaceExtent.height);
-            framebufferCI.setLayers(1);
-            mFramebuffers[i] = mDevice.createFramebuffer(framebufferCI);
-        }
-
-        CreateRenderPass();
-        CreatePipeline();
     }
 
     void RendererBase::RenderFrame()
@@ -353,8 +342,9 @@ namespace Vultana
 
         mDevice.resetFences(mImmdiateFence);
         mCommandBuffer.reset({});
-
-        // RecreateSwapchian(mSurfaceExtent.width, mSurfaceExtent.height);
+        
+        RecreateSwapchian(mSurfaceExtent.width, mSurfaceExtent.height);
+        CreateFramebuffer();
 
         vk::CommandBufferBeginInfo commandBufferBI {};
 
@@ -407,6 +397,7 @@ namespace Vultana
         if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR)
         {
             RecreateSwapchian(mSurfaceExtent.width, mSurfaceExtent.height);
+            CreateFramebuffer();
         }
         else if (res != vk::Result::eSuccess)
         {
@@ -547,7 +538,18 @@ namespace Vultana
 
     void RendererBase::CreateFramebuffer()
     {
-        
+        mFramebuffers.resize(mSwapchainImages.size());
+
+        for (size_t i = 0; i < mFramebuffers.size(); i++)
+        {
+            vk::FramebufferCreateInfo framebufferCI {};
+            framebufferCI.setRenderPass(mRenderPass);
+            framebufferCI.setAttachments(mSwapchainImageViews[i]);
+            framebufferCI.setWidth(mSurfaceExtent.width);
+            framebufferCI.setHeight(mSurfaceExtent.height);
+            framebufferCI.setLayers(1);
+            mFramebuffers[i] = mDevice.createFramebuffer(framebufferCI);
+        }
     }
 
 } // namespace Vultana::Renderer
