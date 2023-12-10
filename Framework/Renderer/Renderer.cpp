@@ -323,11 +323,95 @@ namespace Vultana
             imageViewCI.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
             mSwapchainImageViews[i] = mDevice.createImageView(imageViewCI);
         }
+
+        mFramebuffers.resize(mSwapchainImages.size());
+
+        for (size_t i = 0; i < mFramebuffers.size(); i++)
+        {
+            vk::FramebufferCreateInfo framebufferCI {};
+            framebufferCI.setRenderPass(mRenderPass);
+            framebufferCI.setAttachments(mSwapchainImageViews[i]);
+            framebufferCI.setWidth(mSurfaceExtent.width);
+            framebufferCI.setHeight(mSurfaceExtent.height);
+            framebufferCI.setLayers(1);
+            mFramebuffers[i] = mDevice.createFramebuffer(framebufferCI);
+        }
+
+        CreateRenderPass();
+        CreatePipeline();
     }
 
     void RendererBase::RenderFrame()
     {
+        vk::Result res = mDevice.waitForFences(mImmdiateFence, true, UINT64_MAX);
+        if (res != vk::Result::eSuccess)
+        {
+            throw std::runtime_error("Failed to wait for fence!");
+        }
 
+        uint32_t imageIndex = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, mImageAvailableSemaphore, {}).value;
+
+        mDevice.resetFences(mImmdiateFence);
+        mCommandBuffer.reset({});
+
+        // RecreateSwapchian(mSurfaceExtent.width, mSurfaceExtent.height);
+
+        vk::CommandBufferBeginInfo commandBufferBI {};
+
+        mCommandBuffer.begin(commandBufferBI);
+
+        vk::RenderPassBeginInfo renderPassBI {};
+        renderPassBI.setRenderPass(mRenderPass);
+        renderPassBI.setFramebuffer(mFramebuffers[imageIndex]);
+        renderPassBI.setRenderArea({ { 0, 0 }, mSurfaceExtent });
+
+        std::array<vk::ClearValue, 1> clearValues = { vk::ClearColorValue{ std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } } };
+        renderPassBI.setClearValues(clearValues);
+
+        mCommandBuffer.beginRenderPass(renderPassBI, vk::SubpassContents::eInline);
+        mCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline);
+
+        vk::Viewport viewport {};
+        viewport.setWidth(mSurfaceExtent.width);
+        viewport.setHeight(mSurfaceExtent.height);
+        viewport.setMinDepth(0.0f);
+        viewport.setMaxDepth(1.0f);
+        mCommandBuffer.setViewport(0, viewport);
+        vk::Rect2D scissor {};
+        scissor.setExtent(mSurfaceExtent);
+        mCommandBuffer.setScissor(0, scissor);
+
+        mCommandBuffer.draw(3, 1, 0, 0);
+        mCommandBuffer.endRenderPass();
+
+        mCommandBuffer.end();
+
+        vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        vk::Semaphore waitSem = mImageAvailableSemaphore;
+        vk::Semaphore signalSem = mRenderFinishedSemaphore;
+
+        vk::SubmitInfo submitInfo {};
+        submitInfo.setWaitSemaphores(waitSem);
+        submitInfo.setWaitDstStageMask(waitStage);
+        submitInfo.setCommandBuffers(mCommandBuffer);
+        submitInfo.setSignalSemaphores(signalSem);
+
+        mQueue.submit(submitInfo, mImmdiateFence);
+
+        vk::PresentInfoKHR presentInfo {};
+        presentInfo.setWaitSemaphores(signalSem);
+        presentInfo.setSwapchains(mSwapchain);
+        presentInfo.setImageIndices(imageIndex);
+
+        res = mQueue.presentKHR(presentInfo);
+        if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR)
+        {
+            RecreateSwapchian(mSurfaceExtent.width, mSurfaceExtent.height);
+        }
+        else if (res != vk::Result::eSuccess)
+        {
+            throw std::runtime_error("Failed to present swapchain image!");
+        }
     }
 
     void RendererBase::CreateRenderPass()
@@ -369,8 +453,8 @@ namespace Vultana
 
     void RendererBase::CreatePipeline()
     {
-        auto vsCode = readFiles("../../Assets/Shaders/Generated/Triangle.vert.spv");
-        auto fsCode = readFiles("../../Assets/Shaders/Generated/Triangle.frag.spv");
+        auto vsCode = readFiles("./Generated/Triangle.vert.spv");
+        auto fsCode = readFiles("./Generated/Triangle.frag.spv");
 
         vk::ShaderModuleCreateInfo vsCI {};
         vsCI.pCode = reinterpret_cast<const uint32_t*>(vsCode.data());
