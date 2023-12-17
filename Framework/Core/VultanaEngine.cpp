@@ -15,16 +15,17 @@ namespace Vultana
     {
         mpWorld = std::make_unique<World>();
 
-        mWndHandle = std::unique_ptr<GLFWindow>(windowHandle);
+        mWndHandle = windowHandle;
 
         RendererCreateInfo rendererCI;
-        rendererCI.Extensions = mWndHandle->GetRequiredExtensions();
-        rendererCI.ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
         rendererCI.ApplicationName = "Vultana";
         rendererCI.DeviceType = RHIDeviceType::DISCRETE_GPU;
+        rendererCI.Width = width;
+        rendererCI.Height = height;
+        rendererCI.bEnableValidationLayers = true;
 
-        mpRenderer = std::make_unique<RendererBase>(rendererCI);
-        mpRenderer->Init(mWndHandle->CreateWindowSurface(*mpRenderer), rendererCI);
+        mpRenderer = std::make_unique<RendererBase>(mWndHandle);
+        mpRenderer->Init(rendererCI);
 
         stm_setup();
     }

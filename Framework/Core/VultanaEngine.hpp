@@ -20,13 +20,14 @@ namespace Vultana
         World* GetWorld() const { return mpWorld.get(); }
         RendererBase* GetRenderer() const { return mpRenderer.get(); }
 
-        GLFWindow* GetWindowHandle() const { return mWndHandle.get(); }
+        GLFWindow* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
 
     private:
         std::unique_ptr<World> mpWorld;
         std::unique_ptr<RendererBase> mpRenderer;
-        std::unique_ptr<GLFWindow> mWndHandle;
+
+        GLFWindow* mWndHandle;
 
         uint64_t mLastFrameTime = 0;
         float mFrameTime = 0.0f;

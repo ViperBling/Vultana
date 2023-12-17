@@ -76,6 +76,7 @@ namespace Vultana
         void OnMouseChanged(std::function<void(GLFWindow&, MouseButton, bool)> callback);
 
         const vk::SurfaceKHR& CreateWindowSurface(const RendererBase &renderer);
+        bool CheckPresentationSupport(const RendererBase& renderer);
         
         void SetContext(GLFWwindow* window);
 
