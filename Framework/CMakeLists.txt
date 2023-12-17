@@ -21,9 +21,7 @@ add_library(FrameworkLib STATIC
     ${Renderer_Src}
     ${RHI_Src}
     ${Scene_Src}
-    ${Window_Src} 
-    
-    ${ExternalPath}/tinyxml2/tinyxml2.cpp
+    ${Window_Src}
 )
 
 add_custom_target(CompileShaders
@@ -42,8 +40,10 @@ add_dependencies(FrameworkLib CompileShaders)
 
 target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath})
 target_link_libraries(FrameworkLib PUBLIC
-    assimp::assimp
+    # assimp::assimp
     glfw
     glm::glm
     Vulkan::Vulkan
-    GPUOpen::VulkanMemoryAllocator)
+    GPUOpen::VulkanMemoryAllocator
+    tinyxml2
+    vkbootstrap)

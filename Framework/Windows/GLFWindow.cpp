@@ -198,13 +198,18 @@ namespace Vultana
         return CreateVulkanSurface(this->mHwnd, renderer);
     }
 
+    bool GLFWindow::CheckPresentationSupport(const RendererBase &renderer)
+    {
+        return CheckVulkanPresentationSupport(renderer.GetInstance(), renderer.GetPhysicalDevice(), renderer.GetQueueFamilyIndex());
+    }
+
     void GLFWindow::SetContext(GLFWwindow *window)
     {
         this->mHwnd = window;
         glfwMakeContextCurrent(window);
     }
 
-    const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, const RendererBase &renderer)
+    const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, const RendererBase &renderer)
     {
         static vk::SurfaceKHR surface;
         (void)glfwCreateWindowSurface(renderer.GetInstance(), window, nullptr, (VkSurfaceKHR*)&surface);
