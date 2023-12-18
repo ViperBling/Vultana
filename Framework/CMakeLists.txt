@@ -45,5 +45,4 @@ target_link_libraries(FrameworkLib PUBLIC
     glm::glm
     Vulkan::Vulkan
     GPUOpen::VulkanMemoryAllocator
-    tinyxml2
-    vkbootstrap)
+    tinyxml2)

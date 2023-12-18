@@ -27,7 +27,7 @@ namespace Vultana
         std::unique_ptr<World> mpWorld;
         std::unique_ptr<RendererBase> mpRenderer;
 
-        GLFWindow* mWndHandle;
+        GLFWindow* mWndHandle = nullptr;
 
         uint64_t mLastFrameTime = 0;
         float mFrameTime = 0.0f;
