@@ -256,13 +256,19 @@ namespace Vultana
         std::vector<const char *> deviceExtensions;
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
-        vk::PhysicalDeviceSynchronization2Features sync2Features{};
-        sync2Features.setSynchronization2(true);
+        // 由于使用了PipelineBarrier2，所以必须启用Sync2Feature
+        vk::PhysicalDeviceVulkan12Features features12{};
+        features12.setBufferDeviceAddress(true);
+        features12.setDescriptorIndexing(true);
+        vk::PhysicalDeviceVulkan13Features features13{};
+        features13.setSynchronization2(true);
+        features13.setDynamicRendering(true);
+        features12.setPNext(&features13);
 
         vk::DeviceCreateInfo deviceCI{};
         deviceCI.setQueueCreateInfos(deviceQueueCI);
         deviceCI.setPEnabledExtensionNames(deviceExtensions);
-        deviceCI.setPNext(&sync2Features);
+        deviceCI.setPNext(&features12);
 
         mDevice = mPhysicalDevice.createDevice(deviceCI);
         mQueue = mDevice.getQueue(mQueueFamilyIndex, 0);
