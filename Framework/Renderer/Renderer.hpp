@@ -2,6 +2,7 @@
 
 #include "RHI/RHICommon.hpp"
 #include "RHI/RHIDevice.hpp"
+#include "Utilities/Utility.hpp"
 
 #include <iostream>
 #include <deque>
@@ -66,6 +67,7 @@ namespace Vultana
     class RendererBase
     {
     public:
+        NOCOPY(RendererBase);
         RendererBase(GLFWindow* window) : mWndHandle(window) {}
         virtual ~RendererBase();
 
