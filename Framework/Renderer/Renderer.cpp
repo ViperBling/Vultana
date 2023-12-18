@@ -9,17 +9,6 @@
 #include <vk_mem_alloc.h>
 #include <vkbootstrap/VkBootstrap.h>
 
-#define VK_CHECK(x)                                                     \
-    do                                                                  \
-    {                                                                   \
-        vk::Result err = x;                                               \
-        if (err)                                                        \
-        {                                                               \
-            std::cout << "Detected Vulkan error: " << err << std::endl; \
-            abort();                                                    \
-        }                                                               \
-    } while (0)
-
 namespace Vultana
 {
     const char *ValidationLayerName = "VK_LAYER_KHRONOS_validation";
@@ -118,7 +107,7 @@ namespace Vultana
 
         vk::ClearColorValue clearValue;
         float flash = abs(sin(mFrameIndex / 12000.0f));
-        clearValue.setFloat32({0.0f, 0.0f, flash, 1.0f});
+        clearValue.setFloat32({0.0f, 0.5f, flash, 1.0f});
 
         TransitionImage(mCommandBuffer, mSwapchainImages[swapchainImageIndex], ImageTransitionMode::ToGeneral);
 
@@ -266,7 +255,6 @@ namespace Vultana
 
         std::vector<const char *> deviceExtensions;
         deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        deviceExtensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
         vk::PhysicalDeviceSynchronization2Features sync2Features{};
         sync2Features.setSynchronization2(true);
