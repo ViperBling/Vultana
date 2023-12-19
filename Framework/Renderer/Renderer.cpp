@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+﻿#include "Renderer.hpp"
 #include "RHI/RHICommon.hpp"
 #include "Windows/GLFWindow.hpp"
 
@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <fstream>
 
+#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
-#include <vkbootstrap/VkBootstrap.h>
 
 namespace Vultana
 {
@@ -59,6 +59,8 @@ namespace Vultana
         InitSwapchain(createInfo);
         InitCommands();
         InitSyncStructures();
+        InitDescriptors();
+        InitPipelines();
 
         mbInitialized = true;
     }
@@ -71,8 +73,6 @@ namespace Vultana
         mDevice.waitIdle();
         mDevice.destroyCommandPool(mCommandPool);
 
-        vmaDestroyAllocator(mAllocator);
-
         mDevice.destroyFence(mImmdiateFence);
         mDevice.destroySemaphore(mImageAvailableSemaphore);
         mDevice.destroySemaphore(mRenderFinishedSemaphore);
@@ -84,6 +84,12 @@ namespace Vultana
             mDevice.destroyImageView(imageView);
         }
 
+        mDeletionQueue.Flush();
+        mDevice.destroyPipeline(mPipeline);
+        mDevice.destroyPipelineLayout(mPipelineLayout);
+        mDevice.destroyDescriptorSetLayout(mDescriptorSetLayout);
+        mDevice.destroyDescriptorPool(mDescriptorPool);
+
         mDevice.destroy();
         mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicLoader);
         mInstance.destroySurfaceKHR(mSurface);
@@ -93,7 +99,6 @@ namespace Vultana
     void RendererBase::RenderFrame()
     {
         vk::resultCheck(mDevice.waitForFences(mImmdiateFence, true, UINT64_MAX), "WaitFences");
-
         mDevice.resetFences(mImmdiateFence);
 
         mCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
@@ -105,17 +110,26 @@ namespace Vultana
         cmdBufferBI.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
         mCommandBuffer.begin(cmdBufferBI);
 
-        vk::ClearColorValue clearValue;
-        float flash = abs(sin(mFrameIndex / 12000.0f));
-        clearValue.setFloat32({0.0f, 0.5f, flash, 1.0f});
+        TransitionImage(mCommandBuffer, mDrawImage.Image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
-        TransitionImage(mCommandBuffer, mSwapchainImages[swapchainImageIndex], ImageTransitionMode::ToGeneral);
+        mCommandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, mPipeline);
+        mCommandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, mPipelineLayout, 0, mDescriptorSet, nullptr);
+        mCommandBuffer.dispatch(mSurfaceExtent.width / 16, mSurfaceExtent.height / 16, 1);
 
-        vk::ImageSubresourceRange subresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+        TransitionImage(mCommandBuffer, mDrawImage.Image, vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal);
+        TransitionImage(mCommandBuffer, mSwapchainImages[swapchainImageIndex], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 
-        mCommandBuffer.clearColorImage(mSwapchainImages[swapchainImageIndex], vk::ImageLayout::eGeneral, clearValue, subresourceRange);
+        vk::ImageSubresourceRange clearRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
-        TransitionImage(mCommandBuffer, mSwapchainImages[swapchainImageIndex], ImageTransitionMode::GeneralToPresent);
+        vk::Extent3D extent = {
+            mSurfaceExtent.width,
+            mSurfaceExtent.height,
+            1
+        };
+
+        CopyImage(mCommandBuffer, mDrawImage.Image, mSwapchainImages[swapchainImageIndex], extent);
+
+        TransitionImage(mCommandBuffer, mSwapchainImages[swapchainImageIndex], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::ePresentSrcKHR);
 
         mCommandBuffer.end();
 
@@ -289,6 +303,8 @@ namespace Vultana
         allocatorCI.instance = mInstance;
         vmaCreateAllocator(&allocatorCI, &mAllocator);
 
+        mDeletionQueue.PushFunction([=]() { vmaDestroyAllocator(mAllocator); });
+
         createInfo.InfoCallback("Created vulkan memory allocator");
     }
 
@@ -326,6 +342,41 @@ namespace Vultana
             imageViewCI.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
             mSwapchainImageViews.push_back(mDevice.createImageView(imageViewCI));
         }
+
+        vk::Extent3D drawImageExtent = {
+            mSurfaceExtent.width,
+            mSurfaceExtent.height,
+            1
+        };
+        
+        vk::ImageCreateInfo drawImageCI{};
+        drawImageCI.setImageType(vk::ImageType::e2D);
+        drawImageCI.setFormat(mSurfaceFormat.format);
+        drawImageCI.setExtent(drawImageExtent);
+        drawImageCI.setMipLevels(1);
+        drawImageCI.setArrayLayers(1);
+        drawImageCI.setSamples(vk::SampleCountFlagBits::e1);
+        drawImageCI.setTiling(vk::ImageTiling::eOptimal);
+        drawImageCI.setUsage(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
+
+        VmaAllocationCreateInfo drawImageAllocCI {};
+        drawImageAllocCI.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        drawImageAllocCI.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        vmaCreateImage(mAllocator, (VkImageCreateInfo*)&drawImageCI,  &drawImageAllocCI, (VkImage*)&mDrawImage.Image, &mDrawImage.ImageAllocation, nullptr);
+        
+        vk::ImageViewCreateInfo drawImageViewCI{};
+        drawImageViewCI.setImage(mDrawImage.Image);
+        drawImageViewCI.setViewType(vk::ImageViewType::e2D);
+        drawImageViewCI.setFormat(mSurfaceFormat.format);
+        drawImageViewCI.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+        mDrawImageView = mDevice.createImageView(drawImageViewCI);
+
+        mDeletionQueue.PushFunction([=]()
+        {
+            mDevice.destroyImageView(mDrawImageView);
+            vmaDestroyImage(mAllocator, mDrawImage.Image, mDrawImage.ImageAllocation);
+        });
     }
 
     void RendererBase::InitRenderpass()
@@ -349,6 +400,76 @@ namespace Vultana
         cmdBufferAI.setCommandBufferCount(1);
 
         mCommandBuffer = mDevice.allocateCommandBuffers(cmdBufferAI).front();
+    }
+
+    void RendererBase::InitPipelines()
+    {
+        vk::ShaderModule computeDraw;
+        if (!LoadShaderModule("../Assets/Shaders/Generated/ComputeDraw.comp.spv", &computeDraw))
+        {
+            throw std::runtime_error("Failed to load compute shader");
+        }
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCI{};
+        pipelineLayoutCI.setSetLayoutCount(1);
+        pipelineLayoutCI.setPSetLayouts(&mDescriptorSetLayout);
+
+        mPipelineLayout = mDevice.createPipelineLayout(pipelineLayoutCI);
+
+        vk::PipelineShaderStageCreateInfo shaderStageCI{};
+        shaderStageCI.setStage(vk::ShaderStageFlagBits::eCompute);
+        shaderStageCI.setModule(computeDraw);
+        shaderStageCI.setPName("main");
+
+        vk::ComputePipelineCreateInfo pipelineCI{};
+        pipelineCI.setStage(shaderStageCI);
+        pipelineCI.setLayout(mPipelineLayout);
+
+        mPipeline = mDevice.createComputePipeline(nullptr, pipelineCI).value;
+
+        mDevice.destroyShaderModule(computeDraw);
+    }
+
+    void RendererBase::InitDescriptors()
+    {
+        std::vector<vk::DescriptorPoolSize> poolSizes = {
+            {vk::DescriptorType::eStorageImage, 1}
+        };
+
+        vk::DescriptorPoolCreateInfo descPoolCI {};
+        descPoolCI.setPoolSizes(poolSizes);
+        descPoolCI.setMaxSets(10);
+
+        mDescriptorPool = mDevice.createDescriptorPool(descPoolCI);
+
+        vk::DescriptorSetLayoutBinding descSetLayoutBinding {};
+        descSetLayoutBinding.setBinding(0);
+        descSetLayoutBinding.setDescriptorType(vk::DescriptorType::eStorageImage);
+        descSetLayoutBinding.setDescriptorCount(1);
+        descSetLayoutBinding.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+        vk::DescriptorSetLayoutCreateInfo descSetLayoutCI {};
+        descSetLayoutCI.setBindings(descSetLayoutBinding);
+
+        mDescriptorSetLayout = mDevice.createDescriptorSetLayout(descSetLayoutCI);
+
+        vk::DescriptorSetAllocateInfo descSetAI {};
+        descSetAI.setDescriptorPool(mDescriptorPool);
+        descSetAI.setSetLayouts(mDescriptorSetLayout);
+
+        mDescriptorSet = mDevice.allocateDescriptorSets(descSetAI).front();
+
+        vk::DescriptorImageInfo descImageInfo {};
+        descImageInfo.setImageLayout(vk::ImageLayout::eGeneral);
+        descImageInfo.setImageView(mDrawImageView);
+
+        vk::WriteDescriptorSet descWrite {};
+        descWrite.setDstSet(mDescriptorSet);
+        descWrite.setDstBinding(0);
+        descWrite.setDescriptorType(vk::DescriptorType::eStorageImage);
+        descWrite.setImageInfo(descImageInfo);
+
+        mDevice.updateDescriptorSets(descWrite, nullptr);
     }
 
     void RendererBase::InitSyncStructures()
@@ -401,5 +522,85 @@ namespace Vultana
         dependencyInfo.pImageMemoryBarriers = &imageBarrier;
 
         cmdBuffer.pipelineBarrier2(dependencyInfo);
+    }
+
+    void RendererBase::TransitionImage(vk::CommandBuffer cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+    {
+        vk::ImageMemoryBarrier2 imageBarrier{};
+        imageBarrier.setSrcStageMask(vk::PipelineStageFlagBits2KHR::eAllCommands);
+        imageBarrier.setSrcAccessMask(vk::AccessFlagBits2::eMemoryWrite);
+        imageBarrier.setDstStageMask(vk::PipelineStageFlagBits2KHR::eAllCommands);
+        imageBarrier.setDstAccessMask(vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eMemoryRead);
+        imageBarrier.oldLayout = oldLayout;
+        imageBarrier.newLayout = newLayout;
+
+        vk::ImageSubresourceRange subImage {};
+        subImage.aspectMask = (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+        subImage.levelCount = 1;
+        subImage.layerCount = 1;
+        subImage.baseMipLevel = 0;
+        subImage.baseArrayLayer = 0;
+
+        imageBarrier.image = image;
+        imageBarrier.subresourceRange = subImage;
+
+        vk::DependencyInfo dependencyInfo{};
+        dependencyInfo.imageMemoryBarrierCount = 1;
+        dependencyInfo.pImageMemoryBarriers = &imageBarrier;
+
+        cmdBuffer.pipelineBarrier2(dependencyInfo);
+    }
+
+    void RendererBase::CopyImage(vk::CommandBuffer cmdBuffer, vk::Image srcImage, vk::Image dstImage, vk::Extent3D extent)
+    {
+        vk::ImageSubresourceRange subImage {};
+        subImage.aspectMask = vk::ImageAspectFlagBits::eColor;
+        subImage.levelCount = 1;
+        subImage.layerCount = 1;
+        subImage.baseMipLevel = 0;
+        subImage.baseArrayLayer = 0;
+
+        vk::ImageCopy2 imageCopy {};
+        imageCopy.extent = extent;
+        imageCopy.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        imageCopy.srcSubresource.layerCount = 1;
+        imageCopy.srcSubresource.baseArrayLayer = 0;
+        imageCopy.srcSubresource.mipLevel = 0;
+        imageCopy.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        imageCopy.dstSubresource.layerCount = 1;
+        imageCopy.dstSubresource.baseArrayLayer = 0;
+        imageCopy.dstSubresource.mipLevel = 0;
+
+        vk::CopyImageInfo2 copyImageInfo {};
+        copyImageInfo.srcImage = srcImage;
+        copyImageInfo.dstImage = dstImage;
+        copyImageInfo.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
+        copyImageInfo.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
+        copyImageInfo.setRegions(imageCopy);
+        
+        cmdBuffer.copyImage2(copyImageInfo);
+    }
+
+    bool RendererBase::LoadShaderModule(const char *filePath, vk::ShaderModule *outShaderModule)
+    {
+        // Open file, with cursor at the end
+        std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+        if (!file.is_open()) { return false; }
+
+        // 获取文件大小，因为指针在末尾，所以指针位置就是文件大小
+        size_t fileSize = (size_t)file.tellg();
+        std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
+
+        file.seekg(0);
+        file.read((char*)buffer.data(), fileSize);
+        file.close();
+
+        vk::ShaderModuleCreateInfo shaderModuleCI{};
+        shaderModuleCI.setCodeSize(buffer.size() * sizeof(uint32_t));
+        shaderModuleCI.setPCode(buffer.data());
+
+        *outShaderModule = mDevice.createShaderModule(shaderModuleCI);
+
+        return true;
     }
 } // namespace Vultana::Renderer

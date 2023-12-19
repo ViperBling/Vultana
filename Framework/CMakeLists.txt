@@ -44,5 +44,5 @@ target_link_libraries(FrameworkLib PUBLIC
     glfw
     glm::glm
     Vulkan::Vulkan
-    GPUOpen::VulkanMemoryAllocator
+    # GPUOpen::VulkanMemoryAllocator
     tinyxml2)
