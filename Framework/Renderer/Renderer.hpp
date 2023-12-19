@@ -89,8 +89,6 @@ namespace Vultana
     private:
         void InitVulkan(RendererCreateInfo& createInfo);
         void InitSwapchain(RendererCreateInfo& createInfo);
-        void InitRenderpass();
-        void InitFramebuffers();
         void InitCommands();
         void InitPipelines();
         void InitDescriptors();

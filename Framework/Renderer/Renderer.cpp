@@ -379,14 +379,6 @@ namespace Vultana
         });
     }
 
-    void RendererBase::InitRenderpass()
-    {
-    }
-
-    void RendererBase::InitFramebuffers()
-    {
-    }
-
     void RendererBase::InitCommands()
     {
         vk::CommandPoolCreateInfo cmdPoolCI{};
