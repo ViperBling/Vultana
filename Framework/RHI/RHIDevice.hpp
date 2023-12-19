@@ -8,6 +8,9 @@ namespace Vultana
     {
     public:
         virtual ~RHIDevice() {}
+        virtual void OnCreate() = 0;
+        virtual void OnDestroy() = 0;
+
         virtual void* GetHandle() const = 0;
 
         virtual void BeginFrame() = 0;
