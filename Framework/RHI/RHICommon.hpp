@@ -181,4 +181,11 @@ namespace Vultana
         RHIRenderBackend Backend = RHIRenderBackend::Vulkan;
         uint32_t MaxFrameLag = 3;
     };
+
+    enum class RHIPipelineType
+    {
+        Graphics,
+        Compute,
+        Count
+    };
 }
