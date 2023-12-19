@@ -54,7 +54,7 @@ namespace Vultana
     class DirectedAcyclicGraph
     {
     public:
-        DAGNodeID GenerateNodeId() { return (DAGNodeID)mNodes.size(); }
+        DAGNodeID GenerateNodeID() { return (DAGNodeID)mNodes.size(); }
         DAGNode* GetNode(DAGNodeID id) const { return mNodes[id]; }
         DAGEdge* GetEdge(DAGNodeID from, DAGNodeID to) const;
 
