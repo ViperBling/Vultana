@@ -17,6 +17,8 @@ namespace Vultana
     public:
         NOCOPY(VKDevice);
         VKDevice(const RHIDeviceInfo& deviceInfo);
+        virtual void OnCreate() override;
+        virtual void OnDestroy() override;
 
         virtual void* GetHandle() const override { return nullptr; }
 

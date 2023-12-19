@@ -6,4 +6,12 @@ namespace Vultana
     {
         mDeviceInfo = deviceInfo;
     }
+    
+    void VKDevice::OnCreate()
+    {
+    }
+
+    void VKDevice::OnDestroy()
+    {
+    }
 }
