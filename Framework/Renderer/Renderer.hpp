@@ -7,10 +7,10 @@
 #include <iostream>
 #include <deque>
 #include <functional>
+
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
-struct VmaAllocator_T;
-using VmaAllocator = VmaAllocator_T*;
 
 namespace Vultana
 {
@@ -41,6 +41,12 @@ namespace Vultana
         ToGeneral,
         GeneralToPresent,
         AttachmentToPresent
+    };
+
+    struct AllocatedImage
+    {
+        vk::Image Image;
+        VmaAllocation ImageAllocation;
     };
 
     struct DeletionQueue
@@ -86,9 +92,14 @@ namespace Vultana
         void InitRenderpass();
         void InitFramebuffers();
         void InitCommands();
+        void InitPipelines();
+        void InitDescriptors();
         void InitSyncStructures();
 
         void TransitionImage(vk::CommandBuffer cmdBuffer, vk::Image image, ImageTransitionMode transitionMode);
+        void TransitionImage(vk::CommandBuffer cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+        void CopyImage(vk::CommandBuffer cmdBuffer, vk::Image srcImage, vk::Image dstImage, vk::Extent3D extent);
+        bool LoadShaderModule(const char* filePath, vk::ShaderModule* outShaderModule);
 
     private:
         vk::Instance mInstance;
@@ -112,15 +123,26 @@ namespace Vultana
         vk::SwapchainKHR mSwapchain;
         vk::PresentModeKHR mPresentMode;
         vk::SurfaceFormatKHR mSurfaceFormat;
-        vk::Format mSwapchainFormat;
 
         std::vector<vk::Image> mSwapchainImages;
         std::vector<vk::ImageView> mSwapchainImageViews;
         std::vector<vk::Framebuffer> mFramebuffers;
 
+        vk::DescriptorPool mDescriptorPool;
+        vk::DescriptorSet mDescriptorSet;
+        vk::DescriptorSetLayout mDescriptorSetLayout;
+
+        vk::ImageView mDrawImageView;
+        AllocatedImage mDrawImage;
+
+        vk::Pipeline mPipeline;
+        vk::PipelineLayout mPipelineLayout;
+
         vk::Extent2D mSurfaceExtent;
 
         vk::DispatchLoaderDynamic mDynamicLoader;
+
+        DeletionQueue mDeletionQueue;
 
         VmaAllocator mAllocator = { };
 
