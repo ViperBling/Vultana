@@ -4,20 +4,26 @@
 
 namespace Vultana
 {
+    struct QueueInfo
+    {
+        RHICommandQueueType Type;
+        uint8_t Count;
+    };
+
+    struct DeviceCreateInfo
+    {
+        uint32_t QueueCreateInfoCount;
+        const QueueInfo* QueueCreateInfos;
+    };
+
     class RHIDevice
     {
     public:
-        virtual ~RHIDevice() {}
-        virtual void OnCreate() = 0;
-        virtual void OnDestroy() = 0;
+        NOCOPY(RHIDevice)
+        virtual ~RHIDevice() = default;
 
-        virtual void* GetHandle() const = 0;
+        virtual void Destroy() = 0;
 
-        virtual void BeginFrame() = 0;
-        virtual void EndFrame() = 0;
 
-        virtual bool Init() = 0;
     };
-
-    RHIDevice* CreateRHIDevice(const RHIDeviceInfo& deviceInfo);
 } // namespace Vultana::RHI

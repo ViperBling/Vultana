@@ -19,7 +19,7 @@ namespace Vultana
 
         RendererCreateInfo rendererCI;
         rendererCI.ApplicationName = "Vultana";
-        rendererCI.DeviceType = RHIDeviceType::DISCRETE_GPU;
+        rendererCI.DeviceType = RHIDeviceType::Hardware;
         rendererCI.Width = width;
         rendererCI.Height = height;
         rendererCI.bEnableValidationLayers = true;

@@ -1,24 +1,21 @@
 #pragma once
 
 #include "Utilities/Utility.hpp"
+#include "RHI/RHIInstance.hpp"
 
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
 namespace Vultana
 {
-    class VKInstance
+    class VKInstance : public RHIInstance
     {
     public:
-        NOCOPY(VKInstance);
+        NOCOPY(VKInstance)
+        VKInstance();
+        ~VKInstance() override;
 
-        VKInstance(vk::Instance instance);
-        ~VKInstance();
-        const std::vector<const char*>& GetExtensions() const;
-        
-        vk::Instance GetHandle() const;
-
-    private:
-        vk::Instance mInstance;
+        RHIRenderBackend GetRHIBackend() override;
+        void Destroy() override;
     };
 }
