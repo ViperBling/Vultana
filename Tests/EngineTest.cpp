@@ -5,6 +5,8 @@
 #include "Scene/ModelLoader.hpp"
 #include "Scene/World.hpp"
 
+#include "RHI/RHIInstance.hpp"
+
 using namespace Vultana;
 
 int main()

@@ -1,4 +1,5 @@
 #include "VKInstance.hpp"
+#include "RHI/RHIInstance.hpp"
 
 namespace Vultana
 {
