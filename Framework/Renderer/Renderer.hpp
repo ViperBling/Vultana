@@ -26,7 +26,7 @@ namespace Vultana
 
     struct RendererCreateInfo
     {
-        RHIDeviceType DeviceType = RHIDeviceType::DISCRETE_GPU;
+        RHIDeviceType DeviceType = RHIDeviceType::Hardware;
         std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
         std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
         const char* ApplicationName = "Vultana";
@@ -114,8 +114,6 @@ namespace Vultana
 
         vk::CommandPool mCommandPool;
         vk::CommandBuffer mCommandBuffer;
-
-        vk::RenderPass mRenderPass;
 
         vk::SurfaceKHR mSurface;
         vk::SwapchainKHR mSwapchain;
