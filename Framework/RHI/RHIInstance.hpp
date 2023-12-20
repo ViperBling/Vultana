@@ -1,28 +1,13 @@
 #pragma once
 
 #include "RHICommon.hpp"
-#include "RHIModule.hpp"
 
 namespace Vultana
 {
     class RHIInstance
     {
     public:
-        static RHIInstance* GetByRHIBackend(const RHIRenderBackend& backend)
-        {
-            RHIInstance* instance = nullptr;
-
-            switch (backend)
-            {
-            case RHIRenderBackend::Vulkan:
-                rhiModule = RHIModule::GetRHIInstance();
-                break;
-            
-            default:
-                break;
-            }
-            return instance;
-        }
+        static RHIInstance* GetInstanceByRHIBackend(const RHIRenderBackend& backend);
 
         NOCOPY(RHIInstance)
         virtual ~RHIInstance() = default;

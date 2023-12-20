@@ -15,7 +15,16 @@ namespace Vultana
         VKInstance();
         ~VKInstance() override;
 
-        RHIRenderBackend GetRHIBackend() override;
+        RHIRenderBackend GetRHIBackend() override { return RHIRenderBackend::Vulkan; }
+        vk::Instance GetVkInstance() const;
         void Destroy() override;
+
+    private:
+
+    private:
+        vk::Instance mInstance;
+        std::vector<const char*> mInstanceExtensions;
+        vk::DebugUtilsMessengerEXT mDebugMessenger;
+        
     };
 }
