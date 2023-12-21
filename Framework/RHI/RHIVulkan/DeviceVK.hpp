@@ -12,9 +12,17 @@ using VmaAllocation = VmaAllocation_T*;
 
 namespace Vultana
 {
-    class VKDevice : public RHIDevice
+    class GPUVK;
+
+
+    class DeviceVK : public RHIDevice
     {
-    
+    public:
+        NOCOPY(DeviceVK)
+        DeviceVK(GPUVK& gpu, const DeviceCreateInfo& createInfo);
+        ~DeviceVK();
+
+        void Destroy() override;
     };
 
     

@@ -6,20 +6,20 @@
 
 namespace Vultana
 {
-    class VKInstance;
+    class InstanceVK;
 
-    class VKGPU : public RHIGPU
+    class GPUVK : public RHIGPU
     {
     public:
-        NOCOPY(VKGPU);
-        explicit VKGPU(vk::Instance& instance, vk::PhysicalDevice& physicalDevice);
-        ~VKGPU() = default;
+        NOCOPY(GPUVK);
+        explicit GPUVK(vk::Instance& instance, vk::PhysicalDevice& physicalDevice);
+        ~GPUVK() = default;
 
         GPUProperty GetProperty() override;
         RHIDevice* RequestDevice(const DeviceCreateInfo& info) override;
 
-        const vk::PhysicalDevice& GetVKPhysicalDevice() const;
-        vk::Instance& GetInstance() const;
+        const vk::PhysicalDevice& GetVKPhysicalDevice() const { return mPhysicalDevice; }
+        vk::Instance& GetInstance() const { return mInstance; }
 
         uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
