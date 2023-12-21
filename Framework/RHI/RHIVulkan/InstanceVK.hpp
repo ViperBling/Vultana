@@ -17,10 +17,20 @@ namespace Vultana
         ~InstanceVK() override;
 
         RHIRenderBackend GetRHIBackend() override { return RHIRenderBackend::Vulkan; }
+        uint32_t GetGPUCount() override { return static_cast<uint32_t>(mGPUs.size()); }
+        RHIGPU* GetGPU(uint32_t index) override { return &mGPUs[index]; }
+
         vk::Instance GetVkInstance() const;
         void Destroy() override;
 
+        void DebugOutput() override;
+
     private:
+        void AddInstanceLayers();
+        void AddInstanceExtensions();
+        void CreateInstance();
+
+        void EnumeratePhysicalDevices();
 
     private:
         vk::Instance mInstance;
