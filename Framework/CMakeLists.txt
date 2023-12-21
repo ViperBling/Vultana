@@ -6,7 +6,6 @@ set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED)
-find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
 file(GLOB_RECURSE Core_Head         ${SourcePath}/Core/*.hpp)
@@ -50,5 +49,4 @@ target_link_libraries(FrameworkLib PUBLIC
     glfw
     glm::glm
     Vulkan::Vulkan
-    # GPUOpen::VulkanMemoryAllocator
     tinyxml2)
