@@ -1,5 +1,5 @@
 #include "RHIInstance.hpp"
-#include "RHI/RHIVulkan/VKInstance.hpp"
+#include "RHI/RHIVulkan/InstanceVK.hpp"
 
 namespace Vultana
 {
@@ -10,7 +10,7 @@ namespace Vultana
         switch (backend)
         {
         case RHIRenderBackend::Vulkan :
-            instance = new VKInstance();
+            instance = new InstanceVK();
             break;
         default:
             break;

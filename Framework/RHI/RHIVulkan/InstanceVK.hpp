@@ -8,12 +8,12 @@
 
 namespace Vultana
 {
-    class VKInstance : public RHIInstance
+    class InstanceVK : public RHIInstance
     {
     public:
-        NOCOPY(VKInstance)
-        VKInstance();
-        ~VKInstance() override;
+        NOCOPY(InstanceVK)
+        InstanceVK();
+        ~InstanceVK() override;
 
         RHIRenderBackend GetRHIBackend() override { return RHIRenderBackend::Vulkan; }
         vk::Instance GetVkInstance() const;
