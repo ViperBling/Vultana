@@ -9,23 +9,23 @@ find_package(Vulkan REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
-# file(GLOB_RECURSE Core_Head         ${SourcePath}/Core/*.hpp)
+file(GLOB_RECURSE Core_Head         ${SourcePath}/Core/*.hpp)
 file(GLOB_RECURSE Core_Src          ${SourcePath}/Core/*.cpp)
-# file(GLOB_RECURSE Renderer_Head     ${SourcePath}/Renderer/*.hpp)
+file(GLOB_RECURSE Renderer_Head     ${SourcePath}/Renderer/*.hpp)
 file(GLOB_RECURSE Renderer_Src      ${SourcePath}/Renderer/*.cpp)
-# file(GLOB_RECURSE RHI_Head          ${SourcePath}/RHI/*.hpp)
+file(GLOB_RECURSE RHI_Head          ${SourcePath}/RHI/*.hpp)
 file(GLOB_RECURSE RHI_Src           ${SourcePath}/RHI/*.cpp)
-# file(GLOB_RECURSE Scene_Head        ${SourcePath}/Scene/*.hpp)
+file(GLOB_RECURSE Scene_Head        ${SourcePath}/Scene/*.hpp)
 file(GLOB_RECURSE Scene_Src         ${SourcePath}/Scene/*.cpp)
-# file(GLOB_RECURSE Window_Head       ${SourcePath}/Windows/*.hpp)
+file(GLOB_RECURSE Window_Head       ${SourcePath}/Windows/*.hpp)
 file(GLOB_RECURSE Window_Src        ${SourcePath}/Windows/*.cpp)
 
 add_library(FrameworkLib STATIC 
-    ${Core_Src}
-    ${Renderer_Src}
-    ${RHI_Src}
-    ${Scene_Src}
-    ${Window_Src}
+    ${Core_Head}        ${Core_Src}
+    ${Renderer_Head}    ${Renderer_Src}
+    ${RHI_Head}         ${RHI_Src}
+    ${Scene_Head}       ${Scene_Src}
+    ${Window_Head}      ${Window_Src}
 )
 
 file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)

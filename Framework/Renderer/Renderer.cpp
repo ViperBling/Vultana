@@ -172,7 +172,7 @@ namespace Vultana
         auto supportedExt = vk::enumerateInstanceExtensionProperties();
         auto supportedLayers = vk::enumerateInstanceLayerProperties();
 
-        auto extensions = mWndHandle->GetRequiredExtensions();
+        auto extensions = mWndHandle->GetRequiredExtensions();              // 手动导入WindowsSurface相关扩展
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         createInfo.InfoCallback("Enumerating request extensions: ");
@@ -397,7 +397,7 @@ namespace Vultana
     void RendererBase::InitPipelines()
     {
         vk::ShaderModule computeDraw;
-        if (!LoadShaderModule("../Assets/Shaders/Generated/ComputeDraw.comp.spv", &computeDraw))
+        if (!LoadShaderModule("./Assets/Shaders/Generated/ComputeDraw.comp.spv", &computeDraw))
         {
             throw std::runtime_error("Failed to load compute shader");
         }

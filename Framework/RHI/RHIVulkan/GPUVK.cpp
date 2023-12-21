@@ -1,3 +1,4 @@
+#include "RHICommonVK.hpp"
 #include "GPUVK.hpp"
 #include "DeviceVK.hpp"
 
@@ -12,7 +13,13 @@ namespace Vultana
 
     GPUProperty GPUVK::GetProperty()
     {
-        return GPUProperty();
+        vk::PhysicalDeviceProperties properties = mPhysicalDevice.getProperties();
+
+        GPUProperty property;
+        property.VendorID = properties.vendorID;
+        property.DeviceID = properties.deviceID;
+        property.Type = VKEnumCast<vk::PhysicalDeviceType, RHIDeviceType>(properties.deviceType);
+        return property;
     }
 
     RHIDevice *GPUVK::RequestDevice(const DeviceCreateInfo &info)
@@ -22,7 +29,15 @@ namespace Vultana
 
     uint32_t GPUVK::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const
     {
-        return 0;
+        vk::PhysicalDeviceMemoryProperties memProperties = mPhysicalDevice.getMemoryProperties();
+
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
+        {
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                return i;
+        }
+        
+        return -1;
     }
 
 } // namespace Vultana

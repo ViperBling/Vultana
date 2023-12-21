@@ -2,6 +2,7 @@
 
 #include "Utilities/Utility.hpp"
 #include "RHI/RHIInstance.hpp"
+#include "RHI/RHIGPU.hpp"
 
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
@@ -24,7 +25,9 @@ namespace Vultana
     private:
         vk::Instance mInstance;
         std::vector<const char*> mInstanceExtensions;
+        std::vector<const char*> mInstanceLayers;
+        std::vector<RHIGPU> mGPUs;
         vk::DebugUtilsMessengerEXT mDebugMessenger;
-        
+        vk::DispatchLoaderDynamic mDynamicLoader;
     };
 }
