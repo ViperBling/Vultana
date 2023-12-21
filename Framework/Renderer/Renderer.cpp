@@ -289,7 +289,7 @@ namespace Vultana
 
         createInfo.InfoCallback("Created logical device and queue");
 
-        mDynamicLoader.init(mInstance, vkGetInstanceProcAddr, mDevice, vkGetDeviceProcAddr);
+        mDynamicLoader.init(mInstance, mDevice);
 
         vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCI{};
         debugMessengerCI.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning);
