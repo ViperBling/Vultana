@@ -459,13 +459,13 @@ namespace Vultana
     template <typename T>
     RHIFlags<T> operator&(RHIFlags<T> a, RHIFlags<T> b)
     {
-        return Flags<T>(a.Value() & b.Value());
+        return RHIFlags<T>(a.Value() & b.Value());
     }
 
     template <typename T>
     RHIFlags<T> operator|(RHIFlags<T> a, RHIFlags<T> b)
     {
-        return Flags<T>(a.Value() | b.Value());
+        return RHIFlags<T>(a.Value() | b.Value());
     }
 
     using RHIBufferUsageFlags = RHIFlags<>;
@@ -501,6 +501,7 @@ namespace Vultana
     using RHIShaderStageFlags = RHIFlags<>;
     enum class RHIShaderStageBits : RHIShaderStageFlags::UnderlyingType
     {
+        None      = 0x0,
         Vertex    = 0x1,
         Pixel     = 0x2,
         Compute   = 0x4,
