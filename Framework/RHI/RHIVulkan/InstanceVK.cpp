@@ -130,6 +130,8 @@ namespace Vultana
         mGPUs.resize(physicalDevices.size());
         for (size_t i = 0; i < physicalDevices.size(); ++i)
         {
+            auto properties = physicalDevices[i].getProperties();
+
             mGPUs[i] = std::make_unique<GPUVK>(*this, physicalDevices[i]);
         }
     }

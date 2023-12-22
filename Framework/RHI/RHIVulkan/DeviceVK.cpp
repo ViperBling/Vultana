@@ -4,6 +4,8 @@
 #include "GPUVK.hpp"
 #include "InstanceVK.hpp"
 
+#include <map>
+
 namespace Vultana
 {
     const std::vector<const char *> DEVICE_EXTENSIONS = {
@@ -165,7 +167,42 @@ namespace Vultana
             queueNumMap[queueCI.Type] += queueCI.Count;
         }
 
-        
+        std::vector<vk::DeviceQueueCreateInfo> queueInfos;
+        std::vector<uint32_t> usedQueueFamily;
+        std::vector<float> queueProperties;
+        for (auto it : queueNumMap)
+        {
+            auto queueFamilyIndex = FindQueueFamilyIndex(queueFamilyProps, usedQueueFamily, it.first);
+            assert(queueFamilyIndex.has_value());
+            auto queueCount = std::min(queueFamilyProps[queueFamilyIndex.value()].queueCount, it.second);
+            if (queueCount > queueProperties.size()) { queueProperties.resize(queueCount, 1.0f); }
+
+            vk::DeviceQueueCreateInfo tempCI {};
+            tempCI.queueFamilyIndex = queueFamilyIndex.value();
+            tempCI.setQueuePriorities(queueProperties);
+            queueInfos.emplace_back(tempCI);
+
+            mQueueFamilyMappings[it.first] = std::make_pair(queueFamilyIndex.value(), queueCount);
+        }
+
+        vk::PhysicalDeviceFeatures deviceFeatures {};
+        deviceFeatures.setSamplerAnisotropy(true);
+        vk::PhysicalDeviceVulkan12Features deviceFeatures12 {};
+        deviceFeatures12.setBufferDeviceAddress(true);
+        deviceFeatures12.setDescriptorIndexing(true);
+        deviceFeatures12.setPNext(&deviceFeatures);
+        vk::PhysicalDeviceVulkan13Features deviceFeatures13 {};
+        deviceFeatures13.setSynchronization2(true);
+        deviceFeatures13.setDynamicRendering(true);
+        deviceFeatures13.setPNext(&deviceFeatures12);
+
+        vk::DeviceCreateInfo deviceCI {};
+        deviceCI.setQueueCreateInfos(queueInfos);
+        deviceCI.setPNext(&deviceFeatures13);
+        deviceCI.setPEnabledExtensionNames(DEVICE_EXTENSIONS);
+        deviceCI.setPEnabledLayerNames(DEVICE_LAYERS);
+
+       vk::resultCheck(mGPU.GetVKPhysicalDevice().createDevice(&deviceCI, nullptr, &mDevice), nullptr);
     }
 
     void DeviceVK::GetQueues()
@@ -189,7 +226,7 @@ namespace Vultana
                 cmdCI.queueFamilyIndex = queueFamilyIndex;
 
                 vk::CommandPool cmdPool;
-                mDevice.createCommandPool(&cmdCI, nullptr, &cmdPool);
+                vk::resultCheck(mDevice.createCommandPool(&cmdCI, nullptr, &cmdPool), nullptr);
                 mCommandPools.emplace(queueType, cmdPool);
             }
         }
