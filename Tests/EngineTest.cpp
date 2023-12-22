@@ -31,12 +31,14 @@ int main()
     // Engine::GetEngineInstance()->Shutdown();
 
     auto instance = RHIInstance::GetInstanceByRHIBackend(RHIRenderBackend::Vulkan);
-    instance->DebugOutput();
-    
-    // auto GPU = instance->GetGPU(0);
-    // auto GPUProp = GPU->GetProperty();
+    auto GPU = instance->GetGPU(0);
 
-    // std::cout << GPUProp.VendorID << " " << GPUProp.DeviceID << " " << static_cast<uint32_t>(GPUProp.Type) << std::endl;
+    std::vector<QueueInfo> queueCI = { {RHICommandQueueType::Graphics, 1} };
+    DeviceCreateInfo deviceCI {};
+    deviceCI.QueueCreateInfos = queueCI.data();
+    deviceCI.QueueCreateInfoCount = queueCI.size();
+    auto Device = GPU->RequestDevice(deviceCI);
+    auto GraphicsQueue = Device->GetQueue(RHICommandQueueType::Graphics, 0);
 
     return 0;
 }
