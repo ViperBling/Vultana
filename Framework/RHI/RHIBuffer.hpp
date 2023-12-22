@@ -1,6 +1,8 @@
 #pragma once
 
-#include "RHIResource.hpp"
+#include "RHICommon.hpp"
+
+#include <string>
 
 namespace Vultana
 {

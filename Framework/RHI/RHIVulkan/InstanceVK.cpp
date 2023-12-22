@@ -1,5 +1,6 @@
 #include "InstanceVK.hpp"
 #include "RHICommonVK.hpp"
+#include "GPUVK.hpp"
 
 #include <vector>
 
@@ -31,15 +32,13 @@ namespace Vultana
 
     InstanceVK::~InstanceVK()
     {
-    }
-
-    vk::Instance InstanceVK::GetVkInstance() const
-    {
-        return vk::Instance();
+        Destroy();
     }
 
     void InstanceVK::Destroy()
     {
+        mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicLoader);
+        mInstance.destroy();
     }
 
     void InstanceVK::DebugOutput()
@@ -51,6 +50,11 @@ namespace Vultana
         for (auto & extension : mInstanceExtensions)
         {
             std::cout << std::string(extension) << std::endl;
+        }
+        for (auto& gpu : mGPUs)
+        {
+            auto name = static_cast<GPUVK*>(gpu.get())->GetVKPhysicalDevice().getProperties().deviceName;
+            std::cout << name << std::endl;
         }
     }
 
@@ -110,7 +114,7 @@ namespace Vultana
 
         mInstance = vk::createInstance(instanceCI);
 
-        mDynamicLoader.init(mInstance, vkGetInstanceProcAddr);
+        mDynamicLoader.init(mInstance);
 
         vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCI{};
         debugMessengerCI.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning);
@@ -121,6 +125,13 @@ namespace Vultana
 
     void InstanceVK::EnumeratePhysicalDevices()
     {
+        auto physicalDevices = mInstance.enumeratePhysicalDevices();
+
+        mGPUs.resize(physicalDevices.size());
+        for (size_t i = 0; i < physicalDevices.size(); ++i)
+        {
+            mGPUs[i] = std::make_unique<GPUVK>(*this, physicalDevices[i]);
+        }
     }
 
 } // namespace Vultana::RHI
