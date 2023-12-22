@@ -114,7 +114,7 @@ namespace Vultana
 
         mInstance = vk::createInstance(instanceCI);
 
-        mDynamicLoader.init(mInstance);
+        mDynamicLoader.init(mInstance, vkGetInstanceProcAddr);
 
         vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCI{};
         debugMessengerCI.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning);
@@ -131,7 +131,7 @@ namespace Vultana
         for (size_t i = 0; i < physicalDevices.size(); ++i)
         {
             auto properties = physicalDevices[i].getProperties();
-
+            std::cout << properties.deviceName << std::endl;
             mGPUs[i] = std::make_unique<GPUVK>(*this, physicalDevices[i]);
         }
     }
