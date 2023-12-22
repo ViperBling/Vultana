@@ -32,6 +32,7 @@ int main()
 
     auto instance = RHIInstance::GetInstanceByRHIBackend(RHIRenderBackend::Vulkan);
     instance->DebugOutput();
+    
     // auto GPU = instance->GetGPU(0);
     // auto GPUProp = GPU->GetProperty();
 

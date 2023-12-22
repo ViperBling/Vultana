@@ -18,9 +18,10 @@ namespace Vultana
 
         RHIRenderBackend GetRHIBackend() override { return RHIRenderBackend::Vulkan; }
         uint32_t GetGPUCount() override { return static_cast<uint32_t>(mGPUs.size()); }
-        RHIGPU* GetGPU(uint32_t index) override { return &mGPUs[index]; }
+        RHIGPU* GetGPU(uint32_t index) override { return mGPUs[index].get(); }
 
-        vk::Instance GetVkInstance() const;
+        vk::Instance GetVkInstance() const { return mInstance; }
+        vk::DispatchLoaderDynamic GetVkDynamicLoader() const { return mDynamicLoader; }
         void Destroy() override;
 
         void DebugOutput() override;
@@ -36,7 +37,7 @@ namespace Vultana
         vk::Instance mInstance;
         std::vector<const char*> mInstanceExtensions;
         std::vector<const char*> mInstanceLayers;
-        std::vector<RHIGPU> mGPUs;
+        std::vector<std::unique_ptr<RHIGPU>> mGPUs;
         vk::DebugUtilsMessengerEXT mDebugMessenger;
         vk::DispatchLoaderDynamic mDynamicLoader;
     };

@@ -4,7 +4,7 @@
 
 namespace Vultana
 {
-    GPUVK::GPUVK(vk::Instance &instance, vk::PhysicalDevice &physicalDevice)
+    GPUVK::GPUVK(InstanceVK& instance, vk::PhysicalDevice physicalDevice)
         : RHIGPU()
         , mInstance(instance)
         , mPhysicalDevice(physicalDevice)
@@ -22,7 +22,7 @@ namespace Vultana
         return property;
     }
 
-    RHIDevice *GPUVK::RequestDevice(const DeviceCreateInfo &info)
+    RHIDevice* GPUVK::RequestDevice(const DeviceCreateInfo &info)
     {
         return new DeviceVK(*this, info);
     }
