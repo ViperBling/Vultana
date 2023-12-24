@@ -185,22 +185,20 @@ namespace Vultana
             mQueueFamilyMappings[it.first] = std::make_pair(queueFamilyIndex.value(), queueCount);
         }
 
-        vk::PhysicalDeviceFeatures deviceFeatures {};
-        deviceFeatures.setSamplerAnisotropy(true);
-        vk::PhysicalDeviceVulkan12Features deviceFeatures12 {};
-        deviceFeatures12.setBufferDeviceAddress(true);
-        deviceFeatures12.setDescriptorIndexing(true);
-        deviceFeatures12.setPNext(&deviceFeatures);
-        vk::PhysicalDeviceVulkan13Features deviceFeatures13 {};
-        deviceFeatures13.setSynchronization2(true);
-        deviceFeatures13.setDynamicRendering(true);
-        deviceFeatures13.setPNext(&deviceFeatures12);
+        // 由于使用了PipelineBarrier2，所以必须启用Sync2Feature
+        vk::PhysicalDeviceVulkan12Features features12{};
+        features12.setBufferDeviceAddress(true);
+        features12.setDescriptorIndexing(true);
+        vk::PhysicalDeviceVulkan13Features features13{};
+        features13.setSynchronization2(true);
+        features13.setDynamicRendering(true);
+        features13.setPNext(&features12);
 
         vk::DeviceCreateInfo deviceCI {};
         deviceCI.setQueueCreateInfos(queueInfos);
-        deviceCI.setPNext(&deviceFeatures13);
         deviceCI.setPEnabledExtensionNames(DEVICE_EXTENSIONS);
         deviceCI.setPEnabledLayerNames(DEVICE_LAYERS);
+        deviceCI.setPNext(&features13);
 
        vk::resultCheck(mGPU.GetVKPhysicalDevice().createDevice(&deviceCI, nullptr, &mDevice), nullptr);
     }
@@ -222,13 +220,14 @@ namespace Vultana
                 vk::Queue queue;
                 mDevice.getQueue(queueFamilyIndex, i, &queue);
                 tempQueues[i] = std::make_unique<QueueVK>(queue);
-
-                cmdCI.queueFamilyIndex = queueFamilyIndex;
-
-                vk::CommandPool cmdPool;
-                vk::resultCheck(mDevice.createCommandPool(&cmdCI, nullptr, &cmdPool), nullptr);
-                mCommandPools.emplace(queueType, cmdPool);
             }
+            mQueues[queueType] = std::move(tempQueues);
+            
+            cmdCI.queueFamilyIndex = queueFamilyIndex;
+            vk::CommandPool cmdPool;
+            vk::resultCheck(mDevice.createCommandPool(&cmdCI, nullptr, &cmdPool), nullptr);
+            mCommandPools.emplace(queueType, cmdPool);
+            
         }
     }
 

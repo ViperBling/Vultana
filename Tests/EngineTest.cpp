@@ -38,6 +38,7 @@ int main()
     deviceCI.QueueCreateInfos = queueCI.data();
     deviceCI.QueueCreateInfoCount = queueCI.size();
     auto Device = GPU->RequestDevice(deviceCI);
+    uint32_t queueCount = Device->GetQueueCount(RHICommandQueueType::Graphics);
     auto GraphicsQueue = Device->GetQueue(RHICommandQueueType::Graphics, 0);
 
     return 0;
