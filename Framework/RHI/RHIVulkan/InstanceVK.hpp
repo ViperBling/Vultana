@@ -24,8 +24,6 @@ namespace Vultana
         vk::DispatchLoaderDynamic GetVkDynamicLoader() const { return mDynamicLoader; }
         void Destroy() override;
 
-        void DebugOutput() override;
-
     private:
         void AddInstanceLayers();
         void AddInstanceExtensions();

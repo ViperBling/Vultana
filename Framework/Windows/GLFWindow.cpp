@@ -16,12 +16,12 @@ namespace Vultana
     {
         if (glfwInit() != GLFW_TRUE)
         {
-            createInfo.ErrorCallback("Failed to initialize GLFW");
+            GDebugInfoCallback("Failed to initialize GLFW", "Window");
             return;
         }
         if (glfwVulkanSupported() != GLFW_TRUE)
         {
-            createInfo.ErrorCallback("Vulkan is not supported in glfw context");
+            GDebugInfoCallback("Vulkan is not supported in glfw context", "Window");
             return;
         }
 
@@ -33,7 +33,7 @@ namespace Vultana
         this->mHwnd = glfwCreateWindow((int)createInfo.Size.x, (int)createInfo.Size.y, createInfo.Title, nullptr, nullptr);
         if (this->mHwnd == nullptr)
         {
-            createInfo.ErrorCallback("Failed to create window");
+            GDebugInfoCallback("Failed to create window", "Window");
             return;
         }
 

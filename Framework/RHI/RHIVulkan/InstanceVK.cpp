@@ -41,23 +41,6 @@ namespace Vultana
         mInstance.destroy();
     }
 
-    void InstanceVK::DebugOutput()
-    {
-        for (auto & layer : mInstanceLayers)
-        {
-            std::cout << std::string(layer) << std::endl;
-        }
-        for (auto & extension : mInstanceExtensions)
-        {
-            std::cout << std::string(extension) << std::endl;
-        }
-        for (auto& gpu : mGPUs)
-        {
-            auto name = static_cast<GPUVK*>(gpu.get())->GetVKPhysicalDevice().getProperties().deviceName;
-            std::cout << name << std::endl;
-        }
-    }
-
     void InstanceVK::AddInstanceLayers()
     {
         static std::vector<const char *> requestLayers = {
@@ -66,8 +49,10 @@ namespace Vultana
 
         auto instanceLayers = vk::enumerateInstanceLayerProperties();
 
+        GDebugInfoCallback("Enumerating request layers: ", "VulkanInstance");
         for (auto &layer : requestLayers)
         {
+            GDebugInfoCallback("- " + std::string(layer), "VulkanInstance");
             auto it = std::find_if(instanceLayers.begin(), instanceLayers.end(), [&layer](const auto &layerProp) -> bool
             {
                 return std::string(layer) == layerProp.layerName;
@@ -87,8 +72,11 @@ namespace Vultana
 
         auto instanceExtenstions = vk::enumerateInstanceExtensionProperties();
 
+        GDebugInfoCallback("Enumerating request extensions: ", "VulkanInstance");
         for (auto& extension : requestExtensions)
         {
+            GDebugInfoCallback("- " + std::string(extension), "VulkanInstance");
+
             auto it = std::find_if(instanceExtenstions.begin(), instanceExtenstions.end(), [&extension](const auto& extensionProp) -> bool
             {
                 return std::string(extension) == extensionProp.extensionName;
@@ -114,6 +102,8 @@ namespace Vultana
 
         mInstance = vk::createInstance(instanceCI);
 
+        GDebugInfoCallback("Vulkan instance created", "VulkanInstance");
+
         mDynamicLoader.init(mInstance, vkGetInstanceProcAddr);
 
         vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCI{};
@@ -128,10 +118,12 @@ namespace Vultana
         auto physicalDevices = mInstance.enumeratePhysicalDevices();
 
         mGPUs.resize(physicalDevices.size());
+        GDebugInfoCallback("Enumerating physical devices: ", "VulkanInstance");
         for (size_t i = 0; i < physicalDevices.size(); ++i)
         {
             auto properties = physicalDevices[i].getProperties();
-            std::cout << properties.deviceName << std::endl;
+            GDebugInfoCallback("- " + std::string(properties.deviceName.data()), "VulkanInstance");
+
             mGPUs[i] = std::make_unique<GPUVK>(*this, physicalDevices[i]);
         }
     }
