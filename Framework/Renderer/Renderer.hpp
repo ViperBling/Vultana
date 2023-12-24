@@ -14,21 +14,16 @@
 
 namespace Vultana
 {
-    // inline void DefaultCallback(const std::string&) {}
-    // inline void InfoCallbackFunc(const std::string& message)
-    // {
-    //     std::cout << "[INFO Renderer] : " << message << std::endl;
-    // }
-    // inline void ErrorCallbackFunc(const std::string& message)
-    // {
-    //     std::cout << "[ERROR Renderer] : " << message << std::endl;
-    // }
+    class RHIGPU;
+    class RHIInstance;
+    class RHIDevice;
+    class RHISurface;
+    class RHIBuffer;
+    class RHIBufferView;
 
     struct RendererCreateInfo
     {
         RHIDeviceType DeviceType = RHIDeviceType::Hardware;
-        // std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
-        // std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
         const char* ApplicationName = "Vultana";
         uint32_t Width = 1280;
         uint32_t Height = 720;
@@ -81,69 +76,22 @@ namespace Vultana
         void Cleanup();
         void RenderFrame();
 
-        VkInstance GetInstance() const { return mInstance; }
-        VkSurfaceKHR GetSurface() const { return mSurface; }
-        VkPhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
-        uint32_t GetQueueFamilyIndex() const { return mQueueFamilyIndex; }
-
     private:
-        void InitVulkan(RendererCreateInfo& createInfo);
+        void InitContext(RendererCreateInfo& createInfo);
         void InitSwapchain(RendererCreateInfo& createInfo);
         void InitCommands();
         void InitPipelines();
         void InitDescriptors();
         void InitSyncStructures();
 
-        void TransitionImage(vk::CommandBuffer cmdBuffer, vk::Image image, ImageTransitionMode transitionMode);
-        void TransitionImage(vk::CommandBuffer cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-        void CopyImage(vk::CommandBuffer cmdBuffer, vk::Image srcImage, vk::Image dstImage, vk::Extent3D extent);
-        bool LoadShaderModule(const char* filePath, vk::ShaderModule* outShaderModule);
-
     private:
-        vk::Instance mInstance;
-        vk::DebugUtilsMessengerEXT mDebugMessenger;
-        vk::PhysicalDevice mPhysicalDevice;
-        vk::Device mDevice;
-
-        vk::Semaphore mImageAvailableSemaphore;
-        vk::Semaphore mRenderFinishedSemaphore;
-        vk::Fence mImmdiateFence;
-
-        vk::Queue mQueue;
-        uint32_t mQueueFamilyIndex;
-
-        vk::CommandPool mCommandPool;
-        vk::CommandBuffer mCommandBuffer;
-
-        vk::SurfaceKHR mSurface;
-        vk::SwapchainKHR mSwapchain;
-        vk::PresentModeKHR mPresentMode;
-        vk::SurfaceFormatKHR mSurfaceFormat;
-
-        std::vector<vk::Image> mSwapchainImages;
-        std::vector<vk::ImageView> mSwapchainImageViews;
-        std::vector<vk::Framebuffer> mFramebuffers;
-
-        vk::DescriptorPool mDescriptorPool;
-        vk::DescriptorSet mDescriptorSet;
-        vk::DescriptorSetLayout mDescriptorSetLayout;
-
-        vk::ImageView mDrawImageView;
-        AllocatedImage mDrawImage;
-
-        vk::Pipeline mPipeline;
-        vk::PipelineLayout mPipelineLayout;
-
-        vk::Extent2D mSurfaceExtent;
-
-        vk::DispatchLoaderDynamic mDynamicLoader;
-
-        DeletionQueue mDeletionQueue;
-
-        VmaAllocator mAllocator = { };
-
-        bool mbInitialized = false;
-        uint32_t mFrameIndex = 0;
+        RHIGPU* mGPU = nullptr;
+        RHIInstance* mInstance = nullptr;
+        std::unique_ptr<RHIDevice> mDevice;
+        RHIQueue* mQueue = nullptr;
+        std::unique_ptr<RHISurface> mSurface;
+        std::unique_ptr<RHIBuffer> mVertexBuffer;
+        std::unique_ptr<RHIBufferView> mVertexBufferView;
 
         GLFWindow* mWndHandle;
     };
