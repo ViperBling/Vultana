@@ -227,7 +227,6 @@ namespace Vultana
             vk::CommandPool cmdPool;
             vk::resultCheck(mDevice.createCommandPool(&cmdCI, nullptr, &cmdPool), nullptr);
             mCommandPools.emplace(queueType, cmdPool);
-            
         }
     }
 

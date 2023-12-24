@@ -84,6 +84,12 @@ namespace Vultana
         VK_ENUM_MAP_ITEM(RHIFormat::Count, vk::Format::eUndefined)
     VK_ENUM_MAP_END()
 
+    VK_ENUM_MAP_BEGIN(RHICommandQueueType, vk::QueueFlagBits)
+        VK_ENUM_MAP_ITEM(RHICommandQueueType::Graphics, vk::QueueFlagBits::eGraphics)
+        VK_ENUM_MAP_ITEM(RHICommandQueueType::Compute, vk::QueueFlagBits::eCompute)
+        VK_ENUM_MAP_ITEM(RHICommandQueueType::Transfer, vk::QueueFlagBits::eTransfer)
+    VK_ENUM_MAP_END()
+
     VK_ENUM_MAP_BEGIN(RHIShaderStageBits, vk::ShaderStageFlagBits)
         VK_ENUM_MAP_ITEM(RHIShaderStageBits::Vertex, vk::ShaderStageFlagBits::eVertex)
         VK_ENUM_MAP_ITEM(RHIShaderStageBits::Pixel, vk::ShaderStageFlagBits::eFragment)
