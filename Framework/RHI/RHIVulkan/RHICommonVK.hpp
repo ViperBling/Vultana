@@ -12,19 +12,24 @@ namespace Vultana
     #define VK_KRONOS_VALIDATION_LAYER_NAME "VK_LAYER_KHRONOS_validation"
 
     template <typename A, typename B>
-    static const std::unordered_map<A, B> VK_ENUM_MAP;
+    static std::unordered_map<A, B>& GetEnumMap()
+    {
+        static std::unordered_map<A, B> map;
+        return map;
+    }
 
     template <typename A, typename B>
     B VKEnumCast(const A& value)
     {
-        auto it = VK_ENUM_MAP<A, B>.find(value);
-        assert((it != VK_ENUM_MAP<A, B>.end()));
+        auto& map = GetEnumMap<A, B>();
+        auto it = map.find(value);
+        assert((it != map.end()));
         return static_cast<B>(it->second);
     }
 
-    #define VK_ENUM_MAP_BEGIN(A, B) template <> static const std::unordered_map<A, B> VK_ENUM_MAP<A, B> = {
+    #define VK_ENUM_MAP_BEGIN(A, B) template <> std::unordered_map<A, B>& GetEnumMap<A, B>() { static std::unordered_map<A, B> map = {
     #define VK_ENUM_MAP_ITEM(A, B) { A, B },
-    #define VK_ENUM_MAP_END() };
+    #define VK_ENUM_MAP_END() }; return map; }
 
     VK_ENUM_MAP_BEGIN(vk::PhysicalDeviceType, RHIDeviceType)
         VK_ENUM_MAP_ITEM(vk::PhysicalDeviceType::eOther, RHIDeviceType::Software)
@@ -104,7 +109,7 @@ namespace Vultana
     inline vk::ShaderStageFlags FromRHI(const RHIShaderStageFlags& src)
     {
         vk::ShaderStageFlags dst = {};
-        for (auto& pair : VK_ENUM_MAP<RHIShaderStageBits, vk::ShaderStageFlagBits>)
+        for (auto& pair : GetEnumMap<RHIShaderStageBits, vk::ShaderStageFlagBits>())
         {
             if (src & pair.first)
             {
