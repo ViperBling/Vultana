@@ -101,6 +101,16 @@ namespace Vultana
         VK_ENUM_MAP_ITEM(RHIShaderStageBits::Compute, vk::ShaderStageFlagBits::eCompute)
     VK_ENUM_MAP_END()
 
+    VK_ENUM_MAP_BEGIN(RHIBufferUsageBits, vk::BufferUsageFlagBits)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::CopySrc, vk::BufferUsageFlagBits::eTransferSrc)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::CopyDst, vk::BufferUsageFlagBits::eTransferDst)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::Index, vk::BufferUsageFlagBits::eIndexBuffer)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::Vertex, vk::BufferUsageFlagBits::eVertexBuffer)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::Uniform, vk::BufferUsageFlagBits::eUniformBuffer)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::Storage, vk::BufferUsageFlagBits::eStorageBuffer)
+        VK_ENUM_MAP_ITEM(RHIBufferUsageBits::Indirect, vk::BufferUsageFlagBits::eIndirectBuffer)
+    VK_ENUM_MAP_END()
+
     inline vk::Extent3D FromRHI(const Vector3& ext)
     {
         return { (uint32_t)ext.x, (uint32_t)ext.y, (uint32_t)ext.z };
@@ -137,5 +147,18 @@ namespace Vultana
             }
         }
         return result;
+    }
+
+    inline vk::BufferUsageFlags GetVkBufferUsageFlags(const RHIBufferUsageFlags& bufferUsage)
+    {
+        vk::BufferUsageFlags res {};
+        for (const auto& pair : GetEnumMap<RHIBufferUsageBits, vk::BufferUsageFlagBits>())
+        {
+            if (bufferUsage & pair.first)
+            {
+                res |= pair.second;
+            }
+        }
+        return res;
     }
 }

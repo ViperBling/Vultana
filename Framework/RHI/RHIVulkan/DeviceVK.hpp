@@ -45,7 +45,7 @@ namespace Vultana
 
         vk::Device GetVkDevice() const { return mDevice; }
         GPUVK& GetGPU() const { return mGPU; }
-        VmaAllocator& GetVkAllocator() { return mAllocator; }
+        VmaAllocator& GetVmaAllocator() { return mAllocator; }
 
         void SetObjectName(vk::ObjectType objectType, uint64_t handle, const std::string& name);
 
