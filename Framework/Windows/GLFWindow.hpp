@@ -12,16 +12,6 @@ struct GLFWwindow;
 
 namespace Vultana
 {
-    inline void DefaultWindowCallback(const std::string& message)
-    {
-        std::cout << message << std::endl;
-    }
-
-    inline void WindowErrorCallback(const std::string& msg)
-    {
-        std::cerr << "[ERROR Window] : " << msg << std::endl;
-    }
-
     struct WindowSurface
     {
         vk::SurfaceKHR Surface;
@@ -32,7 +22,7 @@ namespace Vultana
         bool TransparentFramebuffer = false;
         bool Resizeable = true;
         bool TileBar = true;
-        std::function<void(const std::string&)> ErrorCallback = WindowErrorCallback;
+        // std::function<void(const std::string&)> ErrorCallback = WindowErrorCallback;
         Vector2 Size = { 800.0f, 600.0f };
         Vector2 Position = { 100.0f, 100.0f };
         const char* Title = "Vultana";

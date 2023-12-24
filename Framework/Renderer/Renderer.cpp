@@ -175,10 +175,10 @@ namespace Vultana
         auto extensions = mWndHandle->GetRequiredExtensions();              // 手动导入WindowsSurface相关扩展
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-        createInfo.InfoCallback("Enumerating request extensions: ");
+        GDebugInfoCallback("Enumerating request extensions: ", "Renderer");
         for (auto &ext : extensions)
         {
-            createInfo.InfoCallback("- " + std::string(ext));
+            GDebugInfoCallback("- " + std::string(ext), "Renderer");
 
             auto extIt = std::find_if(supportedExt.begin(), supportedExt.end(),
                                       [ext](const vk::ExtensionProperties &extension)
@@ -187,7 +187,7 @@ namespace Vultana
                                       });
             if (extIt == supportedExt.end())
             {
-                createInfo.ErrorCallback("Extension " + std::string(ext) + " is not supported");
+                GDebugInfoCallback("Extension " + std::string(ext) + " is not supported", "Renderer");
                 break;
             }
         }
@@ -196,10 +196,10 @@ namespace Vultana
         if (createInfo.bEnableValidationLayers)
             layers.push_back(ValidationLayerName);
 
-        createInfo.InfoCallback("Enumerating request layers: ");
+        GDebugInfoCallback("Enumerating request layers: ", "Renderer");
         for (auto &layer : layers)
         {
-            createInfo.InfoCallback("- " + std::string(layer));
+            GDebugInfoCallback("- " + std::string(layer), "Renderer");
             auto layerIt = std::find_if(supportedLayers.begin(), supportedLayers.end(),
                                         [layer](const vk::LayerProperties &properties)
                                         {
@@ -207,7 +207,7 @@ namespace Vultana
                                         });
             if (layerIt == supportedLayers.end())
             {
-                createInfo.ErrorCallback("Layer " + std::string(layer) + " is not supported");
+                GDebugInfoCallback("Layer " + std::string(layer) + " is not supported", "Renderer");
                 break;
             }
         }
@@ -218,21 +218,21 @@ namespace Vultana
         instanceCI.setPEnabledLayerNames(layers);
 
         mInstance = vk::createInstance(instanceCI);
-        createInfo.InfoCallback("Created vulkan instance");
+        GDebugInfoCallback("Created vulkan instance", "Renderer");
         mSurface = mWndHandle->CreateWindowSurface(*this);
-        createInfo.InfoCallback("Created surface");
+        GDebugInfoCallback("Created surface", "Renderer");
 
-        createInfo.InfoCallback("Enumerating physical devices: ");
+        GDebugInfoCallback("Enumerating physical devices: ", "Renderer");
         auto physicalDevices = mInstance.enumeratePhysicalDevices();
         for (auto &pd : physicalDevices)
         {
             auto properties = pd.getProperties();
-            createInfo.InfoCallback("- " + std::string(properties.deviceName.data()));
+            GDebugInfoCallback("- " + std::string(properties.deviceName.data()), "Renderer");
 
             auto queueFamilyIndex = DetermineQueueFamilyIndex(mInstance, pd, mSurface);
             if (queueFamilyIndex.has_value())
             {
-                createInfo.InfoCallback("Found suitable physical device" + std::string(properties.deviceName.data()));
+                GDebugInfoCallback("Found suitable physical device" + std::string(properties.deviceName.data()), "Renderer");
                 mPhysicalDevice = pd;
                 mQueueFamilyIndex = queueFamilyIndex.value();
                 break;
@@ -259,8 +259,8 @@ namespace Vultana
             }
         }
 
-        createInfo.InfoCallback("Selected surface format: " + std::string(vk::to_string(mSurfaceFormat.format)));
-        createInfo.InfoCallback("Selected present mode: " + std::string(vk::to_string(mPresentMode)));
+        GDebugInfoCallback("Selected surface format: " + std::string(vk::to_string(mSurfaceFormat.format)), "Renderer");
+        GDebugInfoCallback("Selected present mode: " + std::string(vk::to_string(mPresentMode)), "Renderer");
 
         vk::DeviceQueueCreateInfo deviceQueueCI{};
         std::array queuePriorities = {1.0f};
@@ -287,7 +287,7 @@ namespace Vultana
         mDevice = mPhysicalDevice.createDevice(deviceCI);
         mQueue = mDevice.getQueue(mQueueFamilyIndex, 0);
 
-        createInfo.InfoCallback("Created logical device and queue");
+        GDebugInfoCallback("Created logical device and queue", "Renderer");
 
         mDynamicLoader.init(mInstance, mDevice);
 
@@ -305,7 +305,7 @@ namespace Vultana
 
         mDeletionQueue.PushFunction([=]() { vmaDestroyAllocator(mAllocator); });
 
-        createInfo.InfoCallback("Created vulkan memory allocator");
+        GDebugInfoCallback("Created vulkan memory allocator", "Renderer");
     }
 
     void RendererBase::InitSwapchain(RendererCreateInfo &createInfo)

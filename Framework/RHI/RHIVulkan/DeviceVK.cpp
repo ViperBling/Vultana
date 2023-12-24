@@ -199,6 +199,7 @@ namespace Vultana
         deviceCI.setPEnabledExtensionNames(DEVICE_EXTENSIONS);
         deviceCI.setPEnabledLayerNames(DEVICE_LAYERS);
         deviceCI.setPNext(&features13);
+        GDebugInfoCallback("Created Vulkan Device", "VulkanDevice");
 
        vk::resultCheck(mGPU.GetVKPhysicalDevice().createDevice(&deviceCI, nullptr, &mDevice), nullptr);
     }
@@ -217,8 +218,7 @@ namespace Vultana
             std::vector<std::unique_ptr<QueueVK>> tempQueues(queueCount);
             for (auto i = 0; i < tempQueues.size(); i++)
             {
-                vk::Queue queue;
-                mDevice.getQueue(queueFamilyIndex, i, &queue);
+                vk::Queue queue = mDevice.getQueue(queueFamilyIndex, i, mGPU.GetInstance().GetVkDynamicLoader());
                 tempQueues[i] = std::make_unique<QueueVK>(queue);
             }
             mQueues[queueType] = std::move(tempQueues);
@@ -228,6 +228,8 @@ namespace Vultana
             vk::resultCheck(mDevice.createCommandPool(&cmdCI, nullptr, &cmdPool), nullptr);
             mCommandPools.emplace(queueType, cmdPool);
         }
+
+        GDebugInfoCallback("Created logical device and queue", "VulkanDevice");
     }
 
     void DeviceVK::CreateVmaAllocator()

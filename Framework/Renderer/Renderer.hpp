@@ -14,21 +14,21 @@
 
 namespace Vultana
 {
-    inline void DefaultCallback(const std::string&) {}
-    inline void InfoCallbackFunc(const std::string& message)
-    {
-        std::cout << "[INFO Renderer] : " << message << std::endl;
-    }
-    inline void ErrorCallbackFunc(const std::string& message)
-    {
-        std::cout << "[ERROR Renderer] : " << message << std::endl;
-    }
+    // inline void DefaultCallback(const std::string&) {}
+    // inline void InfoCallbackFunc(const std::string& message)
+    // {
+    //     std::cout << "[INFO Renderer] : " << message << std::endl;
+    // }
+    // inline void ErrorCallbackFunc(const std::string& message)
+    // {
+    //     std::cout << "[ERROR Renderer] : " << message << std::endl;
+    // }
 
     struct RendererCreateInfo
     {
         RHIDeviceType DeviceType = RHIDeviceType::Hardware;
-        std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
-        std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
+        // std::function<void(const std::string&)> ErrorCallback = ErrorCallbackFunc;
+        // std::function<void(const std::string&)> InfoCallback = InfoCallbackFunc;
         const char* ApplicationName = "Vultana";
         uint32_t Width = 1280;
         uint32_t Height = 720;

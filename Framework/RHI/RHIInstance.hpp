@@ -19,8 +19,6 @@ namespace Vultana
         virtual RHIGPU* GetGPU(uint32_t index) = 0;
         virtual void Destroy() = 0;
 
-        virtual void DebugOutput() = 0;
-
     protected:
         explicit RHIInstance() = default;
     };
