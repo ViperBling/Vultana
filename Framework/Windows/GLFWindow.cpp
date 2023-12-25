@@ -200,7 +200,8 @@ namespace Vultana
 
     bool GLFWindow::CheckPresentationSupport(const RendererBase &renderer)
     {
-        return CheckVulkanPresentationSupport(renderer.GetInstance(), renderer.GetPhysicalDevice(), renderer.GetQueueFamilyIndex());
+        // return CheckVulkanPresentationSupport(renderer.GetInstance(), renderer.GetPhysicalDevice(), renderer.GetQueueFamilyIndex());
+        return true;
     }
 
     void GLFWindow::SetContext(GLFWwindow *window)
@@ -212,7 +213,7 @@ namespace Vultana
     const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, const RendererBase &renderer)
     {
         static vk::SurfaceKHR surface;
-        (void)glfwCreateWindowSurface(renderer.GetInstance(), window, nullptr, (VkSurfaceKHR*)&surface);
+        // (void)glfwCreateWindowSurface(renderer.GetInstance(), window, nullptr, (VkSurfaceKHR*)&surface);
         return surface;
     }
 
