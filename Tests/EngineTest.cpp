@@ -16,30 +16,19 @@ int main()
     wndCI.Position = { 100, 100 };
     wndCI.Size = { 1280, 720 };
 
-    // GLFWindow window(wndCI);
-    // World world;
+    GLFWindow window(wndCI);
+    World world;
 
-    // Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
+    Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
 
-    // while (!window.ShouldClose())
-    // {
-    //     window.PollEvents();
+    while (!window.ShouldClose())
+    {
+        window.PollEvents();
 
-    //    Engine::GetEngineInstance()->Tick();
-    // }
+       Engine::GetEngineInstance()->Tick();
+    }
 
-    // Engine::GetEngineInstance()->Shutdown();
-
-    auto instance = RHIInstance::GetInstanceByRHIBackend(RHIRenderBackend::Vulkan);
-    auto GPU = instance->GetGPU(0);
-
-    std::vector<QueueInfo> queueCI = { {RHICommandQueueType::Graphics, 1} };
-    DeviceCreateInfo deviceCI {};
-    deviceCI.QueueCreateInfos = queueCI.data();
-    deviceCI.QueueCreateInfoCount = queueCI.size();
-    auto Device = GPU->RequestDevice(deviceCI);
-    uint32_t queueCount = Device->GetQueueCount(RHICommandQueueType::Graphics);
-    auto GraphicsQueue = Device->GetQueue(RHICommandQueueType::Graphics, 0);
+    Engine::GetEngineInstance()->Shutdown();
 
     return 0;
 }

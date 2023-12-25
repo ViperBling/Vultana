@@ -1,26 +1,18 @@
 #pragma once
 
-#include "RHI/RHICommon.hpp"
-#include "RHI/RHIDevice.hpp"
+#include "RHI/RHIPCH.hpp"
 #include "Utilities/Utility.hpp"
 
 #include <iostream>
 #include <deque>
+#include <memory>
 #include <functional>
 
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
-
 namespace Vultana
 {
-    class RHIGPU;
-    class RHIInstance;
-    class RHIDevice;
-    class RHISurface;
-    class RHIBuffer;
-    class RHIBufferView;
-
     struct RendererCreateInfo
     {
         RHIDeviceType DeviceType = RHIDeviceType::Hardware;
@@ -87,8 +79,8 @@ namespace Vultana
     private:
         RHIGPU* mGPU = nullptr;
         RHIInstance* mInstance = nullptr;
-        std::unique_ptr<RHIDevice> mDevice;
         RHIQueue* mQueue = nullptr;
+        std::unique_ptr<RHIDevice> mDevice;
         std::unique_ptr<RHISurface> mSurface;
         std::unique_ptr<RHIBuffer> mVertexBuffer;
         std::unique_ptr<RHIBufferView> mVertexBufferView;
