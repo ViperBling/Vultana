@@ -65,7 +65,7 @@ namespace Vultana
     struct MultiSampleState
     {
         uint8_t SampleCount = 1;
-        uint8_t SampleMask = 0xFFFFFFFF;
+        uint32_t SampleMask = 0xFFFFFFFF;
         bool bAlphaToCoverage = false;
     };
 

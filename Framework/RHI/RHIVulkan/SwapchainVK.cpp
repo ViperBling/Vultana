@@ -57,7 +57,7 @@ namespace Vultana
 
     void SwapchainVK::CreateNativeSwapchain(const SwapchainCreateInfo &createInfo)
     {
-        auto device = mDevice.GetVkDevice();
+        auto deviceVK = mDevice.GetVkDevice();
         auto* queue = dynamic_cast<QueueVK*>(createInfo.PresentQueue);
         assert(queue);
         auto* surface = dynamic_cast<SurfaceVK*>(createInfo.Surface);
@@ -81,8 +81,47 @@ namespace Vultana
         assert(!presentModes.empty());
 
         vk::PresentModeKHR supportedMode = VKEnumCast<RHIPresentMode, vk::PresentModeKHR>(createInfo.PresentMode);
-
+        assert(!presentModes.empty());
+        auto it = std::find_if(presentModes.begin(), presentModes.end(), [supportedMode](vk::PresentModeKHR mode) { return mode == supportedMode; });
+        assert(it != presentModes.end());
         
+        mSwapchainImageCount = std::clamp(static_cast<uint32_t>(createInfo.TextureCount), surfaceCaps.minImageCount, surfaceCaps.maxImageCount);
+        vk::SwapchainCreateInfoKHR swapChainCI {};
+        swapChainCI.setSurface(surfaceVK);
+        swapChainCI.setMinImageCount(mSwapchainImageCount);
+        swapChainCI.setImageFormat(supportedFormat);
+        swapChainCI.setImageColorSpace(colorSpace);
+        swapChainCI.setPresentMode(supportedMode);
+        swapChainCI.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
+        swapChainCI.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity);
+        swapChainCI.setImageExtent(surfaceExtent);
+        swapChainCI.setClipped(true);
+        swapChainCI.setImageSharingMode(vk::SharingMode::eExclusive);
+        swapChainCI.setImageArrayLayers(1);
+        swapChainCI.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst);
+        mSwapchain = deviceVK.createSwapchainKHR(swapChainCI);
+
+        TextureCreateInfo textureCI {};
+        textureCI.Format = createInfo.Format;
+        textureCI.Usage = RHITextureUsageBits::CopyDst | RHITextureUsageBits::RenderAttachment;
+        textureCI.MipLevels = 1;
+        textureCI.Samples = 1;
+        textureCI.Dimension = RHITextureDimension::Texture2D;
+        textureCI.Extent.x = surfaceExtent.width;
+        textureCI.Extent.y = surfaceExtent.height;
+        textureCI.Extent.z = 1;
+
+        deviceVK.getSwapchainImagesKHR(mSwapchain, &mSwapchainImageCount, nullptr);
+        std::vector<vk::Image> swapchainImages(mSwapchainImageCount);
+        swapchainImages = deviceVK.getSwapchainImagesKHR(mSwapchain /*, mDevice.GetGPU().GetInstance().GetVkDynamicLoader()*/);
+        for (auto & image : swapchainImages)
+        {
+            mTextures.emplace_back(new TextureVK(mDevice, textureCI, image));
+        }
+        mSwapchainImageCount = static_cast<uint32_t>(swapchainImages.size());
+
+        vk::SemaphoreCreateInfo semaphoreCI {};
+        mImageAvaliableSemaphore = deviceVK.createSemaphore(semaphoreCI);
     }
 
 } // namespace Vultana
