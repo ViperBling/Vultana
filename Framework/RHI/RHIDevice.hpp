@@ -63,7 +63,7 @@ namespace Vultana
         virtual RHIGraphicsPipeline* CreateGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo) = 0;
         virtual RHIComputePipeline* CreateComputePipeline(const ComputePipelineCreateInfo& createInfo) = 0;
         virtual RHICommandBuffer* CreateCommandBuffer() = 0;
-        virtual RHIFence* CreateFence(bool signaled) = 0;
+        virtual RHIFence* CreateFence() = 0;
 
         virtual bool CheckSwapchainFormatSupport(RHISurface* surface, RHIFormat format) = 0;
 
