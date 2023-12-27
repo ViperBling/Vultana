@@ -16,8 +16,8 @@ namespace Vultana
         union
         {
             RHISampler* Sampler;
-            RHIBufferView* Buffer;
-            RHITextureView* Texture;
+            RHIBufferView* BufferView;
+            RHITextureView* TextureView;
         };
     };
 

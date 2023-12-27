@@ -1,5 +1,12 @@
 #include "TextureVK.hpp"
 #include "RHICommonVK.hpp"
+#include "DeviceVK.hpp"
+#include "TextureViewVK.hpp"
+#include "GPUVK.hpp"
+#include "QueueVK.hpp"
+#include "CommandBufferVK.hpp"
+#include "CommandListVK.hpp"
+#include "SynchronousVK.hpp"
 
 namespace Vultana
 {

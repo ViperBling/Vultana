@@ -62,11 +62,11 @@ namespace Vultana
         const GraphicsPassDepthStencilAttachment* DepthStencilAttachment;
     };
 
-    class ComputePassCommandList
+    class RHIComputePassCommandList
     {
     public:
-        NOCOPY(ComputePassCommandList)
-        virtual ~ComputePassCommandList() = default;
+        NOCOPY(RHIComputePassCommandList)
+        virtual ~RHIComputePassCommandList() = default;
 
         virtual void SetPipeline(RHIComputePipeline* pipeline) = 0;
         virtual void SetBindGroup(uint32_t index, RHIBindGroup* bindGroup) = 0;
@@ -75,14 +75,14 @@ namespace Vultana
         virtual void Destroy() = 0;
 
     protected:
-        ComputePassCommandList() = default;
+        RHIComputePassCommandList() = default;
     };
 
-    class GraphicsPassCommandList
+    class RHIGraphicsPassCommandList
     {
     public:
-        NOCOPY(GraphicsPassCommandList)
-        virtual ~GraphicsPassCommandList() = default;
+        NOCOPY(RHIGraphicsPassCommandList)
+        virtual ~RHIGraphicsPassCommandList() = default;
 
         virtual void SetPipeline(RHIGraphicsPipeline* pipeline) = 0;
         virtual void SetBindGroup(uint32_t index, RHIBindGroup* bindGroup) = 0;
@@ -100,7 +100,7 @@ namespace Vultana
         virtual void Destroy() = 0;
     
     protected:
-        GraphicsPassCommandList() = default;
+        RHIGraphicsPassCommandList() = default;
     };
 
 
@@ -115,8 +115,8 @@ namespace Vultana
         virtual void CopyTextureToBuffer(RHITexture* Src, RHIBuffer* Dst, const TextureSubResourceCreateInfo* subResourceInfo, const Vector3& size) = 0;
         virtual void CopyTextureToTexture(RHITexture* Src, RHITexture* Dst, const TextureSubResourceCreateInfo* srcSubResourceInfo, const TextureSubResourceCreateInfo* dstSubResourceInfo, const Vector3& size) = 0;
 
-        virtual ComputePassCommandList* BeginComputePass() = 0;
-        virtual GraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo& info) = 0;
+        virtual RHIComputePassCommandList* BeginComputePass() = 0;
+        virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo& info) = 0;
         virtual void SwapchainSync(RHISwapchain* swapchain) = 0;
         virtual void End() = 0;
         virtual void Destroy() = 0;

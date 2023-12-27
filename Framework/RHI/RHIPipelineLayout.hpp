@@ -4,7 +4,7 @@
 
 namespace Vultana
 {
-    class BindGroupLayout;
+    class RHIBindGroupLayout;
 
     struct PipelineConstantLayout
     {
@@ -13,10 +13,10 @@ namespace Vultana
         uint32_t Size;
     };
 
-    struct PipelineLayoutCretateInfo
+    struct PipelineLayoutCreateInfo
     {
         uint32_t BindGroupLayoutCount;
-        const BindGroupLayout* const* BindGroupLayouts;
+        const RHIBindGroupLayout* const* BindGroupLayouts;
         uint32_t PipelineConstantLayoutCount;
         const PipelineConstantLayout* PipelineConstantLayouts;
         std::string Name;
@@ -31,6 +31,6 @@ namespace Vultana
         virtual void Destroy() = 0;
 
     protected:
-        explicit RHIPipelineLayout(const PipelineLayoutCretateInfo& createInfo) {}
+        explicit RHIPipelineLayout(const PipelineLayoutCreateInfo& createInfo) {}
     };
 }
