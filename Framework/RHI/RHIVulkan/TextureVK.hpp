@@ -22,7 +22,7 @@ namespace Vultana
         void Destroy() override;
         RHITextureView* CreateTextureView(const TextureViewCreateInfo& createInfo) override;
 
-        vk::Image GetImage() const { return mImage; }
+        vk::Image GetVkImage() const { return mImage; }
         Vector3 GetExtent() const { return mExtent; }
         RHIFormat GetFormat() const { return mFormat; }
         vk::ImageSubresourceRange GetFullRange() { return {mAspect, 0, mMipLevels, 0, mExtent.z}; }

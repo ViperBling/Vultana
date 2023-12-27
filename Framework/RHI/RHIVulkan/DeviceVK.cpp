@@ -119,7 +119,7 @@ namespace Vultana
         return nullptr;
     }
 
-    RHIFence *DeviceVK::CreateFence(bool signaled)
+    RHIFence *DeviceVK::CreateFence()
     {
         return nullptr;
     }

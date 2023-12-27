@@ -269,6 +269,15 @@ namespace Vultana
         VK_ENUM_MAP_ITEM(RHIPresentMode::Count, vk::PresentModeKHR::eImmediate)
     VK_ENUM_MAP_END()
 
+    VK_ENUM_MAP_BEGIN(RHITextureUsageFlags, vk::ImageUsageFlagBits)
+        VK_ENUM_MAP_ITEM(RHITextureUsageBits::CopySrc, vk::ImageUsageFlagBits::eTransferSrc)
+        VK_ENUM_MAP_ITEM(RHITextureUsageBits::CopyDst, vk::ImageUsageFlagBits::eTransferDst)
+        VK_ENUM_MAP_ITEM(RHITextureUsageBits::TextureBinding, vk::ImageUsageFlagBits::eSampled)
+        VK_ENUM_MAP_ITEM(RHITextureUsageBits::StorageBinding, vk::ImageUsageFlagBits::eStorage)
+        VK_ENUM_MAP_ITEM(RHITextureUsageBits::RenderAttachment, vk::ImageUsageFlagBits::eColorAttachment)
+        VK_ENUM_MAP_ITEM(RHITextureUsageBits::DepthStencilAttachment, vk::ImageUsageFlagBits::eDepthStencilAttachment)
+    VK_ENUM_MAP_END()
+
     inline vk::Extent3D GetVkExtent3D(const Vector3& ext)
     {
         return { (uint32_t)ext.x, (uint32_t)ext.y, (uint32_t)ext.z };
@@ -278,6 +287,19 @@ namespace Vultana
     {
         vk::ShaderStageFlags dst = {};
         for (auto& pair : GetEnumMap<RHIShaderStageBits, vk::ShaderStageFlagBits>())
+        {
+            if (src & pair.first)
+            {
+                dst |= pair.second;
+            }
+        }
+        return dst;
+    }
+
+    inline vk::ImageUsageFlags GetVkImageUsageFlags(const RHITextureUsageFlags& src)
+    {
+        vk::ImageUsageFlags dst = {};
+        for (auto& pair : GetEnumMap<RHITextureUsageBits, vk::ImageUsageFlagBits>())
         {
             if (src & pair.first)
             {

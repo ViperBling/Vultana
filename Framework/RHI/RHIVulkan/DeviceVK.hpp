@@ -39,7 +39,7 @@ namespace Vultana
         RHIGraphicsPipeline* CreateGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo) override;
         RHIComputePipeline* CreateComputePipeline(const ComputePipelineCreateInfo& createInfo) override;
         RHICommandBuffer* CreateCommandBuffer() override;
-        RHIFence* CreateFence(bool signaled) override;
+        RHIFence* CreateFence() override;
 
         bool CheckSwapchainFormatSupport(RHISurface* surface, RHIFormat format) override;
 

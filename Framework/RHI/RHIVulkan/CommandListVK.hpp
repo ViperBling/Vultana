@@ -22,6 +22,7 @@ namespace Vultana
         virtual void CopyBufferToTexture(RHIBuffer* Src, RHITexture* Dst, const TextureSubResourceCreateInfo* subResourceInfo, const Vector3& size) override;
         virtual void CopyTextureToBuffer(RHITexture* Src, RHIBuffer* Dst, const TextureSubResourceCreateInfo* subResourceInfo, const Vector3& size) override;
         virtual void CopyTextureToTexture(RHITexture* Src, RHITexture* Dst, const TextureSubResourceCreateInfo* srcSubResourceInfo, const TextureSubResourceCreateInfo* dstSubResourceInfo, const Vector3& size) override;
+        virtual void ResourceBarrier(const RHIBarrier& barrier) override;
 
         virtual RHIComputePassCommandList* BeginComputePass() override;
         virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo& info) override;

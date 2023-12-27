@@ -114,6 +114,7 @@ namespace Vultana
         virtual void CopyBufferToTexture(RHIBuffer* Src, RHITexture* Dst, const TextureSubResourceCreateInfo* subResourceInfo, const Vector3& size) = 0;
         virtual void CopyTextureToBuffer(RHITexture* Src, RHIBuffer* Dst, const TextureSubResourceCreateInfo* subResourceInfo, const Vector3& size) = 0;
         virtual void CopyTextureToTexture(RHITexture* Src, RHITexture* Dst, const TextureSubResourceCreateInfo* srcSubResourceInfo, const TextureSubResourceCreateInfo* dstSubResourceInfo, const Vector3& size) = 0;
+        virtual void ResourceBarrier(const RHIBarrier& barrier) = 0;
 
         virtual RHIComputePassCommandList* BeginComputePass() = 0;
         virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo& info) = 0;

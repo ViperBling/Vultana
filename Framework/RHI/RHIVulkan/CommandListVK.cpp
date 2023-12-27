@@ -17,6 +17,37 @@
 
 namespace Vultana
 {
+    static std::tuple<vk::ImageLayout, vk::AccessFlags, vk::PipelineStageFlags> GetBarrierInfo(RHITextureState state)
+    {
+        switch (state)
+        {
+        case RHITextureState::Present:
+            return { vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits::eMemoryRead, vk::PipelineStageFlagBits::eBottomOfPipe };
+            break;
+        case RHITextureState::RenderTarget:
+            return { vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eColorAttachmentOutput };
+            break;
+        case RHITextureState::CopyDst:
+            return { vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTransfer };
+            break;
+        case RHITextureState::CopySrc:
+            return { vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer };
+            break;
+        case RHITextureState::ShaderReadOnly:
+            return { vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eFragmentShader };
+            break;
+        case RHITextureState::DepthStencilReadOnly:
+            return { vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::AccessFlagBits::eDepthStencilAttachmentRead, vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests };
+            break;
+        case RHITextureState::DepthStencilWrite:
+            return { vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests };
+            break;
+        default:
+            break;
+        }
+        return { vk::ImageLayout::eUndefined, vk::AccessFlags(), vk::PipelineStageFlagBits::eTopOfPipe };
+    }
+
     CommandListVK::CommandListVK(DeviceVK &device, CommandBufferVK &commandBuffer)
         : mDevice(device)
         , mCommandBuffer(commandBuffer)
@@ -29,18 +60,54 @@ namespace Vultana
 
     void CommandListVK::CopyBufferToBuffer(RHIBuffer *srcBuffer, RHIBuffer *dstBuffer, uint64_t srcOffset, uint64_t dstOffset, uint64_t size)
     {
+        auto* src = dynamic_cast<BufferVK*>(srcBuffer);
+        auto* dst = dynamic_cast<BufferVK*>(dstBuffer);
+
+        vk::BufferCopy copyRegion {};
+        copyRegion.srcOffset = srcOffset;
+        copyRegion.dstOffset = dstOffset;
+        copyRegion.size = size;
+        mCommandBuffer.GetVkCommandBuffer().copyBuffer(src->GetVkBuffer(), dst->GetVkBuffer(), 1, &copyRegion);
     }
 
     void CommandListVK::CopyBufferToTexture(RHIBuffer *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3 &size)
     {
+        auto* buffer = dynamic_cast<BufferVK*>(Src);
+        auto* texture = dynamic_cast<TextureVK*>(Dst);
 
+        vk::BufferImageCopy copyRegion {};
+        copyRegion.imageExtent = vk::Extent3D { size.x, size.y, size.z };
+        copyRegion.imageSubresource = { GetVkAspectMask(subResourceInfo->Type), subResourceInfo->MipLevel, subResourceInfo->BaseArrayLayer, subResourceInfo->LayerCount };
+
+        mCommandBuffer.GetVkCommandBuffer().copyBufferToImage(buffer->GetVkBuffer(), texture->GetVkImage(), vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
     }
 
     void CommandListVK::CopyTextureToBuffer(RHITexture *Src, RHIBuffer *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3 &size)
     {
+        auto* buffer = dynamic_cast<BufferVK*>(Dst);
+        auto* texture = dynamic_cast<TextureVK*>(Src);
+
+        vk::BufferImageCopy copyRegion {};
+        copyRegion.imageExtent = vk::Extent3D { size.x, size.y, size.z };
+        copyRegion.imageSubresource = { GetVkAspectMask(subResourceInfo->Type), subResourceInfo->MipLevel, subResourceInfo->BaseArrayLayer, subResourceInfo->LayerCount };
+
+        mCommandBuffer.GetVkCommandBuffer().copyImageToBuffer(texture->GetVkImage(), vk::ImageLayout::eTransferSrcOptimal, buffer->GetVkBuffer(), 1, &copyRegion);
     }
 
     void CommandListVK::CopyTextureToTexture(RHITexture *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *srcSubResourceInfo, const TextureSubResourceCreateInfo *dstSubResourceInfo, const Vector3 &size)
+    {
+        auto* srcTexture = dynamic_cast<TextureVK*>(Src);
+        auto* dstTexture = dynamic_cast<TextureVK*>(Dst);
+
+        vk::ImageCopy copyRegion {};
+        copyRegion.extent = vk::Extent3D { size.x, size.y, size.z };
+        copyRegion.srcSubresource = { GetVkAspectMask(srcSubResourceInfo->Type), srcSubResourceInfo->MipLevel, srcSubResourceInfo->BaseArrayLayer, srcSubResourceInfo->LayerCount };
+        copyRegion.dstSubresource = { GetVkAspectMask(dstSubResourceInfo->Type), dstSubResourceInfo->MipLevel, dstSubResourceInfo->BaseArrayLayer, dstSubResourceInfo->LayerCount };
+
+        mCommandBuffer.GetVkCommandBuffer().copyImage(srcTexture->GetVkImage(), vk::ImageLayout::eTransferSrcOptimal, dstTexture->GetVkImage(), vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
+    }
+
+    void CommandListVK::ResourceBarrier(const RHIBarrier &barrier)
     {
     }
 
