@@ -1,10 +1,23 @@
 #include "DeviceVK.hpp"
 #include "RHICommonVK.hpp"
-#include "QueueVK.hpp"
-#include "GPUVK.hpp"
 #include "InstanceVK.hpp"
+#include "GPUVK.hpp"
+#include "QueueVK.hpp"
+#include "BufferVK.hpp"
+#include "ShaderModuleVK.hpp"
+#include "PipelineLayoutVK.hpp"
+#include "BindGroupLayoutVK.hpp"
+#include "BindGroupVK.hpp"
+#include "SamplerVK.hpp"
+#include "TextureVK.hpp"
+#include "SwapchainVK.hpp"
+#include "PipelineVK.hpp"
+#include "CommandBufferVK.hpp"
+#include "SynchronousVK.hpp"
+#include "SurfaceVK.hpp"
 
 #include <map>
+#include <algorithm>
 
 namespace Vultana
 {
@@ -61,52 +74,52 @@ namespace Vultana
 
     RHISurface *DeviceVK::CreateSurface(const SurfaceCreateInfo &createInfo)
     {
-        return nullptr;
+        return new SurfaceVK(*this, createInfo);
     }
 
     RHISwapchain *DeviceVK::CreateSwapchain(const SwapchainCreateInfo &createInfo)
     {
-        return nullptr;
+        return new SwapchainVK(*this, createInfo);
     }
 
     RHIBuffer *DeviceVK::CreateBuffer(const BufferCreateInfo &createInfo)
     {
-        return nullptr;
+        return new BufferVK(*this, createInfo);
     }
 
     RHITexture *DeviceVK::CreateTexture(const TextureCreateInfo &createInfo)
     {
-        return nullptr;
+        return new TextureVK(*this, createInfo);
     }
 
     RHISampler *DeviceVK::CreateSampler(const SamplerCreateInfo &createInfo)
     {
-        return nullptr;
+        return new SamplerVK(*this, createInfo);
     }
 
     RHIBindGroup *DeviceVK::CreateBindGroup(const BindGroupCreateInfo &createInfo)
     {
-        return nullptr;
+        return new BindGroupVK(*this, createInfo);
     }
 
     RHIBindGroupLayout *DeviceVK::CreateBindGroupLayout(const BindGroupLayoutCreateInfo &createInfo)
     {
-        return nullptr;
+        return new BindGroupLayoutVK(*this, createInfo);
     }
 
     RHIPipelineLayout *DeviceVK::CreatePipelineLayout(const PipelineLayoutCreateInfo &createInfo)
     {
-        return nullptr;
+        return new PipelineLayoutVK(*this, createInfo);
     }
 
     RHIShaderModule *DeviceVK::CreateShaderModule(const ShaderModuleCreateInfo &createInfo)
     {
-        return nullptr;
+        return new ShaderModuleVK(*this, createInfo);
     }
 
     RHIGraphicsPipeline *DeviceVK::CreateGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo)
     {
-        return nullptr;
+        return new GraphicsPipelineVK(*this, createInfo);
     }
 
     RHIComputePipeline *DeviceVK::CreateComputePipeline(const ComputePipelineCreateInfo &createInfo)
@@ -116,17 +129,29 @@ namespace Vultana
 
     RHICommandBuffer *DeviceVK::CreateCommandBuffer()
     {
-        return nullptr;
+        return new CommandBufferVK(*this, mCommandPools[RHICommandQueueType::Graphics]);
     }
 
     RHIFence *DeviceVK::CreateFence()
     {
-        return nullptr;
+        return new FenceVK(*this);
     }
 
     bool DeviceVK::CheckSwapchainFormatSupport(RHISurface *surface, RHIFormat format)
     {
-        return false;
+        auto* surfaceVK = dynamic_cast<SurfaceVK*>(surface);
+        vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+
+        uint32_t formatCount = 0;
+        std::vector<vk::SurfaceFormatKHR> surfaceFormats;
+        vk::resultCheck(mGPU.GetVKPhysicalDevice().getSurfaceFormatsKHR(surfaceVK->GetVkSurface(), &formatCount, surfaceFormats.data()), "Query surface format support");
+        
+        auto it = std::find_if (surfaceFormats.begin(), surfaceFormats.end(), 
+            [format = VKEnumCast<RHIFormat, vk::Format>(format), colorSpace](const vk::SurfaceFormatKHR& surfaceFormat) 
+            {
+                return format == surfaceFormat.format && colorSpace == surfaceFormat.colorSpace;
+            });
+        return it != surfaceFormats.end();
     }
 
     void DeviceVK::SetObjectName(vk::ObjectType objectType, uint64_t handle, const std::string &name)

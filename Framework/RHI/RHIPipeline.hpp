@@ -136,9 +136,9 @@ namespace Vultana
     {
     public:
         NOCOPY(RHIComputePipeline)
-        ~RHIComputePipeline() override;
+        ~RHIComputePipeline() override {}
 
-        void Destroy() override;
+        void Destroy() override {}
 
     protected:
         explicit RHIComputePipeline(const ComputePipelineCreateInfo& createInfo) {}
@@ -148,9 +148,9 @@ namespace Vultana
     {
     public:
         NOCOPY(RHIGraphicsPipeline)
-        ~RHIGraphicsPipeline() override;
+        ~RHIGraphicsPipeline() override {}
 
-        void Destroy() override;
+        void Destroy() override {}
 
     protected:
         explicit RHIGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo) {}

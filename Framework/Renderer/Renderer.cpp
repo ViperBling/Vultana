@@ -60,6 +60,40 @@ namespace Vultana
         mSurface = std::unique_ptr<RHISurface>(mDevice->CreateSurface(surfaceCI));
 
         GDebugInfoCallback("RendererBase::InitSwapchain: Surface created", "Renderer");
+        for (auto format : swapchainFormats)
+        {
+            if (mDevice->CheckSwapchainFormatSupport(mSurface.get(), format))
+            {
+                mSwapchainFormat = format;
+                break;
+            }
+        }
+        assert(mSwapchainFormat != RHIFormat::Count);
+
+        SwapchainCreateInfo swapchainCI {};
+        swapchainCI.Format = mSwapchainFormat;
+        swapchainCI.PresentMode = RHIPresentMode::Immediate;
+        swapchainCI.Surface = mSurface.get();
+        swapchainCI.Extent = { createInfo.Width, createInfo.Height };
+        swapchainCI.TextureCount = mBackBufferCount;
+        swapchainCI.PresentQueue = mQueue;
+        mSwapchain = std::unique_ptr<RHISwapchain>(mDevice->CreateSwapchain(swapchainCI));
+
+        for (auto i = 0; i < mBackBufferCount; i++)
+        {
+            mSwapchainTextures[i] = mSwapchain->GetTexture(i);
+
+            TextureViewCreateInfo texViewCI {};
+            texViewCI.Dimension = RHITextureViewDimension::TextureView2D;
+            texViewCI.BaseArrayLayer = 0;
+            texViewCI.BaseMipLevel = 0;
+            texViewCI.ArrayLayerCount = 1;
+            texViewCI.MipLevelCount = 1;
+            texViewCI.Type = RHITextureViewType::ColorAttachment;
+            texViewCI.TextureType = RHITextureType::Color;
+            mSwapchainTextureViews[i] = std::unique_ptr<RHITextureView>(mSwapchainTextures[i]->CreateTextureView(texViewCI));
+        }
+        GDebugInfoCallback("RendererBase::InitSwapchain: Swapchain created", "Renderer");
     }
 
     void RendererBase::InitCommands()
