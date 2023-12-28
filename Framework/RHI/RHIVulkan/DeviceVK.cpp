@@ -23,7 +23,7 @@ namespace Vultana
 {
     const std::vector<const char *> DEVICE_EXTENSIONS = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+        // VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
         VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
     };
@@ -143,8 +143,7 @@ namespace Vultana
         vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 
         uint32_t formatCount = 0;
-        std::vector<vk::SurfaceFormatKHR> surfaceFormats;
-        vk::resultCheck(mGPU.GetVKPhysicalDevice().getSurfaceFormatsKHR(surfaceVK->GetVkSurface(), &formatCount, surfaceFormats.data()), "Query surface format support");
+        auto surfaceFormats = mGPU.GetVkPhysicalDevice().getSurfaceFormatsKHR(surfaceVK->GetVkSurface());
         
         auto it = std::find_if (surfaceFormats.begin(), surfaceFormats.end(), 
             [format = VKEnumCast<RHIFormat, vk::Format>(format), colorSpace](const vk::SurfaceFormatKHR& surfaceFormat) 
@@ -181,7 +180,7 @@ namespace Vultana
 
     void DeviceVK::CreateDevice(const DeviceCreateInfo &createInfo)
     {
-        auto queueFamilyProps = mGPU.GetVKPhysicalDevice().getQueueFamilyProperties();
+        auto queueFamilyProps = mGPU.GetVkPhysicalDevice().getQueueFamilyProperties();
 
         std::map<RHICommandQueueType, uint32_t> queueNumMap;
         for (size_t i = 0; i < createInfo.QueueCreateInfoCount; i++)
@@ -226,7 +225,7 @@ namespace Vultana
         deviceCI.setPNext(&features13);
         GDebugInfoCallback("Created Vulkan Device", "VulkanDevice");
 
-       vk::resultCheck(mGPU.GetVKPhysicalDevice().createDevice(&deviceCI, nullptr, &mDevice), nullptr);
+       vk::resultCheck(mGPU.GetVkPhysicalDevice().createDevice(&deviceCI, nullptr, &mDevice), nullptr);
     }
 
     void DeviceVK::GetQueues()
@@ -266,7 +265,7 @@ namespace Vultana
         VmaAllocatorCreateInfo vmaAI {};
         vmaAI.vulkanApiVersion = VK_API_VERSION_1_3;
         vmaAI.instance = mGPU.GetInstance().GetVkInstance();
-        vmaAI.physicalDevice = mGPU.GetVKPhysicalDevice();
+        vmaAI.physicalDevice = mGPU.GetVkPhysicalDevice();
         vmaAI.device = mDevice;
         vmaAI.pVulkanFunctions = &vkFuncs;
 

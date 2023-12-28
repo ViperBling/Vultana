@@ -10,8 +10,8 @@
 namespace Vultana
 {
     SwapchainVK::SwapchainVK(DeviceVK &device, const SwapchainCreateInfo &createInfo)
-        : mDevice(device)
-        , RHISwapchain(createInfo)
+        : RHISwapchain(createInfo)
+        , mDevice(device)
     {
         CreateNativeSwapchain(createInfo);
     }
@@ -65,7 +65,7 @@ namespace Vultana
         mQueue = queue->GetVkQueue();
         auto surfaceVK = surface->GetVkSurface();
 
-        vk::SurfaceCapabilitiesKHR surfaceCaps = mDevice.GetGPU().GetVKPhysicalDevice().getSurfaceCapabilitiesKHR(surfaceVK);
+        vk::SurfaceCapabilitiesKHR surfaceCaps = mDevice.GetGPU().GetVkPhysicalDevice().getSurfaceCapabilitiesKHR(surfaceVK);
 
         vk::Extent2D surfaceExtent = { static_cast<uint32_t>(createInfo.Extent.x), static_cast<uint32_t>(createInfo.Extent.y) };
         surfaceExtent = vk::Extent2D {
@@ -77,7 +77,7 @@ namespace Vultana
         auto supportedFormat = VKEnumCast<RHIFormat, vk::Format>(createInfo.Format);
         auto colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 
-        std::vector<vk::PresentModeKHR> presentModes = mDevice.GetGPU().GetVKPhysicalDevice().getSurfacePresentModesKHR(surfaceVK);
+        std::vector<vk::PresentModeKHR> presentModes = mDevice.GetGPU().GetVkPhysicalDevice().getSurfacePresentModesKHR(surfaceVK);
         assert(!presentModes.empty());
 
         vk::PresentModeKHR supportedMode = VKEnumCast<RHIPresentMode, vk::PresentModeKHR>(createInfo.PresentMode);

@@ -1,7 +1,16 @@
+// #if (WIN32)
+// #define VK_USE_PLATFORM_WIN32_KHR
+// #endif
+
 #include "SurfaceVK.hpp"
 #include "InstanceVK.hpp"
 #include "GPUVK.hpp"
 #include "DeviceVK.hpp"
+
+// #include <vulkan/vulkan_win32.h>
+// #include <Windows.h>
+
+#include "Windows/GLFWindow.hpp"
 
 namespace Vultana
 {
@@ -9,6 +18,7 @@ namespace Vultana
         : RHISurface(createInfo)
         , mDevice(inDevice)
     {
+        mSurface = CreateVulkanSurface((GLFWwindow*)createInfo.Window, mDevice.GetGPU().GetInstance().GetVkInstance());
     }
 
     SurfaceVK::~SurfaceVK()
