@@ -11,6 +11,12 @@
 
 namespace Vultana
 {
+    struct Vertex
+    {
+        Vector3 Position;
+        Vector3 Color;
+    };
+
     RendererBase::~RendererBase()
     {
     }
@@ -19,8 +25,10 @@ namespace Vultana
     {
         InitContext(createInfo);
         InitSwapchain(createInfo);
+    
+        InitPipelines();
         // InitCommands();
-        // InitPipelines();
+        // CreateVertexBuffer();
         // InitDescriptors();
         // InitSyncStructures();
     }
@@ -96,20 +104,62 @@ namespace Vultana
         GDebugInfoCallback("RendererBase::InitSwapchain: Swapchain created", "Renderer");
     }
 
-    void RendererBase::InitCommands()
-    {
-    }
-
     void RendererBase::InitPipelines()
     {
+        PipelineLayoutCreateInfo pipelineLayoutCI {};
+        pipelineLayoutCI.BindGroupLayoutCount = 0;
+        pipelineLayoutCI.BindGroupLayouts = nullptr;
+        mPipelineLayout = std::unique_ptr<RHIPipelineLayout>(mDevice->CreatePipelineLayout(pipelineLayoutCI));
+
+        std::vector<uint8_t> vsCode;
+        
     }
 
-    void RendererBase::InitDescriptors()
+    void RendererBase::CreateVertexBuffer()
     {
+        std::vector<Vertex> vertices = {
+            { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+            { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+        };
+        
+        BufferCreateInfo bufferCI {};
+        bufferCI.Size = sizeof(Vertex) * vertices.size();
+        bufferCI.Usage = RHIBufferUsageBits::Vertex | RHIBufferUsageBits::MapWrite | RHIBufferUsageBits::CopySrc;
+        mVertexBuffer = std::unique_ptr<RHIBuffer>(mDevice->CreateBuffer(bufferCI));
+        if (mVertexBuffer)
+        {
+            auto* data = mVertexBuffer->Map(RHIMapMode::Write, 0, bufferCI.Size);
+            memcpy(data, vertices.data(), bufferCI.Size);
+            mVertexBuffer->Unmap();
+        }
+        BufferViewCreateInfo bufferViewCI {};
+        bufferViewCI.Type = RHIBufferViewType::Vertex;
+        bufferViewCI.Size = sizeof(Vertex) * vertices.size();
+        bufferViewCI.Offset = 0;
+        bufferViewCI.Vertex.Stride = sizeof(Vertex);
+        mVertexBufferView = std::unique_ptr<RHIBufferView>(mVertexBuffer->CreateBufferView(bufferViewCI));
     }
 
     void RendererBase::InitSyncStructures()
     {
+        mFence = std::unique_ptr<RHIFence>(mDevice->CreateFence());
     }
 
+    void RendererBase::InitCommands()
+    {
+        mCommandBuffer = std::unique_ptr<RHICommandBuffer>(mDevice->CreateCommandBuffer());
+    }
+
+    void RendererBase::RecordCommandBuffer()
+    {
+    }
+
+    void RendererBase::SubmitCommandBuffer()
+    {
+        mFence->Reset();
+        mQueue->Submit(mCommandBuffer.get(), mFence.get());
+        mSwapchain->Present();
+        mFence->Wait();
+    }
 } // namespace Vultana::Renderer

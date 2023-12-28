@@ -71,10 +71,13 @@ namespace Vultana
     private:
         void InitContext(RendererCreateInfo& createInfo);
         void InitSwapchain(RendererCreateInfo& createInfo);
-        void InitCommands();
         void InitPipelines();
-        void InitDescriptors();
+        void CreateVertexBuffer();
         void InitSyncStructures();
+        void InitCommands();
+
+        void RecordCommandBuffer();
+        void SubmitCommandBuffer();
 
     private:
         static const uint8_t mBackBufferCount = 2;
