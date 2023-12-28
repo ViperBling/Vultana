@@ -72,7 +72,7 @@ namespace Vultana
         mCommandBuffer.GetVkCommandBuffer().copyBuffer(src->GetVkBuffer(), dst->GetVkBuffer(), 1, &copyRegion);
     }
 
-    void CommandListVK::CopyBufferToTexture(RHIBuffer *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3 &size)
+    void CommandListVK::CopyBufferToTexture(RHIBuffer *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3u &size)
     {
         auto* buffer = dynamic_cast<BufferVK*>(Src);
         auto* texture = dynamic_cast<TextureVK*>(Dst);
@@ -84,7 +84,7 @@ namespace Vultana
         mCommandBuffer.GetVkCommandBuffer().copyBufferToImage(buffer->GetVkBuffer(), texture->GetVkImage(), vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
     }
 
-    void CommandListVK::CopyTextureToBuffer(RHITexture *Src, RHIBuffer *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3 &size)
+    void CommandListVK::CopyTextureToBuffer(RHITexture *Src, RHIBuffer *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3u &size)
     {
         auto* buffer = dynamic_cast<BufferVK*>(Dst);
         auto* texture = dynamic_cast<TextureVK*>(Src);
@@ -96,7 +96,7 @@ namespace Vultana
         mCommandBuffer.GetVkCommandBuffer().copyImageToBuffer(texture->GetVkImage(), vk::ImageLayout::eTransferSrcOptimal, buffer->GetVkBuffer(), 1, &copyRegion);
     }
 
-    void CommandListVK::CopyTextureToTexture(RHITexture *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *srcSubResourceInfo, const TextureSubResourceCreateInfo *dstSubResourceInfo, const Vector3 &size)
+    void CommandListVK::CopyTextureToTexture(RHITexture *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *srcSubResourceInfo, const TextureSubResourceCreateInfo *dstSubResourceInfo, const Vector3u &size)
     {
         auto* srcTexture = dynamic_cast<TextureVK*>(Src);
         auto* dstTexture = dynamic_cast<TextureVK*>(Dst);
@@ -219,7 +219,8 @@ namespace Vultana
             }
         }
         mCmdHandle = commandBuffer.GetVkCommandBuffer();
-        mDevice.GetGPU().GetInstance().GetVkDynamicLoader().vkCmdBeginRendering(mCmdHandle, &VkRenderingInfoKHR(renderInfo));
+        VkRenderingInfoKHR vkRenderInfo = VkRenderingInfoKHR(renderInfo);
+        mDevice.GetGPU().GetInstance().GetVkDynamicLoader().vkCmdBeginRendering(mCmdHandle, &vkRenderInfo);
     }
 
     GraphicsPassCommandListVK::~GraphicsPassCommandListVK()
@@ -285,7 +286,7 @@ namespace Vultana
     void GraphicsPassCommandListVK::SetScissor(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom)
     {
         vk::Rect2D scissor {};
-        scissor.setOffset({left, top});
+        scissor.setOffset({ static_cast<int32_t>(left), static_cast<int32_t>(top) });
         scissor.setExtent({ right - left, bottom - top });
         mCmdHandle.setScissor(0, 1, &scissor);
     }

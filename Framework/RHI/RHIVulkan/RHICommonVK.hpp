@@ -278,9 +278,9 @@ namespace Vultana
         VK_ENUM_MAP_ITEM(RHITextureUsageBits::DepthStencilAttachment, vk::ImageUsageFlagBits::eDepthStencilAttachment)
     VK_ENUM_MAP_END()
 
-    inline vk::Extent3D GetVkExtent3D(const Vector3& ext)
+    inline vk::Extent3D GetVkExtent3D(const Vector3u& ext)
     {
-        return { (uint32_t)ext.x, (uint32_t)ext.y, (uint32_t)ext.z };
+        return { ext.x, ext.y, ext.z };
     }
 
     inline vk::ShaderStageFlags GetVkShaderStageFlags(const RHIShaderStageFlags& src)

@@ -1,4 +1,4 @@
-#include "TextureView.hpp"
+#include "TextureViewVK.hpp"
 
 #include "RHICommonVK.hpp"
 #include "TextureVK.hpp"
@@ -38,7 +38,7 @@ namespace Vultana
         {
             vk::ImageViewCreateInfo imageViewCI {};
             imageViewCI.setFormat(VKEnumCast<RHIFormat, vk::Format>(mTexture.GetFormat()));
-            imageViewCI.setImage(mTexture.GetImage());
+            imageViewCI.setImage(mTexture.GetVkImage());
             imageViewCI.setViewType(VKEnumCast<RHITextureViewDimension, vk::ImageViewType>(createInfo.Dimension));
             imageViewCI.setSubresourceRange({ GetVkAspectMask(createInfo.TextureType), mBaseMipLevel, mMipLevelCount, mBaseArrayLayer, mArrayLayerCount });
             mTexture.mImageView = mDevice.GetVkDevice().createImageView(imageViewCI);

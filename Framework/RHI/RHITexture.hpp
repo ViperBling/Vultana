@@ -12,7 +12,7 @@ namespace Vultana
     struct TextureCreateInfo
     {
         RHITextureDimension Dimension;
-        Vector3 Extent;
+        Vector3u Extent;
         RHIFormat Format;
         RHITextureUsageFlags Usage;
         uint8_t MipLevels;
