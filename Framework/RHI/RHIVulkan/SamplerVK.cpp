@@ -14,6 +14,7 @@ namespace Vultana
 
     SamplerVK::~SamplerVK()
     {
+        Destroy();
     }
 
     void SamplerVK::Destroy()

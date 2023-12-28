@@ -11,6 +11,7 @@
 #include "InstanceVK.hpp"
 #include "SwapchainVK.hpp"
 #include "BindGroupVK.hpp"
+#include "PipelineVK.hpp"
 #include "PipelineLayoutVK.hpp"
 
 #include "RHI/RHISynchronous.hpp"
@@ -56,6 +57,7 @@ namespace Vultana
 
     CommandListVK::~CommandListVK()
     {
+        Destroy();
     }
 
     void CommandListVK::CopyBufferToBuffer(RHIBuffer *srcBuffer, RHIBuffer *dstBuffer, uint64_t srcOffset, uint64_t dstOffset, uint64_t size)
@@ -109,6 +111,22 @@ namespace Vultana
 
     void CommandListVK::ResourceBarrier(const RHIBarrier &barrier)
     {
+        if (barrier.Type == RHIResourceType::Texture)
+        {
+            const auto& textureBarrierInfo = barrier.Texture;
+            auto oldLayout = GetBarrierInfo(textureBarrierInfo.Before == RHITextureState::Present ? RHITextureState::Undefined : textureBarrierInfo.Before);
+            auto newLayout = GetBarrierInfo(textureBarrierInfo.After);
+
+            auto* textureVK = static_cast<TextureVK*>(textureBarrierInfo.Texture);
+            vk::ImageMemoryBarrier imageBarrier {};
+            imageBarrier.oldLayout = std::get<0>(oldLayout);
+            imageBarrier.newLayout = std::get<0>(newLayout);
+            imageBarrier.srcAccessMask = std::get<1>(oldLayout);
+            imageBarrier.dstAccessMask = std::get<1>(newLayout);
+            imageBarrier.image = textureVK->GetVkImage();
+            imageBarrier.subresourceRange = textureVK->GetFullRange();
+            mCommandBuffer.GetVkCommandBuffer().pipelineBarrier(std::get<2>(oldLayout), std::get<2>(newLayout), vk::DependencyFlagBits::eByRegion, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+        }
     }
 
     RHIComputePassCommandList *CommandListVK::BeginComputePass()
@@ -118,17 +136,20 @@ namespace Vultana
 
     RHIGraphicsPassCommandList *CommandListVK::BeginGraphicsPass(const GraphicsPassBeginInfo &info)
     {
-        return nullptr;
+        return new GraphicsPassCommandListVK(mDevice, mCommandBuffer, &info);
     }
 
     void CommandListVK::SwapchainSync(RHISwapchain *swapchain)
     {
-
-        
+        auto swapchainVK = static_cast<SwapchainVK*>(swapchain);
+        auto signal = swapchainVK->GetImageSemaphore();
+        mCommandBuffer.AddWaitSemaphore(signal, vk::PipelineStageFlagBits::eColorAttachmentOutput);
+        swapchainVK->AddWaitSemaphore(mCommandBuffer.GetSignalSemaphores()[0]);
     }
 
     void CommandListVK::End()
     {
+        mCommandBuffer.GetVkCommandBuffer().end();
     }
 
     void CommandListVK::Destroy()
@@ -141,6 +162,7 @@ namespace Vultana
         , mCommandBuffer(commandBuffer)
     {
     }
+
     ComputePassCommandListVK::~ComputePassCommandListVK()
     {
     }
@@ -150,6 +172,54 @@ namespace Vultana
         : mDevice(device)
         , mCommandBuffer(commandBuffer)
     {
+        std::vector<vk::RenderingAttachmentInfo> colorAttachInfos(beginInfo->ColorAttachmentCount);
+        for (size_t i = 0; i < beginInfo->ColorAttachmentCount; i++)
+        {
+            auto* colorTexViewVK = dynamic_cast<TextureViewVK*>(beginInfo->ColorAttachments[i].TextureView);
+            colorAttachInfos[i].setImageView(colorTexViewVK->GetVkImageView());
+            colorAttachInfos[i].setImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+            colorAttachInfos[i].setLoadOp(VKEnumCast<RHILoadOp, vk::AttachmentLoadOp>(beginInfo->ColorAttachments[i].LoadOp));
+            colorAttachInfos[i].setStoreOp(VKEnumCast<RHIStoreOp, vk::AttachmentStoreOp>(beginInfo->ColorAttachments[i].StoreOp));
+            colorAttachInfos[i].clearValue.color = {
+                beginInfo->ColorAttachments[i].ColorClearValue.r,
+                beginInfo->ColorAttachments[i].ColorClearValue.g,
+                beginInfo->ColorAttachments[i].ColorClearValue.b,
+                beginInfo->ColorAttachments[i].ColorClearValue.a
+            };
+        }
+        auto* textureView = dynamic_cast<TextureViewVK*>(beginInfo->ColorAttachments[0].TextureView);
+        vk::RenderingInfoKHR renderInfo {};
+        renderInfo.setColorAttachments(colorAttachInfos);
+        renderInfo.setLayerCount(textureView->GetArrayLayerCount());
+        renderInfo.setRenderArea(vk::Rect2D { { 0, 0 }, { static_cast<uint32_t>(textureView->GetTexture().GetExtent().x), static_cast<uint32_t>(textureView->GetTexture().GetExtent().y) } });
+        renderInfo.viewMask = 0;
+
+        if (beginInfo->DepthStencilAttachment != nullptr)
+        {
+            auto* depthStencilTexView = dynamic_cast<TextureViewVK*>(beginInfo->DepthStencilAttachment->TextureView);
+            vk::RenderingAttachmentInfo depthStencilAttachInfo {};
+            depthStencilAttachInfo.setImageView(depthStencilTexView->GetVkImageView());
+            depthStencilAttachInfo.setImageLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+            depthStencilAttachInfo.setLoadOp(VKEnumCast<RHILoadOp, vk::AttachmentLoadOp>(beginInfo->DepthStencilAttachment->DepthLoadOp));
+            depthStencilAttachInfo.setStoreOp(VKEnumCast<RHIStoreOp, vk::AttachmentStoreOp>(beginInfo->DepthStencilAttachment->DepthStoreOp));
+            depthStencilAttachInfo.clearValue.setDepthStencil({ beginInfo->DepthStencilAttachment->DepthClearValue, beginInfo->DepthStencilAttachment->StencilClearValue });
+
+            renderInfo.setPDepthAttachment(&depthStencilAttachInfo);
+
+            if (!beginInfo->DepthStencilAttachment->DepthReadOnly)
+            {
+                vk::RenderingAttachmentInfo stencilAttachInfo {};
+                stencilAttachInfo.setImageView(depthStencilTexView->GetVkImageView());
+                stencilAttachInfo.setImageLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                stencilAttachInfo.setLoadOp(VKEnumCast<RHILoadOp, vk::AttachmentLoadOp>(beginInfo->DepthStencilAttachment->StencilLoadOp));
+                stencilAttachInfo.setStoreOp(VKEnumCast<RHIStoreOp, vk::AttachmentStoreOp>(beginInfo->DepthStencilAttachment->StencilStoreOp));
+                stencilAttachInfo.clearValue.setDepthStencil({ beginInfo->DepthStencilAttachment->DepthClearValue, beginInfo->DepthStencilAttachment->StencilClearValue });
+
+                renderInfo.setPStencilAttachment(&stencilAttachInfo);
+            }
+        }
+        mCmdHandle = commandBuffer.GetVkCommandBuffer();
+        mDevice.GetGPU().GetInstance().GetVkDynamicLoader().vkCmdBeginRendering(mCmdHandle, &VkRenderingInfoKHR(renderInfo));
     }
 
     GraphicsPassCommandListVK::~GraphicsPassCommandListVK()
@@ -158,52 +228,86 @@ namespace Vultana
 
     void GraphicsPassCommandListVK::SetPipeline(RHIGraphicsPipeline *pipeline)
     {
+        mGraphicsPipeline = dynamic_cast<GraphicsPipelineVK*>(pipeline);
+        assert(mGraphicsPipeline != nullptr);
+        mCmdHandle.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline->GetVkPipeline());
     }
 
     void GraphicsPassCommandListVK::SetBindGroup(uint32_t index, RHIBindGroup *bindGroup)
     {
+        auto* bg = dynamic_cast<BindGroupVK*>(bindGroup);
+        assert(bg != nullptr);
+        vk::DescriptorSet descSet = bg->GetVkDescriptorSet();
+        vk::PipelineLayout layout = mGraphicsPipeline->GetPipelineLayout()->GetVkPipelineLayout();
+        mCmdHandle.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, index, 1, &descSet, 0, nullptr);
     }
 
     void GraphicsPassCommandListVK::SetIndexBuffer(RHIBufferView *bufferView)
     {
+        auto* bv = dynamic_cast<BufferViewVK*>(bufferView);
+        assert(bv != nullptr);
+        vk::Buffer buffer = bv->GetBuffer().GetVkBuffer();
+        auto formatVK = VKEnumCast<RHIIndexFormat, vk::IndexType>(bv->GetIndexFormat());
+        mCmdHandle.bindIndexBuffer(buffer, 0, formatVK);
     }
 
     void GraphicsPassCommandListVK::SetVertexBuffers(uint32_t slot, RHIBufferView *bufferView)
     {
+        auto* bv = dynamic_cast<BufferViewVK*>(bufferView);
+        assert(bv != nullptr);
+        vk::Buffer buffer = bv->GetBuffer().GetVkBuffer();
+        vk::DeviceSize offset[] = { bv->GetOffset() };
+        mCmdHandle.bindVertexBuffers(slot, 1, &buffer, offset);
     }
 
     void GraphicsPassCommandListVK::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
     {
+        mCmdHandle.draw(vertexCount, instanceCount, firstVertex, firstInstance);
     }
 
     void GraphicsPassCommandListVK::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t baseVertex, uint32_t firstInstance)
     {
+        mCmdHandle.drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
     }
 
     void GraphicsPassCommandListVK::SetViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth)
     {
+        vk::Viewport viewport {};
+        viewport.x = topLeftX;
+        viewport.y = topLeftY;
+        viewport.width = width;
+        viewport.height = height;
+        viewport.minDepth = minDepth;
+        viewport.maxDepth = maxDepth;
+        mCmdHandle.setViewport(0, 1, &viewport);
     }
 
     void GraphicsPassCommandListVK::SetScissor(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom)
     {
+        vk::Rect2D scissor {};
+        scissor.setOffset({left, top});
+        scissor.setExtent({ right - left, bottom - top });
+        mCmdHandle.setScissor(0, 1, &scissor);
     }
 
     void GraphicsPassCommandListVK::SetPrimitiveTopology(RHIPrimitiveTopology topology)
     {
-
-        
+        mCmdHandle.setPrimitiveTopology(VKEnumCast<RHIPrimitiveTopology, vk::PrimitiveTopology>(topology));
     }
 
     void GraphicsPassCommandListVK::SetBlendConstants(const float blendConstants[4])
     {
+        mCmdHandle.setBlendConstants(blendConstants);
     }
 
     void GraphicsPassCommandListVK::SetStencilReference(uint32_t reference)
     {
+        mCmdHandle.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack, reference);
     }
 
     void GraphicsPassCommandListVK::EndPass()
     {
+        mDevice.GetGPU().GetInstance().GetVkDynamicLoader().vkCmdEndRendering(mCmdHandle);
     }
 
     void GraphicsPassCommandListVK::Destroy()
