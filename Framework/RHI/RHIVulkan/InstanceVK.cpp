@@ -127,5 +127,4 @@ namespace Vultana
             mGPUs[i] = std::make_unique<GPUVK>(*this, physicalDevices[i]);
         }
     }
-
 } // namespace Vultana::RHI

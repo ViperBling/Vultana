@@ -309,7 +309,7 @@ namespace Vultana
         return dst;
     }
 
-    inline vk::ImageAspectFlags GetVkAspectMask(const RHITextureType type)
+    inline vk::ImageAspectFlags GetVkAspectMask(const RHITextureType& type)
     {
         vk::ImageAspectFlags result {};
         for (const auto& pair : GetEnumMap<RHITextureType, vk::ImageAspectFlags>())

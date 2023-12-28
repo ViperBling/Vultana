@@ -111,7 +111,7 @@ namespace Vultana
         textureCI.Extent.y = surfaceExtent.height;
         textureCI.Extent.z = 1;
 
-        deviceVK.getSwapchainImagesKHR(mSwapchain, &mSwapchainImageCount, nullptr);
+        vk::resultCheck(deviceVK.getSwapchainImagesKHR(mSwapchain, &mSwapchainImageCount, nullptr), "Get swapchain image");
         std::vector<vk::Image> swapchainImages(mSwapchainImageCount);
         swapchainImages = deviceVK.getSwapchainImagesKHR(mSwapchain /*, mDevice.GetGPU().GetInstance().GetVkDynamicLoader()*/);
         for (auto & image : swapchainImages)
