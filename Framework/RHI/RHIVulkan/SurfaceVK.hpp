@@ -9,6 +9,7 @@
 namespace Vultana
 {
     class DeviceVK;
+    // vk::SurfaceKHR CreateNativeSurface(vk::Instance instance, const SurfaceCreateInfo& createInfo);
 
     class SurfaceVK : public RHISurface
     {

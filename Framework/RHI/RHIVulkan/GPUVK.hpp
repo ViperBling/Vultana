@@ -18,7 +18,7 @@ namespace Vultana
         GPUProperty GetProperty() override;
         RHIDevice* RequestDevice(const DeviceCreateInfo& info) override;
 
-        const vk::PhysicalDevice& GetVKPhysicalDevice() const { return mPhysicalDevice; }
+        const vk::PhysicalDevice& GetVkPhysicalDevice() const { return mPhysicalDevice; }
         InstanceVK& GetInstance() const { return mInstance; }
 
         uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;

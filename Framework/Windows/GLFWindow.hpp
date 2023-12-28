@@ -68,9 +68,6 @@ namespace Vultana
         void OnResize(std::function<void(GLFWindow&, Vector2)> callback);
         void OnKeyChanged(std::function<void(GLFWindow&, KeyCode, bool)> callback);
         void OnMouseChanged(std::function<void(GLFWindow&, MouseButton, bool)> callback);
-
-        const vk::SurfaceKHR& CreateWindowSurface(const RendererBase &renderer);
-        bool CheckPresentationSupport(const RendererBase& renderer);
         
         void SetContext(GLFWwindow* window);
 
@@ -81,6 +78,6 @@ namespace Vultana
         std::function<void(GLFWindow&, MouseButton, bool)> mOnMouseChanged;
     };
 
-    const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow* window, const RendererBase& renderer);
+    const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, vk::Instance instance);
     bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
 }

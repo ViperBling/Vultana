@@ -193,27 +193,16 @@ namespace Vultana
         this->mOnMouseChanged = std::move(callback);
     }
 
-    const vk::SurfaceKHR& GLFWindow::CreateWindowSurface(const RendererBase &renderer)
-    {
-        return CreateVulkanSurface(this->mHwnd, renderer);
-    }
-
-    bool GLFWindow::CheckPresentationSupport(const RendererBase &renderer)
-    {
-        // return CheckVulkanPresentationSupport(renderer.GetInstance(), renderer.GetPhysicalDevice(), renderer.GetQueueFamilyIndex());
-        return true;
-    }
-
     void GLFWindow::SetContext(GLFWwindow *window)
     {
         this->mHwnd = window;
         glfwMakeContextCurrent(window);
     }
 
-    const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, const RendererBase &renderer)
+    const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, vk::Instance instance)
     {
         static vk::SurfaceKHR surface;
-        // (void)glfwCreateWindowSurface(renderer.GetInstance(), window, nullptr, (VkSurfaceKHR*)&surface);
+        (void)glfwCreateWindowSurface(VkInstance(instance), window, nullptr, (VkSurfaceKHR*)&surface);
         return surface;
     }
 

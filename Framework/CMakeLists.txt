@@ -46,7 +46,7 @@ add_dependencies(FrameworkLib CompileShaders)
 
 target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath})
 target_link_libraries(FrameworkLib PUBLIC
-    # assimp::assimp
+    assimp::assimp
     glfw
     glm::glm
     Vulkan::Vulkan

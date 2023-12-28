@@ -111,13 +111,13 @@ namespace Vultana
         VK_ENUM_MAP_ITEM(RHITextureType::DepthStencil, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)
     VK_ENUM_MAP_END()
 
-    VK_ENUM_MAP_BEGIN(RHIShaderStageBits, vk::ShaderStageFlagBits)
+    VK_ENUM_MAP_BEGIN(RHIShaderStageFlags, vk::ShaderStageFlagBits)
         VK_ENUM_MAP_ITEM(RHIShaderStageBits::Vertex, vk::ShaderStageFlagBits::eVertex)
         VK_ENUM_MAP_ITEM(RHIShaderStageBits::Pixel, vk::ShaderStageFlagBits::eFragment)
         VK_ENUM_MAP_ITEM(RHIShaderStageBits::Compute, vk::ShaderStageFlagBits::eCompute)
     VK_ENUM_MAP_END()
 
-    VK_ENUM_MAP_BEGIN(RHIBufferUsageBits, vk::BufferUsageFlagBits)
+    VK_ENUM_MAP_BEGIN(RHIBufferUsageFlags, vk::BufferUsageFlagBits)
         VK_ENUM_MAP_ITEM(RHIBufferUsageBits::CopySrc, vk::BufferUsageFlagBits::eTransferSrc)
         VK_ENUM_MAP_ITEM(RHIBufferUsageBits::CopyDst, vk::BufferUsageFlagBits::eTransferDst)
         VK_ENUM_MAP_ITEM(RHIBufferUsageBits::Index, vk::BufferUsageFlagBits::eIndexBuffer)
@@ -286,7 +286,7 @@ namespace Vultana
     inline vk::ShaderStageFlags GetVkShaderStageFlags(const RHIShaderStageFlags& src)
     {
         vk::ShaderStageFlags dst = {};
-        for (auto& pair : GetEnumMap<RHIShaderStageBits, vk::ShaderStageFlagBits>())
+        for (auto& pair : GetEnumMap<RHIShaderStageFlags, vk::ShaderStageFlagBits>())
         {
             if (src & pair.first)
             {
@@ -299,7 +299,7 @@ namespace Vultana
     inline vk::ImageUsageFlags GetVkImageUsageFlags(const RHITextureUsageFlags& src)
     {
         vk::ImageUsageFlags dst = {};
-        for (auto& pair : GetEnumMap<RHITextureUsageBits, vk::ImageUsageFlagBits>())
+        for (auto& pair : GetEnumMap<RHITextureUsageFlags, vk::ImageUsageFlagBits>())
         {
             if (src & pair.first)
             {
@@ -325,7 +325,7 @@ namespace Vultana
     inline vk::BufferUsageFlags GetVkBufferUsageFlags(const RHIBufferUsageFlags& bufferUsage)
     {
         vk::BufferUsageFlags res {};
-        for (const auto& pair : GetEnumMap<RHIBufferUsageBits, vk::BufferUsageFlagBits>())
+        for (const auto& pair : GetEnumMap<RHIBufferUsageFlags, vk::BufferUsageFlagBits>())
         {
             if (bufferUsage & pair.first)
             {
