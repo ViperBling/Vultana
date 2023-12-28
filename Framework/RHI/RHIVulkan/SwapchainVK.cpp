@@ -123,5 +123,4 @@ namespace Vultana
         vk::SemaphoreCreateInfo semaphoreCI {};
         mImageAvaliableSemaphore = deviceVK.createSemaphore(semaphoreCI);
     }
-
 } // namespace Vultana

@@ -15,6 +15,7 @@ namespace Vultana
 
     PipelineLayoutVK::~PipelineLayoutVK()
     {
+        Destroy();
     }
 
     void PipelineLayoutVK::Destroy()
