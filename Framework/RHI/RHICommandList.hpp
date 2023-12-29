@@ -92,7 +92,7 @@ namespace Vultana
         virtual void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t baseVertex, uint32_t firstInstance) = 0;
         virtual void SetViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) = 0;
         virtual void SetScissor(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom) = 0;
-        virtual void SetPrimitiveTopology(RHIPrimitiveTopology topology) = 0;
+        virtual void SetPrimitiveTopology(RHIPrimitiveTopologyType topology) = 0;
         virtual void SetBlendConstants(const float blendConstants[4]) = 0;
         virtual void SetStencilReference(uint32_t reference) = 0;
 
@@ -117,7 +117,7 @@ namespace Vultana
         virtual void ResourceBarrier(const RHIBarrier& barrier) = 0;
 
         virtual RHIComputePassCommandList* BeginComputePass() = 0;
-        virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo& info) = 0;
+        virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo* info) = 0;
         virtual void SwapchainSync(RHISwapchain* swapchain) = 0;
         virtual void End() = 0;
         virtual void Destroy() = 0;

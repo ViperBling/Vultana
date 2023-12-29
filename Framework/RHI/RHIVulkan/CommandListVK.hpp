@@ -25,7 +25,7 @@ namespace Vultana
         virtual void ResourceBarrier(const RHIBarrier& barrier) override;
 
         virtual RHIComputePassCommandList* BeginComputePass() override;
-        virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo& info) override;
+        virtual RHIGraphicsPassCommandList* BeginGraphicsPass(const GraphicsPassBeginInfo* info) override;
         virtual void SwapchainSync(RHISwapchain* swapchain) override;
         virtual void End() override;
         void Destroy() override;
@@ -68,7 +68,7 @@ namespace Vultana
         virtual void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t baseVertex, uint32_t firstInstance) override;
         virtual void SetViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth) override;
         virtual void SetScissor(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom) override;
-        virtual void SetPrimitiveTopology(RHIPrimitiveTopology topology) override;
+        virtual void SetPrimitiveTopology(RHIPrimitiveTopologyType topology) override;
         virtual void SetBlendConstants(const float blendConstants[4]) override;
         virtual void SetStencilReference(uint32_t reference) override;
 

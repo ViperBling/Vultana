@@ -134,9 +134,9 @@ namespace Vultana
         return nullptr;
     }
 
-    RHIGraphicsPassCommandList *CommandListVK::BeginGraphicsPass(const GraphicsPassBeginInfo &info)
+    RHIGraphicsPassCommandList *CommandListVK::BeginGraphicsPass(const GraphicsPassBeginInfo* info)
     {
-        return new GraphicsPassCommandListVK(mDevice, mCommandBuffer, &info);
+        return new GraphicsPassCommandListVK(mDevice, mCommandBuffer, info);
     }
 
     void CommandListVK::SwapchainSync(RHISwapchain *swapchain)
@@ -291,9 +291,9 @@ namespace Vultana
         mCmdHandle.setScissor(0, 1, &scissor);
     }
 
-    void GraphicsPassCommandListVK::SetPrimitiveTopology(RHIPrimitiveTopology topology)
+    void GraphicsPassCommandListVK::SetPrimitiveTopology(RHIPrimitiveTopologyType topology)
     {
-        mCmdHandle.setPrimitiveTopology(VKEnumCast<RHIPrimitiveTopology, vk::PrimitiveTopology>(topology));
+        // mCmdHandle.setPrimitiveTopology(VKEnumCast<RHIPrimitiveTopologyType, vk::PrimitiveTopology>(topology));
     }
 
     void GraphicsPassCommandListVK::SetBlendConstants(const float blendConstants[4])

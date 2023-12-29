@@ -20,6 +20,7 @@ namespace Vultana
 
     RendererBase::~RendererBase()
     {
+        Cleanup();
     }
 
     void RendererBase::Init(RendererCreateInfo &createInfo)
@@ -31,14 +32,20 @@ namespace Vultana
         CreateVertexBuffer();
         InitSyncStructures();
         InitCommands();
+
+        GDebugInfoCallback("RendererBase::Init: Renderer initialized", "Renderer");
     }
 
     void RendererBase::Cleanup()
     {
+        mQueue->Wait(mFence.get());
+        mFence->Wait();
     }
 
     void RendererBase::RenderFrame()
     {
+        RecordCommandBuffer();
+        SubmitCommandBuffer();
     }
 
     void RendererBase::InitContext(RendererCreateInfo &createInfo)
@@ -86,6 +93,8 @@ namespace Vultana
         swapchainCI.TextureCount = mBackBufferCount;
         swapchainCI.PresentQueue = mQueue;
         mSwapchain = std::unique_ptr<RHISwapchain>(mDevice->CreateSwapchain(swapchainCI));
+
+        mSwapchainExtent = { createInfo.Width, createInfo.Height };
 
         for (auto i = 0; i < mBackBufferCount; i++)
         {
@@ -208,6 +217,36 @@ namespace Vultana
 
     void RendererBase::RecordCommandBuffer()
     {
+        auto backTextureIndex = mSwapchain->AcquireBackTexture();
+        auto cmdList = std::unique_ptr<RHICommandList>(mCommandBuffer->Begin());
+        {
+            std::array<GraphicsPassColorAttachment, 1> colorAttachments {};
+            colorAttachments[0].TextureView = mSwapchainTextureViews[backTextureIndex].get();
+            colorAttachments[0].LoadOp = RHILoadOp::Clear;
+            colorAttachments[0].StoreOp = RHIStoreOp::Store;
+            colorAttachments[0].ColorClearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+            colorAttachments[0].ResolveTextureView = nullptr;
+
+            GraphicsPassBeginInfo passBI {};
+            passBI.ColorAttachmentCount = colorAttachments.size();
+            passBI.ColorAttachments = colorAttachments.data();
+            passBI.DepthStencilAttachment = nullptr;
+
+            cmdList->ResourceBarrier(RHIBarrier::Transition(mSwapchainTextures[backTextureIndex], RHITextureState::Present, RHITextureState::RenderTarget));
+            auto graphicsCmdList = std::unique_ptr<RHIGraphicsPassCommandList>(cmdList->BeginGraphicsPass(&passBI));
+            {
+                graphicsCmdList->SetPipeline(mGraphicsPipeline.get());
+                graphicsCmdList->SetScissor(0, 0, mSwapchainExtent.x, mSwapchainExtent.y);
+                graphicsCmdList->SetViewport(0, 0, static_cast<float>(mSwapchainExtent.x), static_cast<float>(mSwapchainExtent.y), 0, 1);
+                graphicsCmdList->SetPrimitiveTopology(RHIPrimitiveTopologyType::Triangle);
+                graphicsCmdList->SetVertexBuffers(0, mVertexBufferView.get());
+                graphicsCmdList->Draw(3, 1, 0, 0);
+            }
+            graphicsCmdList->EndPass();
+            cmdList->ResourceBarrier(RHIBarrier::Transition(mSwapchainTextures[backTextureIndex], RHITextureState::RenderTarget, RHITextureState::Present));
+        }
+        cmdList->SwapchainSync(mSwapchain.get());
+        cmdList->End();
     }
 
     void RendererBase::SubmitCommandBuffer()
