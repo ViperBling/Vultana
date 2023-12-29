@@ -8,7 +8,10 @@ find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
+file(GLOB_RECURSE Common_Head       ${SourcePath}/Common/*.hpp)
+file(GLOB_RECURSE Common_Src        ${SourcePath}/Common/*.cpp)
 file(GLOB_RECURSE Core_Head         ${SourcePath}/Core/*.hpp)
 file(GLOB_RECURSE Core_Src          ${SourcePath}/Core/*.cpp)
 file(GLOB_RECURSE Renderer_Head     ${SourcePath}/Renderer/*.hpp)
@@ -21,6 +24,7 @@ file(GLOB_RECURSE Window_Head       ${SourcePath}/Windows/*.hpp)
 file(GLOB_RECURSE Window_Src        ${SourcePath}/Windows/*.cpp)
 
 add_library(FrameworkLib STATIC 
+    ${Common_Head}      ${Common_Src}
     ${Core_Head}        ${Core_Src}
     ${Renderer_Head}    ${Renderer_Src}
     ${RHI_Head}         ${RHI_Src}
@@ -44,6 +48,8 @@ endforeach()
 
 add_dependencies(FrameworkLib CompileShaders)
 
+set(ENABLE_SPIRV_CODEGEN ON CACHE BOOL "Enable SPIR-V CodeGen")
+
 target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath})
 target_link_libraries(FrameworkLib PUBLIC
     assimp::assimp
@@ -51,4 +57,7 @@ target_link_libraries(FrameworkLib PUBLIC
     glm::glm
     Vulkan::Vulkan
     spirv-cross-core
-    tinyxml2)
+    fmt::fmt-header-only
+    tinyxml2
+    "dxcompiler.lib"    # For Shaer Compiler
+)
