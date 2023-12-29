@@ -1,6 +1,7 @@
 #include "Renderer.hpp"
 
 #include "Windows/GLFWindow.hpp"
+#include "ShaderCompiler.hpp"
 
 #include <optional>
 #include <algorithm>
@@ -112,7 +113,56 @@ namespace Vultana
         mPipelineLayout = std::unique_ptr<RHIPipelineLayout>(mDevice->CreatePipelineLayout(pipelineLayoutCI));
 
         std::vector<uint8_t> vsCode;
-        
+        CompileShader(vsCode, "./Assets/Shaders/HLSL/Triangle.hlsl", "VSMain", RHIShaderStageBits::Vertex);
+        std::vector<uint8_t> psCode;
+        CompileShader(psCode, "./Assets/Shaders/HLSL/Triangle.hlsl", "PSMain", RHIShaderStageBits::Pixel);
+
+        ShaderModuleCreateInfo vsCI {};
+        vsCI.Code = vsCode.data();
+        vsCI.CodeSize = vsCode.size();
+        mVertexShader = std::unique_ptr<RHIShaderModule>(mDevice->CreateShaderModule(vsCI));
+        ShaderModuleCreateInfo psCI {};
+        psCI.Code = psCode.data();
+        psCI.CodeSize = psCode.size();
+        mFragmentShader = std::unique_ptr<RHIShaderModule>(mDevice->CreateShaderModule(psCI));
+
+        std::array<VertexAttribute, 2> vertexAttributes {};
+        vertexAttributes[0].Format = RHIVertexFormat::FLOAT_32X3;
+        vertexAttributes[0].Offset = 0;
+        vertexAttributes[0].SemanticName = "POSITION";
+        vertexAttributes[0].SemanticIndex = 0;
+        vertexAttributes[0].Format = RHIVertexFormat::FLOAT_32X3;
+        vertexAttributes[0].Offset = offsetof(Vertex, Color);
+        vertexAttributes[0].SemanticName = "COLOR";
+        vertexAttributes[0].SemanticIndex = 0;
+
+        VertexBufferLayout vertexBufferLayout {};
+        vertexBufferLayout.Attributes = vertexAttributes.data();
+        vertexBufferLayout.AttributeCount = vertexAttributes.size();
+        vertexBufferLayout.Stride = sizeof(Vertex);
+        vertexBufferLayout.StepMode = RHIVertexStepMode::PerVertex;
+
+        std::array<ColorTargetState, 1> colorTargetStates {};
+        colorTargetStates[0].Format = mSwapchainFormat;
+        colorTargetStates[0].WriteFlags = RHIColorWriteBits::Red | RHIColorWriteBits::Green | RHIColorWriteBits::Blue | RHIColorWriteBits::Alpha;
+
+        GraphicsPipelineCreateInfo pipelineCI {};
+        pipelineCI.PipelineLayout = mPipelineLayout.get();
+        pipelineCI.VertexShader = mVertexShader.get();
+        pipelineCI.FragmentShader = mFragmentShader.get();
+        pipelineCI.VertexState.BufferLayoutCount = 1;
+        pipelineCI.VertexState.BufferLayouts = &vertexBufferLayout;
+        pipelineCI.FragState.ColorTargetCount = colorTargetStates.size();
+        pipelineCI.FragState.ColorTargets = colorTargetStates.data();
+        pipelineCI.PrimitiveState.bDepthClip = false;
+        pipelineCI.PrimitiveState.FrontFace = RHIFrontFace::CounterClockwise;
+        pipelineCI.PrimitiveState.CullMode = RHICullMode::None;
+        pipelineCI.PrimitiveState.TopologyType = RHIPrimitiveTopologyType::Triangle;
+        pipelineCI.PrimitiveState.IndexFormat = RHIIndexFormat::UINT_16;
+        pipelineCI.DepthStencilState.bDepthEnable = false;
+        pipelineCI.DepthStencilState.bStencilEnable = false;
+        pipelineCI.MultiSampleState.SampleCount = 1;
+        mGraphicsPipeline = std::unique_ptr<RHIGraphicsPipeline>(mDevice->CreateGraphicsPipeline(pipelineCI));
     }
 
     void RendererBase::CreateVertexBuffer()
@@ -161,5 +211,34 @@ namespace Vultana
         mQueue->Submit(mCommandBuffer.get(), mFence.get());
         mSwapchain->Present();
         mFence->Wait();
+    }
+
+    void RendererBase::CompileShader(std::vector<uint8_t> &byteCode, const std::string &fileName, const std::string &entryPoint, RHIShaderStageBits shaderStage, std::vector<std::string> includePath)
+    {
+        std::string shaderSrc = FileUtils::ReadTextFile(fileName);
+
+        ShaderCompileInput input {};
+        input.Source = shaderSrc;
+        input.EntryPoint = entryPoint;
+        input.Stage = shaderStage;
+        ShaderCompileOptions option;
+        if (!includePath.empty()) { option.IncludePaths.insert(option.IncludePaths.end(), includePath.begin(), includePath.end()); }
+        option.ByteCodeType = ShaderByteCodeType::SPIRV;
+        option.bWithDebugInfo = true;
+
+        auto future = ShaderCompiler::Get().Compile(input, option);
+
+        future.wait();
+        auto result = future.get();
+        if (result.bSuccess)
+        {
+            byteCode = std::move(result.ByteCode);
+        }
+        else
+        {
+            GDebugInfoCallback(result.ErrorMsg, "ShaderCompiler");
+        }
+        assert(result.bSuccess);
+        byteCode = std::move(result.ByteCode);
     }
 } // namespace Vultana::Renderer

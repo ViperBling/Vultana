@@ -79,6 +79,8 @@ namespace Vultana
         void RecordCommandBuffer();
         void SubmitCommandBuffer();
 
+        void CompileShader(std::vector<uint8_t>& byteCode, const std::string& fileName, const std::string& entryPoint, RHIShaderStageBits shaderStage, std::vector<std::string> includePath = {});
+
     private:
         static const uint8_t mBackBufferCount = 2;
 
