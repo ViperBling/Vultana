@@ -213,7 +213,7 @@ namespace Vultana
         setStage(createInfo.VertexShader, vk::ShaderStageFlagBits::eVertex);
         setStage(createInfo.FragmentShader, vk::ShaderStageFlagBits::eFragment);
 
-        std::vector<vk::DynamicState> dyStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
+        std::vector<vk::DynamicState> dyStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor, vk::DynamicState::ePrimitiveTopology};
 
         vk::PipelineDynamicStateCreateInfo dyStateCI {};
         dyStateCI.setDynamicStates(dyStates);
