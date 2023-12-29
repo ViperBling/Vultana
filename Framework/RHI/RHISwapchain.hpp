@@ -29,6 +29,7 @@ namespace Vultana
         virtual uint8_t AcquireBackTexture() = 0;
 
         virtual void Present() = 0;
+        virtual void Resize(const Vector2& extent) = 0;
         virtual void Destroy() = 0;
 
     protected:
