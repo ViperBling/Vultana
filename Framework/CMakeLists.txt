@@ -7,6 +7,7 @@ find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(spirv_cross_core CONFIG REQUIRED)
+find_package(directx-dxc CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 
@@ -34,21 +35,21 @@ add_library(FrameworkLib STATIC
 
 file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)
 
-add_custom_target(CompileShaders
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${BinaryPath}/Assets/Shaders/Generated)
+# add_custom_target(CompileShaders
+#     COMMAND ${CMAKE_COMMAND} -E make_directory ${BinaryPath}/Assets/Shaders/Generated)
 
-foreach(Shader ${ShaderSrc})
-    get_filename_component(ShaderName ${Shader} NAME)
-    set(SPIRV_OUTPUT ${BinaryPath}/Assets/Shaders/Generated/${ShaderName}.spv)
-    add_custom_command(TARGET FrameworkLib PRE_BUILD
-        COMMAND glslangValidator -V ${Shader} -o ${SPIRV_OUTPUT} -t
-        # COMMENT "Compiling ${ShaderName}"
-        )
-endforeach()
+# foreach(Shader ${ShaderSrc})
+#     get_filename_component(ShaderName ${Shader} NAME)
+#     set(SPIRV_OUTPUT ${BinaryPath}/Assets/Shaders/Generated/${ShaderName}.spv)
+#     add_custom_command(TARGET FrameworkLib PRE_BUILD
+#         COMMAND glslangValidator -V ${Shader} -o ${SPIRV_OUTPUT} -t
+#         # COMMENT "Compiling ${ShaderName}"
+#         )
+# endforeach()
 
-add_dependencies(FrameworkLib CompileShaders)
+# add_dependencies(FrameworkLib CompileShaders)
 
-set(ENABLE_SPIRV_CODEGEN ON CACHE BOOL "Enable SPIR-V CodeGen")
+
 
 target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath})
 target_link_libraries(FrameworkLib PUBLIC
@@ -59,5 +60,5 @@ target_link_libraries(FrameworkLib PUBLIC
     spirv-cross-core
     fmt::fmt-header-only
     tinyxml2
-    "dxcompiler.lib"    # For Shaer Compiler
+    Microsoft::DirectXShaderCompiler
 )

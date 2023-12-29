@@ -163,6 +163,8 @@ namespace Vultana
         pipelineCI.DepthStencilState.bStencilEnable = false;
         pipelineCI.MultiSampleState.SampleCount = 1;
         mGraphicsPipeline = std::unique_ptr<RHIGraphicsPipeline>(mDevice->CreateGraphicsPipeline(pipelineCI));
+
+        GDebugInfoCallback("RendererBase::InitPipelines: Pipeline created", "Renderer");
     }
 
     void RendererBase::CreateVertexBuffer()
@@ -230,15 +232,11 @@ namespace Vultana
 
         future.wait();
         auto result = future.get();
-        if (result.bSuccess)
-        {
-            byteCode = std::move(result.ByteCode);
-        }
-        else
+        if (!result.bSuccess)
         {
             GDebugInfoCallback(result.ErrorMsg, "ShaderCompiler");
         }
         assert(result.bSuccess);
-        byteCode = std::move(result.ByteCode);
+        byteCode = result.ByteCode;
     }
 } // namespace Vultana::Renderer

@@ -16,7 +16,7 @@ using namespace Microsoft::WRL;
 
 #include <dxcapi.h>
 #include <spirv_cross/spirv_cross.hpp>
-#include <spirv_cross/spirv_msl.hpp>
+#include <spirv_cross/spirv_hlsl.hpp>
 
 #include "ShaderCompiler.hpp"
 #include "Common/String.hpp"
@@ -82,7 +82,6 @@ namespace Vultana
         std::vector<std::wstring> result { L"-D" };
         auto def = option.ByteCodeType == ShaderByteCodeType::SPIRV ? std::wstring(L"VULKAN=1") : std::wstring(L"VULKAN=0");
         result.emplace_back(def);
-        auto temp = std::wstring(L"-DENABLE_SPIRV_CODEGEN=ON");
         return result;
     }
 
@@ -156,7 +155,6 @@ namespace Vultana
 
         ComPtr<IDxcBlobEncoding> errorBlob;
         assert(SUCCEEDED(result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorBlob), nullptr)));
-        std::cout << errorBlob->GetBufferSize() << std::endl;
 
         if (FAILED(operationResult) || errorBlob->GetBufferSize() > 0)
         {
@@ -180,7 +178,7 @@ namespace Vultana
         return instance;
     }
 
-    std::future<ShaderCompileOutput> ShaderCompiler::Compile(const ShaderCompileInput &input, const ShaderCompileOptions &options)
+    std::future<ShaderCompileOutput> ShaderCompiler::Compile(const ShaderCompileInput& inInput, const ShaderCompileOptions& inOptions)
     {
         return mThreadPool.EmplaceTask([](const ShaderCompileInput& input, const ShaderCompileOptions& options) -> ShaderCompileOutput
         {
@@ -196,7 +194,7 @@ namespace Vultana
                 break;
             }
             return output;
-        }, input, options);
+        }, inInput, inOptions);
     }
 
     ShaderCompiler::ShaderCompiler()
