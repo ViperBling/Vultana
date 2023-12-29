@@ -83,6 +83,7 @@ namespace Vultana
                             {
                                 return mbStop || !mTasks.empty();
                             });
+                            if (mbStop && mTasks.empty()) { return; }
                             task = std::move(mTasks.front());
                             mTasks.pop();
                         }

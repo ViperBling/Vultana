@@ -293,7 +293,7 @@ namespace Vultana
 
     void GraphicsPassCommandListVK::SetPrimitiveTopology(RHIPrimitiveTopologyType topology)
     {
-        // mCmdHandle.setPrimitiveTopology(VKEnumCast<RHIPrimitiveTopologyType, vk::PrimitiveTopology>(topology));
+        mCmdHandle.setPrimitiveTopology(VKEnumCast<RHIPrimitiveTopologyType, vk::PrimitiveTopology>(topology));
     }
 
     void GraphicsPassCommandListVK::SetBlendConstants(const float blendConstants[4])
