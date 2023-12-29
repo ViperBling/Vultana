@@ -11,6 +11,7 @@ namespace Vultana
         , mDevice(inDevice)
         , mUsages(createInfo.Usage)
     {
+        CreateBuffer(createInfo);
     }
 
     BufferVK::~BufferVK()

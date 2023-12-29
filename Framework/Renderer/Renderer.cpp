@@ -28,10 +28,9 @@ namespace Vultana
         InitSwapchain(createInfo);
     
         InitPipelines();
-        // InitCommands();
-        // CreateVertexBuffer();
-        // InitDescriptors();
-        // InitSyncStructures();
+        CreateVertexBuffer();
+        InitSyncStructures();
+        InitCommands();
     }
 
     void RendererBase::Cleanup()
@@ -113,9 +112,9 @@ namespace Vultana
         mPipelineLayout = std::unique_ptr<RHIPipelineLayout>(mDevice->CreatePipelineLayout(pipelineLayoutCI));
 
         std::vector<uint8_t> vsCode;
-        CompileShader(vsCode, "./Assets/Shaders/HLSL/Triangle.hlsl", "VSMain", RHIShaderStageBits::Vertex);
+        CompileShader(vsCode, "./Assets/Shaders/HLSL/Triangle.hlsl", VS_ENTRY_POINT, RHIShaderStageBits::Vertex);
         std::vector<uint8_t> psCode;
-        CompileShader(psCode, "./Assets/Shaders/HLSL/Triangle.hlsl", "PSMain", RHIShaderStageBits::Pixel);
+        CompileShader(psCode, "./Assets/Shaders/HLSL/Triangle.hlsl", PS_ENTRY_POINT, RHIShaderStageBits::Pixel);
 
         ShaderModuleCreateInfo vsCI {};
         vsCI.Code = vsCode.data();
@@ -131,10 +130,10 @@ namespace Vultana
         vertexAttributes[0].Offset = 0;
         vertexAttributes[0].SemanticName = "POSITION";
         vertexAttributes[0].SemanticIndex = 0;
-        vertexAttributes[0].Format = RHIVertexFormat::FLOAT_32X3;
-        vertexAttributes[0].Offset = offsetof(Vertex, Color);
-        vertexAttributes[0].SemanticName = "COLOR";
-        vertexAttributes[0].SemanticIndex = 0;
+        vertexAttributes[1].Format = RHIVertexFormat::FLOAT_32X3;
+        vertexAttributes[1].Offset = offsetof(Vertex, Color);
+        vertexAttributes[1].SemanticName = "COLOR";
+        vertexAttributes[1].SemanticIndex = 0;
 
         VertexBufferLayout vertexBufferLayout {};
         vertexBufferLayout.Attributes = vertexAttributes.data();
@@ -191,16 +190,20 @@ namespace Vultana
         bufferViewCI.Offset = 0;
         bufferViewCI.Vertex.Stride = sizeof(Vertex);
         mVertexBufferView = std::unique_ptr<RHIBufferView>(mVertexBuffer->CreateBufferView(bufferViewCI));
+
+        GDebugInfoCallback("RendererBase::CreateVertexBuffer: Vertex buffer created", "Renderer");
     }
 
     void RendererBase::InitSyncStructures()
     {
         mFence = std::unique_ptr<RHIFence>(mDevice->CreateFence());
+        GDebugInfoCallback("RendererBase::InitSyncStructures: Fence created", "Renderer");
     }
 
     void RendererBase::InitCommands()
     {
         mCommandBuffer = std::unique_ptr<RHICommandBuffer>(mDevice->CreateCommandBuffer());
+        GDebugInfoCallback("RendererBase::InitCommands: Command buffer created", "Renderer");
     }
 
     void RendererBase::RecordCommandBuffer()
