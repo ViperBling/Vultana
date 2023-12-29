@@ -102,6 +102,7 @@ namespace Vultana
         std::unique_ptr<RHICommandBuffer> mCommandBuffer;
         std::unique_ptr<RHIFence> mFence;
 
+        Vector2u mSwapchainExtent;
         GLFWindow* mWndHandle;
     };
 }

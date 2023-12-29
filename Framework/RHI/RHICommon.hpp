@@ -11,8 +11,8 @@
 #define RHI_FLAGS_DECLARE(FlagsType, BitsType)      \
     inline FlagsType operator&(BitsType a, BitsType b) { return FlagsType(a) & FlagsType(b); };    \
     inline FlagsType operator&(FlagsType a, BitsType b) { return a & FlagsType(b); };   \
-    inline FlagsType operator|(BitsType a, BitsType b) { return FlagsType(a) & FlagsType(b); };    \
-    inline FlagsType operator|(FlagsType a, BitsType b) { return a & FlagsType(b); };   \
+    inline FlagsType operator|(BitsType a, BitsType b) { return FlagsType(a) | FlagsType(b); };    \
+    inline FlagsType operator|(FlagsType a, BitsType b) { return a | FlagsType(b); };   \
 
 namespace Vultana
 {
