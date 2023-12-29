@@ -11,8 +11,8 @@ namespace Vultana
     {
         switch (stage)
         {
-        case vk::ShaderStageFlagBits::eVertex: return "VSMain";
-        case vk::ShaderStageFlagBits::eFragment: return "FSMain";
+        case vk::ShaderStageFlagBits::eVertex: return VS_ENTRY_POINT.c_str();
+        case vk::ShaderStageFlagBits::eFragment: return PS_ENTRY_POINT.c_str();
         default: assert(false); return nullptr;
         }
     }

@@ -12,6 +12,8 @@
     ClassName(const ClassName&) = delete;\
     ClassName& operator=(const ClassName&) = delete;
 
+const std::string VS_ENTRY_POINT = "VSMain";
+const std::string PS_ENTRY_POINT = "PSMain";
 
 inline void GDebugInfoCallbackFunc(const std::string& message, const std::string& type)
 {
