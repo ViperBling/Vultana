@@ -20,6 +20,7 @@ namespace Vultana
         RHITexture* GetTexture(uint8_t index) override { return mTextures[index]; }
         uint8_t AcquireBackTexture() override;
         void Present() override;
+        void Resize(const Vector2& extent) override;
         void Destroy() override;
 
         vk::Semaphore GetImageSemaphore() const { return mImageAvaliableSemaphore; }
@@ -35,6 +36,7 @@ namespace Vultana
         vk::Queue mQueue = VK_NULL_HANDLE;
         vk::Semaphore mImageAvaliableSemaphore;
         std::vector<vk::Semaphore> mWaitSemaphores;
+        Vector2 mExtent;
 
         uint32_t mSwapchainImageCount = 0;
         uint32_t mSwapchainImageIndex = 0;

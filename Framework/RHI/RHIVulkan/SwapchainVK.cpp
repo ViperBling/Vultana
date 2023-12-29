@@ -37,6 +37,18 @@ namespace Vultana
         mWaitSemaphores.clear();
     }
 
+    void SwapchainVK::Resize(const Vector2 &extent)
+    {
+        if (mExtent == extent)
+        {
+            return;
+        }
+        Destroy();
+        mExtent = extent;
+
+        
+    }
+
     void SwapchainVK::Destroy()
     {
         auto device = mDevice.GetVkDevice();
@@ -64,6 +76,7 @@ namespace Vultana
         assert(surface);
         mQueue = queue->GetVkQueue();
         auto surfaceVK = surface->GetVkSurface();
+        mExtent = createInfo.Extent;
 
         vk::SurfaceCapabilitiesKHR surfaceCaps = mDevice.GetGPU().GetVkPhysicalDevice().getSurfaceCapabilitiesKHR(surfaceVK);
 
