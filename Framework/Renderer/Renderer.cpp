@@ -96,6 +96,27 @@ namespace Vultana
 
         mSwapchainExtent = { createInfo.Width, createInfo.Height };
 
+        mWndHandle->OnResize([this, &swapchainCI](GLFWindow& window, Vector2 size)
+        {
+            mSwapchainExtent = size;
+            SwapchainCreateInfo swapchainCI {};
+            swapchainCI.Format = mSwapchainFormat;
+            swapchainCI.PresentMode = RHIPresentMode::Immediate;
+            swapchainCI.Surface = mSurface.get();
+            swapchainCI.Extent = size;
+            swapchainCI.TextureCount = mBackBufferCount;
+            swapchainCI.PresentQueue = mQueue;
+            mSwapchain->Resize(swapchainCI);
+
+            CreateSwapchainImageView();
+        });
+
+        CreateSwapchainImageView();
+        GDebugInfoCallback("RendererBase::InitSwapchain: Swapchain created", "Renderer");
+    }
+
+    void RendererBase::CreateSwapchainImageView()
+    {
         for (auto i = 0; i < mBackBufferCount; i++)
         {
             mSwapchainTextures[i] = mSwapchain->GetTexture(i);
@@ -110,7 +131,6 @@ namespace Vultana
             texViewCI.TextureType = RHITextureType::Color;
             mSwapchainTextureViews[i] = std::unique_ptr<RHITextureView>(mSwapchainTextures[i]->CreateTextureView(texViewCI));
         }
-        GDebugInfoCallback("RendererBase::InitSwapchain: Swapchain created", "Renderer");
     }
 
     void RendererBase::InitPipelines()

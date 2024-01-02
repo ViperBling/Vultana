@@ -20,7 +20,7 @@ namespace Vultana
         RHITexture* GetTexture(uint8_t index) override { return mTextures[index]; }
         uint8_t AcquireBackTexture() override;
         void Present() override;
-        void Resize(const Vector2& extent) override;
+        void Resize(const SwapchainCreateInfo& createInfo) override;
         void Destroy() override;
 
         vk::Semaphore GetImageSemaphore() const { return mImageAvaliableSemaphore; }
