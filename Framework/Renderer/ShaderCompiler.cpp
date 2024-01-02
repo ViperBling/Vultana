@@ -21,15 +21,15 @@ using namespace Microsoft::WRL;
 #include "ShaderCompiler.hpp"
 #include "Utilities/String.hpp"
 
-namespace Vultana
+namespace Renderer
 {
-    static std::wstring GetDXCTargetProfile(RHIShaderStageBits stage)
+    static std::wstring GetDXCTargetProfile(RHI::RHIShaderStageBits stage)
     {
-        static const std::unordered_map<RHIShaderStageBits, std::wstring> stageToProfile =
+        static const std::unordered_map<RHI::RHIShaderStageBits, std::wstring> stageToProfile =
         {
-            { RHIShaderStageBits::Vertex, L"vs" },
-            { RHIShaderStageBits::Pixel, L"ps" },
-            { RHIShaderStageBits::Compute, L"cs" },
+            { RHI::RHIShaderStageBits::Vertex, L"vs" },
+            { RHI::RHIShaderStageBits::Pixel, L"ps" },
+            { RHI::RHIShaderStageBits::Compute, L"cs" },
         };
         auto it = stageToProfile.find(stage);
         assert(it != stageToProfile.end());
@@ -58,7 +58,7 @@ namespace Vultana
 
     static std::vector<std::wstring> GetEntryPointArguments(const ShaderCompileInput& input)
     {
-        return { L"-E", StringUtils::ToWideString(input.EntryPoint) };
+        return { L"-E", Utility::StringUtils::ToWideString(input.EntryPoint) };
     }
 
     static std::vector<std::wstring> GetTargetProfileArguments(const ShaderCompileInput& input)
@@ -72,7 +72,7 @@ namespace Vultana
         for (const auto& includePath : option.IncludePaths)
         {
             result.emplace_back(L"-I");
-            result.emplace_back(StringUtils::ToWideString(includePath));
+            result.emplace_back(Utility::StringUtils::ToWideString(includePath));
         }
         return result;
     }
@@ -95,7 +95,7 @@ namespace Vultana
         for (const auto& definition : options.Definitions) 
         {
             result.emplace_back(L"-D");
-            result.emplace_back(StringUtils::ToWideString(definition));
+            result.emplace_back(Utility::StringUtils::ToWideString(definition));
         }
         return result;
     }

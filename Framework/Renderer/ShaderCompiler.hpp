@@ -8,7 +8,7 @@
 #include "Shader.hpp"
 #include "Utilities/Concurrent.hpp"
 
-namespace Vultana
+namespace Renderer
 {
     enum class ShaderByteCodeType
     {
@@ -21,7 +21,7 @@ namespace Vultana
     {
         std::string Source;
         std::string EntryPoint;
-        RHIShaderStageBits Stage;
+        RHI::RHIShaderStageBits Stage;
     };
 
     struct ShaderCompileOptions
@@ -51,6 +51,6 @@ namespace Vultana
         ShaderCompiler();
 
     private:
-        ThreadPool mThreadPool;
+        Utility::ThreadPool mThreadPool;
     };
 }

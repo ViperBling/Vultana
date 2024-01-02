@@ -2,7 +2,7 @@
 
 #include "RHICommon.hpp"
 
-namespace Vultana
+namespace RHI
 {
     struct BufferCreateInfo;
     struct TextureCreateInfo;

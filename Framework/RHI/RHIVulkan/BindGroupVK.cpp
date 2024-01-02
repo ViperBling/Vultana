@@ -9,7 +9,7 @@
 #include "TextureViewVK.hpp"
 #include "SamplerVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     BindGroupVK::BindGroupVK(DeviceVK &device, const BindGroupCreateInfo &createInfo)
         : RHIBindGroup(createInfo)

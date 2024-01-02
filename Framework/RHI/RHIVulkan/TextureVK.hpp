@@ -8,7 +8,7 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace RHI
 {
     class DeviceVK;
 
@@ -23,7 +23,7 @@ namespace Vultana
         RHITextureView* CreateTextureView(const TextureViewCreateInfo& createInfo) override;
 
         vk::Image GetVkImage() const { return mImage; }
-        Vector3u GetExtent() const { return mExtent; }
+        Math::Vector3u GetExtent() const { return mExtent; }
         RHIFormat GetFormat() const { return mFormat; }
         vk::ImageSubresourceRange GetFullRange() { return {mAspect, 0, mMipLevels, 0, mExtent.z}; }
         
@@ -41,7 +41,7 @@ namespace Vultana
         vk::ImageAspectFlags mAspect = vk::ImageAspectFlagBits::eColor;
         VmaAllocation mAllocation = VK_NULL_HANDLE;
 
-        Vector3u mExtent;
+        Math::Vector3u mExtent;
         RHIFormat mFormat;
         uint32_t mMipLevels = 0;
         uint8_t mSamples;

@@ -4,7 +4,7 @@
 #include "DeviceVK.hpp"
 #include "BindGroupLayoutVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     PipelineLayoutVK::PipelineLayoutVK(DeviceVK &device, const PipelineLayoutCreateInfo &createInfo)
         : RHIPipelineLayout(createInfo)

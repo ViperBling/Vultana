@@ -7,7 +7,7 @@
 #include <glm/simd/matrix.h>
 #include <utility>
 
-namespace Vultana
+namespace Math
 {
     using Vector2 = glm::vec2;
     using Vector3 = glm::vec3;

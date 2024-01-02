@@ -2,7 +2,7 @@
 #include "GPUVK.hpp"
 #include "DeviceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     GPUVK::GPUVK(InstanceVK& instance, vk::PhysicalDevice physicalDevice)
         : RHIGPU()

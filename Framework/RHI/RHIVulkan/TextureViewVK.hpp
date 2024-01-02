@@ -5,7 +5,7 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace RHI
 {
     class TextureVK;
     class DeviceVK;

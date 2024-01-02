@@ -12,7 +12,7 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace RHI
 {
     class GPUVK;
     class QueueVK;

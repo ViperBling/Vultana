@@ -1,7 +1,7 @@
 #include "RHIInstance.hpp"
 #include "RHI/RHIVulkan/InstanceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     RHIInstance *RHIInstance::GetInstanceByRHIBackend(const RHIRenderBackend &backend)
     {

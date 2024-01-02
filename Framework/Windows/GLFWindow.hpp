@@ -10,7 +10,7 @@
 
 struct GLFWwindow;
 
-namespace Vultana
+namespace Window
 {
     struct WindowSurface
     {
@@ -22,8 +22,8 @@ namespace Vultana
         bool TransparentFramebuffer = false;
         bool Resizeable = true;
         bool TileBar = true;
-        Vector2 Size = { 800.0f, 600.0f };
-        Vector2 Position = { 100.0f, 100.0f };
+        Math::Vector2 Size = { 800.0f, 600.0f };
+        Math::Vector2 Position = { 100.0f, 100.0f };
         const char* Title = "Vultana";
     };
 
@@ -44,38 +44,38 @@ namespace Vultana
         bool ShouldClose() const;
         void Close();
 
-        void SetSize(Vector2 size);
-        Vector2 GetSize() const;
-        void SetPosition(Vector2 position);
-        Vector2 GetPosition() const;
+        void SetSize(Math::Vector2 size);
+        Math::Vector2 GetSize() const;
+        void SetPosition(Math::Vector2 position);
+        Math::Vector2 GetPosition() const;
         void SetTitle(const char* title);
 
-        Vector2 GetCursorPosition() const;
-        void SetCursorPosition(Vector2 position);
+        Math::Vector2 GetCursorPosition() const;
+        void SetCursorPosition(Math::Vector2 position);
 
-        CursorMode GetCursorMode() const;
-        void SetCursorMode(CursorMode mode);
+        Utility::CursorMode GetCursorMode() const;
+        void SetCursorMode(Utility::CursorMode mode);
 
-        bool IsKeyPressed(KeyCode key) const;
-        bool IsKeyReleased(KeyCode key) const;
+        bool IsKeyPressed(Utility::KeyCode key) const;
+        bool IsKeyReleased(Utility::KeyCode key) const;
 
-        bool IsMousePressed(MouseButton button) const;
-        bool IsMouseReleased(MouseButton button) const;
+        bool IsMousePressed(Utility::MouseButton button) const;
+        bool IsMouseReleased(Utility::MouseButton button) const;
 
         float GetTimeSinceCreation() const;
         void SetTimeSinceCreation(float time);
 
-        void OnResize(std::function<void(GLFWindow&, Vector2)> callback);
-        void OnKeyChanged(std::function<void(GLFWindow&, KeyCode, bool)> callback);
-        void OnMouseChanged(std::function<void(GLFWindow&, MouseButton, bool)> callback);
+        void OnResize(std::function<void(GLFWindow&, Math::Vector2)> callback);
+        void OnKeyChanged(std::function<void(GLFWindow&, Utility::KeyCode, bool)> callback);
+        void OnMouseChanged(std::function<void(GLFWindow&, Utility::MouseButton, bool)> callback);
         
         void SetContext(GLFWwindow* window);
 
     private:
         GLFWwindow* mHwnd = nullptr;
-        std::function<void(GLFWindow&, Vector2)> mOnResize;
-        std::function<void(GLFWindow&, KeyCode, bool)> mOnKeyChanged;
-        std::function<void(GLFWindow&, MouseButton, bool)> mOnMouseChanged;
+        std::function<void(GLFWindow&, Math::Vector2)> mOnResize;
+        std::function<void(GLFWindow&, Utility::KeyCode, bool)> mOnKeyChanged;
+        std::function<void(GLFWindow&, Utility::MouseButton, bool)> mOnMouseChanged;
     };
 
     const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, vk::Instance instance);

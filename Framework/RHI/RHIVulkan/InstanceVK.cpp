@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace Vultana
+namespace RHI
 {
     static VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayerCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

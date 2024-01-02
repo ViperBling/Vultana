@@ -4,7 +4,7 @@
 #include "RHICommon.hpp"
 #include "RHIBindGroupLayout.hpp"
 
-namespace Vultana
+namespace RHI
 {
     class RHISampler;
     class RHIBufferView;

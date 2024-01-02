@@ -5,7 +5,7 @@
 
 #include <spirv_cross/spirv_cross.hpp>
 
-namespace Vultana
+namespace RHI
 {
     ShaderModuleVK::ShaderModuleVK(DeviceVK &device, const ShaderModuleCreateInfo &createInfo)
         : RHIShaderModule(createInfo)

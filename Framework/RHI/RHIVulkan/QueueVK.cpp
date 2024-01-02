@@ -3,7 +3,7 @@
 #include "CommandBufferVK.hpp"
 #include "SynchronousVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     QueueVK::QueueVK(vk::Queue queue)
         : RHIQueue()

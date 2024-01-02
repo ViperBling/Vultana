@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-namespace Vultana
+namespace Renderer
 {
     DAGEdge::DAGEdge(DirectedAcyclicGraph &graph, DAGNode *from, DAGNode *to)
         : mFromNode(from->GetID())

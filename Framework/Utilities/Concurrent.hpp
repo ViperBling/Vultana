@@ -20,7 +20,7 @@
 
 #include "String.hpp"
 
-namespace Vultana
+namespace Utility
 {
     class NamedThread
     {

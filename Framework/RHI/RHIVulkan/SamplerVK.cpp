@@ -3,7 +3,7 @@
 #include "RHICommonVK.hpp"
 #include "DeviceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     SamplerVK::SamplerVK(DeviceVK &device, const SamplerCreateInfo &createInfo)
         : RHISampler(createInfo)

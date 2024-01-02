@@ -8,27 +8,27 @@
 #include "RHI/RHIInstance.hpp"
 #include "RHI/RHIGPU.hpp"
 
-using namespace Vultana;
+// using namespace Vultana;
 
 int main()
 {
-    WindowCreateInfo wndCI {};
+    Window::WindowCreateInfo wndCI {};
     wndCI.Position = { 100, 100 };
     wndCI.Size = { 1280, 720 };
 
-    GLFWindow window(wndCI);
-    World world;
+    Window::GLFWindow window(wndCI);
+    Scene::World world;
 
-    Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
+    Core::Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
 
     while (!window.ShouldClose())
     {
         window.PollEvents();
 
-       Engine::GetEngineInstance()->Tick();
+       Core::Engine::GetEngineInstance()->Tick();
     }
 
-    Engine::GetEngineInstance()->Shutdown();
+    Core::Engine::GetEngineInstance()->Shutdown();
 
     return 0;
 }

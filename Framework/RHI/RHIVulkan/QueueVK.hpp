@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace RHI
 {
     class QueueVK : public RHIQueue
     {

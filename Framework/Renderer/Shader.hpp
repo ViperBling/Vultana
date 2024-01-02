@@ -12,19 +12,19 @@
 
 #include "Utilities/Hash.hpp"
 
-namespace Vultana
+namespace Renderer
 {
     class Shader {};
 
     using ShaderTypeKey = uint64_t;
     using VariantKey = uint64_t;
     using ShaderByteCode = std::vector<uint8_t>;
-    using ShaderStage = RHIShaderStageBits;
+    using ShaderStage = RHI::RHIShaderStageBits;
 
     struct ShaderReflectionData
     {
         using LayoutIndex = uint8_t;
-        std::unordered_map<std::string, std::pair<LayoutIndex, ResourceBinding>> ResourceBindings;
+        std::unordered_map<std::string, std::pair<LayoutIndex, RHI::ResourceBinding>> ResourceBindings;
     };
 
     class IShaderType
@@ -47,10 +47,10 @@ namespace Vultana
                 TypeKey,
                 VariantKey,
             };
-            return HashUtils::CityHash(values.data(), values.size() * sizeof(size_t));
+            return Utility::HashUtils::CityHash(values.data(), values.size() * sizeof(size_t));
         }
 
-        RHIShaderModule* ShaderHandle = nullptr;
+        RHI::RHIShaderModule* ShaderHandle = nullptr;
         ShaderTypeKey TypeKey;
         VariantKey VariantKey;
         ShaderReflectionData ReflectionData;

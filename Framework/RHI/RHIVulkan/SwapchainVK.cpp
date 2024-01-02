@@ -7,7 +7,7 @@
 #include "QueueVK.hpp"
 #include "SurfaceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     SwapchainVK::SwapchainVK(DeviceVK &device, const SwapchainCreateInfo &createInfo)
         : RHISwapchain(createInfo)

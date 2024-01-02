@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace Vultana
+namespace RHI
 {
     struct BufferViewCreateInfo;
     class RHIBufferView;

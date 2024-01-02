@@ -7,7 +7,7 @@
 #include <cassert>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace RHI
 {
     #define VK_KRONOS_VALIDATION_LAYER_NAME "VK_LAYER_KHRONOS_validation"
 
@@ -278,7 +278,7 @@ namespace Vultana
         VK_ENUM_MAP_ITEM(RHITextureUsageBits::DepthStencilAttachment, vk::ImageUsageFlagBits::eDepthStencilAttachment)
     VK_ENUM_MAP_END()
 
-    inline vk::Extent3D GetVkExtent3D(const Vector3u& ext)
+    inline vk::Extent3D GetVkExtent3D(const Math::Vector3u& ext)
     {
         return { ext.x, ext.y, ext.z };
     }

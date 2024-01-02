@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace RHI
 {
     class InstanceVK : public RHIInstance
     {

@@ -5,7 +5,7 @@
 #include "PipelineLayoutVK.hpp"
 #include "ShaderModuleVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     static const char* GetShaderEntry(vk::ShaderStageFlagBits stage)
     {

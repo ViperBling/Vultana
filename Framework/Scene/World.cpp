@@ -6,13 +6,11 @@
 
 #include <tinyxml2/tinyxml2.h>
 
-using namespace Vultana;
-
-namespace Vultana
+namespace Scene
 {
     World::World()
     {
-        RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase* pRender = Core::Engine::GetEngineInstance()->GetRenderer();
 
         mpCamera = std::make_unique<Camera>();
     }
@@ -25,7 +23,7 @@ namespace Vultana
     {
         mpCamera->Tick(deltaTime);
 
-        RendererBase* pRender = Engine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase* pRender = Core::Engine::GetEngineInstance()->GetRenderer();
 
         for (auto it = mPrimitives.begin(); it != mPrimitives.end(); ++it)
         {

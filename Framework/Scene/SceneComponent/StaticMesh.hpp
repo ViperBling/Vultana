@@ -5,7 +5,7 @@
 
 #include "Primitive.hpp"
 
-namespace Vultana
+namespace Scene
 {
     class StaticMesh : public IPrimitive
     {
@@ -15,11 +15,11 @@ namespace Vultana
 
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
-        virtual void Render(RendererBase* pRenderer) override;
+        virtual void Render(Renderer::RendererBase* pRenderer) override;
 
     private:
         std::string& mName;
-        Vector3 mCenter = { 0.0f, 0.0f, 0.0f };
+        Math::Vector3 mCenter = { 0.0f, 0.0f, 0.0f };
         float mRadius = 0.0f;
     };
 } // namespace Vultana::Scene

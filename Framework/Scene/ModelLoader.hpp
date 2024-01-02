@@ -6,7 +6,7 @@
 
 #include "Utilities/Math.hpp"
 
-namespace Vultana
+namespace Scene
 {
     class ModelLoader
     {
