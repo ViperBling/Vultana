@@ -19,7 +19,7 @@ using namespace Microsoft::WRL;
 #include <spirv_cross/spirv_hlsl.hpp>
 
 #include "ShaderCompiler.hpp"
-#include "Common/String.hpp"
+#include "Utilities/String.hpp"
 
 namespace Vultana
 {

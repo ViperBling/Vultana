@@ -6,7 +6,7 @@
 #include "RHI/RHICommon.hpp"
 #include "RHI/RHIBindGroupLayout.hpp"
 #include "Shader.hpp"
-#include "Common/Concurrent.hpp"
+#include "Utilities/Concurrent.hpp"
 
 namespace Vultana
 {
