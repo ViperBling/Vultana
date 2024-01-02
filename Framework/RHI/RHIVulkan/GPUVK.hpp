@@ -4,7 +4,7 @@
 
 #include "RHI/RHIGPU.hpp"
 
-namespace Vultana
+namespace RHI
 {
     class InstanceVK;
 

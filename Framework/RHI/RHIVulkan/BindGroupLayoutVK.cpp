@@ -3,7 +3,7 @@
 #include "RHICommonVK.hpp"
 #include "DeviceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     BindGroupLayoutVK::BindGroupLayoutVK(DeviceVK &device, const BindGroupLayoutCreateInfo &createInfo)
         : RHIBindGroupLayout(createInfo)

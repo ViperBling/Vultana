@@ -8,7 +8,7 @@
 #include "CommandListVK.hpp"
 #include "SynchronousVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     TextureVK::TextureVK(DeviceVK &device, const TextureCreateInfo &createInfo)
         : RHITexture(createInfo)

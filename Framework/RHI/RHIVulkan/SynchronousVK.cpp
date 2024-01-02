@@ -3,7 +3,7 @@
 #include "RHICommonVK.hpp"
 #include "DeviceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     FenceVK::FenceVK(DeviceVK &device)
         : RHIFence(device)

@@ -2,7 +2,7 @@
 
 #include "RHI/RHIBufferView.hpp"
 
-namespace Vultana
+namespace RHI
 {
     class BufferVK;
     class DeviceVK;

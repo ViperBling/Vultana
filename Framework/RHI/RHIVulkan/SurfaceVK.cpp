@@ -12,13 +12,13 @@
 
 #include "Windows/GLFWindow.hpp"
 
-namespace Vultana
+namespace RHI
 {
     SurfaceVK::SurfaceVK(DeviceVK &inDevice, const SurfaceCreateInfo &createInfo)
         : RHISurface(createInfo)
         , mDevice(inDevice)
     {
-        mSurface = CreateVulkanSurface((GLFWwindow*)createInfo.Window, mDevice.GetGPU().GetInstance().GetVkInstance());
+        mSurface = Window::CreateVulkanSurface((GLFWwindow*)createInfo.Window, mDevice.GetGPU().GetInstance().GetVkInstance());
     }
 
     SurfaceVK::~SurfaceVK()

@@ -14,7 +14,7 @@
     inline FlagsType operator|(BitsType a, BitsType b) { return FlagsType(a) | FlagsType(b); };    \
     inline FlagsType operator|(FlagsType a, BitsType b) { return a | FlagsType(b); };   \
 
-namespace Vultana
+namespace RHI
 {
     static const uint32_t RHI_MAX_IN_FLIGHT_FRAMES = 3;
     static const uint32_t RHI_MAX_ROOT_CONSTANT = 8;
@@ -527,9 +527,9 @@ namespace Vultana
 namespace std 
 {
     template <typename T>
-    struct hash<Vultana::RHIFlags<T>>
+    struct hash<RHI::RHIFlags<T>>
     {
-        size_t operator()(Vultana::RHIFlags<T> flags) const
+        size_t operator()(RHI::RHIFlags<T> flags) const
         {
             return hash<T>()(flags.Value());
         }

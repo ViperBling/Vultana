@@ -3,7 +3,7 @@
 #include "Utilities/Math.hpp"
 #include "RHICommon.hpp"
 
-namespace Vultana
+namespace RHI
 {
     class RHITexture;
     class RHIQueue;
@@ -15,7 +15,7 @@ namespace Vultana
         RHISurface* Surface;
         uint8_t TextureCount;
         RHIFormat Format;
-        Vector2 Extent;
+        Math::Vector2 Extent;
         RHIPresentMode PresentMode;
     };
 

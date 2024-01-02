@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Vultana
+namespace Utility
 {
     enum class KeyCode
     {

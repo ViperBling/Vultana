@@ -3,7 +3,7 @@
 #include "Utilities/Math.hpp"
 #include "RHICommon.hpp"
 
-namespace Vultana
+namespace RHI
 {
     struct TextureViewCreateInfo;
     class RHITextureView;
@@ -12,7 +12,7 @@ namespace Vultana
     struct TextureCreateInfo
     {
         RHITextureDimension Dimension;
-        Vector3u Extent;
+        Math::Vector3u Extent;
         RHIFormat Format;
         RHITextureUsageFlags Usage;
         uint8_t MipLevels;

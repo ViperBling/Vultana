@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vector>
 
-namespace Vultana
+namespace RHI
 {
     class DeviceVK;
     class QueueVK;
@@ -36,7 +36,7 @@ namespace Vultana
         vk::Queue mQueue = VK_NULL_HANDLE;
         vk::Semaphore mImageAvaliableSemaphore;
         std::vector<vk::Semaphore> mWaitSemaphores;
-        Vector2 mExtent;
+        Math::Vector2 mExtent;
 
         uint32_t mSwapchainImageCount = 0;
         uint32_t mSwapchainImageIndex = 0;

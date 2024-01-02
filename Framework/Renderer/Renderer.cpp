@@ -10,12 +10,12 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
-namespace Vultana
+namespace Renderer
 {
     struct Vertex
     {
-        Vector3 Position;
-        Vector3 Color;
+        Math::Vector3 Position;
+        Math::Vector3 Color;
     };
 
     RendererBase::~RendererBase()
@@ -50,29 +50,29 @@ namespace Vultana
 
     void RendererBase::InitContext(RendererCreateInfo &createInfo)
     {
-        mInstance = RHIInstance::GetInstanceByRHIBackend(RHIRenderBackend::Vulkan);
+        mInstance = RHI::RHIInstance::GetInstanceByRHIBackend(RHI::RHIRenderBackend::Vulkan);
         mGPU = mInstance->GetGPU(0);
 
-        std::vector<QueueInfo> queueInfos = {
-            { RHICommandQueueType::Graphics, 1 },
+        std::vector<RHI::QueueInfo> queueInfos = {
+            { RHI::RHICommandQueueType::Graphics, 1 },
         };
-        DeviceCreateInfo deviceCI {};
+        RHI::DeviceCreateInfo deviceCI {};
         deviceCI.QueueCreateInfoCount = queueInfos.size();
         deviceCI.QueueCreateInfos = queueInfos.data();
-        mDevice = std::unique_ptr<RHIDevice>(mGPU->RequestDevice(deviceCI));
-        mQueue = mDevice->GetQueue(RHICommandQueueType::Graphics, 0);
+        mDevice = std::unique_ptr<RHI::RHIDevice>(mGPU->RequestDevice(deviceCI));
+        mQueue = mDevice->GetQueue(RHI::RHICommandQueueType::Graphics, 0);
     }
 
     void RendererBase::InitSwapchain(RendererCreateInfo &createInfo)
     {
-        static std::vector<RHIFormat> swapchainFormats = {
-            RHIFormat::RGBA8_UNORM,
-            RHIFormat::BGRA8_UNORM,
+        static std::vector<RHI::RHIFormat> swapchainFormats = {
+            RHI::RHIFormat::RGBA8_UNORM,
+            RHI::RHIFormat::BGRA8_UNORM,
         };
 
-        SurfaceCreateInfo surfaceCI {};
+        RHI::SurfaceCreateInfo surfaceCI {};
         surfaceCI.Window = mWndHandle->GetNativeHandle();
-        mSurface = std::unique_ptr<RHISurface>(mDevice->CreateSurface(surfaceCI));
+        mSurface = std::unique_ptr<RHI::RHISurface>(mDevice->CreateSurface(surfaceCI));
 
         GDebugInfoCallback("RendererBase::InitSwapchain: Surface created", "Renderer");
         for (auto format : swapchainFormats)
@@ -83,25 +83,25 @@ namespace Vultana
                 break;
             }
         }
-        assert(mSwapchainFormat != RHIFormat::Count);
+        assert(mSwapchainFormat != RHI::RHIFormat::Count);
 
-        SwapchainCreateInfo swapchainCI {};
+        RHI::SwapchainCreateInfo swapchainCI {};
         swapchainCI.Format = mSwapchainFormat;
-        swapchainCI.PresentMode = RHIPresentMode::Immediate;
+        swapchainCI.PresentMode = RHI::RHIPresentMode::Immediate;
         swapchainCI.Surface = mSurface.get();
         swapchainCI.Extent = { createInfo.Width, createInfo.Height };
         swapchainCI.TextureCount = mBackBufferCount;
         swapchainCI.PresentQueue = mQueue;
-        mSwapchain = std::unique_ptr<RHISwapchain>(mDevice->CreateSwapchain(swapchainCI));
+        mSwapchain = std::unique_ptr<RHI::RHISwapchain>(mDevice->CreateSwapchain(swapchainCI));
 
         mSwapchainExtent = { createInfo.Width, createInfo.Height };
 
-        mWndHandle->OnResize([this, &swapchainCI](GLFWindow& window, Vector2 size)
+        mWndHandle->OnResize([this, &swapchainCI](Window::GLFWindow& window, Math::Vector2 size)
         {
             mSwapchainExtent = size;
-            SwapchainCreateInfo swapchainCI {};
+            RHI::SwapchainCreateInfo swapchainCI {};
             swapchainCI.Format = mSwapchainFormat;
-            swapchainCI.PresentMode = RHIPresentMode::Immediate;
+            swapchainCI.PresentMode = RHI::RHIPresentMode::Immediate;
             swapchainCI.Surface = mSurface.get();
             swapchainCI.Extent = size;
             swapchainCI.TextureCount = mBackBufferCount;
@@ -121,60 +121,60 @@ namespace Vultana
         {
             mSwapchainTextures[i] = mSwapchain->GetTexture(i);
 
-            TextureViewCreateInfo texViewCI {};
-            texViewCI.Dimension = RHITextureViewDimension::TextureView2D;
+            RHI::TextureViewCreateInfo texViewCI {};
+            texViewCI.Dimension = RHI::RHITextureViewDimension::TextureView2D;
             texViewCI.BaseArrayLayer = 0;
             texViewCI.BaseMipLevel = 0;
             texViewCI.ArrayLayerCount = 1;
             texViewCI.MipLevelCount = 1;
-            texViewCI.Type = RHITextureViewType::ColorAttachment;
-            texViewCI.TextureType = RHITextureType::Color;
-            mSwapchainTextureViews[i] = std::unique_ptr<RHITextureView>(mSwapchainTextures[i]->CreateTextureView(texViewCI));
+            texViewCI.Type = RHI::RHITextureViewType::ColorAttachment;
+            texViewCI.TextureType = RHI::RHITextureType::Color;
+            mSwapchainTextureViews[i] = std::unique_ptr<RHI::RHITextureView>(mSwapchainTextures[i]->CreateTextureView(texViewCI));
         }
     }
 
     void RendererBase::InitPipelines()
     {
-        PipelineLayoutCreateInfo pipelineLayoutCI {};
+        RHI::PipelineLayoutCreateInfo pipelineLayoutCI {};
         pipelineLayoutCI.BindGroupLayoutCount = 0;
         pipelineLayoutCI.BindGroupLayouts = nullptr;
-        mPipelineLayout = std::unique_ptr<RHIPipelineLayout>(mDevice->CreatePipelineLayout(pipelineLayoutCI));
+        mPipelineLayout = std::unique_ptr<RHI::RHIPipelineLayout>(mDevice->CreatePipelineLayout(pipelineLayoutCI));
 
         std::vector<uint8_t> vsCode;
-        CompileShader(vsCode, "./Assets/Shaders/HLSL/Triangle.hlsl", VS_ENTRY_POINT, RHIShaderStageBits::Vertex);
+        CompileShader(vsCode, "./Assets/Shaders/HLSL/Triangle.hlsl", VS_ENTRY_POINT, RHI::RHIShaderStageBits::Vertex);
         std::vector<uint8_t> psCode;
-        CompileShader(psCode, "./Assets/Shaders/HLSL/Triangle.hlsl", PS_ENTRY_POINT, RHIShaderStageBits::Pixel);
+        CompileShader(psCode, "./Assets/Shaders/HLSL/Triangle.hlsl", PS_ENTRY_POINT, RHI::RHIShaderStageBits::Pixel);
 
-        ShaderModuleCreateInfo vsCI {};
+        RHI::ShaderModuleCreateInfo vsCI {};
         vsCI.Code = vsCode.data();
         vsCI.CodeSize = vsCode.size();
-        mVertexShader = std::unique_ptr<RHIShaderModule>(mDevice->CreateShaderModule(vsCI));
-        ShaderModuleCreateInfo psCI {};
+        mVertexShader = std::unique_ptr<RHI::RHIShaderModule>(mDevice->CreateShaderModule(vsCI));
+        RHI::ShaderModuleCreateInfo psCI {};
         psCI.Code = psCode.data();
         psCI.CodeSize = psCode.size();
-        mFragmentShader = std::unique_ptr<RHIShaderModule>(mDevice->CreateShaderModule(psCI));
+        mFragmentShader = std::unique_ptr<RHI::RHIShaderModule>(mDevice->CreateShaderModule(psCI));
 
-        std::array<VertexAttribute, 2> vertexAttributes {};
-        vertexAttributes[0].Format = RHIVertexFormat::FLOAT_32X3;
+        std::array<RHI::VertexAttribute, 2> vertexAttributes {};
+        vertexAttributes[0].Format = RHI::RHIVertexFormat::FLOAT_32X3;
         vertexAttributes[0].Offset = 0;
         vertexAttributes[0].SemanticName = "POSITION";
         vertexAttributes[0].SemanticIndex = 0;
-        vertexAttributes[1].Format = RHIVertexFormat::FLOAT_32X3;
+        vertexAttributes[1].Format = RHI::RHIVertexFormat::FLOAT_32X3;
         vertexAttributes[1].Offset = offsetof(Vertex, Color);
         vertexAttributes[1].SemanticName = "COLOR";
         vertexAttributes[1].SemanticIndex = 0;
 
-        VertexBufferLayout vertexBufferLayout {};
+        RHI::VertexBufferLayout vertexBufferLayout {};
         vertexBufferLayout.Attributes = vertexAttributes.data();
         vertexBufferLayout.AttributeCount = vertexAttributes.size();
         vertexBufferLayout.Stride = sizeof(Vertex);
-        vertexBufferLayout.StepMode = RHIVertexStepMode::PerVertex;
+        vertexBufferLayout.StepMode = RHI::RHIVertexStepMode::PerVertex;
 
-        std::array<ColorTargetState, 1> colorTargetStates {};
+        std::array<RHI::ColorTargetState, 1> colorTargetStates {};
         colorTargetStates[0].Format = mSwapchainFormat;
-        colorTargetStates[0].WriteFlags = RHIColorWriteBits::Red | RHIColorWriteBits::Green | RHIColorWriteBits::Blue | RHIColorWriteBits::Alpha;
+        colorTargetStates[0].WriteFlags = RHI::RHIColorWriteBits::Red | RHI::RHIColorWriteBits::Green | RHI::RHIColorWriteBits::Blue | RHI::RHIColorWriteBits::Alpha;
 
-        GraphicsPipelineCreateInfo pipelineCI {};
+        RHI::GraphicsPipelineCreateInfo pipelineCI {};
         pipelineCI.PipelineLayout = mPipelineLayout.get();
         pipelineCI.VertexShader = mVertexShader.get();
         pipelineCI.FragmentShader = mFragmentShader.get();
@@ -183,14 +183,14 @@ namespace Vultana
         pipelineCI.FragState.ColorTargetCount = colorTargetStates.size();
         pipelineCI.FragState.ColorTargets = colorTargetStates.data();
         pipelineCI.PrimitiveState.bDepthClip = false;
-        pipelineCI.PrimitiveState.FrontFace = RHIFrontFace::CounterClockwise;
-        pipelineCI.PrimitiveState.CullMode = RHICullMode::None;
-        pipelineCI.PrimitiveState.TopologyType = RHIPrimitiveTopologyType::Triangle;
-        pipelineCI.PrimitiveState.IndexFormat = RHIIndexFormat::UINT_16;
+        pipelineCI.PrimitiveState.FrontFace = RHI::RHIFrontFace::CounterClockwise;
+        pipelineCI.PrimitiveState.CullMode = RHI::RHICullMode::None;
+        pipelineCI.PrimitiveState.TopologyType = RHI::RHIPrimitiveTopologyType::Triangle;
+        pipelineCI.PrimitiveState.IndexFormat = RHI::RHIIndexFormat::UINT_16;
         pipelineCI.DepthStencilState.bDepthEnable = false;
         pipelineCI.DepthStencilState.bStencilEnable = false;
         pipelineCI.MultiSampleState.SampleCount = 1;
-        mGraphicsPipeline = std::unique_ptr<RHIGraphicsPipeline>(mDevice->CreateGraphicsPipeline(pipelineCI));
+        mGraphicsPipeline = std::unique_ptr<RHI::RHIGraphicsPipeline>(mDevice->CreateGraphicsPipeline(pipelineCI));
 
         GDebugInfoCallback("RendererBase::InitPipelines: Pipeline created", "Renderer");
     }
@@ -203,67 +203,67 @@ namespace Vultana
             { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
         };
         
-        BufferCreateInfo bufferCI {};
+        RHI::BufferCreateInfo bufferCI {};
         bufferCI.Size = sizeof(Vertex) * vertices.size();
-        bufferCI.Usage = RHIBufferUsageBits::Vertex | RHIBufferUsageBits::MapWrite | RHIBufferUsageBits::CopySrc;
-        mVertexBuffer = std::unique_ptr<RHIBuffer>(mDevice->CreateBuffer(bufferCI));
+        bufferCI.Usage = RHI::RHIBufferUsageBits::Vertex | RHI::RHIBufferUsageBits::MapWrite | RHI::RHIBufferUsageBits::CopySrc;
+        mVertexBuffer = std::unique_ptr<RHI::RHIBuffer>(mDevice->CreateBuffer(bufferCI));
         if (mVertexBuffer)
         {
-            auto* data = mVertexBuffer->Map(RHIMapMode::Write, 0, bufferCI.Size);
+            auto* data = mVertexBuffer->Map(RHI::RHIMapMode::Write, 0, bufferCI.Size);
             memcpy(data, vertices.data(), bufferCI.Size);
             mVertexBuffer->Unmap();
         }
-        BufferViewCreateInfo bufferViewCI {};
-        bufferViewCI.Type = RHIBufferViewType::Vertex;
+        RHI::BufferViewCreateInfo bufferViewCI {};
+        bufferViewCI.Type = RHI::RHIBufferViewType::Vertex;
         bufferViewCI.Size = sizeof(Vertex) * vertices.size();
         bufferViewCI.Offset = 0;
         bufferViewCI.Vertex.Stride = sizeof(Vertex);
-        mVertexBufferView = std::unique_ptr<RHIBufferView>(mVertexBuffer->CreateBufferView(bufferViewCI));
+        mVertexBufferView = std::unique_ptr<RHI::RHIBufferView>(mVertexBuffer->CreateBufferView(bufferViewCI));
 
         GDebugInfoCallback("RendererBase::CreateVertexBuffer: Vertex buffer created", "Renderer");
     }
 
     void RendererBase::InitSyncStructures()
     {
-        mFence = std::unique_ptr<RHIFence>(mDevice->CreateFence());
+        mFence = std::unique_ptr<RHI::RHIFence>(mDevice->CreateFence());
         GDebugInfoCallback("RendererBase::InitSyncStructures: Fence created", "Renderer");
     }
 
     void RendererBase::InitCommands()
     {
-        mCommandBuffer = std::unique_ptr<RHICommandBuffer>(mDevice->CreateCommandBuffer());
+        mCommandBuffer = std::unique_ptr<RHI::RHICommandBuffer>(mDevice->CreateCommandBuffer());
         GDebugInfoCallback("RendererBase::InitCommands: Command buffer created", "Renderer");
     }
 
     void RendererBase::RecordCommandBuffer()
     {
         auto backTextureIndex = mSwapchain->AcquireBackTexture();
-        auto cmdList = std::unique_ptr<RHICommandList>(mCommandBuffer->Begin());
+        auto cmdList = std::unique_ptr<RHI::RHICommandList>(mCommandBuffer->Begin());
         {
-            std::array<GraphicsPassColorAttachment, 1> colorAttachments {};
+            std::array<RHI::GraphicsPassColorAttachment, 1> colorAttachments {};
             colorAttachments[0].TextureView = mSwapchainTextureViews[backTextureIndex].get();
-            colorAttachments[0].LoadOp = RHILoadOp::Clear;
-            colorAttachments[0].StoreOp = RHIStoreOp::Store;
+            colorAttachments[0].LoadOp = RHI::RHILoadOp::Clear;
+            colorAttachments[0].StoreOp = RHI::RHIStoreOp::Store;
             colorAttachments[0].ColorClearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
             colorAttachments[0].ResolveTextureView = nullptr;
 
-            GraphicsPassBeginInfo passBI {};
+            RHI::GraphicsPassBeginInfo passBI {};
             passBI.ColorAttachmentCount = colorAttachments.size();
             passBI.ColorAttachments = colorAttachments.data();
             passBI.DepthStencilAttachment = nullptr;
 
-            cmdList->ResourceBarrier(RHIBarrier::Transition(mSwapchainTextures[backTextureIndex], RHITextureState::Present, RHITextureState::RenderTarget));
-            auto graphicsCmdList = std::unique_ptr<RHIGraphicsPassCommandList>(cmdList->BeginGraphicsPass(&passBI));
+            cmdList->ResourceBarrier(RHI::RHIBarrier::Transition(mSwapchainTextures[backTextureIndex], RHI::RHITextureState::Present, RHI::RHITextureState::RenderTarget));
+            auto graphicsCmdList = std::unique_ptr<RHI::RHIGraphicsPassCommandList>(cmdList->BeginGraphicsPass(&passBI));
             {
                 graphicsCmdList->SetPipeline(mGraphicsPipeline.get());
                 graphicsCmdList->SetScissor(0, 0, mSwapchainExtent.x, mSwapchainExtent.y);
                 graphicsCmdList->SetViewport(0, 0, static_cast<float>(mSwapchainExtent.x), static_cast<float>(mSwapchainExtent.y), 0, 1);
-                graphicsCmdList->SetPrimitiveTopology(RHIPrimitiveTopologyType::Triangle);
+                graphicsCmdList->SetPrimitiveTopology(RHI::RHIPrimitiveTopologyType::Triangle);
                 graphicsCmdList->SetVertexBuffers(0, mVertexBufferView.get());
                 graphicsCmdList->Draw(3, 1, 0, 0);
             }
             graphicsCmdList->EndPass();
-            cmdList->ResourceBarrier(RHIBarrier::Transition(mSwapchainTextures[backTextureIndex], RHITextureState::RenderTarget, RHITextureState::Present));
+            cmdList->ResourceBarrier(RHI::RHIBarrier::Transition(mSwapchainTextures[backTextureIndex], RHI::RHITextureState::RenderTarget, RHI::RHITextureState::Present));
         }
         cmdList->SwapchainSync(mSwapchain.get());
         cmdList->End();
@@ -277,7 +277,7 @@ namespace Vultana
         mFence->Wait();
     }
 
-    void RendererBase::CompileShader(std::vector<uint8_t> &byteCode, const std::string &fileName, const std::string &entryPoint, RHIShaderStageBits shaderStage, std::vector<std::string> includePath)
+    void RendererBase::CompileShader(std::vector<uint8_t> &byteCode, const std::string &fileName, const std::string &entryPoint, RHI::RHIShaderStageBits shaderStage, std::vector<std::string> includePath)
     {
         std::string shaderSrc = FileUtils::ReadTextFile(fileName);
 

@@ -11,24 +11,27 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
-namespace Vultana
+namespace Window
+{
+    class GLFWindow;
+}
+
+namespace Renderer
 {
     struct RendererCreateInfo
     {
-        RHIDeviceType DeviceType = RHIDeviceType::Hardware;
+        RHI::RHIDeviceType DeviceType = RHI::RHIDeviceType::Hardware;
         const char* ApplicationName = "Vultana";
         uint32_t Width = 1280;
         uint32_t Height = 720;
         bool bEnableValidationLayers = true;
     };
-
-    class GLFWindow;
     
     class RendererBase
     {
     public:
         NOCOPY(RendererBase);
-        RendererBase(GLFWindow* window) : mWndHandle(window) {}
+        RendererBase(Window::GLFWindow* window) : mWndHandle(window) {}
         virtual ~RendererBase();
 
         void Init(RendererCreateInfo& createInfo);
@@ -47,30 +50,30 @@ namespace Vultana
         void RecordCommandBuffer();
         void SubmitCommandBuffer();
 
-        void CompileShader(std::vector<uint8_t>& byteCode, const std::string& fileName, const std::string& entryPoint, RHIShaderStageBits shaderStage, std::vector<std::string> includePath = {});
+        void CompileShader(std::vector<uint8_t>& byteCode, const std::string& fileName, const std::string& entryPoint, RHI::RHIShaderStageBits shaderStage, std::vector<std::string> includePath = {});
 
     private:
         static const uint8_t mBackBufferCount = 2;
 
-        RHIGPU* mGPU = nullptr;
-        RHIInstance* mInstance = nullptr;
-        RHIQueue* mQueue = nullptr;
-        std::unique_ptr<RHIDevice> mDevice;
-        std::unique_ptr<RHISurface> mSurface;
-        std::unique_ptr<RHISwapchain> mSwapchain;
-        RHIFormat mSwapchainFormat = RHIFormat::Count;
-        std::array<RHITexture*, mBackBufferCount> mSwapchainTextures;
-        std::array<std::unique_ptr<RHITextureView>, mBackBufferCount> mSwapchainTextureViews;
-        std::unique_ptr<RHIBuffer> mVertexBuffer;
-        std::unique_ptr<RHIBufferView> mVertexBufferView;
-        std::unique_ptr<RHIPipelineLayout> mPipelineLayout;
-        std::unique_ptr<RHIGraphicsPipeline> mGraphicsPipeline;
-        std::unique_ptr<RHIShaderModule> mVertexShader;
-        std::unique_ptr<RHIShaderModule> mFragmentShader;
-        std::unique_ptr<RHICommandBuffer> mCommandBuffer;
-        std::unique_ptr<RHIFence> mFence;
+        RHI::RHIGPU* mGPU = nullptr;
+        RHI::RHIInstance* mInstance = nullptr;
+        RHI::RHIQueue* mQueue = nullptr;
+        std::unique_ptr<RHI::RHIDevice> mDevice;
+        std::unique_ptr<RHI::RHISurface> mSurface;
+        std::unique_ptr<RHI::RHISwapchain> mSwapchain;
+        RHI::RHIFormat mSwapchainFormat = RHI::RHIFormat::Count;
+        std::array<RHI::RHITexture*, mBackBufferCount> mSwapchainTextures;
+        std::array<std::unique_ptr<RHI::RHITextureView>, mBackBufferCount> mSwapchainTextureViews;
+        std::unique_ptr<RHI::RHIBuffer> mVertexBuffer;
+        std::unique_ptr<RHI::RHIBufferView> mVertexBufferView;
+        std::unique_ptr<RHI::RHIPipelineLayout> mPipelineLayout;
+        std::unique_ptr<RHI::RHIGraphicsPipeline> mGraphicsPipeline;
+        std::unique_ptr<RHI::RHIShaderModule> mVertexShader;
+        std::unique_ptr<RHI::RHIShaderModule> mFragmentShader;
+        std::unique_ptr<RHI::RHICommandBuffer> mCommandBuffer;
+        std::unique_ptr<RHI::RHIFence> mFence;
 
-        Vector2u mSwapchainExtent;
-        GLFWindow* mWndHandle;
+        Math::Vector2u mSwapchainExtent;
+        Window::GLFWindow* mWndHandle;
     };
 }

@@ -3,7 +3,7 @@
 #include "DeviceVK.hpp"
 #include "CommandListVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     CommandBufferVK::CommandBufferVK(DeviceVK &device, vk::CommandPool commandPool)
         : mDevice(device)

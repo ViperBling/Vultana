@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-namespace Vultana
+namespace Renderer
 {
     using DAGNodeID = uint32_t;
 

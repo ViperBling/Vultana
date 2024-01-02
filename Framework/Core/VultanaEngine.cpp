@@ -3,7 +3,7 @@
 #define SOKOL_IMPL
 #include <sokol/sokol_time.h>
 
-namespace Vultana
+namespace Core
 {
     Engine *Engine::GetEngineInstance()
     {
@@ -11,20 +11,20 @@ namespace Vultana
         return &engine;
     }
 
-    void Engine::Init(GLFWindow* windowHandle, uint32_t width, uint32_t height)
+    void Engine::Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height)
     {
-        mpWorld = std::make_unique<World>();
+        mpWorld = std::make_unique<Scene::World>();
 
         mWndHandle = windowHandle;
 
-        RendererCreateInfo rendererCI;
+        Renderer::RendererCreateInfo rendererCI;
         rendererCI.ApplicationName = "Vultana";
-        rendererCI.DeviceType = RHIDeviceType::Hardware;
+        rendererCI.DeviceType = RHI::RHIDeviceType::Hardware;
         rendererCI.Width = width;
         rendererCI.Height = height;
         rendererCI.bEnableValidationLayers = true;
 
-        mpRenderer = std::make_unique<RendererBase>(mWndHandle);
+        mpRenderer = std::make_unique<Renderer::RendererBase>(mWndHandle);
         mpRenderer->Init(rendererCI);
 
         stm_setup();

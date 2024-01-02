@@ -1,7 +1,7 @@
 #include "BufferViewVK.hpp"
 #include "BufferVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     static inline bool IsVertexBuffer(RHIBufferViewType usage)
     {

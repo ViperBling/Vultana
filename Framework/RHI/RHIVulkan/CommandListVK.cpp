@@ -16,7 +16,7 @@
 
 #include "RHI/RHISynchronous.hpp"
 
-namespace Vultana
+namespace RHI
 {
     static std::tuple<vk::ImageLayout, vk::AccessFlags, vk::PipelineStageFlags> GetBarrierInfo(RHITextureState state)
     {
@@ -72,7 +72,7 @@ namespace Vultana
         mCommandBuffer.GetVkCommandBuffer().copyBuffer(src->GetVkBuffer(), dst->GetVkBuffer(), 1, &copyRegion);
     }
 
-    void CommandListVK::CopyBufferToTexture(RHIBuffer *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3u &size)
+    void CommandListVK::CopyBufferToTexture(RHIBuffer *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Math::Vector3u &size)
     {
         auto* buffer = dynamic_cast<BufferVK*>(Src);
         auto* texture = dynamic_cast<TextureVK*>(Dst);
@@ -84,7 +84,7 @@ namespace Vultana
         mCommandBuffer.GetVkCommandBuffer().copyBufferToImage(buffer->GetVkBuffer(), texture->GetVkImage(), vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
     }
 
-    void CommandListVK::CopyTextureToBuffer(RHITexture *Src, RHIBuffer *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Vector3u &size)
+    void CommandListVK::CopyTextureToBuffer(RHITexture *Src, RHIBuffer *Dst, const TextureSubResourceCreateInfo *subResourceInfo, const Math::Vector3u &size)
     {
         auto* buffer = dynamic_cast<BufferVK*>(Dst);
         auto* texture = dynamic_cast<TextureVK*>(Src);
@@ -96,7 +96,7 @@ namespace Vultana
         mCommandBuffer.GetVkCommandBuffer().copyImageToBuffer(texture->GetVkImage(), vk::ImageLayout::eTransferSrcOptimal, buffer->GetVkBuffer(), 1, &copyRegion);
     }
 
-    void CommandListVK::CopyTextureToTexture(RHITexture *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *srcSubResourceInfo, const TextureSubResourceCreateInfo *dstSubResourceInfo, const Vector3u &size)
+    void CommandListVK::CopyTextureToTexture(RHITexture *Src, RHITexture *Dst, const TextureSubResourceCreateInfo *srcSubResourceInfo, const TextureSubResourceCreateInfo *dstSubResourceInfo, const Math::Vector3u &size)
     {
         auto* srcTexture = dynamic_cast<TextureVK*>(Src);
         auto* dstTexture = dynamic_cast<TextureVK*>(Dst);

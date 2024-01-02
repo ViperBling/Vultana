@@ -4,7 +4,7 @@
 #include "TextureVK.hpp"
 #include "DeviceVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     TextureViewVK::TextureViewVK(TextureVK &texture, DeviceVK &device, const TextureViewCreateInfo &createInfo)
         : RHITextureView(createInfo)

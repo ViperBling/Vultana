@@ -4,7 +4,7 @@
 #include "RHICommonVK.hpp"
 #include "BufferViewVK.hpp"
 
-namespace Vultana
+namespace RHI
 {
     BufferVK::BufferVK(DeviceVK &inDevice, const BufferCreateInfo &createInfo)
         : RHIBuffer(createInfo)
