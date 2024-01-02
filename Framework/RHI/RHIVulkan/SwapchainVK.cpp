@@ -37,16 +37,15 @@ namespace Vultana
         mWaitSemaphores.clear();
     }
 
-    void SwapchainVK::Resize(const Vector2 &extent)
+    void SwapchainVK::Resize(const SwapchainCreateInfo& createInfo)
     {
-        if (mExtent == extent)
+        if (mExtent == createInfo.Extent)
         {
             return;
         }
         Destroy();
-        mExtent = extent;
-
-        
+        mExtent = createInfo.Extent;
+        CreateNativeSwapchain(createInfo);
     }
 
     void SwapchainVK::Destroy()

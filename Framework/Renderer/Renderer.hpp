@@ -71,6 +71,7 @@ namespace Vultana
     private:
         void InitContext(RendererCreateInfo& createInfo);
         void InitSwapchain(RendererCreateInfo& createInfo);
+        void CreateSwapchainImageView();
         void InitPipelines();
         void CreateVertexBuffer();
         void InitSyncStructures();
