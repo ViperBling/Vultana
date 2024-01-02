@@ -10,6 +10,7 @@ find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+find_package(cityhash CONFIG REQUIRED)
 
 file(GLOB_RECURSE Common_Head       ${SourcePath}/Common/*.hpp)
 file(GLOB_RECURSE Common_Src        ${SourcePath}/Common/*.cpp)
@@ -61,4 +62,5 @@ target_link_libraries(FrameworkLib PUBLIC
     fmt::fmt-header-only
     tinyxml2
     Microsoft::DirectXShaderCompiler
+    cityhash
 )
