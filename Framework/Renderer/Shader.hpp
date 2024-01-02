@@ -62,8 +62,8 @@ namespace Renderer
     public:
         NOCOPY(ShaderByteCodeStorage);
         static ShaderByteCodeStorage& Get();
-        ShaderByteCodeStorage();
-        ~ShaderByteCodeStorage();
+        ShaderByteCodeStorage() = default;
+        ~ShaderByteCodeStorage() = default;
         
         void UpdateByteCodePackage(IShaderType* shaderTypeKey, std::unordered_map<VariantKey, ShaderByteCode>&& byteCodes);
         const std::unordered_map<VariantKey, ShaderByteCode>& GetByteCodePackage(IShaderType* shaderTypeKey);
