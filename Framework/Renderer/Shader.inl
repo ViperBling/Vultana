@@ -4,12 +4,7 @@
 
 namespace Renderer
 {
-    template <typename ShaderType>
-    inline GlobalShaderType<ShaderType>& GlobalShaderType<ShaderType>::Get()
-    {
-        static GlobalShaderType instance;
-        return instance;
-    }
+    
 
     template <typename ShaderType>
     inline GlobalShaderType<ShaderType>::GlobalShaderType()
@@ -20,7 +15,20 @@ namespace Renderer
     template <typename ShaderType>
     inline std::string GlobalShaderType<ShaderType>::GetCode()
     {
-        return std::string();
+        static std::unordered_map<std::string, std::string> pathMap = {
+            { "/Engine/Shader", Utility::FilePaths::EngineShaderPath().string() }
+        };
+
+        std::string sourceFiles = ShaderType::SourceFiles;
+        for (const auto& it : pathMap)
+        {
+            if (sourceFiles.starts_with(it.first))
+            {
+                return Utility::FileUtils::ReadTextFile(Utility::StringUtils::Replace(sourceFiles, it.first, it.second));
+            }
+        }
+        assert(false && "Shader source file not found");
+        return "";
     }
 
     template <typename ShaderType>
