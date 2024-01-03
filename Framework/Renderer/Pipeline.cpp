@@ -221,6 +221,7 @@ namespace Renderer
         pipelineLayoutCI.BindGroupLayouts = reinterpret_cast<const RHI::RHIBindGroupLayout* const*>(bindGroupLayouts.data());
         pipelineLayoutCI.BindGroupLayoutCount = bindGroupLayouts.size();
         pipelineLayoutCI.PipelineConstantLayouts = nullptr;
+        pipelineLayoutCI.PipelineConstantLayoutCount = 0;
 
         mRHIHandle = std::unique_ptr<RHI::RHIPipelineLayout>(inDevice.CreatePipelineLayout(pipelineLayoutCI));
     }
