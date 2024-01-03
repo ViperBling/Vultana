@@ -34,9 +34,9 @@ namespace Renderer
         RendererBase(Window::GLFWindow* window) : mWndHandle(window) {}
         virtual ~RendererBase();
 
-        void Init(RendererCreateInfo& createInfo);
-        void Cleanup();
-        void RenderFrame();
+        virtual void Init(RendererCreateInfo& createInfo);
+        virtual void Cleanup();
+        virtual void RenderFrame();
 
     private:
         void InitContext(RendererCreateInfo& createInfo);

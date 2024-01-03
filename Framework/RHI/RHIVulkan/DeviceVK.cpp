@@ -243,7 +243,7 @@ namespace RHI
             for (auto i = 0; i < tempQueues.size(); i++)
             {
                 vk::Queue queue = mDevice.getQueue(queueFamilyIndex, i, mGPU.GetInstance().GetVkDynamicLoader());
-                tempQueues[i] = std::make_unique<QueueVK>(queue);
+                tempQueues[i] = std::unique_ptr<QueueVK>(new QueueVK(queue));
             }
             mQueues[queueType] = std::move(tempQueues);
             
