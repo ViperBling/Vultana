@@ -101,7 +101,7 @@ namespace Renderer
             RHI::ShaderModuleCreateInfo smCI {};
             smCI.Code = shaderCode.data();
             smCI.CodeSize = shaderCode.size();
-            mShaderModules[variantKey] = mDevice.CreateShaderModule(smCI);
+            mShaderModules[variantKey] = std::unique_ptr<RHI::RHIShaderModule>(mDevice.CreateShaderModule(smCI));
         }
         ShaderInstance result;
         result.ShaderHandle = mShaderModules[variantKey].get();
