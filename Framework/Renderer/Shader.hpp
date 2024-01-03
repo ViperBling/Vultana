@@ -206,7 +206,7 @@ namespace Renderer
         void Set(typename T::ValueType inValue) { std::get<T>(mVariants).Set(inValue); }
 
         template <typename T>
-        typename T::ValueType Get() const { std::get<T>(mVariants).Get(); }
+        typename T::ValueType Get() const { return std::get<T>(mVariants).Get(); }
 
         [[nodiscard]] std::vector<std::string> ComputeDefinitions() const;
         [[nodiscard]] VariantKey Hash() const;
@@ -228,22 +228,22 @@ namespace Renderer
 #define BoolShaderVariantField(inClass, inMarco)                    \
     struct inClass : public Renderer::BoolShaderVariantFieldImpl    \
     {                                                               \
-        static constexpr const char* name = #inClass;               \
-        static constexpr const char* macro = inMarco;               \
+        static constexpr const char* Name = #inClass;               \
+        static constexpr const char* Macro = inMarco;               \
     };                                                              \
 
 #define RangedIntShaderVariantField(inClass, inMarco, inRangeFrom, inRangeTo)                   \
     struct inClass : public Renderer::RangedIntShaderVariantFieldImpl<inRangeFrom, inRangeTo>   \
     {                                                                                           \
-        static constexpr const char* name = #inClass;                                           \
-        static constexpr const char* macro = inMarco;                                           \
+        static constexpr const char* Name = #inClass;                                           \
+        static constexpr const char* Macro = inMarco;                                           \
     };                                                                                          \
 
 #define VariantSet(...)                                                         \
     class VariantSet : public Renderer::VariantSetImpl<__VA_ARGS__> {};         \
 
 #define RegisterGlobalShader(inClass)                                           \
-    struct uint8_t _globalShaderRegister_##inClass = []() -> uint8_t            \
+    static uint8_t _globalShaderRegister_##inClass = []() -> uint8_t            \
     {                                                                           \
         Renderer::GlobalShaderRegistry::Get().RegisterShaderType<inClass>();    \
         return 0;                                                               \

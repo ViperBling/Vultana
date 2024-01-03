@@ -2,8 +2,8 @@
 
 namespace Utility
 {
-    static std::filesystem::path mWorkingDir = std::filesystem::path();
-    static std::filesystem::path mCurrentProjectFile = std::filesystem::path();
+    std::filesystem::path FilePaths::mWorkingDir = std::filesystem::path();
+    std::filesystem::path FilePaths::mCurrentProjectFile = std::filesystem::path();
 
     std::filesystem::path FilePaths::WorkingDir()
     {
