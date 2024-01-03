@@ -1,3 +1,5 @@
+#include <gtest/gtest.h>
+
 #include <iostream>
 
 #include "Core/VultanaEngine.hpp"
@@ -8,9 +10,7 @@
 #include "RHI/RHIInstance.hpp"
 #include "RHI/RHIGPU.hpp"
 
-// using namespace Vultana;
-
-int main()
+TEST(EngineTest, Init)
 {
     Window::WindowCreateInfo wndCI {};
     wndCI.Position = { 100, 100 };
@@ -29,6 +29,4 @@ int main()
     }
 
     Core::Engine::GetEngineInstance()->Shutdown();
-
-    return 0;
 }
