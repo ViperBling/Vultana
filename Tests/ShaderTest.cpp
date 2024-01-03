@@ -1,3 +1,5 @@
+#include <gtest/gtest.h>
+
 #include "Renderer/Shader.hpp"
 
 #include <iostream>
@@ -22,8 +24,10 @@ public:
 };
 RegisterGlobalShader(TestGlobalShaderPS);
 
-int main()
+TEST(ShaderTest, StaticVarSetTest)
 {
+    ASSERT_EQ(TestGlobalShaderPS::VariantSet::VariantNum(), 8);
+
     std::set<std::pair<bool, uint8_t>> expectVars = {
         { false, 0 },
         { false, 1 },
@@ -44,14 +48,9 @@ int main()
         );
     });
 
-    assert(expectVars.size() == realVars.size());
-
-    for (const auto& var : realVars)
+    ASSERT_EQ(expectVars.size(), realVars.size());
+    for (const auto& variant : realVars) 
     {
-        assert(expectVars.contains(var));
-        
-        std::cout << "(" << var.first << ", " << (int)var.second << ")";
+        ASSERT_EQ(expectVars.contains(variant), true);
     }
-
-    return 0;
 }
