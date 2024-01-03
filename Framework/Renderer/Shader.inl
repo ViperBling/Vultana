@@ -4,7 +4,12 @@
 
 namespace Renderer
 {
-    
+    template <typename ShaderType>
+    inline GlobalShaderType<ShaderType>& GlobalShaderType<ShaderType>::Get()
+    {
+        static GlobalShaderType<ShaderType> instance;
+        return instance;
+    }
 
     template <typename ShaderType>
     inline GlobalShaderType<ShaderType>::GlobalShaderType()
@@ -19,7 +24,7 @@ namespace Renderer
             { "/Engine/Shader", Utility::FilePaths::EngineShaderPath().string() }
         };
 
-        std::string sourceFiles = ShaderType::SourceFiles;
+        std::string sourceFiles = ShaderType::SrcFile;
         for (const auto& it : pathMap)
         {
             if (sourceFiles.starts_with(it.first))
@@ -207,7 +212,7 @@ namespace Renderer
         {
             ([&res, this]() -> void 
             {
-                res.emplace_back(std::string(Variants::Marco) + "=" + std::to_string(std::get<Variants>(mVariants).GetNumberValue()));
+                res.emplace_back(std::string(Variants::Macro) + "=" + std::to_string(std::get<Variants>(mVariants).GetNumberValue()));
             }(), 0)...
         };
         return res;

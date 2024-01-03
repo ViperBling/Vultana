@@ -24,6 +24,8 @@ file(GLOB_RECURSE Scene_Head        ${SourcePath}/Scene/*.hpp)
 file(GLOB_RECURSE Scene_Src         ${SourcePath}/Scene/*.cpp)
 file(GLOB_RECURSE Window_Head       ${SourcePath}/Windows/*.hpp)
 file(GLOB_RECURSE Window_Src        ${SourcePath}/Windows/*.cpp)
+file(GLOB_RECURSE Utilities_Head       ${SourcePath}/Utilities/*.hpp)
+file(GLOB_RECURSE Utilities_Src        ${SourcePath}/Utilities/*.cpp)
 
 add_library(FrameworkLib STATIC 
     ${Common_Head}      ${Common_Src}
@@ -32,6 +34,7 @@ add_library(FrameworkLib STATIC
     ${RHI_Head}         ${RHI_Src}
     ${Scene_Head}       ${Scene_Src}
     ${Window_Head}      ${Window_Src}
+    ${Utilities_Head}   ${Utilities_Src}
 )
 
 file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)
