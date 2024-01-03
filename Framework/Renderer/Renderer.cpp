@@ -279,7 +279,7 @@ namespace Renderer
 
     void RendererBase::CompileShader(std::vector<uint8_t> &byteCode, const std::string &fileName, const std::string &entryPoint, RHI::RHIShaderStageBits shaderStage, std::vector<std::string> includePath)
     {
-        std::string shaderSrc = FileUtils::ReadTextFile(fileName);
+        std::string shaderSrc = Utility::FileUtils::ReadTextFile(fileName);
 
         ShaderCompileInput input {};
         input.Source = shaderSrc;

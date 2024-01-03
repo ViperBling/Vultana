@@ -12,6 +12,8 @@
 #include "RHI/RHIBindGroupLayout.hpp"
 
 #include "Utilities/Hash.hpp"
+#include "Utilities/FilePaths.hpp"
+#include "Utilities/String.hpp"
 
 namespace Renderer
 {
