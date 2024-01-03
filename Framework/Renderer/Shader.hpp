@@ -220,8 +220,8 @@ namespace Renderer
     static constexpr const char* EntryPoint = inEntryPoint;     \
     static constexpr RHI::RHIShaderStageBits Stage = inStage;   \
 
-// #define DefaultVariantFilter
-//     static bool VariantFilter(const VariantSet& inVariantSet) { return true; } \
+#define DefaultVariantFilter                                                   \
+    static bool VariantFilter(const VariantSet& inVariantSet) { return true; } \
 
 #define BoolShaderVariantField(inClass, inMarco)                    \
     struct inClass : public Renderer::BoolShaderVariantFieldImpl    \
@@ -238,7 +238,7 @@ namespace Renderer
     };                                                                                          \
 
 #define VariantSet(...)                                                         \
-    class VariantSet : public Renderer::VariantSetImpl<__VA_ARGS__> {};
+    class VariantSet : public Renderer::VariantSetImpl<__VA_ARGS__> {};         \
 
 #define RegisterGlobalShader(inClass)                                           \
     struct uint8_t _globalShaderRegister_##inClass = []() -> uint8_t            \
