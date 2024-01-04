@@ -525,30 +525,30 @@ namespace Renderer
         {
             switch (pass->GetType())
             {
-                case RGPassType::Copy:
-                {
-                    auto* copyPass = static_cast<RGCopyPass*>(pass.get());
-                    RGCopyPassBuilder builder(*this, *copyPass);
-                    copyPass->Setup(builder);
-                    break;
-                }
-                case RGPassType::Compute:
-                {
-                    auto* computePass = static_cast<RGComputePass*>(pass.get());
-                    RGComputePassBuilder builder(*this, *computePass);
-                    computePass->Setup(builder);
-                    break;
-                }
-                case RGPassType::Raster:
-                {
-                    auto* rasterPass = static_cast<RGRasterPass*>(pass.get());
-                    RGRasterPassBuilder builder(*this, *rasterPass);
-                    rasterPass->Setup(builder);
-                    break;
-                }
-                default:
-                    assert(false);
-                    break;
+            case RGPassType::Copy:
+            {
+                auto* copyPass = static_cast<RGCopyPass*>(pass.get());
+                RGCopyPassBuilder builder(*this, *copyPass);
+                copyPass->Setup(builder);
+                break;
+            }
+            case RGPassType::Compute:
+            {
+                auto* computePass = static_cast<RGComputePass*>(pass.get());
+                RGComputePassBuilder builder(*this, *computePass);
+                computePass->Setup(builder);
+                break;
+            }
+            case RGPassType::Raster:
+            {
+                auto* rasterPass = static_cast<RGRasterPass*>(pass.get());
+                RGRasterPassBuilder builder(*this, *rasterPass);
+                rasterPass->Setup(builder);
+                break;
+            }
+            default:
+                assert(false);
+                break;
             }
         }
     }
