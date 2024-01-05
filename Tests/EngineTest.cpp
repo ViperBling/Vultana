@@ -7,8 +7,6 @@
 #include "Scene/ModelLoader.hpp"
 #include "Scene/World.hpp"
 
-#include "RHI/RHIInstance.hpp"
-#include "RHI/RHIGPU.hpp"
 
 TEST(EngineTest, Init)
 {

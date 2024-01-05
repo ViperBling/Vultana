@@ -12,6 +12,8 @@ find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 
+find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
+
 file(GLOB_RECURSE Common_Head       ${SourcePath}/Common/*.hpp)
 file(GLOB_RECURSE Common_Src        ${SourcePath}/Common/*.cpp)
 file(GLOB_RECURSE Core_Head         ${SourcePath}/Core/*.hpp)
@@ -55,7 +57,7 @@ file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shad
 
 
 
-target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath})
+target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS})
 target_link_libraries(FrameworkLib PUBLIC
     assimp::assimp
     glfw

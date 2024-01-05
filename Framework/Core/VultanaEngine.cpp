@@ -19,7 +19,7 @@ namespace Core
 
         Renderer::RendererCreateInfo rendererCI;
         rendererCI.ApplicationName = "Vultana";
-        rendererCI.DeviceType = RHI::RHIDeviceType::Hardware;
+        // rendererCI.DeviceType = RHI::RHIDeviceType::Hardware;
         rendererCI.Width = width;
         rendererCI.Height = height;
         rendererCI.bEnableValidationLayers = true;

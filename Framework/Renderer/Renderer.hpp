@@ -1,6 +1,5 @@
 #pragma once
 
-#include "RHI/RHIPCH.hpp"
 #include "Utilities/Utility.hpp"
 
 #include <iostream>
@@ -20,7 +19,7 @@ namespace Renderer
 {
     struct RendererCreateInfo
     {
-        RHI::RHIDeviceType DeviceType = RHI::RHIDeviceType::Hardware;
+        // RHI::RHIDeviceType DeviceType = RHI::RHIDeviceType::Hardware;
         const char* ApplicationName = "Vultana";
         uint32_t Width = 1280;
         uint32_t Height = 720;

@@ -8,7 +8,6 @@
 #include <optional>
 
 #include "Utilities/Hash.hpp"
-#include "RHI/RHIPCH.hpp"
 
 namespace Renderer
 {
