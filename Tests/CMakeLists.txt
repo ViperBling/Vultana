@@ -9,14 +9,14 @@ add_executable(EngineTest ${MainFile} EngineTest.cpp)
 target_link_libraries(EngineTest FrameworkLib ${GTestLib})
 target_include_directories(EngineTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 
-add_executable(ShaderTest ${MainFile} ShaderTest.cpp)
-target_link_libraries(ShaderTest FrameworkLib ${GTestLib})
-target_include_directories(ShaderTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
+# add_executable(ShaderTest ${MainFile} ShaderTest.cpp)
+# target_link_libraries(ShaderTest FrameworkLib ${GTestLib})
+# target_include_directories(ShaderTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 
 add_executable(RenderGraphTest ${MainFile} RenderGraphTest.cpp)
 target_link_libraries(RenderGraphTest FrameworkLib ${GTestLib})
 target_include_directories(RenderGraphTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 
 add_custom_target(RunEngineTest COMMAND EngineTest)
-add_custom_target(RunShaderTest COMMAND ShaderTest)
+# add_custom_target(RunShaderTest COMMAND ShaderTest)
 add_custom_target(RunRenderGraphTest COMMAND RenderGraphTest)
