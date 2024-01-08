@@ -9,17 +9,18 @@ namespace RHI::Vulkan
 {
     class RHIDeviceVK;
 
-
     class RHIBufferVK : public RHIBuffer
     {
     public:
         RHIBufferVK(RHIDeviceVK* device, const RHIBufferDesc& desc, const std::string& name);
         ~RHIBufferVK();
 
-        virtual void* GetNativeHandle() const override { return (void*)mBuffer; }
-        virtual void* GetCPUAddress() const override { return nullptr; }
+        virtual void* GetNativeHandle() const override;
+        virtual void* GetCPUAddress() const override;
         virtual uint64_t GetGPUAddress() const override { return 0; }
-        virtual uint32_t GetRequiredStagingBufferSize() const override { return 0; }
+        virtual uint32_t GetRequiredStagingBufferSize() const override;
+
+        bool Create();
 
         vk::Buffer GetBuffer() const { return mBuffer; }
         VmaAllocation GetAllocation() const { return mAllocation; }
@@ -27,5 +28,6 @@ namespace RHI::Vulkan
     private:
         vk::Buffer mBuffer;
         VmaAllocation mAllocation;
+        void* mpData = nullptr;
     };
 }

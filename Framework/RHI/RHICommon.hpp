@@ -8,6 +8,8 @@
 namespace RHI
 {
     class RHIHeap;
+    class RHITexture;
+    class RHIShader;
 
     static const uint32_t RHI_MAX_INFLIGHT_FRAMES = 3;
 
@@ -254,7 +256,6 @@ namespace RHI
         RHIHeap* Heap = nullptr;
         uint32_t HeapOffset = 0;
     };
-
     inline bool operator==(const RHIBufferDesc& lhs, const RHIBufferDesc& rhs)
     {
         return lhs.Stride == rhs.Stride &&
@@ -264,4 +265,371 @@ namespace RHI
             lhs.AllocationType == rhs.AllocationType &&
             lhs.Usage == rhs.Usage;
     }
+
+    struct RHITextureDesc
+    {
+        uint32_t Width = 1;
+        uint32_t Height = 1;
+        uint32_t Depth = 1;
+        uint32_t MipLevels = 1;
+        uint32_t ArraySize = 1;
+        ERHITextureType Type = ERHITextureType::Texture2D;
+        ERHIFormat Format = ERHIFormat::Unknown;
+        ERHIMemoryType MemoryType = ERHIMemoryType::GPUOnly;
+        ERHIAlloactionType AllocationType = ERHIAlloactionType::Placed;
+        ERHITextureUsageFlags Usage = 0;
+        RHIHeap* Heap = nullptr;
+        uint32_t HeapOffset = 0;
+    };
+    inline bool operator==(const RHITextureDesc& lhs, const RHITextureDesc& rhs)
+    {
+        return lhs.Width == rhs.Width &&
+            lhs.Height == rhs.Height &&
+            lhs.Depth == rhs.Depth &&
+            lhs.MipLevels == rhs.MipLevels &&
+            lhs.ArraySize == rhs.ArraySize &&
+            lhs.Type == rhs.Type &&
+            lhs.Format == rhs.Format &&
+            lhs.MemoryType == rhs.MemoryType &&
+            lhs.AllocationType == rhs.AllocationType &&
+            lhs.Usage == rhs.Usage;
+    }
+
+    struct RHIConstantBufferViewDesc
+    {
+        uint32_t Size = 0;
+        uint32_t Offset = 0;
+    };
+
+    struct RHIShaderResourceViewDesc
+    {
+        RHIShaderResourceViewDesc() {}
+
+        ERHIShaderResourceViewType Type = ERHIShaderResourceViewType::Textue2D;
+        ERHIFormat Format = ERHIFormat::Unknown;
+
+        union
+        {
+            struct
+            {
+                uint32_t MipSlice = 0;
+                uint32_t ArraySlice = 0;
+                uint32_t MipLevels = -1;
+                uint32_t ArraySize = -1;
+                uint32_t PlaneSlice = 0;
+            } Texture;
+            struct
+            {
+                uint32_t Size = 0;
+                uint32_t Offset = 0;
+            } Buffer;
+        };
+    };
+    inline bool operator==(const RHIShaderResourceViewDesc& lhs, const RHIShaderResourceViewDesc& rhs)
+    {
+        return lhs.Type == rhs.Type &&
+            lhs.Texture.MipSlice == rhs.Texture.MipSlice &&
+            lhs.Texture.ArraySlice == rhs.Texture.ArraySlice &&
+            lhs.Texture.MipLevels == rhs.Texture.MipLevels &&
+            lhs.Texture.ArraySize == rhs.Texture.ArraySize &&
+            lhs.Texture.PlaneSlice == rhs.Texture.PlaneSlice;
+    }
+
+    struct RHIUnorderedAccessViewDesc
+    {
+        RHIUnorderedAccessViewDesc() {}
+
+        ERHIUnorderedAccessViewType Type = ERHIUnorderedAccessViewType::Texture2D;
+        ERHIFormat Format = ERHIFormat::Unknown;
+
+        union
+        {
+            struct
+            {
+                uint32_t MipSlice = 0;
+                uint32_t ArraySlice = 0;
+                uint32_t MipLevels = -1;
+                uint32_t ArraySize = -1;
+                uint32_t PlaneSlice = 0;
+            } Texture;
+            struct
+            {
+                uint32_t Size = 0;
+                uint32_t Offset = 0;
+            } Buffer;
+        };
+    };
+    inline bool operator==(const RHIUnorderedAccessViewDesc& lhs, const RHIUnorderedAccessViewDesc& rhs)
+    {
+        return lhs.Type == rhs.Type &&
+            lhs.Texture.MipSlice == rhs.Texture.MipSlice &&
+            lhs.Texture.ArraySlice == rhs.Texture.ArraySlice &&
+            lhs.Texture.MipLevels == rhs.Texture.MipLevels &&
+            lhs.Texture.ArraySize == rhs.Texture.ArraySize &&
+            lhs.Texture.PlaneSlice == rhs.Texture.PlaneSlice;
+    }
+
+    struct RHIRenderPassColorAttachment
+    {
+        RHITexture* Texture = nullptr;
+        uint32_t MipSlice = 0;
+        uint32_t ArraySlice = 0;
+        ERHIRenderPassLoadOp LoadOp = ERHIRenderPassLoadOp::Load;
+        ERHIRenderPassStoreOp StoreOp = ERHIRenderPassStoreOp::Store;
+        float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    };
+
+    struct RHIRenderPassDepthAttachment
+    {
+        RHITexture* Texture = nullptr;
+        uint32_t MipLevel = 0;
+        uint32_t ArraySlice = 0;
+        ERHIRenderPassLoadOp DepthLoadOp = ERHIRenderPassLoadOp::Load;
+        ERHIRenderPassStoreOp DepthStoreOp = ERHIRenderPassStoreOp::Store;
+        ERHIRenderPassLoadOp StencilLoadOp = ERHIRenderPassLoadOp::Load;
+        ERHIRenderPassStoreOp StencilStoreOp = ERHIRenderPassStoreOp::Store;
+        float ClearDepth = 0.0f;
+        uint32_t ClearStencil = 0;
+        bool bReadOnly = false;
+    };
+
+    struct RHIRenderPassDesc
+    {
+        RHIRenderPassColorAttachment Color[8];
+        RHIRenderPassDepthAttachment Depth;
+    };
+
+    enum ERHIShaderCompileFlagBits
+    {
+        RHIShaderCompileFlagO0 = 1 << 0,
+        RHIShaderCompileFlagO1 = 1 << 1,
+        RHIShaderCompileFlagO2 = 1 << 2,
+        RHIShaderCompileFlagO3 = 1 << 3,
+    };
+    using ERHIShaderCompileFlags = uint32_t;
+
+    struct RHIShaderDesc
+    {
+        std::string File;
+        std::string EntryPoint;
+        std::string Profile;
+        std::vector<std::string> Defines;
+        ERHIShaderCompileFlags CompileFlags = 0;
+    };
+
+    enum class ERHICullMode
+    {
+        None,
+        Front,
+        Back,
+        Count,
+    };
+
+    enum class RHICompareFunc
+    {
+        Never,
+        Less,
+        Equal,
+        LessEqual,
+        Greater,
+        NotEqual,
+        GreaterEqual,
+        Always,
+        Count,
+    };
+    
+    enum class ERHIStencilOp
+    {
+        Keep,
+        Zero,
+        Replace,
+        IncreaseClamp,
+        DecreaseClamp,
+        Invert,
+        IncreaseWrap,
+        DecreaseWrap,
+        Count,
+    };
+
+    enum class ERHIBlendFactor
+    {
+        Zero,
+        One,
+        SrcColor,
+        InvSrcColor,
+        SrcAlpha,
+        InvSrcAlpha,
+        DestAlpha,
+        InvDestAlpha,
+        DestColor,
+        InvDestColor,
+        SrcAlphaClamp,
+        ConstantFactor,
+        InvConstantFactor,
+        Count,
+    };
+
+    enum class ERHIBlendOp
+    {
+        Add,
+        Subtract,
+        RevSubtract,
+        Min,
+        Max,
+        Count,
+    };
+
+    enum class ERHIColorWriteMaskBits
+    {
+        RHIColorWriteMaskR = 1 << 0,
+        RHIColorWriteMaskG = 1 << 1,
+        RHIColorWriteMaskB = 1 << 2,
+        RHIColorWriteMaskA = 1 << 3,
+
+        RHIColorWriteMaskAll = RHIColorWriteMaskR | RHIColorWriteMaskG | RHIColorWriteMaskB | RHIColorWriteMaskA,
+    };
+    using ERHIColorWriteMask = uint8_t;
+    
+    enum class ERHIPrimitiveType
+    {
+        PointList,
+        LineList,
+        LineStrip,
+        TriangleList,
+        TriangleStrip,
+        Count,
+    };
+    
+    enum class ERHIPipelineType
+    {
+        Graphics,
+        Compute,
+        Count,
+    };
+
+    #pragma pack(push, 1)
+    struct RHIRasterizerState
+    {
+        ERHICullMode CullMode = ERHICullMode::None;
+        float DepthBias = 0.0f;
+        float DepthBiasClamp = 0.0f;
+        float DepthSlopeScale = 0.0f;
+        bool bWireframe = false;
+        bool bFrontCCW = false;
+        bool bDepthClip = true;
+    };
+
+    struct RHIDepthStencilOp
+    {
+        ERHIStencilOp StencilFailOp = ERHIStencilOp::Keep;
+        ERHIStencilOp DepthFailOp = ERHIStencilOp::Keep;
+        ERHIStencilOp DepthStencilPassOp = ERHIStencilOp::Keep;
+        RHICompareFunc StencilFunc = RHICompareFunc::Always;
+    };
+
+    struct RHIDepthStencilState
+    {
+        RHICompareFunc DepthFunc = RHICompareFunc::Always;
+        bool bDepthEnable = true;
+        bool bDepthWrite = true;
+        RHIDepthStencilOp FrontFace;
+        RHIDepthStencilOp BackFace;
+        bool bStencilEnable = false;
+        uint8_t StencilReadMask = 0xFF;
+        uint8_t StencilWriteMask = 0xFF;
+    };
+
+    struct RHIBlendState
+    {
+        bool bBlendEnable = false;
+        ERHIBlendFactor ColorSrc = ERHIBlendFactor::One;
+        ERHIBlendFactor ColorDst = ERHIBlendFactor::Zero;
+        ERHIBlendOp ColorOp = ERHIBlendOp::Add;
+        ERHIBlendFactor AlphaSrc = ERHIBlendFactor::One;
+        ERHIBlendFactor AlphaDst = ERHIBlendFactor::Zero;
+        ERHIBlendOp AlphaOp = ERHIBlendOp::Add;
+        ERHIColorWriteMask WriteMask = RHIColorWriteMaskAll;
+    };
+    
+    struct RHIGraphicsPipelineStateDesc
+    {
+        RHIShader* VS = nullptr;
+        RHIShader* PS = nullptr;
+        RHIRasterizerState RasterizerState;
+        RHIDepthStencilState DepthStencilState;
+        RHIBlendState BlendState[8];
+        ERHIFormat RTFormats[8] = { ERHIFormat::Unknown };
+        ERHIFormat DepthStencilFormat = ERHIFormat::Unknown;
+        ERHIPrimitiveType PrimitiveType = ERHIPrimitiveType::TriangleList;
+    };
+
+    struct RHIComputePipelineStateDesc
+    {
+        RHIShader* CS = nullptr;
+    };
+    #pragma pack(pop)
+
+    enum class ERHIFilter
+    {
+        Point,
+        Linear,
+    };
+
+    enum class ERHISamplerAddressMode
+    {
+        Repeat,
+        MirroredRepeat,
+        ClampToEdge,
+        ClampToBorder,
+    };
+
+    enum class ERHISamplerReductionMode
+    {
+        Standard,
+        Compare,
+        Min,
+        Max,
+    };
+
+    struct RHISamplerDesc
+    {
+        ERHIFilter MinFilter = ERHIFilter::Point;
+        ERHIFilter MagFilter = ERHIFilter::Point;
+        ERHIFilter MipFilter = ERHIFilter::Point;
+        ERHISamplerReductionMode ReductionMode = ERHISamplerReductionMode::Standard;
+        ERHISamplerAddressMode AddressU = ERHISamplerAddressMode::Repeat;
+        ERHISamplerAddressMode AddressV = ERHISamplerAddressMode::Repeat;
+        ERHISamplerAddressMode AddressW = ERHISamplerAddressMode::Repeat;
+        RHICompareFunc CompareFunc = RHICompareFunc::Always;
+        bool bEnableAnisotropy = false;
+        float MaxAnisotropy = 1.0f;
+        float MipLODBias = 0.0f;
+        float MinLOD = 0.0f;
+        float MaxLOD = 0.0f;
+        float BorderColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    };
+
+    struct RHIDrawCommand
+    {
+        uint32_t VertexCount = 0;
+        uint32_t InstanceCount = 0;
+        uint32_t FirstVertex = 0;
+        uint32_t FirstInstance = 0;
+    };
+
+    struct RHIDrawIndexedCommand
+    {
+        uint32_t IndexCount = 0;
+        uint32_t InstanceCount = 0;
+        uint32_t FirstIndex = 0;
+        uint32_t BaseVertex = 0;
+        uint32_t FirstInstance = 0;
+    };
+
+    struct RHIDispatchCommand
+    {
+        uint32_t GroupCountX = 0;
+        uint32_t GroupCountY = 0;
+        uint32_t GroupCountZ = 0;
+    };
 }

@@ -13,7 +13,7 @@ namespace RHI
         virtual uint64_t GetGPUAddress() const = 0;
         virtual uint32_t GetRequiredStagingBufferSize() const = 0;
 
-    private:
+    protected:
         RHIBufferDesc mDesc {};
     };
 }

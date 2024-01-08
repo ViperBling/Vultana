@@ -18,7 +18,7 @@ namespace RHI
         RHIDevice* GetDevice() const { return mpDevice; }
         const std::string& GetName() const { return mName; }
 
-    private:
+    protected:
         RHIDevice* mpDevice = nullptr;
         std::string mName;
     };
