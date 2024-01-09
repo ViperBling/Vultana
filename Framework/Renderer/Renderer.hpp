@@ -1,6 +1,8 @@
 #pragma once
 
+#include "RHI/RHI.hpp"
 #include "Utilities/Utility.hpp"
+#include "Utilities/Math.hpp"
 
 #include <iostream>
 #include <deque>
@@ -50,8 +52,10 @@ namespace Renderer
         void SubmitCommandBuffer();
 
     private:
-        static const uint8_t mBackBufferCount = 2;
+        std::unique_ptr<RHI::RHIDevice> mDevice;
+        std::unique_ptr<RHI::RHISwapchain> mSwapchain;
 
+        Math::Vector2u mSwapchainExtent;
         
         Window::GLFWindow* mWndHandle;
     };

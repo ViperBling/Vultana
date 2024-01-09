@@ -47,7 +47,11 @@ namespace Renderer
 
     void RendererBase::InitContext(RendererCreateInfo &createInfo)
     {
-        
+        mSwapchainExtent = { createInfo.Width, createInfo.Height };
+
+        RHI::RHIDeviceDesc deviceDesc {};
+        mDevice.reset(CreateRHIDevice(deviceDesc));
+        GDebugInfoCallback("Renderer", "RendererBase::InitContext: Device created");
     }
 
     void RendererBase::InitSwapchain(RendererCreateInfo &createInfo)

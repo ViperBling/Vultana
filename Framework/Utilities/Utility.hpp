@@ -15,7 +15,7 @@
 const std::string VS_ENTRY_POINT = "VSMain";
 const std::string PS_ENTRY_POINT = "PSMain";
 
-inline void GDebugInfoCallbackFunc(const std::string& message, const std::string& type)
+inline void GDebugInfoCallbackFunc(const std::string& type, const std::string& message)
 {
     std::cout << "[INFO " << type <<"] : " << message << std::endl;
 }

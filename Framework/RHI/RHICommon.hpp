@@ -227,7 +227,7 @@ namespace RHI
     struct RHIDeviceDesc
     {
         ERHIRenderBackend RenderBackend = ERHIRenderBackend::Vulkan;
-        uint32_t MaxFrameLag = 3;
+        uint32_t MaxFrameLag = RHI_MAX_INFLIGHT_FRAMES;
     };
 
     struct RHISwapchainDesc
@@ -235,7 +235,7 @@ namespace RHI
         void* WindowHandle = nullptr;
         uint32_t Width = 1;
         uint32_t Height = 1;
-        uint32_t BufferCount = 3;
+        uint32_t BufferCount = RHI_MAX_INFLIGHT_FRAMES;
         ERHIFormat ColorFormat = ERHIFormat::BGRA8SRGB;
     };
 
@@ -479,7 +479,7 @@ namespace RHI
         Count,
     };
 
-    enum class ERHIColorWriteMaskBits
+    enum ERHIColorWriteMaskBits
     {
         RHIColorWriteMaskR = 1 << 0,
         RHIColorWriteMaskG = 1 << 1,

@@ -1,7 +1,10 @@
 #pragma once
 
+#include "RHICommonVK.hpp"
 #include "RHI/RHIDevice.hpp"
+#include "VulkanInstance.hpp"
 
+#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
 namespace RHI::Vulkan
@@ -12,6 +15,7 @@ namespace RHI::Vulkan
         RHIDeviceVK(const RHIDeviceDesc& desc) : mDesc(desc) {}
         ~RHIDeviceVK();
 
+        virtual bool Initialize() override;
         virtual void BeginFrame() override;
         virtual void EndFrame() override;
         virtual uint64_t GetFrameID() const override;
@@ -38,5 +42,8 @@ namespace RHI::Vulkan
         RHIDeviceDesc mDesc {};
 
         vk::Device mDevice;
+        InstanceVK mInstance;
+
+        VmaAllocator mAllocator;
     };
 } // namespace RHI::Vulkan
