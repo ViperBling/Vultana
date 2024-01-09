@@ -2,7 +2,7 @@
 
 #include "RHI/RHIPCH.hpp"
 #include "Utilities/Utility.hpp"
-#include "RenderGraph.hpp"
+#include "RenderGraph/RenderGraph.hpp"
 
 #include <iostream>
 #include <deque>
@@ -73,8 +73,6 @@ namespace Renderer
         std::unique_ptr<RHI::RHIShaderModule> mFragmentShader;
         std::unique_ptr<RHI::RHICommandBuffer> mCommandBuffer;
         std::unique_ptr<RHI::RHIFence> mFence;
-
-        std::unique_ptr<RenderGraph> mRenderGraph;
 
         Math::Vector2u mSwapchainExtent;
         Window::GLFWindow* mWndHandle;

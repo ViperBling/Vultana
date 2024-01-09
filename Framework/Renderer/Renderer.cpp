@@ -60,7 +60,6 @@ namespace Renderer
         deviceCI.QueueCreateInfoCount = queueInfos.size();
         deviceCI.QueueCreateInfos = queueInfos.data();
         mDevice = std::unique_ptr<RHI::RHIDevice>(mGPU->RequestDevice(deviceCI));
-        mRenderGraph = std::make_unique<RenderGraph>(*mDevice.get());
         mQueue = mDevice->GetQueue(RHI::RHICommandQueueType::Graphics, 0);
     }
 

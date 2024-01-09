@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "RHI/RHIPCH.hpp"
-#include "Renderer/RenderGraph.hpp"
-#include "Renderer/Pipeline.hpp"
+#include "Renderer/RenderGraph/RenderGraph.hpp"
+#include "Renderer/RenderGraph/Pipeline.hpp"
 #include "Renderer/Shader.hpp"
 
 class RenderGraphTestCS : public Renderer::GlobalShader
