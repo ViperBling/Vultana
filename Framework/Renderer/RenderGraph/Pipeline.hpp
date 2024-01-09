@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include "RHI/RHIPCH.hpp"
-#include "Shader.hpp"
+#include "Renderer/Shader.hpp"
 
 namespace Renderer
 {
