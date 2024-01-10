@@ -115,4 +115,9 @@ namespace Math
 
         return std::make_pair(Normalize(tangent), Normalize(bitangent));
     }
+
+    inline Matrix4x4 Transpose(const Matrix4x4& mat)
+    {
+        return glm::transpose(mat);
+    }
 }
