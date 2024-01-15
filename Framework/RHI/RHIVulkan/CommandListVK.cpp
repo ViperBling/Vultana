@@ -49,6 +49,28 @@ namespace RHI
         return { vk::ImageLayout::eUndefined, vk::AccessFlags(), vk::PipelineStageFlagBits::eTopOfPipe };
     }
 
+    static std::tuple<vk::AccessFlags, vk::PipelineStageFlags> GetBarrierInfo(RHIBufferState state)
+    {
+        switch (state)
+        {
+        case RHIBufferState::CopySrc:
+            return { vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer };
+            break;
+        case RHIBufferState::CopyDst:
+            return { vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eTransfer };
+            break;
+        case RHIBufferState::Storage:
+            return { vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite, vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eFragmentShader };
+            break;
+        case RHIBufferState::ShaderReadOnly:
+            return { vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eVertexShader };
+            break;
+        default:
+            break;
+        }
+        return { vk::AccessFlags(), vk::PipelineStageFlagBits::eTopOfPipe };
+    }
+
     CommandListVK::CommandListVK(DeviceVK &device, CommandBufferVK &commandBuffer)
         : mDevice(device)
         , mCommandBuffer(commandBuffer)
@@ -126,6 +148,23 @@ namespace RHI
             imageBarrier.image = textureVK->GetVkImage();
             imageBarrier.subresourceRange = textureVK->GetFullRange();
             mCommandBuffer.GetVkCommandBuffer().pipelineBarrier(std::get<2>(oldLayout), std::get<2>(newLayout), vk::DependencyFlagBits::eByRegion, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+        }
+        else if (barrier.Type == RHIResourceType::Buffer)
+        {
+            const auto& bufferBarrierInfo = barrier.Buffer;
+            auto oldAccess = GetBarrierInfo(bufferBarrierInfo.Before);
+            auto newAccess = GetBarrierInfo(bufferBarrierInfo.After);
+
+            auto* bufferVK = static_cast<BufferVK*>(bufferBarrierInfo.Buffer);
+            vk::BufferMemoryBarrier bufferBarrier {};
+            bufferBarrier.srcAccessMask = std::get<0>(oldAccess);
+            bufferBarrier.dstAccessMask = std::get<0>(newAccess);
+            bufferBarrier.buffer = bufferVK->GetVkBuffer();
+            bufferBarrier.offset = 0;
+            bufferBarrier.size = VK_WHOLE_SIZE;
+            bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            mCommandBuffer.GetVkCommandBuffer().pipelineBarrier(std::get<1>(oldAccess), std::get<1>(newAccess), vk::DependencyFlagBits::eByRegion, 0, nullptr, 1, &bufferBarrier, 0, nullptr);
         }
     }
 
