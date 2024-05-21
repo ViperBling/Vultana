@@ -72,7 +72,7 @@ namespace RHI::Vulkan
         return nullptr;
     }
 
-    RHIShader *RHIDeviceVK::CreateShader(const RHIShaderDesc &desc, std::span<uint8_t> data, const std::string &name)
+    RHIShader *RHIDeviceVK::CreateShader(const RHIShaderDesc &desc, tcb::span<uint8_t> data, const std::string &name)
     {
         return nullptr;
     }

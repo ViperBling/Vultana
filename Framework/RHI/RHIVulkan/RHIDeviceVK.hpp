@@ -6,6 +6,7 @@
 
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
+#include <queue>
 
 namespace RHI::Vulkan
 {
@@ -27,7 +28,7 @@ namespace RHI::Vulkan
         virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const std::string& name) override;
         virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const std::string& name) override;
         virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const std::string& name) override;
-        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, std::span<uint8_t> data, const std::string& name) override;
+        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, tcb::span<uint8_t> data, const std::string& name) override;
         virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const std::string& name) override;
         virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const std::string& name) override;
         virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const std::string& name) override;
@@ -38,6 +39,8 @@ namespace RHI::Vulkan
         virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) const override;
         virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) const override;
 
+        // void Delete()
+
     private:
         RHIDeviceDesc mDesc {};
 
@@ -45,5 +48,19 @@ namespace RHI::Vulkan
         InstanceVK mInstance;
 
         VmaAllocator mAllocator;
+
+        struct ObjectDeletion
+        {
+            void* Object;
+            uint64_t Frame;
+        };
+        std::queue<ObjectDeletion> mDeletionQueue;
+
+        struct AllocationDeletion
+        {
+            VmaAllocation Allocation;
+            uint64_t Frame;
+        };
+        std::queue<AllocationDeletion> mAllocationDeletionQueue;
     };
 } // namespace RHI::Vulkan
