@@ -2,8 +2,8 @@
 
 #include "RHICommon.hpp"
 
-#include <tcb/span.hpp>
-#include <span>
+// #include <tcb/span.hpp>
+// #include <span>
 
 namespace RHI
 {
@@ -35,7 +35,7 @@ namespace RHI
         virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const std::string& name) = 0;
         virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const std::string& name) = 0;
         virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const std::string& name) = 0;
-        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, std::span<uint8_t> data, const std::string& name) = 0;
+        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, tcb::span<uint8_t> data, const std::string& name) = 0;
         virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const std::string& name) = 0;
         virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const std::string& name) = 0;
         virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const std::string& name) = 0;
