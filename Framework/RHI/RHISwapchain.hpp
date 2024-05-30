@@ -7,6 +7,7 @@ namespace RHI
 {
     class RHITexture;
     class RHIQueue;
+    class RHIFence;
     class RHISurface;
 
     struct SwapchainCreateInfo
@@ -17,6 +18,45 @@ namespace RHI
         RHIFormat Format;
         Math::Vector2 Extent;
         RHIPresentMode PresentMode;
+
+        SwapchainCreateInfo()
+            : PresentQueue(nullptr)
+            , Surface(nullptr)
+            , TextureCount(2)
+            , Format(RHIFormat::Count)
+            , Extent({ 1, 1 })
+            , PresentMode(RHIPresentMode::Immediate)
+        {}
+        SwapchainCreateInfo& SetPresentQueue(RHIQueue* inPresentQueue)
+        {
+            PresentQueue = inPresentQueue;
+            return *this;
+        }
+        SwapchainCreateInfo& SetSurface(RHISurface* inSurface)
+        {
+            Surface = inSurface;
+            return *this;
+        }
+        SwapchainCreateInfo& SetTextureCount(uint8_t inTextureCount)
+        {
+            TextureCount = inTextureCount;
+            return *this;
+        }
+        SwapchainCreateInfo& SetFormat(RHIFormat inFormat)
+        {
+            Format = inFormat;
+            return *this;
+        }
+        SwapchainCreateInfo& SetExtent(Math::Vector2 inExtent)
+        {
+            Extent = inExtent;
+            return *this;
+        }
+        SwapchainCreateInfo& SetPresentMode(RHIPresentMode inPresentMode)
+        {
+            PresentMode = inPresentMode;
+            return *this;
+        }
     };
 
     class RHISwapchain
@@ -27,10 +67,7 @@ namespace RHI
 
         virtual RHITexture* GetTexture(uint8_t index) = 0;
         virtual uint8_t AcquireBackTexture() = 0;
-
         virtual void Present() = 0;
-        virtual void Resize(const SwapchainCreateInfo& createInfo) = 0;
-        virtual void Destroy() = 0;
 
     protected:
         explicit RHISwapchain(const SwapchainCreateInfo& createInfo) {}

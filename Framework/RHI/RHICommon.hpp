@@ -1,21 +1,45 @@
 #pragma once
 
 #include "Utilities/Utility.hpp"
+#include "Utilities/Hash.hpp"
 
 #include <iostream>
+#include <cassert>
 #include <type_traits>
 #include <memory>
 #include <string>
 #include <vector>
 
-#define RHI_FLAGS_DECLARE(FlagsType, BitsType)      \
-    inline FlagsType operator&(BitsType a, BitsType b) { return FlagsType(a) & FlagsType(b); };    \
-    inline FlagsType operator&(FlagsType a, BitsType b) { return a & FlagsType(b); };   \
-    inline FlagsType operator|(BitsType a, BitsType b) { return FlagsType(a) | FlagsType(b); };    \
-    inline FlagsType operator|(FlagsType a, BitsType b) { return a | FlagsType(b); };   \
+#define DECLARE_EC_FUNC() template <typename A, typename B> inline B EnumCast(const A& value);
+#define ECIMPL_BEGIN(A, B) template <> inline B EnumCast<A, B>(const A& value) {
+#define ECIMPL_ITEM(A, B) if (value == A) { return B; }
+#define ECIMPL_END(B) assert(false); return (B)0; }
+
+#define DECLARE_FC_FUNC() template <typename A, typename B> inline B FlagsCast(const A& flags);
+#define FCIMPL_BEGIN(A, B) template <> inline B FlagsCast<A, B>(const A& flags) { B result = (B) 0;
+#define FCIMPL_ITEM(A, B) if (flags & A) { result |= B; }
+#define FCIMPL_END(B) return result; };
+
+#define RHI_FLAGS_DECLARE(FlagsType, BitsType) \
+    FlagsType operator&(BitsType a, BitsType b); \
+    FlagsType operator&(FlagsType a, BitsType b); \
+    FlagsType operator|(BitsType a, BitsType b); \
+    FlagsType operator|(FlagsType a, BitsType b); \
 
 namespace RHI
 {
+    template <typename E>
+    using BitsTypeForEachFunc = std::function<void(E e)>;
+
+    template <typename E>
+    void ForEachBitsType(BitsTypeForEachFunc<E>&& func)
+    {
+        using UBitsType = std::underlying_type_t<E>;
+        for (UBitsType i = 0x1; i < static_cast<UBitsType>(E::max); i = i << 1) {
+            func(static_cast<E>(i));
+        }
+    }
+
     static const uint32_t RHI_MAX_IN_FLIGHT_FRAMES = 3;
     static const uint32_t RHI_MAX_ROOT_CONSTANT = 8;
     static const uint32_t RHI_MAX_CBV_BINDINGS = 3;
@@ -393,22 +417,24 @@ namespace RHI
     };
 
 
-
-    template <typename T = uint32_t>
+    using FlagBitsType = uint32_t;
+    
+    template <typename T>
     class RHIFlags
     {
     public:
-        using UnderlyingType = T;
+        using UnderlyingType = std::underlying_type_t<T>;
 
         RHIFlags() = default;
         ~RHIFlags() = default;
-        RHIFlags(T value) : mValue(value) {}
+        RHIFlags(UnderlyingType inValue) : mValue(inValue) {}
+        RHIFlags(T value) : mValue(static_cast<UnderlyingType>(value)) {}
 
-        template <typename E>
-        requires std::is_same_v<T, std::underlying_type_t<E>>
-        RHIFlags(E e) : mValue(static_cast<T>(e)) {}
+        // template <typename E>
+        // requires std::is_same_v<T, std::underlying_type_t<E>>
+        // RHIFlags(E e) : mValue(static_cast<T>(e)) {}
 
-        T Value() const
+        UnderlyingType Value() const
         {
             return mValue;
         }
@@ -428,33 +454,35 @@ namespace RHI
             return mValue != other.mValue;
         }
 
-        bool operator==(T inValue) const
+        bool operator==(UnderlyingType inValue) const
         {
             return mValue == inValue;
         }
 
-        bool operator!=(T inValue) const
+        bool operator!=(UnderlyingType inValue) const
         {
             return mValue != inValue;
         }
 
-        template <typename E>
-        requires std::is_same_v<T, std::underlying_type_t<E>>
-        bool operator==(E e) const
+        bool operator==(T e) const
         {
-            return mValue == static_cast<T>(e);
+            return mValue == static_cast<UnderlyingType>(e);
         }
 
-        template <typename E>
-        requires std::is_same_v<T, std::underlying_type_t<E>>
-        bool operator!=(E e) const
+        bool operator!=(T e) const
         {
-            return mValue != static_cast<T>(e);
+            return mValue != static_cast<UnderlyingType>(e);
         }
+
+    public:
+        static RHIFlags null;
 
     private:
-        T mValue;
+        UnderlyingType mValue;
     };
+
+    template <typename T>
+    RHIFlags<T> RHIFlags<T>::null = RHIFlags<T>(0);
 
     template <typename T>
     RHIFlags<T> operator&(RHIFlags<T> a, RHIFlags<T> b)
@@ -468,8 +496,31 @@ namespace RHI
         return RHIFlags<T>(a.Value() | b.Value());
     }
 
-    using RHIBufferUsageFlags = RHIFlags<>;
-    enum class RHIBufferUsageBits : RHIBufferUsageFlags::UnderlyingType
+    // template <typename T>
+    // RHIFlags<T> operator&(RHIFlags<T> a, FlagBitsType b)
+    // {
+    //     return RHIFlags<T>(a.Value() & static_cast<typename RHIFlags<T>::UnderlyingType>(b));
+    // }
+
+    // template <typename T>
+    // RHIFlags<T> operator|(RHIFlags<T> a, FlagBitsType b)
+    // {
+    //     return RHIFlags<T>(a.Value() | static_cast<typename RHIFlags<T>::UnderlyingType>(b));
+    // }
+
+    // template <typename T>
+    // RHIFlags<T> operator&(FlagBitsType a, RHIFlags<T> b)
+    // {
+    //     return RHIFlags<T>(static_cast<typename RHIFlags<T>::UnderlyingType>(a) & b.Value());
+    // }
+
+    // template <typename T>
+    // RHIFlags<T> operator|(FlagBitsType a, RHIFlags<T> b)
+    // {
+    //     return RHIFlags<T>(static_cast<typename RHIFlags<T>::UnderlyingType>(a) | b.Value());
+    // }
+
+    enum class RHIBufferUsageBits : FlagBitsType
     {
         MapRead         = 0x1,
         MapWrite        = 0x2,
@@ -483,10 +534,10 @@ namespace RHI
         QueryResolve    = 0x200,
         Count,
     };
+    using RHIBufferUsageFlags = RHIFlags<RHIBufferUsageBits>;
     RHI_FLAGS_DECLARE(RHIBufferUsageFlags, RHIBufferUsageBits)
 
-    using RHITextureUsageFlags = RHIFlags<>;
-    enum class RHITextureUsageBits : RHITextureUsageFlags::UnderlyingType
+    enum class RHITextureUsageBits : FlagBitsType
     {
         CopySrc                 = 0x1,
         CopyDst                 = 0x2,
@@ -496,10 +547,10 @@ namespace RHI
         DepthStencilAttachment  = 0x20,
         Count
     };
+    using RHITextureUsageFlags = RHIFlags<RHITextureUsageBits>;
     RHI_FLAGS_DECLARE(RHITextureUsageFlags, RHITextureUsageBits)
 
-    using RHIShaderStageFlags = RHIFlags<>;
-    enum class RHIShaderStageBits : RHIShaderStageFlags::UnderlyingType
+    enum class RHIShaderStageBits : FlagBitsType
     {
         None      = 0x0,
         Vertex    = 0x1,
@@ -510,17 +561,20 @@ namespace RHI
         Hull      = 0x20,
         Count
     };
+    using RHIShaderStageFlags = RHIFlags<RHIShaderStageBits>;
     RHI_FLAGS_DECLARE(RHIShaderStageFlags, RHIShaderStageBits)
 
-    using RHIColorWriteFlags = RHIFlags<>;
-    enum class RHIColorWriteBits : RHIColorWriteFlags::UnderlyingType
+    enum class RHIColorWriteBits : FlagBitsType
     {
         Red   = 0x1,
         Green = 0x2,
         Blue  = 0x4,
         Alpha = 0x8,
+        rgb = Red | Green | Blue,
+        rgba = rgb | Alpha,
         Count
     };
+    using RHIColorWriteFlags = RHIFlags<RHIColorWriteBits>;
     RHI_FLAGS_DECLARE(RHIColorWriteFlags, RHIColorWriteBits)
 }
 
@@ -531,7 +585,7 @@ namespace std
     {
         size_t operator()(RHI::RHIFlags<T> flags) const
         {
-            return hash<T>()(flags.Value());
+            return hash<typename RHI::RHIFlags<T>::UnderlyingType>()(flags.Value());
         }
     };
 }

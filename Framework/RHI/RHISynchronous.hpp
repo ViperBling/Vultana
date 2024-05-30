@@ -63,25 +63,27 @@ namespace RHI
         };
     };
 
-    enum class FenceStatus
-    {
-        Wait,
-        Signal,
-        Count
-    };
-
     class RHIFence
     {
     public:
         NOCOPY(RHIFence)
         virtual ~RHIFence() = default;
 
-        virtual FenceStatus GetFenceStatus() = 0;
+        virtual void IsSignaled() = 0;
         virtual void Reset() = 0;
         virtual void Wait() = 0;
-        virtual void Destroy() = 0;
 
     protected:
-        explicit RHIFence(RHIDevice& device) {}
+        explicit RHIFence(RHIDevice& device, bool bInitAsSignaled) {}
+    };
+
+    class RHISemaphore
+    {
+    public:
+        NOCOPY(RHISemaphore)
+        virtual ~RHISemaphore() = default;
+
+    protected:
+        explicit RHISemaphore(RHIDevice& device) {}
     };
 }

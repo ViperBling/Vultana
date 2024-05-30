@@ -7,6 +7,15 @@ namespace RHI
     struct SurfaceCreateInfo
     {
         void* Window;
+
+        SurfaceCreateInfo()
+            : Window(nullptr)
+        {}
+        SurfaceCreateInfo& SetWindow(void* inWindow)
+        {
+            Window = inWindow;
+            return *this;
+        }
     };
 
     class RHISurface
@@ -14,8 +23,6 @@ namespace RHI
     public:
         NOCOPY(RHISurface)
         virtual ~RHISurface() = default;
-
-        virtual void Destroy() = 0;
     
     protected:
         explicit RHISurface(const SurfaceCreateInfo& CreateInfo) {}
