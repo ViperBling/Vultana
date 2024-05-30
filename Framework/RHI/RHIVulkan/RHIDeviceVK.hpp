@@ -49,18 +49,8 @@ namespace RHI::Vulkan
 
         VmaAllocator mAllocator;
 
-        struct ObjectDeletion
-        {
-            void* Object;
-            uint64_t Frame;
-        };
-        std::queue<ObjectDeletion> mDeletionQueue;
-
-        struct AllocationDeletion
-        {
-            VmaAllocation Allocation;
-            uint64_t Frame;
-        };
-        std::queue<AllocationDeletion> mAllocationDeletionQueue;
+        std::unique_ptr<vk::Queue> mGraphicsQueue;
+        std::unique_ptr<vk::Queue> mComputeQueue;
+        std::unique_ptr<vk::Queue> mTransferQueue;
     };
 } // namespace RHI::Vulkan
