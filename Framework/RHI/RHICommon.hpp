@@ -12,6 +12,10 @@ namespace RHI
     class RHIShader;
 
     static const uint32_t RHI_MAX_INFLIGHT_FRAMES = 3;
+    static const uint32_t RHI_MAX_ROOT_CONSTANTS = 8;
+    static const uint32_t RHI_MAX_CBV_BINDING = 3;
+    static const uint32_t RHI_MAX_RESOURCE_DESCRIPTOR_COUNT = 65535;
+    static const uint32_t RHI_MAX_SAMPLER_DESCRIPTOR_COUNT = 128;
 
     enum class ERHIRenderBackend
     {
@@ -125,9 +129,10 @@ namespace RHI
 
     enum ETextureUsageBit
     {
-        RHITextureUsageRenderTarget     = 1 << 1,
-        RHITextureUsageDepthStencil     = 1 << 2,
-        RHITextureUsageUnorderedAccess  = 1 << 3,
+        RHITextureUsageRenderTarget     = 1 << 0,
+        RHITextureUsageDepthStencil     = 1 << 1,
+        RHITextureUsageUnorderedAccess  = 1 << 2,
+        RHITextureUsageShared           = 1 << 3,
     };
     using ERHITextureUsageFlags = uint32_t;
 
@@ -227,7 +232,6 @@ namespace RHI
     struct RHIDeviceDesc
     {
         ERHIRenderBackend RenderBackend = ERHIRenderBackend::Vulkan;
-        uint32_t MaxFrameLag = RHI_MAX_INFLIGHT_FRAMES;
     };
 
     struct RHISwapchainDesc
