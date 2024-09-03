@@ -17,7 +17,7 @@ namespace RHI
 
         virtual void* GetNativeHandle() const override { return mBuffer; }
         virtual void* GetCPUAddress() const override;
-        virtual uint64_t GetGPUAddress() const override { return 0; }
+        virtual uint64_t GetGPUAddress() const override;
         virtual uint32_t GetRequiredStagingBufferSize() const override;
 
         vk::Buffer GetBuffer() const { return mBuffer; }

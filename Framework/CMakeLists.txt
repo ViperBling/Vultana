@@ -4,13 +4,14 @@ set(SourcePath ${PROJECT_SOURCE_DIR}/Framework)
 set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
 find_package(assimp CONFIG REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 
@@ -58,7 +59,7 @@ file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shad
 
 
 target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS})
-target_link_libraries(FrameworkLib PUBLIC
+target_link_libraries(FrameworkLib PRIVATE
     assimp::assimp
     glfw
     glm::glm
@@ -68,4 +69,5 @@ target_link_libraries(FrameworkLib PUBLIC
     tinyxml2
     Microsoft::DirectXShaderCompiler
     cityhash
+    spdlog::spdlog
 )

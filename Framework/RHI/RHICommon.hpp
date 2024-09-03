@@ -110,7 +110,7 @@ namespace RHI
         Count,
     };
 
-    enum class ERHIAlloactionType
+    enum class ERHIAllocationType
     {
         Committed,
         Placed,
@@ -256,7 +256,7 @@ namespace RHI
         uint32_t Size = 1;
         ERHIFormat Format = ERHIFormat::Unknown;
         ERHIMemoryType MemoryType = ERHIMemoryType::GPUOnly;
-        ERHIAlloactionType AllocationType = ERHIAlloactionType::Placed;
+        ERHIAllocationType AllocationType = ERHIAllocationType::Placed;
         ERHIBufferUsageFlags Usage = 0;
         RHIHeap* Heap = nullptr;
         uint32_t HeapOffset = 0;
@@ -281,7 +281,7 @@ namespace RHI
         ERHITextureType Type = ERHITextureType::Texture2D;
         ERHIFormat Format = ERHIFormat::Unknown;
         ERHIMemoryType MemoryType = ERHIMemoryType::GPUOnly;
-        ERHIAlloactionType AllocationType = ERHIAlloactionType::Placed;
+        ERHIAllocationType AllocationType = ERHIAllocationType::Placed;
         ERHITextureUsageFlags Usage = 0;
         RHIHeap* Heap = nullptr;
         uint32_t HeapOffset = 0;

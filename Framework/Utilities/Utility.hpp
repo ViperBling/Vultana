@@ -20,7 +20,13 @@ inline void GDebugInfoCallbackFunc(const std::string& type, const std::string& m
     std::cout << "[INFO " << type <<"] : " << message << std::endl;
 }
 
+inline void GDebugErrorCallbackFunc(const std::string& type, const std::string& message)
+{
+    std::cerr << "[ERROR " << type <<"] : " << message << std::endl;
+}
+
 static std::function<void(const std::string&, const std::string&)> GDebugInfoCallback = GDebugInfoCallbackFunc;
+static std::function<void(const std::string&, const std::string&)> GDebugErrorCallback = GDebugErrorCallbackFunc;
 
 namespace Utility
 {

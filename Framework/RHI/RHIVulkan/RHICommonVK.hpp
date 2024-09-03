@@ -216,7 +216,7 @@ namespace RHI
             createInfo.flags |= vk::ImageCreateFlagBits::eCubeCompatible;
         }
 
-        if (desc.AllocationType == ERHIAlloactionType::Sparse)
+        if (desc.AllocationType == ERHIAllocationType::Sparse)
         {
             createInfo.flags |= vk::ImageCreateFlagBits::eSparseBinding | vk::ImageCreateFlagBits::eSparseResidency;
         }
