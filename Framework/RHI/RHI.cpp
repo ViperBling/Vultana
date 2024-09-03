@@ -193,4 +193,20 @@ namespace RHI
     {
         return format == ERHIFormat::D32FS8;
     }
+
+    bool IsSRGBFormat(ERHIFormat format)
+    {
+        return format == ERHIFormat::RGBA8SRGB || format == ERHIFormat::BGRA8SRGB;
+    }
+
+    uint32_t CalcSubresource(const RHITextureDesc &desc, uint32_t mipLevel, uint32_t arraySlice)
+    {
+        return mipLevel + desc.MipLevels * arraySlice;
+    }
+
+    void DecomposeSubresource(const RHITextureDesc &desc, uint32_t subresource, uint32_t &mipLevel, uint32_t &arraySlice)
+    {
+        mipLevel = subresource % desc.MipLevels;
+        arraySlice = (subresource / desc.MipLevels) % desc.ArraySize;
+    }
 }

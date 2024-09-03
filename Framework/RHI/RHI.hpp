@@ -20,4 +20,7 @@ namespace RHI
     uint32_t GetFormatComponentNum(ERHIFormat format);
     bool IsDepthFormat(ERHIFormat format);
     bool IsStencilFormat(ERHIFormat format);
+    bool IsSRGBFormat(ERHIFormat format);
+    uint32_t CalcSubresource(const RHITextureDesc& desc, uint32_t mipLevel, uint32_t arraySlice);
+    void DecomposeSubresource(const RHITextureDesc& desc, uint32_t subresource, uint32_t& mipLevel, uint32_t& arraySlice);
 }

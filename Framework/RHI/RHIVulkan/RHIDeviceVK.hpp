@@ -1,25 +1,36 @@
 #pragma once
 
 #include "RHICommonVK.hpp"
+#include "RHIDeletionQueueVK.hpp"
 #include "RHI/RHIDevice.hpp"
-#include "VulkanInstance.hpp"
 
-#include <vma/vk_mem_alloc.h>
-#include <vulkan/vulkan.hpp>
 #include <queue>
+#include <hash_map>
+#include <Hash.hpp>
 
-namespace RHI::Vulkan
+namespace std
+{
+    template<>
+    struct hash<RHI::RHITextureDesc>
+    {
+        size_t operator()(const RHI::RHITextureDesc& desc) const
+        {
+            return CityHash64(reinterpret_cast<const char*>(&desc), sizeof(desc));
+        }
+    };
+}
+
+namespace RHI
 {
     class RHIDeviceVK : public RHIDevice
     {
     public:
-        RHIDeviceVK(const RHIDeviceDesc& desc) : mDesc(desc) {}
+        RHIDeviceVK(const RHIDeviceDesc& desc);
         ~RHIDeviceVK();
 
         virtual bool Initialize() override;
         virtual void BeginFrame() override;
         virtual void EndFrame() override;
-        virtual uint64_t GetFrameID() const override;
         virtual void* GetNativeHandle() const override { return mDevice; }
 
         virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const std::string& name) override;
@@ -39,18 +50,60 @@ namespace RHI::Vulkan
         virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) const override;
         virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) const override;
 
-        // void Delete()
+        vk::Instance GetInstance() const { return mInstance; }
+        vk::PhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
+        vk::Device GetDevice() const { return mDevice; }
+        VmaAllocator GetVmaAllocator() const { return mAllocator; }
+        uint32_t GetGraphicsQueueIndex() const { return mGraphicsQueueIndex; }
+        uint32_t GetComputeQueueIndex() const { return mComputeQueueIndex; }
+        uint32_t GetCopyQueueIndex() const { return mCopyQueueIndex; }
+        vk::Queue GetGraphicsQueue() const { return mGraphicsQueue; }
+        vk::Queue GetComputeQueue() const { return mComputeQueue; }
+        vk::Queue GetCopyQueue() const { return mCopyQueue; }
+
+        template<typename T>
+        void Delete(T object);
+
+        void EnqueueDefaultLayoutTransition(RHITexture* texture);
+        void CancelDefaultLayoutTransition(RHITexture* texture);
+        void FlushLayoutTransition(ERHICommandQueueType queueType);
 
     private:
-        RHIDeviceDesc mDesc {};
+        vk::Result CreateInstance();
+        vk::Result CreateDevice();
+        vk::Result CreateVmaAllocator();
+        void FindQueueFamilyIndex();
 
+    private:
+        vk::Instance mInstance;
+        vk::DebugUtilsMessengerEXT mDebugMessenger;
+        vk::PhysicalDevice mPhysicalDevice;
         vk::Device mDevice;
-        InstanceVK mInstance;
+        VmaAllocator mAllocator = VK_NULL_HANDLE;
 
-        VmaAllocator mAllocator;
+        uint32_t mGraphicsQueueIndex = -1;
+        uint32_t mComputeQueueIndex = -1;
+        uint32_t mCopyQueueIndex = -1;
+        vk::Queue mGraphicsQueue;
+        vk::Queue mComputeQueue;
+        vk::Queue mCopyQueue;
 
-        std::unique_ptr<vk::Queue> mGraphicsQueue;
-        std::unique_ptr<vk::Queue> mComputeQueue;
-        std::unique_ptr<vk::Queue> mTransferQueue;
+        RHIDeletionQueueVK* mDeferredDeletionQueue = nullptr;
+        RHICommandList* mTransitionCopyCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+        RHICommandList* mTransitionGraphicsCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+
+        std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingGraphicsTransitions;
+        std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingCopyTransitions;
+
+        std::hash_map<RHITextureDesc, uint32_t> mTextureSizeMap;
     };
+
+    template<typename T>
+    inline void RHIDeviceVK::Delete(T object)
+    {
+        if (objectHandle != VK_NULL_HANDLE)
+        {
+            mDeferredDeletionQueue->Delete(objectHandle, m_frameID);
+        }
+    }
 } // namespace RHI::Vulkan

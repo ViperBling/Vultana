@@ -1,0 +1,78 @@
+#pragma once
+
+#include "RHICommonVK.hpp"
+#include "RHI/RHICommandList.hpp"
+
+namespace RHI
+{
+    class RHIDeviceVK;
+
+    class RHICommandListVK : public RHICommandList
+    {
+    public:
+        RHICommandListVK(RHIDeviceVK* device, ERHICommandQueueType queueType, const std::string& name);
+        ~RHICommandListVK();
+
+        bool Create();
+
+        virtual void* GetNativeHandle() const override { return mCmdBuffer; }
+
+        virtual void ResetAllocator() override;
+        virtual void Begin() override;
+        virtual void End() override;
+        virtual void Wait(RHIFence* fence, uint64_t value) override;
+        virtual void Signal(RHIFence* fence, uint64_t value) override;
+        virtual void Present(RHISwapchain* swapchain) override;
+        virtual void Submit() override;
+        virtual void ResetState() override;
+
+        virtual void CopyBufferToTexture(RHIBuffer* srcBuffer, RHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
+        virtual void CopyTextureToBuffer(RHITexture* srcTexture, RHIBuffer* dstBuffer, uint32_t mipLevel, uint32_t arraySlice) override;
+        virtual void CopyBuffer(RHIBuffer* src, RHIBuffer* dst, uint32_t srcOffset, uint32_t dstOffset, uint32_t size) override;
+        virtual void CopyTexture(RHITexture* src, RHITexture* dst, uint32_t srcMipLevel, uint32_t dstMipLevel, uint32_t srcArraySlice, uint32_t dstArraySlice) override;
+        virtual void ClearUAV(RHIResource* resource, RHIDescriptor* uav, const float* clearValue) override;
+        virtual void ClearUAV(RHIResource* resource, RHIDescriptor* uav, const uint32_t* clearValue) override;
+        virtual void WriteBuffer(RHIBuffer* buffer, uint32_t offset, uint32_t size, const void* data) override;
+
+        virtual void TextureBarrier(RHITexture* texture, uint32_t subResouce, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
+        virtual void BufferBarrier(RHIBuffer* buffer, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
+        virtual void GlobalBarrier(ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
+        virtual void FlushBarriers() override;
+
+        virtual void BeginRenderPass(const RHIRenderPassDesc& desc) override;
+        virtual void EndRenderPass() override;
+        virtual void SetPipelineState(RHIPipelineState* pipelineState) override;
+        virtual void SetStencilReference(uint8_t stencil) override;
+        virtual void SetBlendFactor(const float* blendFactor) override;
+        virtual void SetIndexBuffer(RHIBuffer* buffer, uint32_t offset, ERHIFormat format) override;
+        virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
+        virtual void SetScissorRect(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
+        virtual void SetGraphicsConstants(uint32_t slot, const void* data, size_t dataSize) override;
+        virtual void SetComputeConstants(uint32_t slot, const void* data, size_t dataSize) override;
+
+        virtual void Draw(uint32_t vertexCount, uint32_t instanceCount = 1) override;
+        virtual void DrawIndexed(uint32_t indexCount, uint32_t instanceCount = 1, uint32_t indexOffset = 0) override;
+        virtual void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
+        virtual void DispatchMesh(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
+
+        virtual void DrawIndirect(RHIBuffer* buffer, uint32_t offset) override;
+        virtual void DrawIndexedIndirect(RHIBuffer* buffer, uint32_t offset) override;
+        virtual void DispatchIndirect(RHIBuffer* buffer, uint32_t offset) override;
+    
+    private:
+        vk::Queue mQueue;
+        vk::CommandPool mCmdPool;
+        vk::CommandBuffer mCmdBuffer;
+
+        std::vector<vk::CommandBuffer> mFreeCmdBuffers;
+        std::vector<vk::CommandBuffer> mPendingCmdBuffers;
+
+        std::vector<vk::MemoryBarrier2> mMemoryBarriers;
+        std::vector<vk::BufferMemoryBarrier2> mBufferMemoryBarriers;
+        std::vector<vk::ImageMemoryBarrier2> mImageMemoryBarriers;
+
+        std::vector<std::pair<RHIFence*, uint64_t>> mPendingWaits;
+        std::vector<std::pair<RHIFence*, uint64_t>> mPendingSignals;
+        std::vector<RHISwapchain*> mPendingSwapchain;
+    };
+}

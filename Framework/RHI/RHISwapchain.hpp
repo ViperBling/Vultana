@@ -11,12 +11,12 @@ namespace RHI
     public:
         virtual ~RHISwapchain() = default;
 
-        virtual bool Present() = 0;
-        virtual bool Resize(uint32_t width, uint32_t height) = 0;
-        virtual void SetVSyncEnabled(bool enable) = 0;
-
-        const RHISwapchainDesc& GetDesc() const { return mDesc; }
+        virtual void AcquireNextBackBuffer() = 0;
         virtual RHITexture* GetBackBuffer() const = 0;
+        virtual bool Resize(uint32_t width, uint32_t height) = 0;
+        virtual void SetVSyncEnabled(bool enabled) = 0;
+
+        const RHISwapchainDesc* GetDesc() const { return &mDesc; }
 
     protected:
         RHISwapchainDesc mDesc {};

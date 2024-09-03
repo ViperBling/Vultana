@@ -7,6 +7,7 @@
 
 namespace RHI
 {
+    class RHIBuffer;
     class RHIHeap;
     class RHITexture;
     class RHIShader;
@@ -403,6 +404,16 @@ namespace RHI
         RHIRenderPassDepthAttachment Depth;
     };
 
+    enum class ERHIShaderType
+    {
+        AS,
+        MS,
+        VS,
+        PS,
+        CS,
+        Count
+    };
+
     enum ERHIShaderCompileFlagBits
     {
         RHIShaderCompileFlagO0 = 1 << 0,
@@ -414,9 +425,9 @@ namespace RHI
 
     struct RHIShaderDesc
     {
+        ERHIShaderType Type;
         std::string File;
         std::string EntryPoint;
-        std::string Profile;
         std::vector<std::string> Defines;
         ERHIShaderCompileFlags CompileFlags = 0;
     };
@@ -477,7 +488,7 @@ namespace RHI
     {
         Add,
         Subtract,
-        RevSubtract,
+        ReverseSubtract,
         Min,
         Max,
         Count,
@@ -508,6 +519,7 @@ namespace RHI
     {
         Graphics,
         Compute,
+        MeshShading,
         Count,
     };
 

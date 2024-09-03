@@ -1,11 +1,9 @@
 #pragma once
 
+#include "RHICommonVK.hpp"
 #include "RHI/RHIBuffer.hpp"
 
-#include <vma/vk_mem_alloc.h>
-#include <vulkan/vulkan.hpp>
-
-namespace RHI::Vulkan
+namespace RHI
 {
     class RHIDeviceVK;
 
@@ -15,19 +13,19 @@ namespace RHI::Vulkan
         RHIBufferVK(RHIDeviceVK* device, const RHIBufferDesc& desc, const std::string& name);
         ~RHIBufferVK();
 
-        virtual void* GetNativeHandle() const override;
+        bool Create();
+
+        virtual void* GetNativeHandle() const override { return mBuffer; }
         virtual void* GetCPUAddress() const override;
         virtual uint64_t GetGPUAddress() const override { return 0; }
         virtual uint32_t GetRequiredStagingBufferSize() const override;
-
-        bool Create();
 
         vk::Buffer GetBuffer() const { return mBuffer; }
         VmaAllocation GetAllocation() const { return mAllocation; }
     
     private:
-        vk::Buffer mBuffer;
-        VmaAllocation mAllocation;
+        vk::Buffer mBuffer = VK_NULL_HANDLE;
+        VmaAllocation mAllocation = VK_NULL_HANDLE;
         void* mpData = nullptr;
     };
 }

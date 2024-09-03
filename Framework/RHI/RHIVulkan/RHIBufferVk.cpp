@@ -1,7 +1,7 @@
 #include "RHIBufferVK.hpp"
 #include "RHIDeviceVK.hpp"
 
-namespace RHI::Vulkan
+namespace RHI
 {
     RHIBufferVK::RHIBufferVK(RHIDeviceVK *device, const RHIBufferDesc &desc, const std::string &name)
     {

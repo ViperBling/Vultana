@@ -12,7 +12,7 @@ namespace RHI
         const RHIShaderDesc& GetDesc() const { return mDesc; }
         uint64_t GetHash() const { return mHash; }
 
-        virtual bool SetShaderData(const uint8_t* data, uint32_t size) = 0;
+        virtual bool Create(tcb::span<uint8_t> data) = 0;
 
     protected:
         RHIShaderDesc mDesc {};

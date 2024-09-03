@@ -3,98 +3,338 @@
 #include "RHI/RHICommon.hpp"
 
 #include <vulkan/vulkan.hpp>
+#include <vma/vk_mem_alloc.h>
+
 #include <unordered_map>
 #include <cassert>
 
-namespace RHI::Vulkan
+namespace RHI
 {
+    #define VK_NO_PROTOTYPES
+    #define VK_USE_PLATFORM_WIN32_KHR
     #define VK_KRONOS_VALIDATION_LAYER_NAME "VK_LAYER_KHRONOS_validation"
 
-    template <typename A, typename B>
-    static std::unordered_map<A, B>& GetEnumMap()
+    template<typename T>
+    inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name)
     {
-        static std::unordered_map<A, B> map;
-        return map;
+        vk::DebugUtilsObjectNameInfoEXT nameInfo = {vk::StructureType::eDebugUtilsObjectNameInfoEXT};
+        nameInfo.objectType = objectType;
+        nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
+        nameInfo.pObjectName = name;
+
+        vkSetDebugUtilsObjectNameEXT(device, reinterpret_cast<const VkDebugUtilsObjectNameInfoEXT*>(&nameInfo));
     }
 
-    template <typename A, typename B>
-    B VKEnumCast(const A& value)
+    inline vk::Format ToVulkanFormat(ERHIFormat format, bool SRVOrRTV = false)
     {
-        auto& map = GetEnumMap<A, B>();
-        auto it = map.find(value);
-        assert((it != map.end()));
-        return static_cast<B>(it->second);
+        switch (format)
+        {
+        case ERHIFormat::Unknown:
+            return vk::Format::eUndefined;
+        case ERHIFormat::RGBA32F:
+            return vk::Format::eR32G32B32A32Sfloat;
+        case ERHIFormat::RGBA32UI:
+            return vk::Format::eR32G32B32A32Uint;
+        case ERHIFormat::RGBA32SI:
+            return vk::Format::eR32G32B32A32Sint;
+        case ERHIFormat::RGBA16F:
+            return vk::Format::eR16G16B16A16Sfloat;
+        case ERHIFormat::RGBA16UI:
+            return vk::Format::eR16G16B16A16Uint;
+        case ERHIFormat::RGBA16SI:
+            return vk::Format::eR16G16B16A16Sint;
+        case ERHIFormat::RGBA16UNORM:
+            return vk::Format::eR16G16B16A16Unorm;
+        case ERHIFormat::RGBA16SNORM:
+            return vk::Format::eR16G16B16A16Snorm;
+        case ERHIFormat::RGBA8UI:
+            return vk::Format::eR8G8B8A8Uint;
+        case ERHIFormat::RGBA8SI:
+            return vk::Format::eR8G8B8A8Sint;
+        case ERHIFormat::RGBA8UNORM:
+            return vk::Format::eR8G8B8A8Unorm;
+        case ERHIFormat::RGBA8SNORM:
+            return vk::Format::eR8G8B8A8Snorm;
+        case ERHIFormat::RGBA8SRGB:
+            return SRVOrRTV ? vk::Format::eR8G8B8A8Srgb : vk::Format::eR8G8B8A8Unorm;
+        case ERHIFormat::BGRA8UNORM:
+            return vk::Format::eB8G8R8A8Unorm;
+        case ERHIFormat::BGRA8SRGB:
+            return SRVOrRTV ? vk::Format::eR8G8B8A8Srgb : vk::Format::eR8G8B8A8Unorm;
+        case ERHIFormat::RGB10A2UI:
+            return vk::Format::eA2R10G10B10UintPack32;
+        case ERHIFormat::RGB10A2UNORM:
+            return vk::Format::eA2R10G10B10UnormPack32;
+        case ERHIFormat::RGB32F:
+            return vk::Format::eR32G32B32Sfloat;
+        case ERHIFormat::RGB32UI:
+            return vk::Format::eR32G32B32Uint;
+        case ERHIFormat::RGB32SI:
+            return vk::Format::eR32G32B32Sint;
+        case ERHIFormat::R11G11B10F:
+            return vk::Format::eB10G11R11UfloatPack32;
+        case ERHIFormat::RGB9E5:
+            return vk::Format::eE5B9G9R9UfloatPack32;
+        case ERHIFormat::RG32F:
+            return vk::Format::eR32G32Sfloat;
+        case ERHIFormat::RG32UI:
+            return vk::Format::eR32G32Uint;
+        case ERHIFormat::RG32SI:
+            return vk::Format::eR32G32Sint;
+        case ERHIFormat::RG16F:
+            return vk::Format::eR16G16Sfloat;
+        case ERHIFormat::RG16UI:
+            return vk::Format::eR16G16Uint;
+        case ERHIFormat::RG16SI:
+            return vk::Format::eR16G16Sint;
+        case ERHIFormat::RG16UNORM:
+            return vk::Format::eR16G16Unorm;
+        case ERHIFormat::RG16SNORM:
+            return vk::Format::eR16G16Snorm;
+        case ERHIFormat::RG8UI:
+            return vk::Format::eR8G8Uint;
+        case ERHIFormat::RG8SI:
+            return vk::Format::eR8G8Sint;
+        case ERHIFormat::RG8UNORM:
+            return vk::Format::eR8G8Unorm;
+        case ERHIFormat::RG8SNORM:
+            return vk::Format::eR8G8Snorm;
+        case ERHIFormat::R32F:
+            return vk::Format::eR32Sfloat;
+        case ERHIFormat::R32UI:
+            return vk::Format::eR32Uint;
+        case ERHIFormat::R32SI:
+            return vk::Format::eR32Sint;
+        case ERHIFormat::R16F:
+            return vk::Format::eR16Sfloat;
+        case ERHIFormat::R16UI:
+            return vk::Format::eR16Uint;
+        case ERHIFormat::R16SI:
+            return vk::Format::eR16Sint;
+        case ERHIFormat::R16UNORM:
+            return vk::Format::eR16Unorm;
+        case ERHIFormat::R16SNORM:
+            return vk::Format::eR16Snorm;
+        case ERHIFormat::R8UI:
+            return vk::Format::eR8Uint;
+        case ERHIFormat::R8SI:
+            return vk::Format::eR8Sint;
+        case ERHIFormat::R8UNORM:
+            return vk::Format::eR8Unorm;
+        case ERHIFormat::R8SNORM:
+            return vk::Format::eR8Snorm;
+        case ERHIFormat::D32F:
+            return vk::Format::eD32Sfloat;
+        case ERHIFormat::D32FS8:
+            return vk::Format::eD32SfloatS8Uint;
+        case ERHIFormat::D16:
+            return vk::Format::eD16Unorm;
+        case ERHIFormat::BC1UNORM:
+            return vk::Format::eBc1RgbUnormBlock;
+        case ERHIFormat::BC1SRGB:
+            return vk::Format::eBc1RgbSrgbBlock;
+        case ERHIFormat::BC2UNORM:
+            return vk::Format::eBc2UnormBlock;
+        case ERHIFormat::BC2SRGB:
+            return vk::Format::eBc2SrgbBlock;
+        case ERHIFormat::BC3UNORM:
+            return vk::Format::eBc3UnormBlock;
+        case ERHIFormat::BC3SRGB:
+            return vk::Format::eBc3SrgbBlock;
+        case ERHIFormat::BC4UNORM:
+            return vk::Format::eBc4UnormBlock;
+        case ERHIFormat::BC4SNORM:
+            return vk::Format::eBc4SnormBlock;
+        case ERHIFormat::BC5UNORM:
+            return vk::Format::eBc5UnormBlock;
+        case ERHIFormat::BC5SNORM:
+            return vk::Format::eBc5SnormBlock;
+        case ERHIFormat::BC6U16F:
+            return vk::Format::eBc6HUfloatBlock;
+        case ERHIFormat::BC6S16F:
+            return vk::Format::eBc6HSfloatBlock;
+        case ERHIFormat::BC7UNORM:
+            return vk::Format::eBc7UnormBlock;
+        case ERHIFormat::BC7SRGB:
+            return vk::Format::eBc7SrgbBlock;
+        default:
+            return vk::Format::eUndefined;
+        }
     }
 
-    #define VK_ENUM_MAP_BEGIN(A, B) template <> std::unordered_map<A, B>& GetEnumMap<A, B>() { static std::unordered_map<A, B> map = {
-    #define VK_ENUM_MAP_ITEM(A, B) { A, B },
-    #define VK_ENUM_MAP_END() }; return map; }
+    inline VmaMemoryUsage ToVmaUsage(ERHIMemoryType type)
+    {
+        switch (type)
+        {
+        case ERHIMemoryType::GPUOnly:
+            return VMA_MEMORY_USAGE_GPU_ONLY;
+        case ERHIMemoryType::CPUOnly:
+            return VMA_MEMORY_USAGE_CPU_ONLY;
+        case ERHIMemoryType::CPUToGPU:
+            return VMA_MEMORY_USAGE_CPU_TO_GPU;
+        case ERHIMemoryType::GPUToCPU:
+            return VMA_MEMORY_USAGE_GPU_TO_CPU;
+        default:
+            return VMA_MEMORY_USAGE_AUTO;
+        }
+    }
 
-    VK_ENUM_MAP_BEGIN(ERHIFormat, vk::Format)
-        VK_ENUM_MAP_ITEM(ERHIFormat::Unknown,       vk::Format::eUndefined)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA32F,       vk::Format::eR32G32B32A32Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA32UI,      vk::Format::eR32G32B32A32Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA32SI,      vk::Format::eR32G32B32A32Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA16F,       vk::Format::eR16G16B16A16Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA16UI,      vk::Format::eR16G16B16A16Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA16SI,      vk::Format::eR16G16B16A16Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA16UNORM,   vk::Format::eR16G16B16A16Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA16SNORM,   vk::Format::eR16G16B16A16Snorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA8UI,       vk::Format::eR8G8B8A8Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA8SI,       vk::Format::eR8G8B8A8Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA8UNORM,    vk::Format::eR8G8B8A8Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA8SNORM,    vk::Format::eR8G8B8A8Snorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGBA8SRGB,     vk::Format::eR8G8B8A8Srgb)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BGRA8UNORM,    vk::Format::eB8G8R8A8Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BGRA8SRGB,     vk::Format::eB8G8R8A8Srgb)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGB10A2UI,     vk::Format::eA2B10G10R10UintPack32)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGB10A2UNORM,  vk::Format::eA2B10G10R10UnormPack32)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGB32F,        vk::Format::eR32G32B32Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGB32UI,       vk::Format::eR32G32B32Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGB32SI,       vk::Format::eR32G32B32Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R11G11B10F,    vk::Format::eB10G11R11UfloatPack32)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RGB9E5,        vk::Format::eE5B9G9R9UfloatPack32)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG32F,         vk::Format::eR32G32Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG32UI,        vk::Format::eR32G32Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG32SI,        vk::Format::eR32G32Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG16F,         vk::Format::eR16G16Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG16UI,        vk::Format::eR16G16Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG16SI,        vk::Format::eR16G16Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG16UNORM,     vk::Format::eR16G16Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG16SNORM,     vk::Format::eR16G16Snorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG8UI,         vk::Format::eR8G8Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG8SI,         vk::Format::eR8G8Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG8UNORM,      vk::Format::eR8G8Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::RG8SNORM,      vk::Format::eR8G8Snorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R32F,          vk::Format::eR32Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R32UI,         vk::Format::eR32Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R32SI,         vk::Format::eR32Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R16F,          vk::Format::eR16Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R16UI,         vk::Format::eR16Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R16SI,         vk::Format::eR16Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R16UNORM,      vk::Format::eR16Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R16SNORM,      vk::Format::eR16Snorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R8UI,          vk::Format::eR8Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R8SI,          vk::Format::eR8Sint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R8UNORM,       vk::Format::eR8Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::R8SNORM,       vk::Format::eR8Snorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::D32F,          vk::Format::eD32Sfloat)
-        VK_ENUM_MAP_ITEM(ERHIFormat::D32FS8,        vk::Format::eD32SfloatS8Uint)
-        VK_ENUM_MAP_ITEM(ERHIFormat::D16,           vk::Format::eD16Unorm)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC1UNORM,      vk::Format::eBc1RgbaUnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC1SRGB,       vk::Format::eBc1RgbaSrgbBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC2UNORM,      vk::Format::eBc2UnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC2SRGB,       vk::Format::eBc2SrgbBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC3UNORM,      vk::Format::eBc3UnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC3SRGB,       vk::Format::eBc3SrgbBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC4UNORM,      vk::Format::eBc4UnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC4SNORM,      vk::Format::eBc4SnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC5UNORM,      vk::Format::eBc5UnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC5SNORM,      vk::Format::eBc5SnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC6U16F,       vk::Format::eBc6HUfloatBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC6S16F,       vk::Format::eBc6HSfloatBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC7UNORM,      vk::Format::eBc7UnormBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::BC7SRGB,       vk::Format::eBc7SrgbBlock)
-        VK_ENUM_MAP_ITEM(ERHIFormat::Count,         vk::Format::eUndefined)
-    VK_ENUM_MAP_END()
+    inline vk::ImageCreateInfo ToVulkanImageCreateInfo(const RHITextureDesc& desc)
+    {
+        vk::ImageCreateInfo createInfo;
+        createInfo.imageType = desc.Type == ERHITextureType::Texture3D ? vk::ImageType::e3D : vk::ImageType::e2D;
+        createInfo.format = ToVulkanFormat(desc.Format);
+        createInfo.extent.width = desc.Width;
+        createInfo.extent.height = desc.Height;
+        createInfo.extent.depth = desc.Depth;
+        createInfo.mipLevels = desc.MipLevels;
+        createInfo.arrayLayers = desc.ArraySize;
+        createInfo.samples = vk::SampleCountFlagBits::e1;
+        createInfo.tiling = vk::ImageTiling::eOptimal;
+        createInfo.usage = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+        createInfo.sharingMode = vk::SharingMode::eExclusive;
+        createInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+        if (desc.Usage & RHITextureUsageRenderTarget)
+        {
+            createInfo.usage |= vk::ImageUsageFlagBits::eColorAttachment;
+        }
+
+        if (desc.Usage & RHITextureUsageDepthStencil)
+        {
+            createInfo.usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+        }
+
+        if (desc.Usage & RHITextureUsageUnorderedAccess)
+        {
+            createInfo.usage |= vk::ImageUsageFlagBits::eStorage;
+        }
+
+        if (desc.Type == ERHITextureType::TextureCube || desc.Type == ERHITextureType::TextureCubeArray)
+        {
+            assert(desc.ArraySize % 6 == 0);
+            createInfo.flags |= vk::ImageCreateFlagBits::eCubeCompatible;
+        }
+
+        if (desc.AllocationType == ERHIAlloactionType::Sparse)
+        {
+            createInfo.flags |= vk::ImageCreateFlagBits::eSparseBinding | vk::ImageCreateFlagBits::eSparseResidency;
+        }
+
+        createInfo.flags |= vk::ImageCreateFlagBits::eMutableFormat;
+
+        return createInfo;
+    }
+
+    inline vk::ImageAspectFlags GetAspectFlags(ERHIFormat format)
+    {
+        vk::ImageAspectFlags aspectMask;
+
+        if (format == ERHIFormat::D32FS8)
+        {
+            aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        }
+        else if (format == ERHIFormat::D32F || format == ERHIFormat::D16)
+        {
+            aspectMask = vk::ImageAspectFlagBits::eDepth;
+        }
+        else
+        {
+            aspectMask = vk::ImageAspectFlagBits::eColor;
+        }
+
+        return aspectMask;
+    }
+
+    inline vk::PipelineStageFlags2 GetStageMask(ERHIAccessFlags flags)
+    {
+        vk::PipelineStageFlags2 stage;
+
+        if (flags & RHIAccessPresent)         stage |= vk::PipelineStageFlagBits2::eTopOfPipe;
+        if (flags & RHIAccessRTV)             stage |= vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+        if (flags & RHIAccessMaskDSV)         stage |= vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests;
+        if (flags & RHIAccessMaskVS)          stage |= vk::PipelineStageFlagBits2::eTaskShaderEXT | vk::PipelineStageFlagBits2::eMeshShaderEXT | vk::PipelineStageFlagBits2::eVertexShader;
+        if (flags & RHIAccessMaskPS)          stage |= vk::PipelineStageFlagBits2::eFragmentShader;
+        if (flags & RHIAccessMaskCS)          stage |= vk::PipelineStageFlagBits2::eComputeShader;
+        if (flags & RHIAccessMaskCopy)        stage |= vk::PipelineStageFlagBits2::eCopy;
+        if (flags & RHIAccessClearUAV)        stage |= vk::PipelineStageFlagBits2::eComputeShader;
+        if (flags & RHIAccessShadingRate)     stage |= vk::PipelineStageFlagBits2::eFragmentShadingRateAttachmentKHR;
+        if (flags & RHIAccessIndexBuffer)     stage |= vk::PipelineStageFlagBits2::eIndexInput;
+        if (flags & RHIAccessIndirectArgs)    stage |= vk::PipelineStageFlagBits2::eDrawIndirect;
+        if (flags & RHIAccessMaskAS)          stage |= vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR;
+
+        return stage;
+    }
+
+    inline vk::AccessFlags2 GetAccessMask(ERHIAccessFlags flags)
+    {
+        vk::AccessFlags2 access;
+
+        if (flags & RHIAccessDiscard)
+        {
+            return access;
+        }
+
+        if (flags & RHIAccessRTV)             access |= vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite;
+        if (flags & RHIAccessDSV)             access |= vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+        if (flags & RHIAccessDSVReadOnly)     access |= vk::AccessFlagBits2::eDepthStencilAttachmentRead;
+        if (flags & RHIAccessMaskSRV)         access |= vk::AccessFlagBits2::eShaderSampledRead | vk::AccessFlagBits2::eShaderStorageRead;
+        if (flags & RHIAccessMaskUAV)         access |= vk::AccessFlagBits2::eShaderStorageWrite;
+        if (flags & RHIAccessClearUAV)        access |= vk::AccessFlagBits2::eShaderStorageWrite;
+        if (flags & RHIAccessCopyDst)         access |= vk::AccessFlagBits2::eTransferWrite;
+        if (flags & RHIAccessCopySrc)         access |= vk::AccessFlagBits2::eTransferRead;
+        if (flags & RHIAccessShadingRate)     access |= vk::AccessFlagBits2::eFragmentShadingRateAttachmentReadKHR;
+        if (flags & RHIAccessIndexBuffer)     access |= vk::AccessFlagBits2::eIndexRead;
+        if (flags & RHIAccessIndirectArgs)    access |= vk::AccessFlagBits2::eIndirectCommandRead;
+        if (flags & RHIAccessASRead)          access |= vk::AccessFlagBits2::eAccelerationStructureReadKHR;
+        if (flags & RHIAccessASWrite)         access |= vk::AccessFlagBits2::eAccelerationStructureWriteKHR;
+
+        return access;
+    }
+
+    inline vk::ImageLayout GetImageLayout(ERHIAccessFlags flags)
+    {
+        if (flags & RHIAccessDiscard)         return vk::ImageLayout::eUndefined;
+        if (flags & RHIAccessPresent)         return vk::ImageLayout::ePresentSrcKHR;
+        if (flags & RHIAccessRTV)             return vk::ImageLayout::eColorAttachmentOptimal;
+        if (flags & RHIAccessDSV)             return vk::ImageLayout::eDepthStencilAttachmentOptimal;
+        if (flags & RHIAccessDSVReadOnly)     return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+        if (flags & RHIAccessMaskSRV)         return vk::ImageLayout::eShaderReadOnlyOptimal;
+        if (flags & RHIAccessMaskUAV)         return vk::ImageLayout::eGeneral;
+        if (flags & RHIAccessClearUAV)        return vk::ImageLayout::eGeneral;
+        if (flags & RHIAccessCopyDst)         return vk::ImageLayout::eTransferDstOptimal;
+        if (flags & RHIAccessCopySrc)         return vk::ImageLayout::eTransferSrcOptimal;
+        if (flags & RHIAccessShadingRate)     return vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR;
+
+        assert(false);
+        return vk::ImageLayout::eUndefined;
+    }
+
+    inline vk::AttachmentLoadOp GetLoadOp(ERHIRenderPassLoadOp loadOp)
+    {
+        switch (loadOp)
+        {
+        case ERHIRenderPassLoadOp::Load:
+            return vk::AttachmentLoadOp::eLoad;
+        case ERHIRenderPassLoadOp::Clear:
+            return vk::AttachmentLoadOp::eClear;
+        case ERHIRenderPassLoadOp::DontCare:
+            return vk::AttachmentLoadOp::eDontCare;
+        default:
+            return vk::AttachmentLoadOp::eLoad;
+        }
+    }
+
+    inline vk::AttachmentStoreOp GetStoreOp(ERHIRenderPassStoreOp storeOp)
+    {
+        switch (storeOp)
+        {
+        case ERHIRenderPassStoreOp::Store:
+            return vk::AttachmentStoreOp::eStore;
+        case ERHIRenderPassStoreOp::DontCare:
+            return vk::AttachmentStoreOp::eDontCare;
+        default:
+            return vk::AttachmentStoreOp::eStore;
+        }
+    }
 }

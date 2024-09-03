@@ -23,6 +23,9 @@ namespace RHI
     public:
         virtual ~RHIDevice() = default;
 
+        const RHIDeviceDesc& GetDesc() const { return mDesc; }
+        uint64_t GetFrameID() const { return mFrameID; }
+
         virtual bool Initialize() = 0;
         virtual void BeginFrame() = 0;
         virtual void EndFrame() = 0;
@@ -45,5 +48,11 @@ namespace RHI
 
         virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) const = 0;
         virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) const = 0;
+
+        virtual bool DumpMemoryStats(const std::string& filename) = 0;
+
+    protected:
+        RHIDeviceDesc mDesc;
+        uint64_t mFrameID = 0;
     };
 }
