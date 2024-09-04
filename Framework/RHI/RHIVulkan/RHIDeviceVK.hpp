@@ -69,14 +69,15 @@ namespace RHI
         void FlushLayoutTransition(ERHICommandQueueType queueType);
 
     private:
-        vk::Result CreateInstance();
-        vk::Result CreateDevice();
-        vk::Result CreateVmaAllocator();
+        bool CreateInstance();
+        bool CreateDevice();
+        bool CreateVmaAllocator();
         void FindQueueFamilyIndex();
 
     private:
         vk::Instance mInstance;
         vk::DebugUtilsMessengerEXT mDebugMessenger;
+        vk::DispatchLoaderDynamic mDynamicLoader;
         vk::PhysicalDevice mPhysicalDevice;
         vk::Device mDevice;
         VmaAllocator mAllocator = VK_NULL_HANDLE;

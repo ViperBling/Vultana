@@ -3,6 +3,7 @@
 #include "RHIHeapVK.hpp"
 
 #include "Utilities/Utility.hpp"
+#include "Utilities/Log.hpp"
 
 namespace RHI
 {
@@ -82,7 +83,7 @@ namespace RHI
         
         if (result != vk::Result::eSuccess)
         {
-            GDebugErrorCallback("VulkanBuffer", "Failed to create buffer");
+            VTNA_LOG_ERROR("[RHIBufferVK] Failed to create buffer: {}", mName);
             return false;
         }
 
@@ -97,16 +98,21 @@ namespace RHI
 
     void * RHIBufferVK::GetCPUAddress() const
     {
-    return nullptr;
+        return mpData;
     }
     
     uint64_t RHIBufferVK::GetGPUAddress() const
     {
-    return 0;
+        vk::BufferDeviceAddressInfo addressInfo {};
+        addressInfo.buffer = mBuffer;
+
+        return ((RHIDeviceVK*)mpDevice)->GetDevice().getBufferAddress(addressInfo);
     }
 
     uint32_t RHIBufferVK::GetRequiredStagingBufferSize() const
     {
-    return 0;
+        vk::MemoryRequirements memReq {};
+        ((RHIDeviceVK*)mpDevice)->GetDevice().getBufferMemoryRequirements(mBuffer, &memReq);
+        return (uint32_t)memReq.size;
     }
 }

@@ -12,7 +12,6 @@ namespace RHI
 {
     #define VK_NO_PROTOTYPES
     #define VK_USE_PLATFORM_WIN32_KHR
-    #define VK_KRONOS_VALIDATION_LAYER_NAME "VK_LAYER_KHRONOS_validation"
 
     template<typename T>
     inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name)
@@ -22,7 +21,7 @@ namespace RHI
         nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
         nameInfo.pObjectName = name;
 
-        vkSetDebugUtilsObjectNameEXT(device, reinterpret_cast<const VkDebugUtilsObjectNameInfoEXT*>(&nameInfo));
+        device.setDebugUtilsObjectNameEXT(reinterpret_cast<const VkDebugUtilsObjectNameInfoEXT*>(&nameInfo));
     }
 
     inline vk::Format ToVulkanFormat(ERHIFormat format, bool SRVOrRTV = false)

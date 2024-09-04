@@ -14,7 +14,7 @@ namespace RHI
         RHIShaderResourceViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIShaderResourceViewDesc& desc, const std::string& name);
         ~RHIShaderResourceViewVK();
 
-        bool Creat();
+        bool Create();
 
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return 0; }
@@ -30,7 +30,7 @@ namespace RHI
         RHIUnorderedAccessViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIUnorderedAccessViewDesc& desc, const std::string& name);
         ~RHIUnorderedAccessViewVK();
 
-        bool Creat();
+        bool Create();
 
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return 0; }
@@ -46,7 +46,7 @@ namespace RHI
         RHIConstantBufferViewVK(RHIDeviceVK* device, RHIBuffer* buffer, const RHIConstantBufferViewDesc& desc, const std::string& name);
         ~RHIConstantBufferViewVK();
 
-        bool Creat();
+        bool Create();
 
         virtual void* GetNativeHandle() const override { return mBuffer->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return 0; }
@@ -62,7 +62,7 @@ namespace RHI
         RHISamplerVK(RHIDeviceVK* device, const RHISamplerDesc& desc, const std::string& name);
         ~RHISamplerVK();
 
-        bool Creat();
+        bool Create();
 
         virtual void* GetNativeHandle() const override { return mSampler; }
         virtual uint32_t GetHeapIndex() const override { return 0; }
