@@ -1,4 +1,5 @@
 #include "Renderer.hpp"
+#include "Core/VultanaEngine.hpp"
 
 #include "Windows/GLFWindow.hpp"
 
@@ -6,91 +7,47 @@
 #include <algorithm>
 #include <fstream>
 
-#define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.h>
-
 namespace Renderer
 {
-    struct Vertex
+    RendererBase::RendererBase()
     {
-        Math::Vector3 Position;
-        Math::Vector3 Color;
-    };
+        Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(RendererBase::OnWindowResize);
+    }
 
     RendererBase::~RendererBase()
     {
-        Cleanup();
     }
 
-    void RendererBase::Init(RendererCreateInfo &createInfo)
+    bool RendererBase::CreateDevice(RHI::ERHIRenderBackend backend, void *windowHandle, uint32_t width, uint32_t height)
     {
-        InitContext(createInfo);
-        InitSwapchain(createInfo);
-    
-        InitPipelines();
-        CreateVertexBuffer();
-        InitSyncStructures();
-        InitCommands();
-
-        GDebugInfoCallback("RendererBase::Init: Renderer initialized", "Renderer");
-    }
-
-    void RendererBase::Cleanup()
-    {
-        
+        return false;
     }
 
     void RendererBase::RenderFrame()
     {
-        
     }
 
-    void RendererBase::InitContext(RendererCreateInfo &createInfo)
+    void RendererBase::WaitGPU()
     {
-        mSwapchainExtent = { createInfo.Width, createInfo.Height };
-
-        RHI::RHIDeviceDesc deviceDesc {};
-        mDevice.reset(CreateRHIDevice(deviceDesc));
-        GDebugInfoCallback("Renderer", "RendererBase::InitContext: Device created");
     }
 
-    void RendererBase::InitSwapchain(RendererCreateInfo &createInfo)
+    void RendererBase::OnWindowResize(Window::GLFWindow* wndHandle, uint32_t width, uint32_t height)
     {
-        
     }
 
-    void RendererBase::CreateSwapchainImageView()
+    void RendererBase::BeginFrame()
     {
-        
     }
 
-    void RendererBase::InitPipelines()
+    void RendererBase::UploadResource()
     {
-        
     }
 
-    void RendererBase::CreateVertexBuffer()
+    void RendererBase::Render()
     {
-        
     }
 
-    void RendererBase::InitSyncStructures()
+    void RendererBase::EndFrame()
     {
-        
-    }
-
-    void RendererBase::InitCommands()
-    {
-        
-    }
-
-    void RendererBase::RecordCommandBuffer()
-    {
-        
-    }
-
-    void RendererBase::SubmitCommandBuffer()
-    {
-        
     }
 } // namespace Vultana::Renderer

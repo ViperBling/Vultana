@@ -9,9 +9,6 @@
 #include <memory>
 #include <functional>
 
-#include <vma/vk_mem_alloc.h>
-#include <vulkan/vulkan.hpp>
-
 namespace Window
 {
     class GLFWindow;
@@ -19,44 +16,57 @@ namespace Window
 
 namespace Renderer
 {
-    struct RendererCreateInfo
-    {
-        // RHI::RHIDeviceType DeviceType = RHI::RHIDeviceType::Hardware;
-        const char* ApplicationName = "Vultana";
-        uint32_t Width = 1280;
-        uint32_t Height = 720;
-        bool bEnableValidationLayers = true;
-    };
-    
     class RendererBase
     {
     public:
-        NOCOPY(RendererBase);
-        RendererBase(Window::GLFWindow* window) : mWndHandle(window) {}
-        virtual ~RendererBase();
+        RendererBase();
+        ~RendererBase();
 
-        virtual void Init(RendererCreateInfo& createInfo);
-        virtual void Cleanup();
-        virtual void RenderFrame();
+        bool CreateDevice(RHI::ERHIRenderBackend backend, void* windowHandle, uint32_t width, uint32_t height);
+        void RenderFrame();
+        void WaitGPU();
 
-    private:
-        void InitContext(RendererCreateInfo& createInfo);
-        void InitSwapchain(RendererCreateInfo& createInfo);
-        void CreateSwapchainImageView();
-        void InitPipelines();
-        void CreateVertexBuffer();
-        void InitSyncStructures();
-        void InitCommands();
+        uint64_t GetFrameID() const { return mpDevice->GetFrameID(); }
+        uint32_t GetDisplayWidth() const { return mDisplayWidth; }
+        uint32_t GetDisplayHeight() const { return mDisplayHeight; }
+        uint32_t GetRenderWidth() const { return mRenderWidth; }
+        uint32_t GetRenderHeight() const { return mRenderHeight; }
 
-        void RecordCommandBuffer();
-        void SubmitCommandBuffer();
+        RHI::RHIDevice* GetDevice() const { return mpDevice.get(); }
+        RHI::RHISwapchain* GetSwapchain() const { return mpSwapchain.get(); }
 
     private:
-        std::unique_ptr<RHI::RHIDevice> mDevice;
-        std::unique_ptr<RHI::RHISwapchain> mSwapchain;
+        void OnWindowResize(Window::GLFWindow* wndHandle, uint32_t width, uint32_t height);
 
-        Math::Vector2u mSwapchainExtent;
+        void BeginFrame();
+        void UploadResource();
+        void Render();
+        void EndFrame();
         
-        Window::GLFWindow* mWndHandle;
+    private:
+        std::unique_ptr<RHI::RHIDevice> mpDevice;
+        std::unique_ptr<RHI::RHISwapchain> mpSwapchain;
+
+        uint32_t mDisplayWidth;
+        uint32_t mDisplayHeight;
+        uint32_t mRenderWidth;
+        uint32_t mRenderHeight;
+        float mUpscaleRatio = 1.0f;
+        float mMipBias = 0.0f;
+
+        uint64_t mCurrentFrameFenceValue = 0;
+        uint64_t mFrameFenceValue[RHI::RHI_MAX_INFLIGHT_FRAMES] = {};
+        std::unique_ptr<RHI::RHIFence> mpFrameFence;
+        std::unique_ptr<RHI::RHICommandList> mpCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+
+        uint64_t mCurrentAsyncComputeFenceValue = 0;
+        std::unique_ptr<RHI::RHIFence> mpAsyncComputeFence;
+        std::unique_ptr<RHI::RHICommandList> mpAsyncComputeCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+
+        uint64_t mCurrentUploadFenceValue = 0;
+        std::unique_ptr<RHI::RHIFence> mpUploadFence;
+        std::unique_ptr<RHI::RHICommandList> mpUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+
+
     };
 }

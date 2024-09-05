@@ -308,5 +308,40 @@ namespace RHI
 
     void RHIDeviceVK::FindQueueFamilyIndex()
     {
+        auto queueFamilyProps = mPhysicalDevice.getQueueFamilyProperties();
+
+        for (uint32_t i = 0; i < queueFamilyProps.size(); i++)
+        {
+            if (mGraphicsQueueIndex == uint32_t(-1))
+            {
+                if (queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eGraphics)
+                {
+                    mGraphicsQueueIndex = i;
+                    continue;
+                }
+            }
+            if (mCopyQueueIndex == uint32_t(-1))
+            {
+                if (queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eTransfer &&
+                    !(queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eGraphics) &&
+                    !(queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eCompute))
+                {
+                    mCopyQueueIndex = i;
+                    continue;
+                }
+            }
+            if (mComputeQueueIndex == uint32_t(-1))
+            {
+                if (queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eCompute &&
+                    !(queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eGraphics))
+                {
+                    mComputeQueueIndex = i;
+                    continue;
+                }
+            }
+        }
+        assert(mGraphicsQueueIndex != uint32_t(-1));
+        assert(mCopyQueueIndex != uint32_t(-1));
+        assert(mComputeQueueIndex != uint32_t(-1));
     }
 }

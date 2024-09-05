@@ -42,7 +42,7 @@ namespace Window
         glfwSetWindowSizeCallback(this->mHwnd, [](GLFWwindow* handle, int width, int height)
         {
                 auto& window = *(GLFWindow*)glfwGetWindowUserPointer(handle);
-                if (window.mOnResize) window.mOnResize(window, Math::Vector2((float)width, (float)height));
+                if (window.mOnResize) window.mOnResize(window, (float)width, (float)height);
         });
         glfwSetKeyCallback(this->mHwnd, [](GLFWwindow* handle, int key, int scancode, int action, int mods)
         {
@@ -178,7 +178,7 @@ namespace Window
         return glfwSetTime((float)time);
     }
 
-    void GLFWindow::OnResize(std::function<void(GLFWindow &, Math::Vector2)> callback)
+    void GLFWindow::OnResize(std::function<void(GLFWindow &, uint32_t width, uint32_t height)> callback)
     {
         this->mOnResize = std::move(callback);
     }
@@ -199,15 +199,15 @@ namespace Window
         glfwMakeContextCurrent(window);
     }
 
-    const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, vk::Instance instance)
-    {
-        static vk::SurfaceKHR surface;
-        (void)glfwCreateWindowSurface(VkInstance(instance), window, nullptr, (VkSurfaceKHR*)&surface);
-        return surface;
-    }
+    // const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, vk::Instance instance)
+    // {
+    //     static vk::SurfaceKHR surface;
+    //     (void)glfwCreateWindowSurface(VkInstance(instance), window, nullptr, (VkSurfaceKHR*)&surface);
+    //     return surface;
+    // }
 
-    bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex)
-    {
-        return glfwGetPhysicalDevicePresentationSupport(instance, physicalDevice, familyQueueIndex) == GLFW_TRUE;
-    }
+    // bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex)
+    // {
+    //     return glfwGetPhysicalDevicePresentationSupport(instance, physicalDevice, familyQueueIndex) == GLFW_TRUE;
+    // }
 }

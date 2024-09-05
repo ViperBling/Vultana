@@ -1,41 +1,56 @@
 #include "VultanaEngine.hpp"
+#include "Utilities/Log.hpp"
+
+#include <spdlog/sinks/msvc_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
 
 #define SOKOL_IMPL
 #include <sokol/sokol_time.h>
 
 namespace Core
 {
-    Engine *Engine::GetEngineInstance()
+    VultanaEngine *VultanaEngine::GetEngineInstance()
     {
-        static Engine engine;
+        static VultanaEngine engine;
         return &engine;
     }
 
-    void Engine::Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height)
+    void VultanaEngine::Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height)
     {
+        auto console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
+        auto logger = std::make_shared<spdlog::logger>("RealEngine", spdlog::sinks_init_list{ console_sink});
+
+        spdlog::set_default_logger(logger);
+        spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e [%l] [thread %t] %v");
+        spdlog::set_level(spdlog::level::trace);
+        spdlog::flush_every(std::chrono::milliseconds(10));
+
         mpWorld = std::make_unique<Scene::World>();
 
         mWndHandle = windowHandle;
 
-        Renderer::RendererCreateInfo rendererCI;
-        rendererCI.ApplicationName = "Vultana";
-        rendererCI.Width = width;
-        rendererCI.Height = height;
-        rendererCI.bEnableValidationLayers = true;
+        RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
         mpRenderer = std::make_unique<Renderer::RendererBase>(mWndHandle);
-        mpRenderer->Init(rendererCI);
+        if (!mpRenderer->CreateDevice(renderBackend, mWndHandle, width, height))
+        {
+            VTNA_LOG_ERROR("Failed to create renderer device");
+            exit(0);
+        }
 
         stm_setup();
     }
 
-    void Engine::Shutdown()
+    void VultanaEngine::Shutdown()
     {
         mpWorld.reset();
         mpRenderer.reset();
+
+        spdlog::shutdown();
     }
 
-    void Engine::Tick()
+    void VultanaEngine::Tick()
     {
         mFrameTime = (float)stm_sec(stm_laptime(&mLastFrameTime));
 

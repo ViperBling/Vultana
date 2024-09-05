@@ -12,10 +12,10 @@ struct GLFWwindow;
 
 namespace Window
 {
-    struct WindowSurface
-    {
-        vk::SurfaceKHR Surface;
-    };
+    // struct WindowSurface
+    // {
+    //     vk::SurfaceKHR Surface;
+    // };
 
     struct WindowCreateInfo
     {
@@ -65,7 +65,7 @@ namespace Window
         float GetTimeSinceCreation() const;
         void SetTimeSinceCreation(float time);
 
-        void OnResize(std::function<void(GLFWindow&, Math::Vector2)> callback);
+        void OnResize(std::function<void(GLFWindow&, uint32_t width, uint32_t height)> callback);
         void OnKeyChanged(std::function<void(GLFWindow&, Utility::KeyCode, bool)> callback);
         void OnMouseChanged(std::function<void(GLFWindow&, Utility::MouseButton, bool)> callback);
         
@@ -73,11 +73,11 @@ namespace Window
 
     private:
         GLFWwindow* mHwnd = nullptr;
-        std::function<void(GLFWindow&, Math::Vector2)> mOnResize;
+        std::function<void(GLFWindow&, uint32_t width, uint32_t height)> mOnResize;
         std::function<void(GLFWindow&, Utility::KeyCode, bool)> mOnKeyChanged;
         std::function<void(GLFWindow&, Utility::MouseButton, bool)> mOnMouseChanged;
     };
 
-    const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, vk::Instance instance);
-    bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
+    // const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, vk::Instance instance);
+    // bool CheckVulkanPresentationSupport(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, uint32_t familyQueueIndex);
 }
