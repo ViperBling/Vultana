@@ -4,9 +4,10 @@
 #include "RHIDeletionQueueVK.hpp"
 #include "RHI/RHIDevice.hpp"
 
+#include "Utilities/Hash.hpp"
+
 #include <queue>
 #include <hash_map>
-#include <Hash.hpp>
 
 namespace std
 {

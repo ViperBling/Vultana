@@ -6,17 +6,13 @@
 
 #include "Utilities/Math.hpp"
 #include "Utilities/KeyCodes.hpp"
+#include "RHI/RHIVulkan/RHICommonVK.hpp"
 #include "Renderer/Renderer.hpp"
 
 struct GLFWwindow;
 
 namespace Window
 {
-    // struct WindowSurface
-    // {
-    //     vk::SurfaceKHR Surface;
-    // };
-
     struct WindowCreateInfo
     {
         bool TransparentFramebuffer = false;
@@ -70,6 +66,8 @@ namespace Window
         void OnMouseChanged(std::function<void(GLFWindow&, Utility::MouseButton, bool)> callback);
         
         void SetContext(GLFWwindow* window);
+
+        vk::Result CreateVulkanSurface(vk::Instance instance, vk::SurfaceKHR& surface);
 
     private:
         GLFWwindow* mHwnd = nullptr;

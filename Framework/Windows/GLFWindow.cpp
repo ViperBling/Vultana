@@ -199,6 +199,11 @@ namespace Window
         glfwMakeContextCurrent(window);
     }
 
+    vk::Result GLFWindow::CreateVulkanSurface(vk::Instance instance, vk::SurfaceKHR& surface)
+    {
+        return (vk::Result)glfwCreateWindowSurface(VkInstance(instance), mHwnd, nullptr, (VkSurfaceKHR*)&surface);
+    }
+
     // const vk::SurfaceKHR& CreateVulkanSurface(GLFWwindow *window, vk::Instance instance)
     // {
     //     static vk::SurfaceKHR surface;
