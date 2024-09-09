@@ -16,12 +16,12 @@ namespace RHI
     template<typename T>
     inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name)
     {
-        vk::DebugUtilsObjectNameInfoEXT nameInfo = {vk::StructureType::eDebugUtilsObjectNameInfoEXT};
+        vk::DebugUtilsObjectNameInfoEXT nameInfo;
         nameInfo.objectType = objectType;
-        nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
+        nameInfo.objectHandle = reinterpret_cast<uint64_t&>(object);
         nameInfo.pObjectName = name;
 
-        device.setDebugUtilsObjectNameEXT(reinterpret_cast<const VkDebugUtilsObjectNameInfoEXT*>(&nameInfo));
+        device.setDebugUtilsObjectNameEXT(nameInfo);
     }
 
     inline vk::Format ToVulkanFormat(ERHIFormat format, bool SRVOrRTV = false)

@@ -7,7 +7,7 @@
 #include "Utilities/Hash.hpp"
 
 #include <queue>
-#include <hash_map>
+#include <unordered_map>
 
 namespace std
 {
@@ -50,6 +50,8 @@ namespace RHI
 
         virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) const override;
         virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) const override;
+
+        virtual bool DumpMemoryStats(const std::string& file) override;
 
         vk::Instance GetInstance() const { return mInstance; }
         vk::PhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
@@ -97,15 +99,15 @@ namespace RHI
         std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingGraphicsTransitions;
         std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingCopyTransitions;
 
-        std::hash_map<RHITextureDesc, uint32_t> mTextureSizeMap;
+        std::unordered_map<RHITextureDesc, uint32_t> mTextureSizeMap;
     };
 
     template<typename T>
-    inline void RHIDeviceVK::Delete(T object)
+    inline void RHIDeviceVK::Delete(T objectHandle)
     {
         if (objectHandle != VK_NULL_HANDLE)
         {
-            mDeferredDeletionQueue->Delete(objectHandle, m_frameID);
+            mDeferredDeletionQueue->Delete(objectHandle, mFrameID);
         }
     }
 } // namespace RHI::Vulkan

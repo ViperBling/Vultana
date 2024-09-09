@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Scene/World.hpp"
-#include "Renderer/Renderer.hpp"
+#include "Renderer/RendererBase.hpp"
 #include "Windows/GLFWindow.hpp"
 
 #include <iostream>

@@ -36,7 +36,7 @@ namespace Renderer
         RHI::RHISwapchain* GetSwapchain() const { return mpSwapchain.get(); }
 
     private:
-        void OnWindowResize(Window::GLFWindow* wndHandle, uint32_t width, uint32_t height);
+        void OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height);
 
         void BeginFrame();
         void UploadResource();
@@ -66,7 +66,5 @@ namespace Renderer
         uint64_t mCurrentUploadFenceValue = 0;
         std::unique_ptr<RHI::RHIFence> mpUploadFence;
         std::unique_ptr<RHI::RHICommandList> mpUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
-
-
     };
 }

@@ -204,11 +204,63 @@ namespace RHI
 
     bool RHISwapchainVK::CreateSemaphores()
     {
-        return false;
+        vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        vk::SemaphoreCreateInfo semaphoreCI {};
+
+        for (uint32_t i = 0; i < mDesc.BufferCount; i++)
+        {
+            vk::Semaphore semaphore;
+
+            vk::Result res = device.createSemaphore(&semaphoreCI, nullptr, &semaphore);
+            if (res != vk::Result::eSuccess)
+            {
+                VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create semaphore");
+                return false;
+            }
+            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} acquire semaphore {}", mName, i).c_str());
+            mAcquireSemaphores.push_back(semaphore);
+        }
+
+        for (uint32_t i = 0; i < mDesc.BufferCount; i++)
+        {
+            vk::Semaphore semaphore;
+
+            vk::Result res = device.createSemaphore(&semaphoreCI, nullptr, &semaphore);
+            if (res != vk::Result::eSuccess)
+            {
+                VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create semaphore");
+                return false;
+            }
+            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} present semaphore {}", mName, i).c_str());
+            mPresentSemaphores.push_back(semaphore);
+        }
+        return true;
     }
 
     bool RHISwapchainVK::RecreateSwapchain()
     {
-        return false;
+        auto deviceVK = (RHIDeviceVK*)mpDevice;
+        auto device = deviceVK->GetDevice();
+        device.waitIdle();
+
+        for (size_t i = 0; i < mBackBuffers.size(); i++)
+        {
+            delete mBackBuffers[i];
+        }
+        mBackBuffers.clear();
+
+        for (size_t i = 0; i < mAcquireSemaphores.size(); i++)
+        {
+            deviceVK->Delete(mAcquireSemaphores[i]);
+        }
+        mAcquireSemaphores.clear();
+
+        for (size_t i = 0; i < mPresentSemaphores.size(); i++)
+        {
+            deviceVK->Delete(mPresentSemaphores[i]);
+        }
+        mPresentSemaphores.clear();
+
+        return CreateSwapchain() && CreateTextures() && CreateSemaphores();
     }
 }

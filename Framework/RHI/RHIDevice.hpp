@@ -29,7 +29,6 @@ namespace RHI
         virtual bool Initialize() = 0;
         virtual void BeginFrame() = 0;
         virtual void EndFrame() = 0;
-        virtual uint64_t GetFrameID() const = 0;
         virtual void* GetNativeHandle() const = 0;
 
         virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const std::string& name) = 0;

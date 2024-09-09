@@ -61,7 +61,7 @@ namespace RHI
             assert(mDesc.MemoryType == mDesc.Heap->GetDesc().MemoryType);
             assert(mDesc.Size + mDesc.HeapOffset <= mDesc.Heap->GetDesc().Size);
 
-            result = (vk::Result)vmaCreateAliasingBuffer2(allocator, (VmaAllocation)mDesc.Heap->GetNativeHandle(), (vk::DeviceSize)mDesc.HeapOffset, &VkBufferCreateInfo(bufferCI), (VkBuffer*)(&mBuffer));
+            result = (vk::Result)vmaCreateAliasingBuffer2(allocator, (VmaAllocation)mDesc.Heap->GetNativeHandle(), (vk::DeviceSize)mDesc.HeapOffset, (VkBufferCreateInfo*)&bufferCI, (VkBuffer*)(&mBuffer));
         }
         else
         {
@@ -76,7 +76,7 @@ namespace RHI
                 vmaAllocCI.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
             }
             VmaAllocationInfo vmaAllocInfo {};
-            result = (vk::Result)vmaCreateBuffer(allocator, &VkBufferCreateInfo(bufferCI), &vmaAllocCI, (VkBuffer*)(&mBuffer), &mAllocation, &vmaAllocInfo);
+            result = (vk::Result)vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&bufferCI, &vmaAllocCI, (VkBuffer*)(&mBuffer), &mAllocation, &vmaAllocInfo);
 
             mpData = vmaAllocInfo.pMappedData;
         }

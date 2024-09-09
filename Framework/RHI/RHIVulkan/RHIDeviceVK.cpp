@@ -136,6 +136,11 @@ namespace RHI
         return 0;
     }
 
+    bool RHIDeviceVK::DumpMemoryStats(const std::string &file)
+    {
+        return false;
+    }
+
     void RHIDeviceVK::EnqueueDefaultLayoutTransition(RHITexture *texture)
     {
     }

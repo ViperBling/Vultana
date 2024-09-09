@@ -10,8 +10,8 @@ namespace RHI
         switch (desc.RenderBackend)
         {
         case ERHIRenderBackend::Vulkan:
-            device = new RHI::Vulkan::RHIDeviceVK(desc);
-            if (!((RHI::Vulkan::RHIDeviceVK*)device)->Initialize())
+            device = new RHI::RHIDeviceVK(desc);
+            if (!((RHI::RHIDeviceVK*)device)->Initialize())
             {
                 delete device;
                 device = nullptr;

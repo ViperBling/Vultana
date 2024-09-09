@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+#include "RendererBase.hpp"
 #include "Core/VultanaEngine.hpp"
 
 #include "Windows/GLFWindow.hpp"
@@ -11,16 +11,18 @@ namespace Renderer
 {
     RendererBase::RendererBase()
     {
-        Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(RendererBase::OnWindowResize);
+        Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(&RendererBase::OnWindowResize);
     }
 
     RendererBase::~RendererBase()
     {
+        WaitGPU();
     }
 
     bool RendererBase::CreateDevice(RHI::ERHIRenderBackend backend, void *windowHandle, uint32_t width, uint32_t height)
     {
-        return false;
+        mDisplayWidth = width;
+        mDisplayHeight = height;
     }
 
     void RendererBase::RenderFrame()
@@ -29,9 +31,13 @@ namespace Renderer
 
     void RendererBase::WaitGPU()
     {
+        if (mpFrameFence)
+        {
+            mpFrameFence->Wait(mCurrentFrameFenceValue);
+        }
     }
 
-    void RendererBase::OnWindowResize(Window::GLFWindow* wndHandle, uint32_t width, uint32_t height)
+    void RendererBase::OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height)
     {
     }
 

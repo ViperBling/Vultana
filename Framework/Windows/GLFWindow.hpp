@@ -7,7 +7,7 @@
 #include "Utilities/Math.hpp"
 #include "Utilities/KeyCodes.hpp"
 #include "RHI/RHIVulkan/RHICommonVK.hpp"
-#include "Renderer/Renderer.hpp"
+#include "Renderer/RendererBase.hpp"
 
 struct GLFWwindow;
 

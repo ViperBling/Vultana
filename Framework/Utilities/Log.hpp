@@ -2,7 +2,7 @@
 
 #include <fmt/format.h>
 #include <string>
-#define SPDLOG_FMT_EXTERNAL
+// #define SPDLOG_FMT_EXTERNAL
 #include <spdlog/spdlog.h>
 
 template<>
