@@ -131,12 +131,75 @@ namespace RHI
 
     bool RHISwapchainVK::CreateSwapchain()
     {
-        return false;
+        vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        vk::SwapchainKHR oldSwapchain = mSwapchain;
+
+        vk::Format viewFormats[2];
+        viewFormats[0] = ToVulkanFormat(mDesc.ColorFormat);
+        viewFormats[1] = ToVulkanFormat(mDesc.ColorFormat, true);
+
+        vk::ImageFormatListCreateInfo imageFormatListCI {};
+        imageFormatListCI.setViewFormats(viewFormats);
+
+        vk::SwapchainCreateInfoKHR swapchainCI {};
+        swapchainCI.setSurface(mSurface);
+        swapchainCI.setMinImageCount(mDesc.BufferCount);
+        swapchainCI.setImageFormat(ToVulkanFormat(mDesc.ColorFormat));
+        swapchainCI.setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear);
+        swapchainCI.setImageExtent({ mDesc.Width, mDesc.Height });
+        swapchainCI.setImageArrayLayers(1);
+        swapchainCI.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
+        swapchainCI.setImageSharingMode(vk::SharingMode::eExclusive);
+        swapchainCI.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity);
+        swapchainCI.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
+        swapchainCI.setPresentMode(vk::PresentModeKHR::eFifo);      // TODO
+        swapchainCI.setClipped(true);
+        swapchainCI.setOldSwapchain(oldSwapchain);
+
+        if (IsSRGBFormat(mDesc.ColorFormat))
+        {
+            swapchainCI.setFlags(vk::SwapchainCreateFlagBitsKHR::eMutableFormat);
+            swapchainCI.setPNext(&imageFormatListCI);
+        }
+
+        vk::Result res = device.createSwapchainKHR(&swapchainCI, nullptr, &mSwapchain);
+        if (res != vk::Result::eSuccess)
+        {
+            VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create swapchain");
+            return false;
+        }
+        SetDebugName(device, vk::ObjectType::eSwapchainKHR, (uint64_t)(VkSwapchainKHR)mSwapchain, mName.c_str());
+
+        if (oldSwapchain != VK_NULL_HANDLE)
+        {
+            ((RHIDeviceVK*)mpDevice)->Delete(oldSwapchain);
+        }
+        return true;
     }
 
     bool RHISwapchainVK::CreateTextures()
     {
-        return false;
+        vk::Device device = (VkDevice)mpDevice->GetNativeHandle();
+
+        RHI::RHITextureDesc desc {};
+        desc.Width = mDesc.Width;
+        desc.Height = mDesc.Height;
+        desc.Format = mDesc.ColorFormat;
+        desc.Usage = RHI::ETextureUsageBit::RHITextureUsageRenderTarget;
+
+        std::vector<vk::Image> images;
+        device.getSwapchainImagesKHR(mSwapchain, images);
+
+        for (uint32_t i = 0; i < images.size(); i++)
+        {
+            std::string name = fmt::format("{} texture {}", mName, i);
+
+            RHITextureVK* texture = new RHITextureVK((RHIDeviceVK*)mpDevice, desc, name);
+            texture->Create(images[i]);
+            
+            mBackBuffers.push_back(texture);
+        }
+        return true;
     }
 
     bool RHISwapchainVK::CreateSemaphores()
