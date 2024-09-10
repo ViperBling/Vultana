@@ -37,7 +37,7 @@ namespace RHI
         return true;
     }
 
-    void RHIFenceVK::Waite(uint64_t value)
+    void RHIFenceVK::Wait(uint64_t value)
     {
         vk::SemaphoreWaitInfo waitInfo {};
         waitInfo.semaphoreCount = 1;
@@ -45,7 +45,7 @@ namespace RHI
         waitInfo.pValues = &value;
         
         auto device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        device.waitSemaphores(waitInfo, UINT64_MAX);
+        assert(device.waitSemaphores(waitInfo, UINT64_MAX) == vk::Result::eSuccess);
     }
 
     void RHIFenceVK::Signal(uint64_t value)

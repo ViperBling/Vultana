@@ -187,8 +187,7 @@ namespace RHI
         desc.Format = mDesc.ColorFormat;
         desc.Usage = RHI::ETextureUsageBit::RHITextureUsageRenderTarget;
 
-        std::vector<vk::Image> images;
-        device.getSwapchainImagesKHR(mSwapchain, images);
+        auto images = device.getSwapchainImagesKHR(mSwapchain);
 
         for (uint32_t i = 0; i < images.size(); i++)
         {

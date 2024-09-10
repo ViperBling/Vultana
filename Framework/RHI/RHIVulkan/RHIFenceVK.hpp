@@ -16,7 +16,7 @@ namespace RHI
         bool Create();
 
         virtual void* GetNativeHandle() const override { return mSemaphore; }
-        virtual void Waite(uint64_t value) override;
+        virtual void Wait(uint64_t value) override;
         virtual void Signal(uint64_t value) override;
 
     private:

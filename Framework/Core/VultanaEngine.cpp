@@ -32,7 +32,7 @@ namespace Core
 
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
-        mpRenderer = std::make_unique<Renderer::RendererBase>(mWndHandle);
+        mpRenderer = std::make_unique<Renderer::RendererBase>();
         if (!mpRenderer->CreateDevice(renderBackend, mWndHandle, width, height))
         {
             VTNA_LOG_ERROR("Failed to create renderer device");

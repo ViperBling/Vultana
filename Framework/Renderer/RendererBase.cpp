@@ -11,7 +11,7 @@ namespace Renderer
 {
     RendererBase::RendererBase()
     {
-        Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(&RendererBase::OnWindowResize);
+        // Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(&RendererBase::OnWindowResize);
     }
 
     RendererBase::~RendererBase()
@@ -23,6 +23,7 @@ namespace Renderer
     {
         mDisplayWidth = width;
         mDisplayHeight = height;
+        return true;
     }
 
     void RendererBase::RenderFrame()
