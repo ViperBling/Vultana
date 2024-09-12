@@ -11,14 +11,14 @@ namespace RHI
         {
         case ERHIRenderBackend::Vulkan:
             device = new RHI::RHIDeviceVK(desc);
-            if (!((RHI::RHIDeviceVK*)device)->Initialize())
-            {
-                delete device;
-                device = nullptr;
-            }
             break;
         default:
             break;
+        }
+        if (device && !device->Initialize())
+        {
+            delete device;
+            device = nullptr;
         }
         return device;
     }

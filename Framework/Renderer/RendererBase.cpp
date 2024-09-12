@@ -1,6 +1,7 @@
 #include "RendererBase.hpp"
+#include "RHI/RHI.hpp"
 #include "Core/VultanaEngine.hpp"
-
+#include "Utilities/Log.hpp"
 #include "Windows/GLFWindow.hpp"
 
 #include <optional>
@@ -23,6 +24,18 @@ namespace Renderer
     {
         mDisplayWidth = width;
         mDisplayHeight = height;
+        mRenderWidth = width;
+        mRenderHeight = height;
+
+        RHI::RHIDeviceDesc deviceDesc {};
+        deviceDesc.RenderBackend = backend;
+        mpDevice.reset(RHI::CreateRHIDevice(deviceDesc));
+        if (mpDevice == nullptr)
+        {
+            VTNA_LOG_ERROR("[Renderer::CreateDevice] failed to create the RHI device.");
+            return false;
+        }
+
         return true;
     }
 
