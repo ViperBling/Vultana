@@ -17,6 +17,9 @@ namespace RHI
 
         template<typename T>
         void Delete(T object, uint64_t frameID);
+
+        void FreeResourceDescriptor(uint32_t index, uint64_t frameID);
+        void FreeSamplerDescriptor(uint32_t index, uint64_t frameID);
     
     private:
         RHIDeviceVK* mDevice = nullptr;
@@ -32,5 +35,8 @@ namespace RHI
         std::queue<std::pair<vk::SwapchainKHR, uint64_t>>   mSwapchainQueue;
         std::queue<std::pair<vk::SurfaceKHR, uint64_t>>     mSurfaceQueue;
         std::queue<std::pair<vk::CommandPool, uint64_t>>    mCommandPoolQueue;
+
+        std::queue<std::pair<uint32_t, uint64_t>>           mResourceDescriptorQueue;
+        std::queue<std::pair<uint32_t, uint64_t>>           mSamplerDescriptorQueue;
     };
 }

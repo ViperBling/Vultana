@@ -58,6 +58,10 @@ namespace RHI
         virtual void DrawIndirect(RHIBuffer* buffer, uint32_t offset) override;
         virtual void DrawIndexedIndirect(RHIBuffer* buffer, uint32_t offset) override;
         virtual void DispatchIndirect(RHIBuffer* buffer, uint32_t offset) override;
+
+    private:
+        void UpdateGraphicsDescriptorBuffer();
+        void UpdateComputeDescriptorBuffer();
     
     private:
         vk::Queue mQueue;

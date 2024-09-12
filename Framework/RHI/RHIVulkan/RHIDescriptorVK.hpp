@@ -17,11 +17,13 @@ namespace RHI
         bool Create();
 
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
-        virtual uint32_t GetHeapIndex() const override { return 0; }
+        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
     
     private:
         RHIResource* mResource = nullptr;
         RHIShaderResourceViewDesc mDesc {};
+        vk::ImageView mImageView;
+        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 
     class RHIUnorderedAccessViewVK : public RHIDescriptor
@@ -33,11 +35,13 @@ namespace RHI
         bool Create();
 
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
-        virtual uint32_t GetHeapIndex() const override { return 0; }
+        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
 
     private:
         RHIResource* mResource = nullptr;
         RHIUnorderedAccessViewDesc mDesc {};
+        vk::ImageView mImageView;
+        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 
     class RHIConstantBufferViewVK : public RHIDescriptor
@@ -49,11 +53,12 @@ namespace RHI
         bool Create();
 
         virtual void* GetNativeHandle() const override { return mBuffer->GetNativeHandle(); }
-        virtual uint32_t GetHeapIndex() const override { return 0; }
+        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
 
     private:
         RHIBuffer* mBuffer = nullptr;
         RHIConstantBufferViewDesc mDesc {};
+        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 
     class RHISamplerVK : public RHIDescriptor
@@ -65,10 +70,11 @@ namespace RHI
         bool Create();
 
         virtual void* GetNativeHandle() const override { return mSampler; }
-        virtual uint32_t GetHeapIndex() const override { return 0; }
+        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
     
     private:
         RHISamplerDesc mDesc {};
         vk::Sampler mSampler;
+        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 }

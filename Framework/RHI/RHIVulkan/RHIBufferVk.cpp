@@ -29,10 +29,10 @@ namespace RHI
         bufferCI.size = mDesc.Size;
         bufferCI.sharingMode = vk::SharingMode::eExclusive;
         bufferCI.usage = vk::BufferUsageFlagBits::eTransferDst |
-                            vk::BufferUsageFlagBits::eTransferSrc |
-                            vk::BufferUsageFlagBits::eIndexBuffer |
-                            vk::BufferUsageFlagBits::eIndirectBuffer |
-                            vk::BufferUsageFlagBits::eShaderDeviceAddress;
+                         vk::BufferUsageFlagBits::eTransferSrc |
+                         vk::BufferUsageFlagBits::eIndexBuffer |
+                         vk::BufferUsageFlagBits::eIndirectBuffer |
+                         vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         if (mDesc.Usage & RHIBufferUsageConstantBuffer)
         {

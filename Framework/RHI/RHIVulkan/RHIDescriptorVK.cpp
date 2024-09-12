@@ -13,6 +13,9 @@ namespace RHI
 
     RHIShaderResourceViewVK::~RHIShaderResourceViewVK()
     {
+        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(mpDevice);
+        device->Delete(mImageView);
+        device->FreeResourceDescriptor(mHeapIndex);
     }
 
     bool RHIShaderResourceViewVK::Create()

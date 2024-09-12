@@ -57,4 +57,8 @@ namespace Core
         mpWorld->Tick(mFrameTime);
         mpRenderer->RenderFrame();
     }
+    
+    VultanaEngine::~VultanaEngine()
+    {
+    }
 }

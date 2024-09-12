@@ -64,6 +64,16 @@ namespace RHI
         }
     }
 
+    void RHIDeletionQueueVK::FreeResourceDescriptor(uint32_t index, uint64_t frameID)
+    {
+        mResourceDescriptorQueue.push(std::make_pair(index, frameID));
+    }
+
+    void RHIDeletionQueueVK::FreeSamplerDescriptor(uint32_t index, uint64_t frameID)
+    {
+        mSamplerDescriptorQueue.push(std::make_pair(index, frameID));
+    }
+
     template<>
     void RHIDeletionQueueVK::Delete(vk::Image object, uint64_t frameID)
     {

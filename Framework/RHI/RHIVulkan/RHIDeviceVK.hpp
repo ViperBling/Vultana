@@ -63,6 +63,19 @@ namespace RHI
         vk::Queue GetGraphicsQueue() const { return mGraphicsQueue; }
         vk::Queue GetComputeQueue() const { return mComputeQueue; }
         vk::Queue GetCopyQueue() const { return mCopyQueue; }
+        vk::PipelineLayout GetPipelineLayout() const { return mPipelineLayout; }
+        class RHIDescriptorAllocatorVK* GetResourceDescriptorAllocator() const { return mResourceDesAllocator; }
+        class RHIDescriptorAllocatorVK* GetSamplerDescriptorAllocator() const { return mSamplerDesAllocator; }
+        class RHIConstantBufferAllocatorVK* GetConstantBufferAllocator() const;
+        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& GetDescriptorBufferProperties() const { return mDescBufferProps; }
+
+        uint32_t AllocateResourceDescriptor(void** desc);
+        uint32_t AllocateSamplerDescriptor(void** desc);
+        void FreeResourceDescriptor(uint32_t index);
+        void FreeSamplerDescriptor(uint32_t index);
+
+        vk::DeviceAddress AllocateConstantBuffer(const void* data, size_t dataSize);
+        vk::DeviceSize AllocateConstantBufferDescriptor(const uint32_t* cbv0, const vk::DescriptorAddressInfoEXT& cbv1, const vk::DescriptorAddressInfoEXT& cbv2);
 
         template<typename T>
         void Delete(T object);
@@ -72,9 +85,10 @@ namespace RHI
         void FlushLayoutTransition(ERHICommandQueueType queueType);
 
     private:
-        bool CreateInstance();
-        bool CreateDevice();
-        bool CreateVmaAllocator();
+        void CreateInstance();
+        void CreateDevice();
+        vk::Result CreateVmaAllocator();
+        void CreatePipelineLayout();
         void FindQueueFamilyIndex();
 
     private:
@@ -84,6 +98,9 @@ namespace RHI
         vk::PhysicalDevice mPhysicalDevice;
         vk::Device mDevice;
         VmaAllocator mAllocator = VK_NULL_HANDLE;
+        vk::DescriptorSetLayout mDescSetLayout[3] = {};
+        vk::PipelineLayout mPipelineLayout;
+        vk::PhysicalDeviceDescriptorBufferPropertiesEXT mDescBufferProps;
 
         uint32_t mGraphicsQueueIndex = -1;
         uint32_t mComputeQueueIndex = -1;
@@ -95,6 +112,10 @@ namespace RHI
         RHIDeletionQueueVK* mDeferredDeletionQueue = nullptr;
         RHICommandList* mTransitionCopyCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
         RHICommandList* mTransitionGraphicsCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+
+        class RHIConstantBufferAllocatorVK* mConstantBufferAllocators[RHI_MAX_INFLIGHT_FRAMES] = {};
+        class RHIDescriptorAllocatorVK* mResourceDesAllocator = nullptr;
+        class RHIDescriptorAllocatorVK* mSamplerDesAllocator = nullptr;
 
         std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingGraphicsTransitions;
         std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingCopyTransitions;

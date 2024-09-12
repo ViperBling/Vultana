@@ -1,4 +1,5 @@
 #include "RHIDeviceVK.hpp"
+#include "RHIDescriptorAllocatorVK.hpp"
 
 #include "Utilities/Log.hpp"
 
@@ -38,9 +39,9 @@ namespace RHI
 
     bool RHIDeviceVK::Initialize()
     {
-        assert(CreateInstance());
-        assert(CreateDevice());
-        assert(CreateVmaAllocator());
+        CreateInstance();
+        CreateDevice();
+        CreateVmaAllocator();
 
         mDeferredDeletionQueue = new RHIDeletionQueueVK(this);
 
@@ -141,6 +142,77 @@ namespace RHI
         return false;
     }
 
+    RHIConstantBufferAllocatorVK *RHIDeviceVK::GetConstantBufferAllocator() const
+    {
+        uint32_t index = mFrameID % RHI_MAX_INFLIGHT_FRAMES;
+        return mConstantBufferAllocators[index];
+    }
+
+    uint32_t RHIDeviceVK::AllocateResourceDescriptor(void **desc)
+    {
+        return mResourceDesAllocator->Allocate(desc);
+    }
+
+    uint32_t RHIDeviceVK::AllocateSamplerDescriptor(void **desc)
+    {
+        return mSamplerDesAllocator->Allocate(desc);
+    }
+
+    void RHIDeviceVK::FreeResourceDescriptor(uint32_t index)
+    {
+        if (index != RHI_INVALID_RESOURCE)
+        {
+            mDeferredDeletionQueue->FreeResourceDescriptor(index, mFrameID);
+        }
+    }
+
+    void RHIDeviceVK::FreeSamplerDescriptor(uint32_t index)
+    {
+        if (index != RHI_INVALID_RESOURCE)
+        {
+            mDeferredDeletionQueue->FreeSamplerDescriptor(index, mFrameID);
+        }
+    }
+
+    vk::DeviceAddress RHIDeviceVK::AllocateConstantBuffer(const void *data, size_t dataSize)
+    {
+        void* cpuAddress = nullptr;
+        vk::DeviceAddress gpuAddress = 0;
+        GetConstantBufferAllocator()->Allocate((uint32_t)dataSize, &cpuAddress, &gpuAddress);
+
+        memcpy(cpuAddress, data, dataSize);
+
+        return gpuAddress;
+    }
+
+    vk::DeviceSize RHIDeviceVK::AllocateConstantBufferDescriptor(const uint32_t *cbv0, const vk::DescriptorAddressInfoEXT &cbv1, const vk::DescriptorAddressInfoEXT &cbv2)
+    {
+        size_t descBufferSize = sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + mDescBufferProps.robustUniformBufferDescriptorSize * 2;
+        void* cpuAddress = nullptr;
+        vk::DeviceAddress gpuAddress = 0;
+        GetConstantBufferAllocator()->Allocate((uint32_t)descBufferSize, &cpuAddress, &gpuAddress);
+
+        memcpy(cpuAddress, cbv0, sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS);
+
+        vk::DescriptorGetInfoEXT descGI {};
+        descGI.type = vk::DescriptorType::eUniformBuffer;
+
+        if (cbv1.address != 0)
+        {
+            descGI.data.pUniformBuffer = &cbv1;
+            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS);
+        }
+
+        if (cbv2.address != 0)
+        {
+            descGI.data.pUniformBuffer = &cbv2;
+            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + mDescBufferProps.robustUniformBufferDescriptorSize);
+        }
+
+        vk::DeviceSize descBufferOffset = gpuAddress - GetConstantBufferAllocator()->GetGPUAddress();
+        return descBufferOffset;
+    }
+
     void RHIDeviceVK::EnqueueDefaultLayoutTransition(RHITexture *texture)
     {
     }
@@ -153,7 +225,7 @@ namespace RHI
     {
     }
 
-    bool RHIDeviceVK::CreateInstance()
+    void RHIDeviceVK::CreateInstance()
     {
         auto supportExtens = vk::enumerateInstanceExtensionProperties();
         auto supportLayers = vk::enumerateInstanceLayerProperties();
@@ -161,12 +233,12 @@ namespace RHI
         VTNA_LOG_DEBUG("Available instance layers:");
         for (uint32_t i = 0; i < supportLayers.size(); i++)
         {
-            VTNA_LOG_DEBUG("  {}", supportLayers[i].layerName);
+            VTNA_LOG_DEBUG("  {}", (char*)supportLayers[i].layerName);
         }
         VTNA_LOG_DEBUG("Available instance extensions:");
         for (uint32_t i = 0; i < supportExtens.size(); i++)
         {
-            VTNA_LOG_DEBUG("  {}", supportExtens[i].extensionName);
+            VTNA_LOG_DEBUG("  {}", (char*)supportExtens[i].extensionName);
         }
 
         std::vector<const char*> requiredLayers = 
@@ -193,12 +265,9 @@ namespace RHI
         instanceCI.setPEnabledExtensionNames(requiredExtensions);
 
         mInstance = vk::createInstance(instanceCI);
-
-        if (mInstance != VK_NULL_HANDLE) return true;
-        else return false;
     }
 
-    bool RHIDeviceVK::CreateDevice()
+    void RHIDeviceVK::CreateDevice()
     {
         auto physicalDevices = mInstance.enumeratePhysicalDevices();
         for (const auto & pd : physicalDevices)
@@ -212,7 +281,7 @@ namespace RHI
         }
         auto properties = mPhysicalDevice.getProperties();
 
-        VTNA_LOG_INFO("GPU : {}", properties.deviceName);
+        VTNA_LOG_INFO("GPU : {}", (char*)properties.deviceName);
         VTNA_LOG_INFO("API Version : {}.{}.{}", VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion));
 
         auto physicalDeviceExtenProps = mPhysicalDevice.enumerateDeviceExtensionProperties();
@@ -281,9 +350,6 @@ namespace RHI
         deviceCI.setPEnabledExtensionNames(requiredExtensions);
 
         mDevice = mPhysicalDevice.createDevice(deviceCI);
-
-        if (mDevice != VK_NULL_HANDLE) return true;
-        else return false;
         
         mDynamicLoader.init(mInstance, mDevice);
 
@@ -294,7 +360,7 @@ namespace RHI
         mDebugMessenger = mInstance.createDebugUtilsMessengerEXT(debugCI, nullptr, mDynamicLoader);
     }
 
-    bool RHIDeviceVK::CreateVmaAllocator()
+    vk::Result RHIDeviceVK::CreateVmaAllocator()
     {
         VmaVulkanFunctions functions = {};
         functions.vkGetInstanceProcAddr = mDynamicLoader.vkGetInstanceProcAddr;
@@ -308,7 +374,7 @@ namespace RHI
         allocatorCI.preferredLargeHeapBlockSize = 0;
         allocatorCI.pVulkanFunctions = &functions;
 
-        return vmaCreateAllocator(&allocatorCI, &mAllocator) == VK_SUCCESS;
+        return (vk::Result)vmaCreateAllocator(&allocatorCI, &mAllocator);
     }
 
     void RHIDeviceVK::FindQueueFamilyIndex()
