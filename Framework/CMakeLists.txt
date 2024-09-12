@@ -65,7 +65,7 @@ target_link_libraries(FrameworkLib PRIVATE
     glm::glm
     Vulkan::Vulkan
     spirv-cross-core
-    fmt::fmt
+    fmt::fmt-header-only
     tinyxml2
     Microsoft::DirectXShaderCompiler
     cityhash
