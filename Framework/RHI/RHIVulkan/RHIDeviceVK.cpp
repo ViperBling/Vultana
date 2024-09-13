@@ -1,7 +1,12 @@
 #include "RHIDeviceVK.hpp"
+#include "RHICommandListVK.hpp"
 #include "RHIDescriptorAllocatorVK.hpp"
+#include "RHISwapchainVK.hpp"
 
 #include "Utilities/Log.hpp"
+
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
 
 #include <map>
 
@@ -32,8 +37,12 @@ namespace RHI
         delete mDeferredDeletionQueue;
 
         vmaDestroyAllocator(mAllocator);
+        mDevice.destroyDescriptorSetLayout(mDescSetLayout[0]);
+        mDevice.destroyDescriptorSetLayout(mDescSetLayout[1]);
+        mDevice.destroyDescriptorSetLayout(mDescSetLayout[2]);
+        mDevice.destroyPipelineLayout(mPipelineLayout);
         mDevice.destroy();
-        mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger);
+        mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicLoader);
         mInstance.destroy();
     }
 
@@ -49,22 +58,56 @@ namespace RHI
         {
             mTransitionCopyCmdList[i] = CreateCommandList(ERHICommandQueueType::Copy, "Transition CmdList(Copy)");
             mTransitionGraphicsCmdList[i] = CreateCommandList(ERHICommandQueueType::Graphics, "Transition CmdList(Graphics)");
+
+            mConstantBufferAllocators[i] = new RHIConstantBufferAllocatorVK(this, 8 * 1024 * 1024);
         }
+
+        vk::PhysicalDeviceProperties2 props2 {};
+        props2.pNext = &mDescBufferProps;
+        mPhysicalDevice.getProperties2(&props2);
+
+        size_t resourceDescSize = mDescBufferProps.sampledImageDescriptorSize;
+        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.storageImageDescriptorSize);
+        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustUniformTexelBufferDescriptorSize);
+        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustStorageTexelBufferDescriptorSize);
+        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustUniformBufferDescriptorSize);
+        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustStorageBufferDescriptorSize);
+        // resourceDescSize = std::max(resourceDescSize, mDescBufferProps.accelerationStructureDescriptorSize);
+
+        size_t samplerDescSize = mDescBufferProps.samplerDescriptorSize;
+
+        mResourceDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)resourceDescSize, RHI_MAX_RESOURCE_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
+        mSamplerDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)samplerDescSize, RHI_MAX_SAMPLER_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
 
         return true;
     }
 
     void RHIDeviceVK::BeginFrame()
     {
+        mDeferredDeletionQueue->Flush();
+
+        uint32_t index = mFrameID % RHI_MAX_INFLIGHT_FRAMES;
+        mTransitionCopyCmdList[index]->ResetAllocator();
+        mTransitionGraphicsCmdList[index]->ResetAllocator();
+        mConstantBufferAllocators[index]->Reset();
     }
 
     void RHIDeviceVK::EndFrame()
     {
+        ++mFrameID;
+
+        vmaSetCurrentFrameIndex(mAllocator, (uint32_t)mFrameID);
     }
 
     RHISwapchain *RHIDeviceVK::CreateSwapchain(const RHISwapchainDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHISwapchainVK *swapchain = new RHISwapchainVK(this, desc, name);
+        if (!swapchain->Create())
+        {
+            delete swapchain;
+            return nullptr;
+        }
+        return swapchain;
     }
 
     RHICommandList *RHIDeviceVK::CreateCommandList(ERHICommandQueueType queueType, const std::string &name)
@@ -200,13 +243,13 @@ namespace RHI
         if (cbv1.address != 0)
         {
             descGI.data.pUniformBuffer = &cbv1;
-            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS);
+            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS, mDynamicLoader);
         }
 
         if (cbv2.address != 0)
         {
             descGI.data.pUniformBuffer = &cbv2;
-            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + mDescBufferProps.robustUniformBufferDescriptorSize);
+            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + mDescBufferProps.robustUniformBufferDescriptorSize, mDynamicLoader);
         }
 
         vk::DeviceSize descBufferOffset = gpuAddress - GetConstantBufferAllocator()->GetGPUAddress();
@@ -286,6 +329,12 @@ namespace RHI
 
         auto physicalDeviceExtenProps = mPhysicalDevice.enumerateDeviceExtensionProperties();
 
+        VTNA_LOG_DEBUG("Available device extensions:");
+        for (uint32_t i = 0; i < physicalDeviceExtenProps.size(); i++)
+        {
+            VTNA_LOG_DEBUG("  {}", (char*)physicalDeviceExtenProps[i].extensionName);
+        }
+
         std::vector<const char*> requiredExtensions =
         {
             "VK_KHR_swapchain",
@@ -304,11 +353,11 @@ namespace RHI
             "VK_KHR_bind_memory2",
             "VK_KHR_timeline_semaphore",
             "VK_KHR_dedicated_allocation",
-            //"VK_EXT_swapchain_maintenance1",
             // "VK_EXT_mesh_shader",
             "VK_EXT_descriptor_indexing",
             "VK_EXT_mutable_descriptor_type",
             "VK_EXT_descriptor_buffer",
+            "VK_EXT_scalar_block_layout",
         };
 
         float queuePriorities[1] = {0.0};
@@ -325,28 +374,59 @@ namespace RHI
         queueCI[2].setQueueCount(1);
         queueCI[2].setQueuePriorities(queuePriorities);
 
+        vk::PhysicalDeviceVulkan12Features vk12Features {};
+        vk12Features.setShaderInt8(VK_TRUE);
+        vk12Features.setShaderFloat16(VK_TRUE);
+        vk12Features.setDescriptorIndexing(VK_TRUE);
+        vk12Features.setShaderUniformTexelBufferArrayDynamicIndexing(VK_TRUE);
+        vk12Features.setShaderStorageTexelBufferArrayDynamicIndexing(VK_TRUE);
+        vk12Features.setShaderUniformBufferArrayNonUniformIndexing(VK_TRUE);
+        vk12Features.setShaderSampledImageArrayNonUniformIndexing(VK_TRUE);
+        vk12Features.setShaderStorageBufferArrayNonUniformIndexing(VK_TRUE);
+        vk12Features.setShaderStorageImageArrayNonUniformIndexing(VK_TRUE);
+        vk12Features.setShaderUniformTexelBufferArrayNonUniformIndexing(VK_TRUE);
+        vk12Features.setShaderStorageTexelBufferArrayNonUniformIndexing(VK_TRUE);
+        vk12Features.setRuntimeDescriptorArray(VK_TRUE);
+        vk12Features.setRuntimeDescriptorArray(VK_TRUE);
+        vk12Features.setSamplerFilterMinmax(VK_TRUE);
+        vk12Features.setScalarBlockLayout(VK_TRUE);
+        vk12Features.setTimelineSemaphore(VK_TRUE);
+        vk12Features.setBufferDeviceAddress(VK_TRUE);
+
+        vk::PhysicalDeviceVulkan13Features vk13Features {};
+        vk13Features.setPNext(&vk12Features);
+        vk13Features.setInlineUniformBlock(VK_TRUE);
+        vk13Features.setSynchronization2(VK_TRUE);
+        vk13Features.setDynamicRendering(VK_TRUE);
+        vk13Features.setSubgroupSizeControl(VK_TRUE);
+        vk13Features.setShaderDemoteToHelperInvocation(VK_TRUE);
+
+        vk::PhysicalDeviceMutableDescriptorTypeFeaturesEXT mutableDesc {};
+        mutableDesc.setPNext(&vk13Features);
+        mutableDesc.setMutableDescriptorType(VK_TRUE);
+
+        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddress {};
+        bufferDeviceAddress.setPNext(&mutableDesc);
+        bufferDeviceAddress.setBufferDeviceAddress(VK_TRUE);
+
+        vk::PhysicalDeviceDescriptorBufferFeaturesEXT descBuffer {};
+        descBuffer.setPNext(&bufferDeviceAddress);
+        descBuffer.setDescriptorBuffer(VK_TRUE);
+
+        // PhysicalDeviceDescriptorBufferFeaturesEXT需要通过features2传递
+        vk::PhysicalDeviceFeatures2 features2 {};
+        features2.setPNext(&descBuffer);
+        features2 = mPhysicalDevice.getFeatures2();
+
         vk::PhysicalDeviceFeatures features {};
         features = mPhysicalDevice.getFeatures();
 
-        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddress {};
-        bufferDeviceAddress.setBufferDeviceAddress(VK_TRUE);
-
-        vk::PhysicalDeviceTimelineSemaphoreFeatures timelineSemaphore {};
-        timelineSemaphore.setTimelineSemaphore(VK_TRUE);
-        timelineSemaphore.setPNext(&bufferDeviceAddress);
-
-        vk::PhysicalDeviceSynchronization2Features sync2 {};
-        sync2.setSynchronization2(VK_TRUE);
-        sync2.setPNext(&timelineSemaphore);
-
-        vk::PhysicalDeviceDynamicRenderingFeatures dynamicRendering {};
-        dynamicRendering.setDynamicRendering(VK_TRUE);
-        dynamicRendering.setPNext(&sync2);
-
+        // setPEnabledFeatures不支持features2，所以要传到pNext链中
         vk::DeviceCreateInfo deviceCI {};
+        deviceCI.setPNext(&features2);
         deviceCI.setQueueCreateInfos(queueCI);
-        deviceCI.setPEnabledFeatures(&features);
-        deviceCI.setPNext(&dynamicRendering);
+        // If the pNext chain includes a VkPhysicalDeviceFeatures2 structure, then pEnabledFeatures must be NULL
+        // deviceCI.setPEnabledFeatures(&features);
         deviceCI.setPEnabledExtensionNames(requiredExtensions);
 
         mDevice = mPhysicalDevice.createDevice(deviceCI);
@@ -358,6 +438,10 @@ namespace RHI
         debugCI.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
         debugCI.setPfnUserCallback(ValidationLayerCallback);
         mDebugMessenger = mInstance.createDebugUtilsMessengerEXT(debugCI, nullptr, mDynamicLoader);
+
+        mCopyQueue = mDevice.getQueue(mCopyQueueIndex, 0);
+        mGraphicsQueue = mDevice.getQueue(mGraphicsQueueIndex, 0);
+        mComputeQueue = mDevice.getQueue(mComputeQueueIndex, 0);
     }
 
     vk::Result RHIDeviceVK::CreateVmaAllocator()
@@ -367,6 +451,7 @@ namespace RHI
         functions.vkGetDeviceProcAddr = mDynamicLoader.vkGetDeviceProcAddr;
         
         VmaAllocatorCreateInfo allocatorCI {};
+        allocatorCI.flags = VMA_ALLOCATOR_CREATE_KHR_BIND_MEMORY2_BIT | VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         allocatorCI.physicalDevice = mPhysicalDevice;
         allocatorCI.device = mDevice;
         allocatorCI.instance = mInstance;

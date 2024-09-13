@@ -38,7 +38,11 @@ namespace RHI
 
     bool RHISwapchainVK::Create()
     {
-        if (!CreateSurface() || !CreateSwapchain() || !CreateTextures() || !CreateSemaphores())
+        if (!CreateSurface() 
+            // || !CreateSwapchain() 
+            // || !CreateTextures() 
+            // || !CreateSemaphores()
+            )
         {
             VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create {}", mName);
             return false;
@@ -115,6 +119,7 @@ namespace RHI
     {
         vk::Instance instance = ((RHIDeviceVK*)mpDevice)->GetInstance();
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        vk::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
         
         // VkWin32SurfaceCreateInfoKHR surfaceCI {};
         auto wnd = (Window::GLFWindow*)mDesc.WindowHandle;
@@ -124,7 +129,7 @@ namespace RHI
             VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create surface");
             return false;
         }
-        SetDebugName(device, vk::ObjectType::eSurfaceKHR, (uint64_t)(VkSurfaceKHR)mSurface, mName.c_str());
+        SetDebugName(device, vk::ObjectType::eSurfaceKHR, (uint64_t)(VkSurfaceKHR)mSurface, mName.c_str(), dynamicLoader);
 
         return true;
     }
@@ -132,6 +137,7 @@ namespace RHI
     bool RHISwapchainVK::CreateSwapchain()
     {
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
         vk::SwapchainKHR oldSwapchain = mSwapchain;
 
         vk::Format viewFormats[2];
@@ -168,7 +174,7 @@ namespace RHI
             VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create swapchain");
             return false;
         }
-        SetDebugName(device, vk::ObjectType::eSwapchainKHR, (uint64_t)(VkSwapchainKHR)mSwapchain, mName.c_str());
+        SetDebugName(device, vk::ObjectType::eSwapchainKHR, (uint64_t)(VkSwapchainKHR)mSwapchain, mName.c_str(), dynamicLoader);
 
         if (oldSwapchain != VK_NULL_HANDLE)
         {
@@ -204,6 +210,7 @@ namespace RHI
     bool RHISwapchainVK::CreateSemaphores()
     {
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
         vk::SemaphoreCreateInfo semaphoreCI {};
 
         for (uint32_t i = 0; i < mDesc.BufferCount; i++)
@@ -216,7 +223,7 @@ namespace RHI
                 VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create semaphore");
                 return false;
             }
-            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} acquire semaphore {}", mName, i).c_str());
+            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} acquire semaphore {}", mName, i).c_str(), dynamicLoader);
             mAcquireSemaphores.push_back(semaphore);
         }
 
@@ -230,7 +237,7 @@ namespace RHI
                 VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create semaphore");
                 return false;
             }
-            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} present semaphore {}", mName, i).c_str());
+            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} present semaphore {}", mName, i).c_str(), dynamicLoader);
             mPresentSemaphores.push_back(semaphore);
         }
         return true;

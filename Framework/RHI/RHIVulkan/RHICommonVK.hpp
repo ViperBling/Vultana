@@ -14,14 +14,14 @@ namespace RHI
     #define VK_USE_PLATFORM_WIN32_KHR
 
     template<typename T>
-    inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name)
+    inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name, vk::DispatchLoaderDynamic& dynamicLoader)
     {
         vk::DebugUtilsObjectNameInfoEXT nameInfo;
         nameInfo.objectType = objectType;
         nameInfo.objectHandle = reinterpret_cast<uint64_t&>(object);
         nameInfo.pObjectName = name;
 
-        device.setDebugUtilsObjectNameEXT(nameInfo);
+        device.setDebugUtilsObjectNameEXT(nameInfo, dynamicLoader);
     }
 
     inline vk::Format ToVulkanFormat(ERHIFormat format, bool SRVOrRTV = false)

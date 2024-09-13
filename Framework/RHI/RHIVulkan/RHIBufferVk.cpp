@@ -23,6 +23,7 @@ namespace RHI
     bool RHIBufferVK::Create()
     {
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
         VmaAllocator allocator = ((RHIDeviceVK*)mpDevice)->GetVmaAllocator();
 
         vk::BufferCreateInfo bufferCI {};
@@ -87,7 +88,7 @@ namespace RHI
             return false;
         }
 
-        SetDebugName(device, vk::ObjectType::eBuffer, mBuffer, mName.c_str());
+        SetDebugName(device, vk::ObjectType::eBuffer, mBuffer, mName.c_str(), dynamicLoader);
 
         if (mAllocation)
         {

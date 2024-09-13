@@ -54,6 +54,7 @@ namespace RHI
         virtual bool DumpMemoryStats(const std::string& file) override;
 
         vk::Instance GetInstance() const { return mInstance; }
+        vk::DispatchLoaderDynamic GetDynamicLoader() const { return mDynamicLoader; }
         vk::PhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
         vk::Device GetDevice() const { return mDevice; }
         VmaAllocator GetVmaAllocator() const { return mAllocator; }

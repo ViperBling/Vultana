@@ -18,6 +18,7 @@ namespace RHI
     bool RHIFenceVK::Create()
     {
         auto device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
 
         vk::SemaphoreTypeCreateInfoKHR semaphoreTypeCI {};
         semaphoreTypeCI.semaphoreType = vk::SemaphoreType::eTimeline;
@@ -32,7 +33,7 @@ namespace RHI
             VTNA_LOG_ERROR("[RHIFenceVK] Failed to create {}", mName);
             return false;
         }
-        SetDebugName(device, vk::ObjectType::eSemaphore, mSemaphore, mName.c_str());
+        SetDebugName(device, vk::ObjectType::eSemaphore, mSemaphore, mName.c_str(), dynamicLoader);
 
         return true;
     }

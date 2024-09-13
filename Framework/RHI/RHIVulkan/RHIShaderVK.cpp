@@ -21,6 +21,7 @@ namespace RHI
         ((RHIDeviceVK*)mpDevice)->Delete(mShaderModule);
 
         auto device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
 
         vk::ShaderModuleCreateInfo shaderCI {};
         shaderCI.setCodeSize(data.size());
@@ -32,7 +33,7 @@ namespace RHI
             VTNA_LOG_ERROR("[RHIShaderVK] Failed to create {}", mName);
             return false;
         }
-        SetDebugName(device, vk::ObjectType::eShaderModule, mShaderModule, mName.c_str());
+        SetDebugName(device, vk::ObjectType::eShaderModule, mShaderModule, mName.c_str(), dynamicLoader);
         mHash = CityHash64(reinterpret_cast<const char*>(data.data()), data.size());
 
         return true;

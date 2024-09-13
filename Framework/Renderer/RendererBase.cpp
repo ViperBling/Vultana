@@ -36,6 +36,13 @@ namespace Renderer
             return false;
         }
 
+        RHI::RHISwapchainDesc swapchainDesc {};
+        swapchainDesc.Width = width;
+        swapchainDesc.Height = height;
+        swapchainDesc.WindowHandle = windowHandle;
+        mpSwapchain.reset(mpDevice->CreateSwapchain(swapchainDesc, "RendererBase::Swapchain"));
+        mpFrameFence.reset(mpDevice->CreateFence("RendererBase::FrameFence"));
+
         return true;
     }
 
