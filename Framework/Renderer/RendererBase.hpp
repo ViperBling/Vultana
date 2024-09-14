@@ -42,6 +42,8 @@ namespace Renderer
         void UploadResource();
         void Render();
         void EndFrame();
+
+        void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
         
     private:
         std::unique_ptr<RHI::RHIDevice> mpDevice;

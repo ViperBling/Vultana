@@ -1,7 +1,14 @@
 #include "RHIDeviceVK.hpp"
+#include "RHIBufferVK.hpp"
 #include "RHICommandListVK.hpp"
+#include "RHIDescriptorVK.hpp"
 #include "RHIDescriptorAllocatorVK.hpp"
+#include "RHIFenceVK.hpp"
+#include "RHIHeapVK.hpp"
+#include "RHIPipelineStateVK.hpp"
+#include "RHIShaderVK.hpp"
 #include "RHISwapchainVK.hpp"
+#include "RHITextureVK.hpp"
 
 #include "Utilities/Log.hpp"
 
@@ -51,6 +58,7 @@ namespace RHI
         CreateInstance();
         CreateDevice();
         CreateVmaAllocator();
+        CreatePipelineLayout();
 
         mDeferredDeletionQueue = new RHIDeletionQueueVK(this);
 
@@ -112,72 +120,164 @@ namespace RHI
 
     RHICommandList *RHIDeviceVK::CreateCommandList(ERHICommandQueueType queueType, const std::string &name)
     {
-        return nullptr;
+        RHICommandListVK* cmdList = new RHICommandListVK(this, queueType, name);
+        if (!cmdList->Create())
+        {
+            delete cmdList;
+            return nullptr;
+        }
+        return cmdList;
     }
 
     RHIFence *RHIDeviceVK::CreateFence(const std::string &name)
     {
-        return nullptr;
+        RHIFenceVK* fence = new RHIFenceVK(this, name);
+        if (!fence->Create())
+        {
+            delete fence;
+            return nullptr;
+        }
+        return fence;
     }
 
     RHIHeap *RHIDeviceVK::CreateHeap(const RHIHeapDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIHeapVK* heap = new RHIHeapVK(this, desc, name);
+        if (!heap->Create())
+        {
+            delete heap;
+            return nullptr;
+        }
+        return heap;
     }
 
     RHIBuffer *RHIDeviceVK::CreateBuffer(const RHIBufferDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIBufferVK* buffer = new RHIBufferVK(this, desc, name);
+        if (!buffer->Create())
+        {
+            delete buffer;
+            return nullptr;
+        }
+        return buffer;
     }
 
     RHITexture *RHIDeviceVK::CreateTexture(const RHITextureDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHITextureVK* texture = new RHITextureVK(this, desc, name);
+        if (!texture->Create())
+        {
+            delete texture;
+            return nullptr;
+        }
+        return texture;
     }
 
     RHIShader *RHIDeviceVK::CreateShader(const RHIShaderDesc &desc, tcb::span<uint8_t> data, const std::string &name)
     {
-        return nullptr;
+        RHIShaderVK* shader = new RHIShaderVK(this, desc, name);
+        if (!shader->Create(data))
+        {
+            delete shader;
+            return nullptr;
+        }
+        return shader;
     }
 
     RHIPipelineState *RHIDeviceVK::CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIGraphicsPipelineStateVK* pipeline = new RHIGraphicsPipelineStateVK(this, desc, name);
+        if (!pipeline->Create())
+        {
+            delete pipeline;
+            return nullptr;
+        }
+        return pipeline;
     }
 
     RHIPipelineState *RHIDeviceVK::CreateComputePipelineState(const RHIComputePipelineStateDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIComputePipelineStateVK* pipeline = new RHIComputePipelineStateVK(this, desc, name);
+        if (!pipeline->Create())
+        {
+            delete pipeline;
+            return nullptr;
+        }
+        return pipeline;
     }
 
     RHIDescriptor *RHIDeviceVK::CreateShaderResourceView(RHIResource *resource, const RHIShaderResourceViewDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIShaderResourceViewVK* srv = new RHIShaderResourceViewVK(this, resource, desc, name);
+        if (!srv->Create())
+        {
+            delete srv;
+            return nullptr;
+        }
+        return srv;
     }
 
     RHIDescriptor *RHIDeviceVK::CreateUnorderedAccessView(RHIResource *resource, const RHIUnorderedAccessViewDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIUnorderedAccessViewVK* uav = new RHIUnorderedAccessViewVK(this, resource, desc, name);
+        if (!uav->Create())
+        {
+            delete uav;
+            return nullptr;
+        }
+        return uav;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateConstantBufferView(RHIResource *resource, const RHIConstantBufferViewDesc &desc, const std::string &name)
+    RHIDescriptor *RHIDeviceVK::CreateConstantBufferView(RHIBuffer *resource, const RHIConstantBufferViewDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHIConstantBufferViewVK* cbv = new RHIConstantBufferViewVK(this, resource, desc, name);
+        if (!cbv->Create())
+        {
+            delete cbv;
+            return nullptr;
+        }
+        return cbv;
     }
 
     RHIDescriptor *RHIDeviceVK::CreateSampler(const RHISamplerDesc &desc, const std::string &name)
     {
-        return nullptr;
+        RHISamplerVK* sampler = new RHISamplerVK(this, desc, name);
+        if (!sampler->Create())
+        {
+            delete sampler;
+            return nullptr;
+        }
+        return sampler;
     }
 
-    uint32_t RHIDeviceVK::GetAllocationSize(const RHIBufferDesc &desc) const
+    uint32_t RHIDeviceVK::GetAllocationSize(const RHIBufferDesc &desc)
     {
         return 0;
     }
 
-    uint32_t RHIDeviceVK::GetAllocationSize(const RHITextureDesc &desc) const
+    uint32_t RHIDeviceVK::GetAllocationSize(const RHITextureDesc &desc)
     {
-        return 0;
+        auto iter = mTextureSizeMap.find(desc);
+        if (iter != mTextureSizeMap.end())
+        {
+            return iter->second;
+        }
+
+        vk::ImageCreateInfo imageCI = ToVulkanImageCreateInfo(desc);
+        vk::Image image;
+        image = mDevice.createImage(imageCI);
+        if (!image)
+        {
+            return 0;
+        }
+
+        vk::ImageMemoryRequirementsInfo2 memReqInfo2 {};
+        memReqInfo2.setImage(image);
+        vk::MemoryRequirements2 requires2 = mDevice.getImageMemoryRequirements2(memReqInfo2);
+        mDevice.destroyImage(image);
+
+        mTextureSizeMap.emplace(desc, (uint32_t)requires2.memoryRequirements.size);
+        return (uint32_t)requires2.memoryRequirements.size;
     }
 
     bool RHIDeviceVK::DumpMemoryStats(const std::string &file)
@@ -258,14 +358,93 @@ namespace RHI
 
     void RHIDeviceVK::EnqueueDefaultLayoutTransition(RHITexture *texture)
     {
+        const RHITextureDesc& desc = texture->GetDesc();
+
+        if (((RHITextureVK*)texture)->IsSwapchainTexture())
+        {
+            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessPresent);
+        }
+        else if (desc.Usage & RHITextureUsageRenderTarget)
+        {
+            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessRTV);
+        }
+        else if (desc.Usage & RHITextureUsageDepthStencil)
+        {
+            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessDSV);
+        }
+        else if (desc.Usage & RHITextureUsageUnorderedAccess)
+        {
+            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessMaskUAV);
+        }
+        else
+        {
+            mPendingCopyTransitions.emplace_back(texture, RHIAccessCopyDst);
+        }
     }
 
     void RHIDeviceVK::CancelDefaultLayoutTransition(RHITexture *texture)
     {
+        auto iter = std::find_if(mPendingGraphicsTransitions.begin(), mPendingGraphicsTransitions.end(),
+        [texture](const std::pair<RHITexture*, ERHIAccessFlags>& transition)
+        {
+            return transition.first == texture;
+        });
+        if (iter != mPendingGraphicsTransitions.end())
+        {
+            mPendingGraphicsTransitions.erase(iter);
+        }
+
+        iter = std::find_if(mPendingCopyTransitions.begin(), mPendingCopyTransitions.end(),
+        [texture](const std::pair<RHITexture*, ERHIAccessFlags>& transition)
+        {
+            return transition.first == texture;
+        });
+        if (iter != mPendingCopyTransitions.end())
+        {
+            mPendingCopyTransitions.erase(iter);
+        }
     }
 
     void RHIDeviceVK::FlushLayoutTransition(ERHICommandQueueType queueType)
     {
+        uint32_t index = mFrameID % RHI_MAX_INFLIGHT_FRAMES;
+
+        if (queueType == ERHICommandQueueType::Graphics)
+        {
+            if (!mPendingGraphicsTransitions.empty() || !mPendingCopyTransitions.empty())
+            {
+                mTransitionGraphicsCmdList[index]->Begin();
+                for (size_t i = 0; i < mPendingGraphicsTransitions.size(); i++)
+                {
+                    mTransitionGraphicsCmdList[index]->TextureBarrier(mPendingGraphicsTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, mPendingGraphicsTransitions[i].second);
+                }
+                mPendingGraphicsTransitions.clear();
+
+                for (size_t i = 0; i < mPendingCopyTransitions.size(); i++)
+                {
+                    mTransitionGraphicsCmdList[index]->TextureBarrier(mPendingCopyTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, mPendingCopyTransitions[i].second);
+                }
+                mPendingCopyTransitions.clear();
+
+                mTransitionGraphicsCmdList[index]->End();
+                mTransitionGraphicsCmdList[index]->Submit();
+            }
+        }
+        if (queueType == ERHICommandQueueType::Copy)
+        {
+            if (!mPendingCopyTransitions.empty())
+            {
+                mTransitionCopyCmdList[index]->Begin();
+                for (size_t i = 0; i < mPendingCopyTransitions.size(); i++)
+                {
+                    mTransitionCopyCmdList[index]->TextureBarrier(mPendingCopyTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, mPendingCopyTransitions[i].second);
+                }
+                mPendingCopyTransitions.clear();
+
+                mTransitionCopyCmdList[index]->End();
+                mTransitionCopyCmdList[index]->Submit();
+            }
+        }
     }
 
     void RHIDeviceVK::CreateInstance()
@@ -449,6 +628,78 @@ namespace RHI
         allocatorCI.pVulkanFunctions = &functions;
 
         return (vk::Result)vmaCreateAllocator(&allocatorCI, &mAllocator);
+    }
+
+    void RHIDeviceVK::CreatePipelineLayout()
+    {
+        vk::DescriptorType mutableDescTypes[6] =
+        {
+            vk::DescriptorType::eSampledImage,
+            vk::DescriptorType::eStorageImage,
+            vk::DescriptorType::eUniformTexelBuffer,
+            vk::DescriptorType::eStorageTexelBuffer,
+            vk::DescriptorType::eUniformBuffer,
+            vk::DescriptorType::eStorageBuffer,
+            // vk::DescriptorType::eMutableEXT,
+            // vk::DescriptorType::eAccelerationStructureKHR,
+        };
+
+        vk::MutableDescriptorTypeListEXT mutableDescList {};
+        mutableDescList.setDescriptorTypes(mutableDescTypes);
+
+        vk::MutableDescriptorTypeCreateInfoEXT mutableDescCI {};
+        mutableDescCI.setMutableDescriptorTypeLists(mutableDescList);
+
+        vk::DescriptorSetLayoutBinding constantBufferBinding[RHI_MAX_CBV_BINDING] = {};
+        constantBufferBinding[0].setDescriptorType(vk::DescriptorType::eInlineUniformBlock);
+        constantBufferBinding[0].setDescriptorCount(sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS);
+        constantBufferBinding[0].setStageFlags(vk::ShaderStageFlagBits::eAll);
+
+        for (size_t i = 0; i < RHI_MAX_CBV_BINDING; i++)
+        {
+            constantBufferBinding[i].setBinding((uint32_t)i);
+            constantBufferBinding[i].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+            constantBufferBinding[i].setDescriptorCount(1);
+            constantBufferBinding[i].setStageFlags(vk::ShaderStageFlagBits::eAll);
+        }
+        
+        vk::DescriptorSetLayoutBinding resourceDescHeap {};
+        resourceDescHeap.descriptorType = vk::DescriptorType::eMutableEXT;
+        resourceDescHeap.descriptorCount = RHI_MAX_RESOURCE_DESCRIPTOR_COUNT;
+        resourceDescHeap.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        vk::DescriptorSetLayoutBinding samplerDescHeap {};
+        samplerDescHeap.descriptorType = vk::DescriptorType::eSampler;
+        samplerDescHeap.descriptorCount = RHI_MAX_SAMPLER_DESCRIPTOR_COUNT;
+        samplerDescHeap.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        // constant buffer
+        vk::DescriptorSetLayoutCreateInfo descSetLayoutCI0 = {};
+        descSetLayoutCI0.flags = vk::DescriptorSetLayoutCreateFlagBits::eDescriptorBufferEXT;
+        descSetLayoutCI0.bindingCount = RHI_MAX_CBV_BINDING;
+        descSetLayoutCI0.pBindings = constantBufferBinding;
+
+        // resource descriptor heap
+        vk::DescriptorSetLayoutCreateInfo descSetLayoutCI1 = {};
+        descSetLayoutCI1.pNext = &mutableDescCI;
+        descSetLayoutCI1.flags = vk::DescriptorSetLayoutCreateFlagBits::eDescriptorBufferEXT;
+        descSetLayoutCI1.bindingCount = 1;
+        descSetLayoutCI1.pBindings = &resourceDescHeap;
+
+        // sampler descriptor heap
+        vk::DescriptorSetLayoutCreateInfo descSetLayoutCI2 = {};
+        descSetLayoutCI2.flags = vk::DescriptorSetLayoutCreateFlagBits::eDescriptorBufferEXT;
+        descSetLayoutCI2.bindingCount = 1;
+        descSetLayoutCI2.pBindings = &samplerDescHeap;
+
+        mDescSetLayout[0] = mDevice.createDescriptorSetLayout(descSetLayoutCI0);
+        mDescSetLayout[1] = mDevice.createDescriptorSetLayout(descSetLayoutCI1);
+        mDescSetLayout[2] = mDevice.createDescriptorSetLayout(descSetLayoutCI2);
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutCI {};
+        pipelineLayoutCI.setSetLayouts(mDescSetLayout);
+
+        mPipelineLayout = mDevice.createPipelineLayout(pipelineLayoutCI);
     }
 
     void RHIDeviceVK::FindQueueFamilyIndex()

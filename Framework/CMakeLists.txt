@@ -6,6 +6,7 @@ set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
+find_package(VulkanHeaders CONFIG)
 find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -64,6 +65,7 @@ target_link_libraries(FrameworkLib PRIVATE
     glfw
     glm::glm
     Vulkan::Vulkan
+    Vulkan::Headers
     spirv-cross-core
     fmt::fmt-header-only
     tinyxml2

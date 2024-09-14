@@ -78,5 +78,15 @@ namespace RHI
         std::vector<std::pair<RHIFence*, uint64_t>> mPendingWaits;
         std::vector<std::pair<RHIFence*, uint64_t>> mPendingSignals;
         std::vector<RHISwapchain*> mPendingSwapchain;
+
+        struct ConstantData
+        {
+            uint32_t cb0[RHI_MAX_ROOT_CONSTANTS] = {};
+            vk::DescriptorAddressInfoEXT cbv1 = {};
+            vk::DescriptorAddressInfoEXT cbv2 = {};
+        };
+
+        ConstantData mGraphicsConstants;
+        ConstantData mComputeConstants;
     };
 }

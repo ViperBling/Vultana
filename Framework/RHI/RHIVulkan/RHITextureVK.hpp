@@ -25,7 +25,7 @@ namespace RHI
         virtual void* GetSharedHandle() const override;
 
     private:
-        vk::Image mImage;
+        vk::Image mImage = VK_NULL_HANDLE;
         VmaAllocation mAllocation;
         bool mbSwapchainImage = false;
 

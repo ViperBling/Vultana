@@ -39,9 +39,9 @@ namespace RHI
     bool RHISwapchainVK::Create()
     {
         if (!CreateSurface() 
-            // || !CreateSwapchain() 
-            // || !CreateTextures() 
-            // || !CreateSemaphores()
+            || !CreateSwapchain() 
+            || !CreateTextures() 
+            || !CreateSemaphores()
             )
         {
             VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create {}", mName);
@@ -158,7 +158,7 @@ namespace RHI
         swapchainCI.setImageSharingMode(vk::SharingMode::eExclusive);
         swapchainCI.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity);
         swapchainCI.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
-        swapchainCI.setPresentMode(vk::PresentModeKHR::eFifo);      // TODO
+        swapchainCI.setPresentMode(vk::PresentModeKHR::eMailbox);      // TODO
         swapchainCI.setClipped(true);
         swapchainCI.setOldSwapchain(oldSwapchain);
 
@@ -191,7 +191,7 @@ namespace RHI
         desc.Width = mDesc.Width;
         desc.Height = mDesc.Height;
         desc.Format = mDesc.ColorFormat;
-        desc.Usage = RHI::ETextureUsageBit::RHITextureUsageRenderTarget;
+        desc.Usage = RHITextureUsageRenderTarget;
 
         auto images = device.getSwapchainImagesKHR(mSwapchain);
 

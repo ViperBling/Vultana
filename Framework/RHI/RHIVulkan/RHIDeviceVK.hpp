@@ -45,11 +45,11 @@ namespace RHI
         virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const std::string& name) override;
         virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const std::string& name) override;
         virtual RHIDescriptor* CreateUnorderedAccessView(RHIResource* resource, const RHIUnorderedAccessViewDesc& desc, const std::string& name) override;
-        virtual RHIDescriptor* CreateConstantBufferView(RHIResource* resource, const RHIConstantBufferViewDesc& desc, const std::string& name) override;
+        virtual RHIDescriptor* CreateConstantBufferView(RHIBuffer* resource, const RHIConstantBufferViewDesc& desc, const std::string& name) override;
         virtual RHIDescriptor* CreateSampler(const RHISamplerDesc& desc, const std::string& name) override;
 
-        virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) const override;
-        virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) const override;
+        virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) override;
+        virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) override;
 
         virtual bool DumpMemoryStats(const std::string& file) override;
 
