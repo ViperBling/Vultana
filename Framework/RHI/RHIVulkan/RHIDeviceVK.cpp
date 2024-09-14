@@ -405,28 +405,17 @@ namespace RHI
         mutableDesc.setPNext(&vk13Features);
         mutableDesc.setMutableDescriptorType(VK_TRUE);
 
-        vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddress {};
-        bufferDeviceAddress.setPNext(&mutableDesc);
-        bufferDeviceAddress.setBufferDeviceAddress(VK_TRUE);
-
         vk::PhysicalDeviceDescriptorBufferFeaturesEXT descBuffer {};
-        descBuffer.setPNext(&bufferDeviceAddress);
+        descBuffer.setPNext(&mutableDesc);
         descBuffer.setDescriptorBuffer(VK_TRUE);
-
-        // PhysicalDeviceDescriptorBufferFeaturesEXT需要通过features2传递
-        vk::PhysicalDeviceFeatures2 features2 {};
-        features2.setPNext(&descBuffer);
-        features2 = mPhysicalDevice.getFeatures2();
 
         vk::PhysicalDeviceFeatures features {};
         features = mPhysicalDevice.getFeatures();
 
-        // setPEnabledFeatures不支持features2，所以要传到pNext链中
         vk::DeviceCreateInfo deviceCI {};
-        deviceCI.setPNext(&features2);
+        deviceCI.setPNext(&descBuffer);
         deviceCI.setQueueCreateInfos(queueCI);
-        // If the pNext chain includes a VkPhysicalDeviceFeatures2 structure, then pEnabledFeatures must be NULL
-        // deviceCI.setPEnabledFeatures(&features);
+        deviceCI.setPEnabledFeatures(&features);
         deviceCI.setPEnabledExtensionNames(requiredExtensions);
 
         mDevice = mPhysicalDevice.createDevice(deviceCI);

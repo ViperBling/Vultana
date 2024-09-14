@@ -10,10 +10,10 @@ namespace RHI
         mBufferSize = bufferSize;
 
         vk::BufferCreateInfo bufferCI {};
-        bufferCI.size = mBufferSize;
-        bufferCI.usage = vk::BufferUsageFlagBits::eUniformBuffer | 
+        bufferCI.setSize(mBufferSize);
+        bufferCI.setUsage(vk::BufferUsageFlagBits::eUniformBuffer | 
                          vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                         vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT;
+                         vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
         
         VmaAllocationCreateInfo allocCI {};
         allocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
