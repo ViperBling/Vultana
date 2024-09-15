@@ -88,16 +88,12 @@ namespace Renderer
     void RendererBase::OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height)
     {
         WaitGPU();
-
-        if (mpSwapchain->GetDesc()->WindowHandle == wndHandle.GetNativeHandle())
-        {
-            mpSwapchain->Resize(width, height);
-
-            mDisplayWidth = width;
-            mDisplayHeight = height;
-            mRenderWidth = mDisplayWidth;
-            mRenderHeight = mDisplayHeight;
-        }
+        
+        mpSwapchain->Resize(width, height);
+        mDisplayWidth = width;
+        mDisplayHeight = height;
+        mRenderWidth = mDisplayWidth;
+        mRenderHeight = mDisplayHeight;
     }
 
     void RendererBase::BeginFrame()

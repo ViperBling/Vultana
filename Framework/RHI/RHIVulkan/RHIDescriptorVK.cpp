@@ -33,6 +33,9 @@ namespace RHI
 
     RHIUnorderedAccessViewVK::~RHIUnorderedAccessViewVK()
     {
+        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(mpDevice);
+        device->Delete(mImageView);
+        device->FreeResourceDescriptor(mHeapIndex);
     }
 
     bool RHIUnorderedAccessViewVK::Create()
@@ -50,6 +53,8 @@ namespace RHI
 
     RHIConstantBufferViewVK::~RHIConstantBufferViewVK()
     {
+        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(mpDevice);
+        device->FreeResourceDescriptor(mHeapIndex);
     }
 
     bool RHIConstantBufferViewVK::Create()
@@ -66,6 +71,9 @@ namespace RHI
 
     RHISamplerVK::~RHISamplerVK()
     {
+        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(mpDevice);
+        device->Delete(mSampler);
+        device->FreeResourceDescriptor(mHeapIndex);
     }
 
     bool RHISamplerVK::Create()

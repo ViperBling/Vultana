@@ -138,7 +138,16 @@ namespace RHI
     {
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
         auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        auto physcialDevice = ((RHIDeviceVK*)mpDevice)->GetPhysicalDevice();
         vk::SwapchainKHR oldSwapchain = mSwapchain;
+
+        auto presentMode = physcialDevice.getSurfacePresentModesKHR(mSurface);
+        auto surfaceCaps = physcialDevice.getSurfaceCapabilitiesKHR(mSurface);
+
+        vk::Extent2D extent = vk::Extent2D(
+            std::clamp(mDesc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
+            std::clamp(mDesc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
+        );
 
         vk::Format viewFormats[2];
         viewFormats[0] = ToVulkanFormat(mDesc.ColorFormat);
@@ -152,7 +161,7 @@ namespace RHI
         swapchainCI.setMinImageCount(mDesc.BufferCount);
         swapchainCI.setImageFormat(ToVulkanFormat(mDesc.ColorFormat));
         swapchainCI.setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear);
-        swapchainCI.setImageExtent({ mDesc.Width, mDesc.Height });
+        swapchainCI.setImageExtent(extent);
         swapchainCI.setImageArrayLayers(1);
         swapchainCI.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
         swapchainCI.setImageSharingMode(vk::SharingMode::eExclusive);
