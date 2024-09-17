@@ -1,4 +1,7 @@
 #include "RendererBase.hpp"
+#include "PipelineStateCache.hpp"
+#include "ShaderCompiler.hpp"
+#include "ShaderCache.hpp"
 #include "RHI/RHI.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "Utilities/Log.hpp"

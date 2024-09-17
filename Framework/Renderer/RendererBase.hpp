@@ -16,6 +16,10 @@ namespace Window
 
 namespace Renderer
 {
+    class PipelineStateCache;
+    class ShaderCompiler;
+    class ShaderCache;
+
     class RendererBase
     {
     public:
@@ -27,6 +31,9 @@ namespace Renderer
         void WaitGPU();
 
         uint64_t GetFrameID() const { return mpDevice->GetFrameID(); }
+        class PipelineStateCache* GetPipelineStateCache() const { return mpPipelineStateCache.get(); }
+        class ShaderCompiler* GetShaderCompiler() const { return mpShaderCompiler.get(); }
+        class ShaderCache* GetShaderCache() const { return mpShaderCache.get(); }
         uint32_t GetDisplayWidth() const { return mDisplayWidth; }
         uint32_t GetDisplayHeight() const { return mDisplayHeight; }
         uint32_t GetRenderWidth() const { return mRenderWidth; }
@@ -48,6 +55,9 @@ namespace Renderer
     private:
         std::unique_ptr<RHI::RHIDevice> mpDevice;
         std::unique_ptr<RHI::RHISwapchain> mpSwapchain;
+        std::unique_ptr<class PipelineStateCache> mpPipelineStateCache;
+        std::unique_ptr<class ShaderCompiler> mpShaderCompiler;
+        std::unique_ptr<class ShaderCache> mpShaderCache;
 
         uint32_t mDisplayWidth;
         uint32_t mDisplayHeight;
