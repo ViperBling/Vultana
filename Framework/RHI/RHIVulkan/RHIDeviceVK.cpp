@@ -508,11 +508,11 @@ namespace RHI
 
         auto physicalDeviceExtenProps = mPhysicalDevice.enumerateDeviceExtensionProperties();
 
-        VTNA_LOG_DEBUG("Available device extensions:");
-        for (uint32_t i = 0; i < physicalDeviceExtenProps.size(); i++)
-        {
-            VTNA_LOG_DEBUG("  {}", (char*)physicalDeviceExtenProps[i].extensionName);
-        }
+        // VTNA_LOG_DEBUG("Available device extensions:");
+        // for (uint32_t i = 0; i < physicalDeviceExtenProps.size(); i++)
+        // {
+        //     VTNA_LOG_DEBUG("  {}", (char*)physicalDeviceExtenProps[i].extensionName);
+        // }
 
         std::vector<const char*> requiredExtensions =
         {

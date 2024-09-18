@@ -41,6 +41,11 @@ namespace Renderer
 
         RHI::RHIDevice* GetDevice() const { return mpDevice.get(); }
         RHI::RHISwapchain* GetSwapchain() const { return mpSwapchain.get(); }
+        RHI::RHIShader* GetShader(const std::string& file, const std::string& entryPoint, RHI::ERHIShaderType type, const std::vector<std::string>& defines = {}, RHI::ERHIShaderCompileFlags flags = 0);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const std::string& name);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
+        void ReloadShaders();
+
 
     private:
         void OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height);
