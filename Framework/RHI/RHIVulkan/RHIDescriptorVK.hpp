@@ -15,6 +15,7 @@ namespace RHI
         ~RHIShaderResourceViewVK();
 
         bool Create();
+        const RHIShaderResourceViewDesc& GetDesc() const { return mDesc; }
 
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
@@ -33,6 +34,7 @@ namespace RHI
         ~RHIUnorderedAccessViewVK();
 
         bool Create();
+        const RHIUnorderedAccessViewDesc& GetDesc() const { return mDesc; }
 
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
