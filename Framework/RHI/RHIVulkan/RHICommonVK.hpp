@@ -336,4 +336,284 @@ namespace RHI
             return vk::AttachmentStoreOp::eStore;
         }
     }
+
+    inline vk::PrimitiveTopology ToVKPrimitiveTopology(ERHIPrimitiveType type)
+    {
+        switch (type)
+        {
+        case ERHIPrimitiveType::PointList:
+            return vk::PrimitiveTopology::ePointList;
+        case ERHIPrimitiveType::LineList:
+            return vk::PrimitiveTopology::eLineList;
+        case ERHIPrimitiveType::LineStrip:
+            return vk::PrimitiveTopology::eLineStrip;
+        case ERHIPrimitiveType::TriangleList:
+            return vk::PrimitiveTopology::eTriangleList;
+        case ERHIPrimitiveType::TriangleStrip:
+            return vk::PrimitiveTopology::eTriangleStrip;
+        default:
+            return vk::PrimitiveTopology::eTriangleList;
+        }
+    }
+
+    inline vk::CullModeFlags ToVKCullMode(ERHICullMode mode)
+    {
+        switch (mode)
+        {
+        case ERHICullMode::None:
+            return vk::CullModeFlagBits::eNone;
+        case ERHICullMode::Front:
+            return vk::CullModeFlagBits::eFront;
+        case ERHICullMode::Back:
+            return vk::CullModeFlagBits::eBack;
+        default:
+            return vk::CullModeFlagBits::eNone;
+        }
+    }
+
+    inline vk::PipelineRasterizationStateCreateInfo ToVKPipelineRSStateCreateInfo(const RHIRasterizerState& state)
+    {
+        vk::PipelineRasterizationStateCreateInfo createInfo;
+        createInfo.depthClampEnable = !state.bDepthClip;
+        createInfo.polygonMode = state.bWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill;
+        createInfo.cullMode = ToVKCullMode(state.CullMode);
+        createInfo.frontFace = state.bFrontCCW ? vk::FrontFace::eCounterClockwise : vk::FrontFace::eClockwise;
+        createInfo.depthBiasEnable = state.DepthBias != 0.0f || state.DepthSlopeScale != 0.0f;
+        createInfo.depthBiasConstantFactor = state.DepthBias;
+        createInfo.depthBiasClamp = state.DepthBiasClamp;
+        createInfo.depthBiasSlopeFactor = state.DepthSlopeScale;
+
+        return createInfo;
+    }
+
+    inline vk::CompareOp ToVKCompareOp(RHICompareFunc func)
+    {
+        switch (func)
+        {
+        case RHICompareFunc::Never:
+            return vk::CompareOp::eNever;
+        case RHICompareFunc::Less:
+            return vk::CompareOp::eLess;
+        case RHICompareFunc::Equal:
+            return vk::CompareOp::eEqual;
+        case RHICompareFunc::LessEqual:
+            return vk::CompareOp::eLessOrEqual;
+        case RHICompareFunc::Greater:
+            return vk::CompareOp::eGreater;
+        case RHICompareFunc::NotEqual:
+            return vk::CompareOp::eNotEqual;
+        case RHICompareFunc::GreaterEqual:
+            return vk::CompareOp::eGreaterOrEqual;
+        case RHICompareFunc::Always:
+            return vk::CompareOp::eAlways;
+        default:
+            return vk::CompareOp::eNever;
+        }
+    }
+
+    inline vk::StencilOp ToVKStencilOp(ERHIStencilOp stencilOp)
+    {
+        switch (stencilOp)
+        {
+        case ERHIStencilOp::Keep:
+            return vk::StencilOp::eKeep;
+        case ERHIStencilOp::Zero:
+            return vk::StencilOp::eZero;
+        case ERHIStencilOp::Replace:
+            return vk::StencilOp::eReplace;
+        case ERHIStencilOp::IncreaseClamp:
+            return vk::StencilOp::eIncrementAndClamp;
+        case ERHIStencilOp::DecreaseClamp:
+            return vk::StencilOp::eDecrementAndClamp;
+        case ERHIStencilOp::Invert:
+            return vk::StencilOp::eInvert;
+        case ERHIStencilOp::IncreaseWrap:
+            return vk::StencilOp::eIncrementAndWrap;
+        case ERHIStencilOp::DecreaseWrap:
+            return vk::StencilOp::eDecrementAndWrap;
+        default:
+            return vk::StencilOp::eKeep;
+        }
+    }
+
+    inline vk::StencilOpState ToVKStencilOpState(RHIDepthStencilOp state, uint8_t readMask, uint8_t writeMask)
+    {
+        vk::StencilOpState stencilState;
+        stencilState.failOp = ToVKStencilOp(state.StencilFailOp);
+        stencilState.passOp = ToVKStencilOp(state.DepthStencilPassOp);
+        stencilState.depthFailOp = ToVKStencilOp(state.DepthFailOp);
+        stencilState.compareOp = ToVKCompareOp(state.StencilFunc);
+        stencilState.compareMask = readMask;
+        stencilState.writeMask = writeMask;
+
+        return stencilState;
+    }
+
+    inline vk::PipelineDepthStencilStateCreateInfo ToVKPipelineDSStateCreateInfo(const RHIDepthStencilState& state)
+    {
+        vk::PipelineDepthStencilStateCreateInfo createInfo;
+        createInfo.depthTestEnable = state.bDepthEnable;
+        createInfo.depthWriteEnable = state.bDepthWrite;
+        createInfo.depthCompareOp = ToVKCompareOp(state.DepthFunc);
+        createInfo.stencilTestEnable = state.bStencilEnable;
+        createInfo.front = ToVKStencilOpState(state.FrontFace, state.StencilReadMask, state.StencilWriteMask);
+        createInfo.back = ToVKStencilOpState(state.BackFace, state.StencilReadMask, state.StencilWriteMask);
+
+        return createInfo;
+    }
+
+    inline vk::BlendFactor ToVKBlendFactor(ERHIBlendFactor factor, bool alpha = false)
+    {
+        switch (factor)
+        {
+        case ERHIBlendFactor::Zero:
+            return vk::BlendFactor::eZero;
+        case ERHIBlendFactor::One:
+            return vk::BlendFactor::eOne;
+        case ERHIBlendFactor::SrcColor:
+            return vk::BlendFactor::eSrcColor;
+        case ERHIBlendFactor::InvSrcColor:
+            return vk::BlendFactor::eOneMinusSrcColor;
+        case ERHIBlendFactor::SrcAlpha:
+            return vk::BlendFactor::eSrcAlpha;
+        case ERHIBlendFactor::InvSrcAlpha:
+            return vk::BlendFactor::eOneMinusSrcAlpha;
+        case ERHIBlendFactor::DestColor:
+            return vk::BlendFactor::eDstColor;
+        case ERHIBlendFactor::InvDestColor:
+            return vk::BlendFactor::eOneMinusDstColor;
+        case ERHIBlendFactor::DestAlpha:
+            return vk::BlendFactor::eDstAlpha;
+        case ERHIBlendFactor::InvDestAlpha:
+            return vk::BlendFactor::eOneMinusDstAlpha;
+        case ERHIBlendFactor::SrcAlphaClamp:
+            return vk::BlendFactor::eSrcAlphaSaturate;
+        case ERHIBlendFactor::ConstantFactor:
+            return alpha ? vk::BlendFactor::eConstantAlpha : vk::BlendFactor::eConstantColor;
+        case ERHIBlendFactor::InvConstantFactor:
+            return alpha ? vk::BlendFactor::eOneMinusConstantAlpha : vk::BlendFactor::eOneMinusConstantColor;
+        default:
+            return vk::BlendFactor::eZero;
+        }
+    }
+
+    inline vk::BlendOp ToVKBlendOp(ERHIBlendOp op)
+    {
+        switch (op)
+        {
+        case ERHIBlendOp::Add:
+            return vk::BlendOp::eAdd;
+        case ERHIBlendOp::Subtract:
+            return vk::BlendOp::eSubtract;
+        case ERHIBlendOp::ReverseSubtract:
+            return vk::BlendOp::eReverseSubtract;
+        case ERHIBlendOp::Min:
+            return vk::BlendOp::eMin;
+        case ERHIBlendOp::Max:
+            return vk::BlendOp::eMax;
+        default:
+            return vk::BlendOp::eAdd;
+        }
+    }
+
+    inline vk::PipelineColorBlendStateCreateInfo ToVKPipelineCBStateCreateInfo(const RHIBlendState* states, vk::PipelineColorBlendAttachmentState* vkStates)
+    {
+        for (uint32_t i = 0; i < 8; i++)
+        {
+            vkStates[i].blendEnable = states[i].bBlendEnable;
+            vkStates[i].srcColorBlendFactor = ToVKBlendFactor(states[i].ColorSrc);
+            vkStates[i].dstColorBlendFactor = ToVKBlendFactor(states[i].ColorDst);
+            vkStates[i].colorBlendOp = ToVKBlendOp(states[i].ColorOp);
+            vkStates[i].srcAlphaBlendFactor = ToVKBlendFactor(states[i].AlphaSrc, true);
+            vkStates[i].dstAlphaBlendFactor = ToVKBlendFactor(states[i].AlphaDst, true);
+            vkStates[i].alphaBlendOp = ToVKBlendOp(states[i].AlphaOp);
+            vkStates[i].colorWriteMask = static_cast<vk::ColorComponentFlags>(states[i].WriteMask);
+        }
+
+        vk::PipelineColorBlendStateCreateInfo createInfo;
+        createInfo.attachmentCount = 8;
+        createInfo.pAttachments = vkStates;
+
+        return createInfo;
+    }
+
+    template<typename T>
+    inline vk::PipelineRenderingCreateInfo ToVKPipelineRenderingCreateInfo(const T& pipelineDesc, vk::Format* colorFormats)
+    {
+        for (uint32_t i = 0; i < 8; i++)
+        {
+            colorFormats[i] = ToVulkanFormat(pipelineDesc.RTFormats[i], true);
+        }
+
+        vk::PipelineRenderingCreateInfo renderingCI {};
+        renderingCI.colorAttachmentCount = 8;
+        renderingCI.pColorAttachmentFormats = colorFormats;
+        renderingCI.depthAttachmentFormat = ToVulkanFormat(pipelineDesc.DepthStencilFormat);
+
+        if (pipelineDesc.DepthStencilFormat == ERHIFormat::D32FS8)
+        {
+            renderingCI.stencilAttachmentFormat = renderingCI.depthAttachmentFormat;
+        }
+        return renderingCI;
+    }
+
+    inline vk::Filter ToVKFilter(ERHIFilter filter)
+    {
+        switch (filter)
+        {
+        case ERHIFilter::Point:
+            return vk::Filter::eNearest;
+        case ERHIFilter::Linear:
+            return vk::Filter::eLinear;
+        default:
+            return vk::Filter::eNearest;
+        }
+    }
+
+    inline vk::SamplerMipmapMode ToVKSamplerMipmapMode(ERHIFilter filter)
+    {
+        switch (filter)
+        {
+        case ERHIFilter::Point:
+            return vk::SamplerMipmapMode::eNearest;
+        case ERHIFilter::Linear:
+            return vk::SamplerMipmapMode::eLinear;
+        default:
+            return vk::SamplerMipmapMode::eNearest;
+        }
+    }
+
+    inline vk::SamplerAddressMode ToVKSamplerAddressMode(ERHISamplerAddressMode mode)
+    {
+        switch (mode)
+        {
+        case ERHISamplerAddressMode::Repeat:
+            return vk::SamplerAddressMode::eRepeat;
+        case ERHISamplerAddressMode::MirroredRepeat:
+            return vk::SamplerAddressMode::eMirroredRepeat;
+        case ERHISamplerAddressMode::ClampToEdge:
+            return vk::SamplerAddressMode::eClampToEdge;
+        case ERHISamplerAddressMode::ClampToBorder:
+            return vk::SamplerAddressMode::eClampToBorder;
+        default:
+            return vk::SamplerAddressMode::eRepeat;
+        }
+    }
+
+    inline vk::SamplerReductionMode ToVKSamplerReductionMode(ERHISamplerReductionMode mode)
+    {
+        switch (mode)
+        {
+        case ERHISamplerReductionMode::Standard:
+            return vk::SamplerReductionMode::eWeightedAverage;
+        case ERHISamplerReductionMode::Compare:
+            return vk::SamplerReductionMode::eWeightedAverage;
+        case ERHISamplerReductionMode::Min:
+            return vk::SamplerReductionMode::eMin;
+        case ERHISamplerReductionMode::Max:
+            return vk::SamplerReductionMode::eMax;
+        default:
+            return vk::SamplerReductionMode::eWeightedAverage;
+        }
+    }
 }

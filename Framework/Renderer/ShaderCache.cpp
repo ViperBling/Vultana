@@ -2,6 +2,8 @@
 #include "RendererBase.hpp"
 #include "PipelineStateCache.hpp"
 #include "ShaderCompiler.hpp"
+
+#include "Core/VultanaEngine.hpp"
 #include "Utilities/Log.hpp"
 
 #include <fstream>
@@ -62,7 +64,7 @@ namespace Renderer
 
     RHI::RHIShader *ShaderCache::GetShader(const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
-        std::string filePath = "./Assets/Shaders/" + file;
+        std::string filePath = Core::VultanaEngine::GetEngineInstance()->GetShaderPath() + file;
         std::string absolutePath = std::filesystem::absolute(filePath.c_str()).string().c_str();
 
         RHI::RHIShaderDesc desc;

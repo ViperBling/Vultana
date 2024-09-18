@@ -23,6 +23,9 @@ namespace Core
         Window::GLFWindow* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
 
+        const std::string& GetAssetsPath() const { return mAssetsPath; }
+        const std::string& GetShaderPath() const { return mShaderPath; }
+
     private:
         ~VultanaEngine();
 
@@ -34,6 +37,9 @@ namespace Core
 
         uint64_t mLastFrameTime = 0;
         float mFrameTime = 0.0f;
+
+        std::string mAssetsPath;
+        std::string mShaderPath;
     };
 } // namespace Vultana
 
