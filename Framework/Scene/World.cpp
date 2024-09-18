@@ -1,5 +1,5 @@
 #include "World.hpp"
-#include "Renderer/Renderer.hpp"
+#include "Renderer/RendererBase.hpp"
 #include "Core/VultanaEngine.hpp"
 
 #include <atomic>
@@ -10,7 +10,7 @@ namespace Scene
 {
     World::World()
     {
-        Renderer::RendererBase* pRender = Core::Engine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
         mpCamera = std::make_unique<Camera>();
     }
@@ -23,7 +23,7 @@ namespace Scene
     {
         mpCamera->Tick(deltaTime);
 
-        Renderer::RendererBase* pRender = Core::Engine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
         for (auto it = mPrimitives.begin(); it != mPrimitives.end(); ++it)
         {

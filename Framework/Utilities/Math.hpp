@@ -1,11 +1,13 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/simd/matrix.h>
 #include <utility>
+#include <cassert>
 
 namespace Math
 {
@@ -114,5 +116,16 @@ namespace Math
         auto bitangent = (deltaPos2 * deltaT1.x - deltaPos1 * deltaT2.x) * r;
 
         return std::make_pair(Normalize(tangent), Normalize(bitangent));
+    }
+
+    inline bool IsPow2(uint32_t x)
+    {
+        return (x & (x - 1)) == 0;
+    }
+
+    inline uint32_t RoundUpPow2(uint32_t a, uint32_t b)
+    {
+        assert(IsPow2(b));
+        return (a + b - 1) & ~(b - 1);
     }
 }

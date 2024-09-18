@@ -2,72 +2,56 @@
 
 #include "RHICommon.hpp"
 
+// #include <tcb/span.hpp>
+// #include <span>
+
 namespace RHI
 {
-    struct BufferCreateInfo;
-    struct TextureCreateInfo;
-    struct SamplerCreateInfo;
-    struct BindGroupCreateInfo;
-    struct BindGroupLayoutCreateInfo;
-    struct PipelineLayoutCreateInfo;
-    struct ShaderModuleCreateInfo;
-    struct GraphicsPipelineCreateInfo;
-    struct ComputePipelineCreateInfo;
-    struct SwapchainCreateInfo;
-    struct SurfaceCreateInfo;
-    class RHIQueue;
+    class RHIResource;
     class RHIBuffer;
     class RHITexture;
-    class RHISampler;
-    class RHIBindGroup;
-    class RHIBindGroupLayout;
-    class RHIPipelineLayout;
-    class RHIShaderModule;
-    class RHIGraphicsPipeline;
-    class RHIComputePipeline;
-    class RHICommandBuffer;
-    class RHISwapchain;
-    class RHISurface;
     class RHIFence;
-
-    struct QueueInfo
-    {
-        RHICommandQueueType Type;
-        uint8_t Count;
-    };
-
-    struct DeviceCreateInfo
-    {
-        uint32_t QueueCreateInfoCount;
-        const QueueInfo* QueueCreateInfos;
-    };
+    class RHISwapchain;
+    class RHICommandList;
+    class RHIShader;
+    class RHIPipelineState;
+    class RHIDescriptor;
+    class RHIHeap;
 
     class RHIDevice
     {
     public:
-        NOCOPY(RHIDevice)
         virtual ~RHIDevice() = default;
-        virtual void Destroy() = 0;
 
-        virtual size_t GetQueueCount(RHICommandQueueType type) = 0;
-        virtual RHIQueue* GetQueue(RHICommandQueueType type, size_t index) = 0;
-        virtual RHISurface* CreateSurface(const SurfaceCreateInfo& createInfo) = 0;
-        virtual RHISwapchain* CreateSwapchain(const SwapchainCreateInfo& createInfo) = 0;
-        virtual RHIBuffer* CreateBuffer(const BufferCreateInfo& createInfo) = 0;
-        virtual RHITexture* CreateTexture(const TextureCreateInfo& createInfo) = 0;
-        virtual RHISampler* CreateSampler(const SamplerCreateInfo& createInfo) = 0;
-        virtual RHIBindGroup* CreateBindGroup(const BindGroupCreateInfo& createInfo) = 0;
-        virtual RHIBindGroupLayout* CreateBindGroupLayout(const BindGroupLayoutCreateInfo& createInfo) = 0;
-        virtual RHIPipelineLayout* CreatePipelineLayout(const PipelineLayoutCreateInfo& createInfo) = 0;
-        virtual RHIShaderModule* CreateShaderModule(const ShaderModuleCreateInfo& createInfo) = 0;
-        virtual RHIGraphicsPipeline* CreateGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo) = 0;
-        virtual RHIComputePipeline* CreateComputePipeline(const ComputePipelineCreateInfo& createInfo) = 0;
-        virtual RHICommandBuffer* CreateCommandBuffer() = 0;
-        virtual RHIFence* CreateFence() = 0;
+        const RHIDeviceDesc& GetDesc() const { return mDesc; }
+        uint64_t GetFrameID() const { return mFrameID; }
 
-        virtual bool CheckSwapchainFormatSupport(RHISurface* surface, RHIFormat format) = 0;
+        virtual bool Initialize() = 0;
+        virtual void BeginFrame() = 0;
+        virtual void EndFrame() = 0;
+        virtual void* GetNativeHandle() const = 0;
+
+        virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const std::string& name) = 0;
+        virtual RHICommandList* CreateCommandList(ERHICommandQueueType queueType, const std::string& name) = 0;
+        virtual RHIFence* CreateFence(const std::string& name) = 0;
+        virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const std::string& name) = 0;
+        virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const std::string& name) = 0;
+        virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const std::string& name) = 0;
+        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, tcb::span<uint8_t> data, const std::string& name) = 0;
+        virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const std::string& name) = 0;
+        virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const std::string& name) = 0;
+        virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const std::string& name) = 0;
+        virtual RHIDescriptor* CreateUnorderedAccessView(RHIResource* resource, const RHIUnorderedAccessViewDesc& desc, const std::string& name) = 0;
+        virtual RHIDescriptor* CreateConstantBufferView(RHIBuffer* resource, const RHIConstantBufferViewDesc& desc, const std::string& name) = 0;
+        virtual RHIDescriptor* CreateSampler(const RHISamplerDesc& desc, const std::string& name) = 0;
+
+        virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) = 0;
+        virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) = 0;
+
+        virtual bool DumpMemoryStats(const std::string& filename) = 0;
 
     protected:
-        explicit RHIDevice(const DeviceCreateInfo& createInfo) {}
+        RHIDeviceDesc mDesc;
+        uint64_t mFrameID = 0;
     };
-} // namespace Vultana::RHI
+}

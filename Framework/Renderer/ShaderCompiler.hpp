@@ -1,56 +1,36 @@
 #pragma once
 
-#include <vector>
-#include <string>
-
 #include "RHI/RHICommon.hpp"
-#include "RHI/RHIBindGroupLayout.hpp"
-#include "Shader.hpp"
-#include "Utilities/Concurrent.hpp"
+
+struct IDxcCompiler3;
+struct IDxcUtils;
+struct IDxcIncludeHandler;
+struct IRCompiler;
+struct IRRootSignature;
 
 namespace Renderer
 {
-    enum class ShaderByteCodeType
-    {
-        DXIL,
-        SPIRV,
-        Count,
-    };
-
-    struct ShaderCompileInput
-    {
-        std::string Source;
-        std::string EntryPoint;
-        RHI::RHIShaderStageBits Stage;
-    };
-
-    struct ShaderCompileOptions
-    {
-        ShaderByteCodeType ByteCodeType = ShaderByteCodeType::Count;
-        bool bWithDebugInfo = false;
-        std::vector<std::string> Definitions;
-        std::vector<std::string> IncludePaths;
-    };
-
-    struct ShaderCompileOutput
-    {
-        bool bSuccess;
-        std::vector<uint8_t> ByteCode;
-        ShaderReflectionData ReflectionData;
-        std::string ErrorMsg;
-    };
+    class RendererBase;
 
     class ShaderCompiler
     {
     public:
-        static ShaderCompiler& Get();
-        ~ShaderCompiler() = default;
-        std::future<ShaderCompileOutput> Compile(const ShaderCompileInput& input, const ShaderCompileOptions& options);
+        ShaderCompiler(RendererBase* renderer);
+        ~ShaderCompiler();
+
+        bool Compile(
+            const std::string& source, 
+            const std::string& file, 
+            const std::string& entryPoint, 
+            RHI::ERHIShaderType type, 
+            const std::vector<std::string>& defines, 
+            RHI::ERHIShaderCompileFlags flags, 
+            std::vector<uint8_t>& output);
 
     private:
-        ShaderCompiler();
-
-    private:
-        Utility::ThreadPool mThreadPool;
+        RendererBase* mpRenderer = nullptr;
+        IDxcCompiler3* mpDxcCompiler = nullptr;
+        IDxcUtils* mpDxcUtils = nullptr;
+        IDxcIncludeHandler* mpDxcIncludeHandler = nullptr;
     };
 }

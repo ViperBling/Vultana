@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Utilities/Math.hpp"
-#include "Renderer/Renderer.hpp"
+#include "Renderer/RendererBase.hpp"
 
 #include <vector>
 
