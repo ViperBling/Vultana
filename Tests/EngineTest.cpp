@@ -7,8 +7,6 @@
 #include "Scene/ModelLoader.hpp"
 #include "Scene/World.hpp"
 
-#include "RHI/RHIInstance.hpp"
-#include "RHI/RHIGPU.hpp"
 
 TEST(EngineTest, Init)
 {
@@ -19,14 +17,14 @@ TEST(EngineTest, Init)
     Window::GLFWindow window(wndCI);
     Scene::World world;
 
-    Core::Engine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
+    Core::VultanaEngine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
 
     while (!window.ShouldClose())
     {
         window.PollEvents();
 
-       Core::Engine::GetEngineInstance()->Tick();
+       Core::VultanaEngine::GetEngineInstance()->Tick();
     }
 
-    Core::Engine::GetEngineInstance()->Shutdown();
+    Core::VultanaEngine::GetEngineInstance()->Shutdown();
 }

@@ -1,37 +1,23 @@
 #pragma once
 
-#include "Utilities/Math.hpp"
-#include "RHICommon.hpp"
+#include "RHIResource.hpp"
 
 namespace RHI
 {
-    struct TextureViewCreateInfo;
-    class RHITextureView;
-    class RHIDevice;
-
-    struct TextureCreateInfo
-    {
-        RHITextureDimension Dimension;
-        Math::Vector3u Extent;
-        RHIFormat Format;
-        RHITextureUsageFlags Usage;
-        uint8_t MipLevels;
-        uint8_t Samples;
-        RHITextureState InitialState;
-        std::string Name;
-    };
-
-    class RHITexture
+    class RHITexture : public RHIResource
     {
     public:
-        NOCOPY(RHITexture)
         virtual ~RHITexture() = default;
 
-        virtual RHITextureView* CreateTextureView(const TextureViewCreateInfo& createInfo) = 0;
-        virtual void Destroy() = 0;
-    
+        const RHITextureDesc& GetDesc() const { return mDesc; }
+
+        virtual bool IsTexture() const override { return true; }
+        virtual uint32_t GetRequiredStagingBufferSize() const = 0;
+        virtual uint32_t GetRowPitch(uint32_t mipLevel = 0) const = 0;
+
+        virtual void* GetSharedHandle() const = 0;
+
     protected:
-        RHITexture() = default;
-        explicit RHITexture(const TextureCreateInfo& createInfo) {}
+        RHITextureDesc mDesc {};
     };
 }

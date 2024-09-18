@@ -1,17 +1,17 @@
 #pragma once
 
 #include "Scene/World.hpp"
-#include "Renderer/Renderer.hpp"
+#include "Renderer/RendererBase.hpp"
 #include "Windows/GLFWindow.hpp"
 
 #include <iostream>
 
 namespace Core
 {
-    class Engine
+    class VultanaEngine
     {
     public:
-        static Engine* GetEngineInstance();
+        static VultanaEngine* GetEngineInstance();
 
         void Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height);
         void Shutdown();
@@ -22,6 +22,9 @@ namespace Core
 
         Window::GLFWindow* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
+
+    private:
+        ~VultanaEngine();
 
     private:
         std::unique_ptr<Scene::World> mpWorld;

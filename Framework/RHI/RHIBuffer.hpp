@@ -1,33 +1,20 @@
 #pragma once
 
-#include "RHICommon.hpp"
-
-#include <string>
+#include "RHIResource.hpp"
 
 namespace RHI
 {
-    struct BufferViewCreateInfo;
-    class RHIBufferView;
-
-    struct BufferCreateInfo
-    {
-        uint32_t Size;
-        RHIBufferUsageFlags Usage;
-        std::string Name;
-    };
-
-    class RHIBuffer
+    class RHIBuffer : public RHIResource
     {
     public:
-        NOCOPY(RHIBuffer)
-        virtual ~RHIBuffer() = default;
-
-        virtual void* Map(RHIMapMode mapMode, size_t offset = 0, size_t size = 0) = 0;
-        virtual void Unmap() = 0;
-        virtual RHIBufferView* CreateBufferView(const BufferViewCreateInfo& createInfo) = 0;
-        virtual void Destroy() = 0;
+        const RHIBufferDesc& GetDesc() const { return mDesc; }
+        virtual bool IsBuffer() const override { return true; }
+        
+        virtual void* GetCPUAddress() const = 0;
+        virtual uint64_t GetGPUAddress() const = 0;
+        virtual uint32_t GetRequiredStagingBufferSize() const = 0;
 
     protected:
-        explicit RHIBuffer(const BufferCreateInfo& createInfo) {}
+        RHIBufferDesc mDesc {};
     };
 }

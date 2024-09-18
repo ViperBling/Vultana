@@ -1,204 +1,226 @@
-#if (WIN32)
-#define PLATFORM_WINDOWS
-#endif
-
-#include <unordered_map>
-
-#ifdef PLATFORM_WINDOWS
-#include <Windows.h>
-#include <d3d12shader.h>
-#include <wrl/client.h>
-using namespace Microsoft::WRL;
-#define ComPtrGet(name) name.Get() 
-#undef min
-#undef max
-#endif
-
-#include <dxcapi.h>
-#include <spirv_cross/spirv_cross.hpp>
-#include <spirv_cross/spirv_hlsl.hpp>
-
 #include "ShaderCompiler.hpp"
-#include "Utilities/String.hpp"
+#include "RendererBase.hpp"
+#include "ShaderCache.hpp"
+
+#include "Core/VultanaEngine.hpp"
+#include "Utilities/Log.hpp"
+
+#include <filesystem>
+#include <atlbase.h>
+#include <dxcapi.h>
 
 namespace Renderer
 {
-    static std::wstring GetDXCTargetProfile(RHI::RHIShaderStageBits stage)
+    class DXCIncludeHandler : public IDxcIncludeHandler
     {
-        static const std::unordered_map<RHI::RHIShaderStageBits, std::wstring> stageToProfile =
+    public:
+        DXCIncludeHandler(ShaderCache* pShaderCache, IDxcUtils* pDxcUtils)
+            : mpShaderCache(pShaderCache)
+            , mpDxcUtils(pDxcUtils)
+        {}
+
+        HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override
         {
-            { RHI::RHIShaderStageBits::Vertex, L"vs" },
-            { RHI::RHIShaderStageBits::Pixel, L"ps" },
-            { RHI::RHIShaderStageBits::Compute, L"cs" },
-        };
-        auto it = stageToProfile.find(stage);
-        assert(it != stageToProfile.end());
-        return it->second + L"_6_2";
-    }
+            std::string absPath = std::filesystem::absolute(pFilename).string();
+            std::string source = mpShaderCache->GetCachedFileContent(absPath);
 
-    static std::vector<LPCWSTR> GetDXCBaseArguments(const ShaderCompileOptions& options)
-    {
-        static std::vector<LPCWSTR> baseArgs = {
-            DXC_ARG_WARNINGS_ARE_ERRORS,
-            DXC_ARG_PACK_MATRIX_ROW_MAJOR
-        };
-
-        std::vector<LPCWSTR> result = baseArgs;
-        if (options.bWithDebugInfo)
-        {
-            result.emplace_back(L"-Qembed_debug");
-            result.emplace_back(DXC_ARG_DEBUG);
-        }
-        if (options.ByteCodeType != ShaderByteCodeType::DXIL)
-        {
-            result.emplace_back(L"-spirv");
-        }
-        return result;
-    }
-
-    static std::vector<std::wstring> GetEntryPointArguments(const ShaderCompileInput& input)
-    {
-        return { L"-E", Utility::StringUtils::ToWideString(input.EntryPoint) };
-    }
-
-    static std::vector<std::wstring> GetTargetProfileArguments(const ShaderCompileInput& input)
-    {
-        return { L"-T", GetDXCTargetProfile(input.Stage) };
-    }
-
-    static std::vector<std::wstring> GetIncludePathArguments(const ShaderCompileOptions& option)
-    {
-        std::vector<std::wstring> result;
-        for (const auto& includePath : option.IncludePaths)
-        {
-            result.emplace_back(L"-I");
-            result.emplace_back(Utility::StringUtils::ToWideString(includePath));
-        }
-        return result;
-    }
-
-    static std::vector<std::wstring> GetInternalPreDefinition(const ShaderCompileOptions& option)
-    {
-        std::vector<std::wstring> result { L"-D" };
-        auto def = option.ByteCodeType == ShaderByteCodeType::SPIRV ? std::wstring(L"VULKAN=1") : std::wstring(L"VULKAN=0");
-        result.emplace_back(def);
-        return result;
-    }
-
-    static std::vector<std::wstring> GetDefinitionArguments(const ShaderCompileOptions& options)
-    {
-        std::vector<std::wstring> result;
-
-        auto preDef = GetInternalPreDefinition(options);
-        result.insert(result.end(), preDef.begin(), preDef.end());
-
-        for (const auto& definition : options.Definitions) 
-        {
-            result.emplace_back(L"-D");
-            result.emplace_back(Utility::StringUtils::ToWideString(definition));
-        }
-        return result;
-    }
-
-    static void FillArguments(std::vector<LPCWSTR>& result, const std::vector<std::wstring>& arguments)
-    {
-        for (const auto& argument : arguments) 
-        {
-            result.emplace_back(argument.c_str());
-        }
-    }
-
-    static void CompileDxilOrSpirv(
-        const ShaderCompileInput &input,
-        const ShaderCompileOptions &options,
-        ShaderCompileOutput &output
-    )
-    {
-        ComPtr<IDxcLibrary> library;
-        assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&library))));
-
-        ComPtr<IDxcCompiler3> compiler;
-        assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler))));
-
-        ComPtr<IDxcUtils> utils;
-        assert(SUCCEEDED(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils))));
-
-        ComPtr<IDxcIncludeHandler> includeHandler;
-        assert(SUCCEEDED(utils->CreateDefaultIncludeHandler(&includeHandler)));
-
-        ComPtr<IDxcBlobEncoding> sourceBlob;
-        utils->CreateBlobFromPinned(input.Source.c_str(), std::strlen(input.Source.c_str()), CP_UTF8, &sourceBlob);
-
-        std::vector<LPCWSTR> arguments = GetDXCBaseArguments(options);
-        auto entryPointArgs = GetEntryPointArguments(input);
-        auto targetProfileArgs = GetTargetProfileArguments(input);
-        auto includePathArgs = GetIncludePathArguments(options);
-        auto definitionArgs = GetDefinitionArguments(options);
-        FillArguments(arguments, entryPointArgs);
-        FillArguments(arguments, targetProfileArgs);
-        FillArguments(arguments, includePathArgs);
-        FillArguments(arguments, definitionArgs);
-
-        DxcBuffer srcBuffer;
-        srcBuffer.Ptr = sourceBlob->GetBufferPointer();
-        srcBuffer.Size = sourceBlob->GetBufferSize();
-        srcBuffer.Encoding = 0u;
-
-        ComPtr<IDxcResult> result;
-        const HRESULT operationResult = compiler->Compile(
-            &srcBuffer,
-            arguments.data(),
-            static_cast<uint32_t>(arguments.size()),
-            ComPtrGet(includeHandler),
-            IID_PPV_ARGS(&result)
-        );
-
-        ComPtr<IDxcBlobEncoding> errorBlob;
-        assert(SUCCEEDED(result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorBlob), nullptr)));
-
-        if (FAILED(operationResult) || errorBlob->GetBufferSize() > 0)
-        {
-            output.bSuccess = false;
-            output.ErrorMsg.resize(errorBlob->GetBufferSize());
-            memcpy(output.ErrorMsg.data(), errorBlob->GetBufferPointer(), errorBlob->GetBufferSize());
-            return;
+            *ppIncludeSource = nullptr;
+            return mpDxcUtils->CreateBlob(source.data(), (UINT32)source.size(), CP_UTF8, reinterpret_cast<IDxcBlobEncoding**>(ppIncludeSource));
         }
 
-        ComPtr<IDxcBlob> codeBlob;
-        assert(SUCCEEDED(result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&codeBlob), nullptr)));
-        output.bSuccess = true;
-        const auto* codeStart = static_cast<const uint8_t*>(codeBlob->GetBufferPointer());
-        const auto* codeEnd = codeStart + codeBlob->GetBufferSize();
-        output.ByteCode = std::vector<uint8_t>(codeStart, codeEnd);
-    }
-
-    ShaderCompiler &ShaderCompiler::Get()
-    {
-        static ShaderCompiler instance;
-        return instance;
-    }
-
-    std::future<ShaderCompileOutput> ShaderCompiler::Compile(const ShaderCompileInput& inInput, const ShaderCompileOptions& inOptions)
-    {
-        return mThreadPool.EmplaceTask([](const ShaderCompileInput& input, const ShaderCompileOptions& options) -> ShaderCompileOutput
+        ULONG STDMETHODCALLTYPE AddRef() override
         {
-            ShaderCompileOutput output;
-            switch (options.ByteCodeType)
+            ++mRef;
+            return mRef;
+        }
+
+        ULONG STDMETHODCALLTYPE Release() override
+        {
+            --mRef;
+            ULONG result = mRef;
+            if (result == 0)
             {
-            case ShaderByteCodeType::DXIL:
-            case ShaderByteCodeType::SPIRV:
-                CompileDxilOrSpirv(input, options, output);
-                break;
-            default:
-                assert(false);
-                break;
+                delete this;
             }
-            return output;
-        }, inInput, inOptions);
+            return result;
+        }
+
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override
+        {
+            if (IsEqualIID(riid, __uuidof(IDxcIncludeHandler)))
+            {
+                *ppvObject = dynamic_cast<IDxcIncludeHandler*>(this);
+                this->AddRef();
+                return S_OK;
+            }
+            else if (IsEqualIID(riid, __uuidof(IUnknown)))
+            {
+                *ppvObject = dynamic_cast<IUnknown*>(this);
+                this->AddRef();
+                return S_OK;
+            }
+            else
+            {
+                return E_NOINTERFACE;
+            }
+        }
+    
+    private:
+        ShaderCache* mpShaderCache = nullptr;
+        IDxcUtils* mpDxcUtils = nullptr;
+        std::atomic<ULONG> mRef = 0;
+    };
+
+    inline const wchar_t* GetShaderProfile(RHI::ERHIShaderType type)
+    {
+        switch (type)
+        {
+        case RHI::ERHIShaderType::AS:
+            return L"as_6_6";
+        case RHI::ERHIShaderType::MS:
+            return L"ms_6_6";
+        case RHI::ERHIShaderType::VS:
+            return L"vs_6_6";
+        case RHI::ERHIShaderType::PS:
+            return L"ps_6_6";
+        case RHI::ERHIShaderType::CS:
+            return L"cs_6_6";
+        default:
+            return L"";
+        }
     }
 
-    ShaderCompiler::ShaderCompiler()
-        : mThreadPool("ShaderCompiler", 16)
+    ShaderCompiler::ShaderCompiler(RendererBase *renderer)
     {
+        HMODULE dxcModule = LoadLibraryA("dxcompiler.dll");
+
+        if (dxcModule)
+        {
+            DxcCreateInstanceProc dxcCreateInstance = (DxcCreateInstanceProc)GetProcAddress(dxcModule, "DxcCreateInstance");
+
+            DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&mpDxcUtils));
+            DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&mpDxcCompiler));
+
+            mpDxcIncludeHandler = new DXCIncludeHandler(renderer->GetShaderCache(), mpDxcUtils);
+            mpDxcIncludeHandler->AddRef();
+        }
+    }
+
+    ShaderCompiler::~ShaderCompiler()
+    {
+        if (mpDxcIncludeHandler)
+        {
+            mpDxcIncludeHandler->Release();
+        }
+        if (mpDxcCompiler)
+        {
+            mpDxcCompiler->Release();
+        }
+        if (mpDxcUtils)
+        {
+            mpDxcUtils->Release();
+        }
+    }
+
+    bool ShaderCompiler::Compile(const std::string &source, const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags, std::vector<uint8_t> &output)
+    {
+        DxcBuffer sourceBuffer;
+        sourceBuffer.Ptr = source.data();
+        sourceBuffer.Size = source.length();
+        sourceBuffer.Encoding = DXC_CP_ACP;
+
+        std::wstring wfile = std::wstring(file.begin(), file.end());
+        std::wstring wentryPoint = std::wstring(entryPoint.begin(), entryPoint.end());
+        std::wstring wprofile = GetShaderProfile(type);
+
+        std::vector<std::wstring> wstrDefines;
+        for (size_t i = 0; i < defines.size(); i++)
+        {
+            wstrDefines.push_back(std::wstring(defines[i].begin(), defines[i].end()));
+        }
+
+        std::vector<LPCWSTR> arguments;
+        arguments.push_back(wfile.c_str());
+        arguments.push_back(L"-E");     arguments.push_back(wentryPoint.c_str());
+        arguments.push_back(L"-T");     arguments.push_back(wprofile.c_str());
+        for (size_t i = 0; i < wstrDefines.size(); i++)
+        {
+            arguments.push_back(L"-D"); arguments.push_back(wstrDefines[i].c_str());
+        }
+        switch (mpRenderer->GetDevice()->GetDesc().RenderBackend)
+        {
+        case RHI::ERHIRenderBackend::Vulkan:
+            arguments.push_back(L"-D");
+            arguments.push_back(L"RHI_BACKEND_VULKAN");
+            arguments.push_back(L"-spirv");
+            arguments.push_back(L"-fspv-target-env=vulkan1.3");
+            arguments.push_back(L"-fvk-use-dx-layout");
+            break;
+        default:
+            break;
+        }
+
+        arguments.push_back(L"-HV 2021");
+        arguments.push_back(L"-enable-16bit-types");
+
+        #ifdef _DEBUG
+            arguments.push_back(L"-Zi");
+            arguments.push_back(L"-Qembed_debug");
+        #endif
+
+        if (flags & RHI::RHIShaderCompileFlagO3)
+        {
+            arguments.push_back(L"-O3");
+        }
+        else if (flags & RHI::RHIShaderCompileFlagO3)
+        {
+            arguments.push_back(L"-O2");
+        }
+        else if (flags & RHI::RHIShaderCompileFlagO1)
+        {
+            arguments.push_back(L"-O1");
+        }
+        else if (flags & RHI::RHIShaderCompileFlagO0)
+        {
+            arguments.push_back(L"-O0");
+        }
+        else
+        {
+        #ifdef _DEBUG
+            arguments.push_back(L"-O0");
+        #else
+            arguments.push_back(L"-O3");
+        #endif
+        }
+
+        CComPtr<IDxcResult> pResult;
+        mpDxcCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), mpDxcIncludeHandler, IID_PPV_ARGS(&pResult));
+        
+        CComPtr<IDxcBlobUtf8> pError = nullptr;
+        pResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&pError), nullptr);
+        if (pError != nullptr && pError->GetStringLength() != 0)
+        {
+            VTNA_LOG_ERROR(pError->GetStringPointer());
+        }
+
+        HRESULT hr;
+        pResult->GetStatus(&hr);
+        if (FAILED(hr))
+        {
+            VTNA_LOG_ERROR("[ShaderCompiler] Failed to compile shader: {}, {}", file, entryPoint);
+            return false;
+        }
+
+        CComPtr<IDxcBlob> pShader = nullptr;
+        if (FAILED(pResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&pShader), nullptr)))
+        {
+            VTNA_LOG_ERROR("[ShaderCompiler] Failed to get shader object: {}, {}", file, entryPoint);
+            return false;
+        }
+
+        output.resize(pShader->GetBufferSize());
+        memcpy(output.data(), pShader->GetBufferPointer(), pShader->GetBufferSize());
+
+        return true;
     }
 }
