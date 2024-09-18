@@ -15,6 +15,10 @@ namespace Renderer
 {
     RendererBase::RendererBase()
     {
+        mpShaderCache = std::make_unique<ShaderCache>(this);
+        mpShaderCompiler = std::make_unique<ShaderCompiler>(this);
+        mpPipelineStateCache = std::make_unique<PipelineStateCache>(this);
+        
         auto onResizeCallback = std::bind(&RendererBase::OnWindowResize, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
         Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(onResizeCallback);
     }
@@ -88,7 +92,27 @@ namespace Renderer
         }
     }
 
-    void RendererBase::OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height)
+    RHI::RHIShader *RendererBase::GetShader(const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    {
+        return mpShaderCache->GetShader(file, entryPoint, type, defines, flags);
+    }
+
+    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const std::string &name)
+    {
+        return mpPipelineStateCache->GetPipelineState(desc, name);
+    }
+
+    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const std::string &name)
+    {
+        return mpPipelineStateCache->GetPipelineState(desc, name);
+    }
+
+    void RendererBase::ReloadShaders()
+    {
+        mpShaderCache->ReloadShaders();
+    }
+
+    void RendererBase::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
     {
         WaitGPU();
         
