@@ -62,6 +62,11 @@ namespace Math
         return glm::degrees(radians);
     }
 
+    inline Matrix4x4 MakeTranslationMatrix(const Vector3& translation)
+    {
+        return glm::translate(translation);
+    }
+
     inline Matrix4x4 MakeRotationMatrix(const Vector3& rotations)
     {
         return glm::yawPitchRoll(rotations.y, rotations.x, rotations.z);
@@ -96,6 +101,11 @@ namespace Math
     inline Matrix4x4 MakeOrthographicMatrix(float xLow, float xHigh, float yLow, float yHigh, float zLow, float zHigh)
     {
         return glm::ortho(xLow, xHigh, yLow, yHigh, zLow, zHigh);
+    }
+
+    inline Matrix4x4 Inverse(const Matrix4x4& matrix)
+    {
+        return glm::inverse(matrix);
     }
 
     inline std::pair<Vector3, Vector3> ComputeTangentSpace(
