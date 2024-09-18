@@ -13,6 +13,7 @@ find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 
@@ -72,4 +73,5 @@ target_link_libraries(FrameworkLib PRIVATE
     Microsoft::DirectXShaderCompiler
     cityhash
     spdlog::spdlog
+    imgui::imgui
 )
