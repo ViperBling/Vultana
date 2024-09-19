@@ -42,7 +42,10 @@ namespace Window
         glfwSetWindowSizeCallback(this->mHwnd, [](GLFWwindow* handle, int width, int height)
         {
                 auto& window = *(GLFWindow*)glfwGetWindowUserPointer(handle);
-                if (window.mOnResize) window.mOnResize(window, (float)width, (float)height);
+                for (auto& callback : window.mOnResizeCallbacks)
+                {
+                    if (callback) callback(window, (uint32_t)width, (uint32_t)height);
+                }
         });
         glfwSetKeyCallback(this->mHwnd, [](GLFWwindow* handle, int key, int scancode, int action, int mods)
         {
@@ -59,7 +62,7 @@ namespace Window
     GLFWindow::GLFWindow(GLFWindow&& other) noexcept
     {
         this->mHwnd = other.mHwnd;
-        this->mOnResize = std::move(other.mOnResize);
+        this->mOnResizeCallbacks = other.mOnResizeCallbacks;
         other.mHwnd = nullptr;
         glfwSetWindowUserPointer(this->mHwnd, (void*)this);
     }
@@ -67,7 +70,7 @@ namespace Window
     GLFWindow &GLFWindow::operator=(GLFWindow &&other) noexcept
     {
         this->mHwnd = other.mHwnd;
-        this->mOnResize = std::move(other.mOnResize);
+        this->mOnResizeCallbacks = other.mOnResizeCallbacks;
         other.mHwnd = nullptr;
         glfwSetWindowUserPointer(this->mHwnd, (void*)this);
         return *this;
@@ -80,6 +83,7 @@ namespace Window
             glfwDestroyWindow(this->mHwnd);
             this->mHwnd = nullptr;
         }
+        mOnResizeCallbacks.clear();
     }
 
     void GLFWindow::PollEvents() const
@@ -180,7 +184,7 @@ namespace Window
 
     void GLFWindow::OnResize(std::function<void(GLFWindow &, uint32_t width, uint32_t height)> callback)
     {
-        this->mOnResize = std::move(callback);
+        this->mOnResizeCallbacks.push_back(std::move(callback));
     }
 
     void GLFWindow::OnKeyChanged(std::function<void(GLFWindow &, Utility::KeyCode, bool)> callback)

@@ -209,6 +209,29 @@ namespace RHI
         }
     }
 
+    void RHICommandListVK::BeginProfiling()
+    {
+    }
+
+    void RHICommandListVK::EndProfiling()
+    {
+    }
+
+    void RHICommandListVK::BeginEvent(const std::string &eventName)
+    {
+        vk::DebugUtilsLabelEXT label {};
+        label.pLabelName = eventName.c_str();
+
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        mCmdBuffer.beginDebugUtilsLabelEXT(label, dynamicLoader);
+    }
+
+    void RHICommandListVK::EndEvent()
+    {
+        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        mCmdBuffer.endDebugUtilsLabelEXT(dynamicLoader);
+    }
+
     void RHICommandListVK::CopyBufferToTexture(RHIBuffer *srcBuffer, RHITexture *dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset)
     {
         FlushBarriers();
@@ -404,6 +427,8 @@ namespace RHI
 
     void RHICommandListVK::BeginRenderPass(const RHIRenderPassDesc &desc)
     {
+        FlushBarriers();
+
     }
 
     void RHICommandListVK::EndRenderPass()

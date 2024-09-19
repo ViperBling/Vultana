@@ -26,6 +26,11 @@ namespace RHI
         virtual void Submit() override;
         virtual void ResetState() override;
 
+        virtual void BeginProfiling() override;
+        virtual void EndProfiling() override;
+        virtual void BeginEvent(const std::string& eventName) override;
+        virtual void EndEvent() override;
+
         virtual void CopyBufferToTexture(RHIBuffer* srcBuffer, RHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
         virtual void CopyTextureToBuffer(RHITexture* srcTexture, RHIBuffer* dstBuffer, uint32_t mipLevel, uint32_t arraySlice) override;
         virtual void CopyBuffer(RHIBuffer* src, RHIBuffer* dst, uint32_t srcOffset, uint32_t dstOffset, uint32_t size) override;

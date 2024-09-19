@@ -71,7 +71,7 @@ namespace Window
 
     private:
         GLFWwindow* mHwnd = nullptr;
-        std::function<void(GLFWindow&, uint32_t width, uint32_t height)> mOnResize;
+        std::vector<std::function<void(GLFWindow&, uint32_t width, uint32_t height)>> mOnResizeCallbacks;
         std::function<void(GLFWindow&, Utility::KeyCode, bool)> mOnKeyChanged;
         std::function<void(GLFWindow&, Utility::MouseButton, bool)> mOnMouseChanged;
     };

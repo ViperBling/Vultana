@@ -15,7 +15,6 @@ TEST(EngineTest, Init)
     wndCI.Size = { 1280, 720 };
 
     Window::GLFWindow window(wndCI);
-    Scene::World world;
 
     Core::VultanaEngine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
 
