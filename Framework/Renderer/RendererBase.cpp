@@ -85,7 +85,8 @@ namespace Renderer
         // CreateCommonResources();
 
         // For Test
-        std::vector<Vertex> vertices = {
+        std::vector<Vertex> vertices = 
+        {
             { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
             { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
             { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
@@ -93,8 +94,8 @@ namespace Renderer
 
         std::vector<uint16_t> indices = { 0, 1, 2 };
 
-        mTestIndexBuffer = CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer");
-        mTestVertexBuffer = CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer");
+        mTestIndexBuffer.reset(CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer"));
+        // mTestVertexBuffer.reset(CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer"));
 
         RHI::RHIGraphicsPipelineStateDesc psoDesc;
         psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);

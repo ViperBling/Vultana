@@ -1,4 +1,4 @@
-#include "StagingBufferAllocator.hpp"
+﻿#include "StagingBufferAllocator.hpp"
 #include "RendererBase.hpp"
 
 #include "Utilities/Math.hpp"
