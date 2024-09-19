@@ -452,7 +452,7 @@ namespace RHI
     inline vk::PipelineDepthStencilStateCreateInfo ToVKPipelineDSStateCreateInfo(const RHIDepthStencilState& state)
     {
         vk::PipelineDepthStencilStateCreateInfo createInfo;
-        createInfo.depthTestEnable = state.bDepthEnable;
+        createInfo.depthTestEnable = state.bDepthTest;
         createInfo.depthWriteEnable = state.bDepthWrite;
         createInfo.depthCompareOp = ToVKCompareOp(state.DepthFunc);
         createInfo.stencilTestEnable = state.bStencilEnable;

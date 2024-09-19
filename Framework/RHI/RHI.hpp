@@ -4,6 +4,7 @@
 #include "RHIBuffer.hpp"
 #include "RHICommandList.hpp"
 #include "RHIDevice.hpp"
+#include "RHIDescriptor.hpp"
 #include "RHIFence.hpp"
 #include "RHIHeap.hpp"
 #include "RHIPipelineState.hpp"

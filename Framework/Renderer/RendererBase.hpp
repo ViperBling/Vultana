@@ -1,5 +1,9 @@
 #pragma once
 
+#include "RenderResources/IndexBuffer.hpp"
+#include "RenderResources/StructuredBuffer.hpp"
+#include "StagingBufferAllocator.hpp"
+
 #include "RHI/RHI.hpp"
 #include "Utilities/Utility.hpp"
 #include "Utilities/Math.hpp"
@@ -46,6 +50,11 @@ namespace Renderer
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
         void ReloadShaders();
 
+        IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
+        StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+
+        void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
+
 
     private:
         void OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height);
@@ -83,5 +92,19 @@ namespace Renderer
         uint64_t mCurrentUploadFenceValue = 0;
         std::unique_ptr<RHI::RHIFence> mpUploadFence;
         std::unique_ptr<RHI::RHICommandList> mpUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        std::unique_ptr<StagingBufferAllocator> mpStagingBufferAllocators[RHI::RHI_MAX_INFLIGHT_FRAMES];
+
+        struct BufferUpload
+        {
+            RHI::RHIBuffer* Buffer;
+            uint32_t Offset;
+            StagingBuffer SBForUpload;
+        };
+        std::vector<BufferUpload> mPendingBufferUpload;
+
+        // For Test
+        StructuredBuffer* mTestVertexBuffer = nullptr;
+        IndexBuffer* mTestIndexBuffer = nullptr;
+        RHI::RHIPipelineState* mTestPSO = nullptr;
     };
 }

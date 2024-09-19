@@ -1,21 +1,25 @@
-struct FragmentInput
+struct Attributes
 {
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
+    float3 positionOS  : POSITION;
+    float4 vertexColor : COLOR;
 };
 
-FragmentInput VSMain(float4 position : POSITION, float4 color : COLOR)
+struct Varyings
 {
-    FragmentInput result;
-    result.position = position;
-#if VULKAN
-    result.position.y = -result.position.y;
-#endif
-    result.color = color;
-    return result;
+    float4 positionCS  : SV_POSITION;
+    float4 vertexColor : COLOR;
+};
+
+Varyings VSMain(Attributes vsIn)
+{
+    Varyings vsOut;
+    vsOut.positionCS = vsIn.positionOS;
+
+    vsOut.vertexColor = vsIn.vertexColor;
+    return vsOut;
 }
 
-float4 PSMain(FragmentInput input) : SV_TARGET
+float4 PSMain(Varyings fsIn) : SV_TARGET
 {
-    return input.color;
+    return fsIn.vertexColor;
 }
