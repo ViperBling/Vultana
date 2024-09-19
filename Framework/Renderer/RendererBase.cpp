@@ -7,12 +7,22 @@
 #include "Utilities/Log.hpp"
 #include "Windows/GLFWindow.hpp"
 
+// For Test
+#include "RHI/RHIBuffer.hpp"
+
 #include <optional>
 #include <algorithm>
 #include <fstream>
 
 namespace Renderer
 {
+    // For Test
+    struct Vertex
+    {
+        Math::Vector3 Position;
+        Math::Vector3 Color;
+    };
+
     RendererBase::RendererBase()
     {
         mpShaderCache = std::make_unique<ShaderCache>(this);
@@ -69,9 +79,32 @@ namespace Renderer
         {
             std::string name = fmt::format("RendererBase::UploadCmdList{}", i).c_str();
             mpUploadCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Copy, name));
+            mpStagingBufferAllocators[i] = std::make_unique<StagingBufferAllocator>(this);
         }
 
         // CreateCommonResources();
+
+        // For Test
+        std::vector<Vertex> vertices = {
+            { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+            { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+        };
+
+        std::vector<uint16_t> indices = { 0, 1, 2 };
+
+        mTestIndexBuffer = CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer");
+        mTestVertexBuffer = CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer");
+
+        RHI::RHIGraphicsPipelineStateDesc psoDesc;
+        psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        psoDesc.DepthStencilState.bDepthWrite = false;
+        psoDesc.DepthStencilState.bDepthTest = false;
+        psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
+        psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+
+        mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
 
         return true;
     }
@@ -112,6 +145,66 @@ namespace Renderer
         mpShaderCache->ReloadShaders();
     }
 
+    IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const std::string &name, RHI::ERHIMemoryType memoryType)
+    {
+        std::vector<uint16_t> u16IndexBuffer;
+        if (stride == 1)
+        {
+            u16IndexBuffer.resize(indexCount);
+            for (uint32_t i = 0; i < indexCount; i++)
+            {
+                u16IndexBuffer[i] = static_cast<const char*>(data)[i];
+            }
+            stride = 2;
+            data = u16IndexBuffer.data();
+        }
+
+        IndexBuffer* idBuffer = new IndexBuffer(name);
+        if (!idBuffer->Create(stride, indexCount, memoryType))
+        {
+            delete idBuffer;
+            return nullptr;
+        }
+        if (data)
+        {
+            UploadBuffer(idBuffer->GetBuffer(), data, 0, stride * indexCount);
+        }
+
+        return idBuffer;
+    }
+
+    StructuredBuffer *RendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const std::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    {
+        StructuredBuffer* pBuffer = new StructuredBuffer(name);
+        if (!pBuffer->Create(stride, elementCount, memoryType, isUAV))
+        {
+            delete pBuffer;
+            return nullptr;
+        }
+        if (data)
+        {
+            UploadBuffer(pBuffer->GetBuffer(), data, 0, stride * elementCount);
+        }
+        return pBuffer;
+    }
+
+    void RendererBase::UploadBuffer(RHI::RHIBuffer *pBuffer, const void *pData, uint32_t offset, uint32_t dataSize)
+    {
+        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        StagingBufferAllocator* pAllocator = mpStagingBufferAllocators[frameIndex].get();
+
+        StagingBuffer stagingBuffer = pAllocator->Allocate(dataSize);
+
+        char* dstData = (char*)stagingBuffer.Buffer->GetCPUAddress() + stagingBuffer.Offset;
+        memcpy(dstData, pData, dataSize);
+
+        BufferUpload upload;
+        upload.Buffer = pBuffer;
+        upload.Offset = offset;
+        upload.SBForUpload = stagingBuffer;
+        mPendingBufferUpload.push_back(upload);
+    }
+
     void RendererBase::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
     {
         WaitGPU();
@@ -142,6 +235,31 @@ namespace Renderer
 
     void RendererBase::UploadResource()
     {
+        if (mPendingBufferUpload.empty()) return;
+
+        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        RHI::RHICommandList* pUploadeCmdList = mpUploadCmdList[frameIndex].get();
+        pUploadeCmdList->ResetAllocator();
+        pUploadeCmdList->Begin();
+
+        {
+            GPU_EVENT_DEBUG(pUploadeCmdList, "RendererBase::UploadResource");
+            
+            for (size_t i = 0; i < mPendingBufferUpload.size(); i++)
+            {
+                const BufferUpload& upload = mPendingBufferUpload[i];
+                pUploadeCmdList->CopyBuffer(upload.SBForUpload.Buffer, upload.Buffer, upload.SBForUpload.Offset, upload.Offset, upload.SBForUpload.Size);
+            }
+        }
+
+        pUploadeCmdList->End();
+        pUploadeCmdList->Signal(mpUploadFence.get(), ++mCurrentUploadFenceValue);
+        pUploadeCmdList->Submit();
+
+        RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
+        pCmdList->Wait(mpUploadFence.get(), mCurrentUploadFenceValue);
+
+        mPendingBufferUpload.clear();
     }
 
     void RendererBase::Render()
@@ -149,6 +267,10 @@ namespace Renderer
         uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
+
+        pCmdList->SetPipelineState(mTestPSO);
+        pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
+        pCmdList->DrawIndexed(3);
         
         RenderBackBufferPass(pCmdList);
     }

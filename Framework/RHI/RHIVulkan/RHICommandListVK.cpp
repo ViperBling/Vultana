@@ -429,6 +429,79 @@ namespace RHI
     {
         FlushBarriers();
 
+        vk::RenderingAttachmentInfo colorAttachments[8] {};
+        vk::RenderingAttachmentInfo depthAttachment {};
+        vk::RenderingAttachmentInfo stencilAttachment {};
+        uint32_t width = 0, height = 0;
+
+        for (uint32_t i = 0; i < 8; i++)
+        {
+            if (desc.Color[i].Texture)
+            {
+                if (width == 0)
+                {
+                    width = desc.Color[i].Texture->GetDesc().Width;
+                }
+                if (height == 0)
+                {
+                    height = desc.Color[i].Texture->GetDesc().Height;
+                }
+                assert(width == desc.Color[i].Texture->GetDesc().Width);
+                assert(height == desc.Color[i].Texture->GetDesc().Height);
+
+                colorAttachments[i].setImageView(((RHITextureVK*)desc.Color[i].Texture)->GetRenderView(desc.Color[i].MipSlice, desc.Color[i].ArraySlice));
+                colorAttachments[i].setImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+                colorAttachments[i].setLoadOp(GetLoadOp(desc.Color[i].LoadOp));
+                colorAttachments[i].setStoreOp(GetStoreOp(desc.Color[i].StoreOp));
+                memcpy(colorAttachments[i].clearValue.color.float32, desc.Color[i].ClearColor, sizeof(float) * 4);
+            }
+        }
+
+        if (desc.Depth.Texture != nullptr)
+        {
+            if (width == 0)
+            {
+                width = desc.Depth.Texture->GetDesc().Width;
+            }
+            if (height == 0)
+            {
+                height = desc.Depth.Texture->GetDesc().Height;
+            }
+            assert(width == desc.Depth.Texture->GetDesc().Width);
+            assert(height == desc.Depth.Texture->GetDesc().Height);
+
+            depthAttachment.setImageView(((RHITextureVK*)desc.Depth.Texture)->GetRenderView(desc.Depth.MipSlice, desc.Depth.ArraySlice));
+            depthAttachment.setImageLayout(desc.Depth.bReadOnly ? vk::ImageLayout::eDepthStencilReadOnlyOptimal : vk::ImageLayout::eDepthStencilAttachmentOptimal);
+            depthAttachment.setLoadOp(GetLoadOp(desc.Depth.DepthLoadOp));
+            depthAttachment.setStoreOp(GetStoreOp(desc.Depth.DepthStoreOp));
+
+            if (IsStencilFormat(desc.Depth.Texture->GetDesc().Format))
+            {
+                stencilAttachment.setImageView(((RHITextureVK*)desc.Depth.Texture)->GetRenderView(desc.Depth.MipSlice, desc.Depth.ArraySlice));
+                stencilAttachment.setImageLayout(desc.Depth.bReadOnly ? vk::ImageLayout::eDepthStencilReadOnlyOptimal : vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                stencilAttachment.setLoadOp(GetLoadOp(desc.Depth.StencilLoadOp));
+                stencilAttachment.setStoreOp(GetStoreOp(desc.Depth.StencilStoreOp));
+            }
+        }
+
+        vk::RenderingInfo renderInfo {};
+        renderInfo.renderArea.extent.width = width;
+        renderInfo.renderArea.extent.height = height;
+        renderInfo.setLayerCount(1);
+        renderInfo.setViewMask(0);
+        renderInfo.setColorAttachments(colorAttachments);
+
+        if (!depthAttachment.imageView)
+        {
+            renderInfo.pDepthAttachment = &depthAttachment;
+        }
+        if (!stencilAttachment.imageView)
+        {
+            renderInfo.pStencilAttachment = &stencilAttachment;
+        }
+        mCmdBuffer.beginRendering(renderInfo);
+
+        SetViewport(0, 0, width, height);
     }
 
     void RHICommandListVK::EndRenderPass()

@@ -17,6 +17,7 @@ namespace RHI
     static const uint32_t RHI_MAX_CBV_BINDING = 3;
     static const uint32_t RHI_MAX_RESOURCE_DESCRIPTOR_COUNT = 65535;
     static const uint32_t RHI_MAX_SAMPLER_DESCRIPTOR_COUNT = 128;
+    static const uint32_t RHI_MAX_BUFFER_SIZE = 1024 * 1024 * 64; // 64MB
 
     enum class ERHIRenderBackend
     {
@@ -387,7 +388,7 @@ namespace RHI
     struct RHIRenderPassDepthAttachment
     {
         RHITexture* Texture = nullptr;
-        uint32_t MipLevel = 0;
+        uint32_t MipSlice = 0;
         uint32_t ArraySlice = 0;
         ERHIRenderPassLoadOp DepthLoadOp = ERHIRenderPassLoadOp::Load;
         ERHIRenderPassStoreOp DepthStoreOp = ERHIRenderPassStoreOp::Store;
@@ -546,7 +547,7 @@ namespace RHI
     struct RHIDepthStencilState
     {
         RHICompareFunc DepthFunc = RHICompareFunc::Always;
-        bool bDepthEnable = true;
+        bool bDepthTest = true;
         bool bDepthWrite = true;
         RHIDepthStencilOp FrontFace;
         RHIDepthStencilOp BackFace;
