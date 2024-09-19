@@ -103,8 +103,8 @@ namespace Renderer
         std::vector<BufferUpload> mPendingBufferUpload;
 
         // For Test
-        StructuredBuffer* mTestVertexBuffer = nullptr;
-        IndexBuffer* mTestIndexBuffer = nullptr;
+        std::unique_ptr<StructuredBuffer> mTestVertexBuffer = nullptr;
+        std::unique_ptr<IndexBuffer> mTestIndexBuffer = nullptr;
         RHI::RHIPipelineState* mTestPSO = nullptr;
     };
 }

@@ -32,6 +32,7 @@ namespace RHI
         bufferCI.usage = vk::BufferUsageFlagBits::eTransferDst |
                          vk::BufferUsageFlagBits::eTransferSrc |
                          vk::BufferUsageFlagBits::eIndexBuffer |
+                         vk::BufferUsageFlagBits::eVertexBuffer |
                          vk::BufferUsageFlagBits::eIndirectBuffer |
                          vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
