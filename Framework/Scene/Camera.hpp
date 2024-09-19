@@ -50,7 +50,7 @@ namespace Scene
 
     private:
         void UpdateMatrix();
-        void OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height);
+        void OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height);
 
     private:
         Math::Vector3 mPosition = { 0.0f, 0.0f, 0.0f };

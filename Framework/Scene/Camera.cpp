@@ -141,7 +141,7 @@ namespace Scene
         mVPMat = mProjection * mView;
     }
 
-    void Camera::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
+    void Camera::OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height)
     {
         mAspectRatio = static_cast<float>(width) / static_cast<float>(height);
         SetPerspective(mAspectRatio, mFov, mNear);

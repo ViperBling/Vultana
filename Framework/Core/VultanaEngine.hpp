@@ -8,6 +8,8 @@
 
 namespace Core
 {
+    class GUI;
+    
     class VultanaEngine
     {
     public:
@@ -29,8 +31,12 @@ namespace Core
     private:
         ~VultanaEngine();
 
+    public:
+        
+
     private:
         std::unique_ptr<Scene::World> mpWorld;
+        std::unique_ptr<GUI> mpGUI;
         std::unique_ptr<Renderer::RendererBase> mpRenderer;
 
         Window::GLFWindow* mWndHandle = nullptr;

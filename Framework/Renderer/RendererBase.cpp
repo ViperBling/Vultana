@@ -173,6 +173,8 @@ namespace Renderer
 
     void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
     {
+        GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
+
         mpSwapchain->AcquireNextBackBuffer();
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 

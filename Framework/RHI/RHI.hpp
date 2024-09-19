@@ -23,4 +23,23 @@ namespace RHI
     bool IsSRGBFormat(ERHIFormat format);
     uint32_t CalcSubresource(const RHITextureDesc& desc, uint32_t mipLevel, uint32_t arraySlice);
     void DecomposeSubresource(const RHITextureDesc& desc, uint32_t subresource, uint32_t& mipLevel, uint32_t& arraySlice);
+
+    class RenderEvent
+    {
+    public:
+        RenderEvent(RHICommandList* cmdList, const std::string& eventName) : mpCmdList(cmdList)
+        {
+            mpCmdList->BeginEvent(eventName);
+        }
+
+        ~RenderEvent()
+        {
+            mpCmdList->EndEvent();
+        }
+    
+    private:
+        RHICommandList* mpCmdList = nullptr;
+    };
 }
+
+#define GPU_EVENT_DEBUG(pCmdList, eventName) RHI::RenderEvent __render_event__(pCmdList, eventName)

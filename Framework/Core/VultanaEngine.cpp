@@ -1,4 +1,5 @@
 #include "VultanaEngine.hpp"
+#include "VultanaGUI.hpp"
 #include "Utilities/Log.hpp"
 
 #include <spdlog/sinks/msvc_sink.h>
@@ -29,8 +30,6 @@ namespace Core
         spdlog::set_level(spdlog::level::trace);
         spdlog::flush_every(std::chrono::milliseconds(10));
 
-        mpWorld = std::make_unique<Scene::World>();
-
         mWndHandle = windowHandle;
 
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
@@ -41,6 +40,11 @@ namespace Core
             VTNA_LOG_ERROR("Failed to create renderer device");
             exit(0);
         }
+
+        mpWorld = std::make_unique<Scene::World>();
+
+        mpGUI = std::make_unique<GUI>();
+        mpGUI->Init();
 
         stm_setup();
     }
