@@ -309,7 +309,7 @@ namespace RHI
 
     struct RHIShaderResourceViewDesc
     {
-        RHIShaderResourceViewDesc() {}
+        RHIShaderResourceViewDesc() : Texture() {}
 
         ERHIShaderResourceViewType Type = ERHIShaderResourceViewType::Textue2D;
         ERHIFormat Format = ERHIFormat::Unknown;
@@ -343,7 +343,7 @@ namespace RHI
 
     struct RHIUnorderedAccessViewDesc
     {
-        RHIUnorderedAccessViewDesc() {}
+        RHIUnorderedAccessViewDesc() : Texture() {}
 
         ERHIUnorderedAccessViewType Type = ERHIUnorderedAccessViewType::Texture2D;
         ERHIFormat Format = ERHIFormat::Unknown;

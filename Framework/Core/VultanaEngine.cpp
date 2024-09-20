@@ -19,8 +19,8 @@ namespace Core
 
     void VultanaEngine::Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height)
     {
-        mAssetsPath = "Assets/";
-        mShaderPath = "Shaders/";
+        mAssetsPath = "../Assets/";
+        mShaderPath = "../Shaders/";
 
         auto console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
         auto logger = std::make_shared<spdlog::logger>("RealEngine", spdlog::sinks_init_list{ console_sink});

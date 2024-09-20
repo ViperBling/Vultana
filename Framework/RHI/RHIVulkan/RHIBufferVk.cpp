@@ -73,7 +73,7 @@ namespace RHI
             {
                 vmaAllocCI.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
             }
-            if (mDesc.MemoryType == ERHIMemoryType::GPUOnly)
+            if (mDesc.MemoryType != ERHIMemoryType::GPUOnly)
             {
                 vmaAllocCI.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
             }
