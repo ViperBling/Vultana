@@ -95,7 +95,7 @@ namespace Renderer
         std::vector<uint16_t> indices = { 0, 1, 2 };
 
         mTestIndexBuffer.reset(CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer"));
-        // mTestVertexBuffer.reset(CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer"));
+        mTestVertexBuffer.reset(CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer"));
 
         RHI::RHIGraphicsPipelineStateDesc psoDesc;
         psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
@@ -270,8 +270,12 @@ namespace Renderer
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
         pCmdList->SetPipelineState(mTestPSO);
+
+        uint32_t posBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
+        pCmdList->SetGraphicsConstants(0, &posBuffer, sizeof(posBuffer));
+
         pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-        pCmdList->DrawIndexed(3);
+        pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
         
         RenderBackBufferPass(pCmdList);
     }

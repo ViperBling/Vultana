@@ -27,7 +27,7 @@ namespace RHI
         shaderCI.setCodeSize(data.size());
         shaderCI.setPCode(reinterpret_cast<const uint32_t*>(data.data()));
 
-        mShaderModule = device.createShaderModule(shaderCI);
+        mShaderModule = device.createShaderModule(shaderCI, nullptr, dynamicLoader);
         if (!mShaderModule)
         {
             VTNA_LOG_ERROR("[RHIShaderVK] Failed to create {}", mName);

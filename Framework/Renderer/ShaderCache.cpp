@@ -39,7 +39,7 @@ namespace Renderer
     {
         std::ifstream is;
         is.open(path.c_str(), std::ios::binary);
-        if (!is.fail())
+        if (is.fail())
         {
             return "";
         }

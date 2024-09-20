@@ -90,7 +90,7 @@ namespace Renderer
         }
     }
 
-    ShaderCompiler::ShaderCompiler(RendererBase *renderer)
+    ShaderCompiler::ShaderCompiler(RendererBase *renderer) : mpRenderer(renderer)
     {
         HMODULE dxcModule = LoadLibraryA("dxcompiler.dll");
 
@@ -129,9 +129,9 @@ namespace Renderer
         sourceBuffer.Size = source.length();
         sourceBuffer.Encoding = DXC_CP_ACP;
 
-        std::wstring wfile = std::wstring(file.begin(), file.end());
-        std::wstring wentryPoint = std::wstring(entryPoint.begin(), entryPoint.end());
-        std::wstring wprofile = GetShaderProfile(type);
+        std::wstring wFile = std::wstring(file.begin(), file.end());
+        std::wstring wEntryPoint = std::wstring(entryPoint.begin(), entryPoint.end());
+        std::wstring wProfile = GetShaderProfile(type);
 
         std::vector<std::wstring> wstrDefines;
         for (size_t i = 0; i < defines.size(); i++)
@@ -140,9 +140,9 @@ namespace Renderer
         }
 
         std::vector<LPCWSTR> arguments;
-        arguments.push_back(wfile.c_str());
-        arguments.push_back(L"-E");     arguments.push_back(wentryPoint.c_str());
-        arguments.push_back(L"-T");     arguments.push_back(wprofile.c_str());
+        arguments.push_back(wFile.c_str());
+        arguments.push_back(L"-E");     arguments.push_back(wEntryPoint.c_str());
+        arguments.push_back(L"-T");     arguments.push_back(wProfile.c_str());
         for (size_t i = 0; i < wstrDefines.size(); i++)
         {
             arguments.push_back(L"-D"); arguments.push_back(wstrDefines[i].c_str());
@@ -151,7 +151,7 @@ namespace Renderer
         {
         case RHI::ERHIRenderBackend::Vulkan:
             arguments.push_back(L"-D");
-            arguments.push_back(L"RHI_BACKEND_VULKAN");
+            arguments.push_back(L"RHI_BACKEND_VULKAN=1");
             arguments.push_back(L"-spirv");
             arguments.push_back(L"-fspv-target-env=vulkan1.3");
             arguments.push_back(L"-fvk-use-dx-layout");
