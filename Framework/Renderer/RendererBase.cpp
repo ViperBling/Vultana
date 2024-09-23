@@ -269,6 +269,15 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
+        mpSwapchain->AcquireNextBackBuffer();
+        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+
+        RHI::RHIRenderPassDesc renderPassDesc {};
+        renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
+        renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+
+        pCmdList->BeginRenderPass(renderPassDesc);
+
         pCmdList->SetPipelineState(mTestPSO);
 
         pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
@@ -276,8 +285,10 @@ namespace Renderer
         pCmdList->SetGraphicsConstants(0, &posBuffer, sizeof(posBuffer));
 
         pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
+
+        pCmdList->EndRenderPass();
         
-        RenderBackBufferPass(pCmdList);
+        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 
     void RendererBase::EndFrame()
@@ -302,9 +313,9 @@ namespace Renderer
     {
         GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
 
-        mpSwapchain->AcquireNextBackBuffer();
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+        // mpSwapchain->AcquireNextBackBuffer();
+        // pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
+        // pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 } // namespace Vultana::Renderer
