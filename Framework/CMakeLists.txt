@@ -42,7 +42,7 @@ add_library(FrameworkLib STATIC
     ${Utilities_Head}   ${Utilities_Src}
 )
 
-file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)
+# file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)
 
 # add_custom_target(CompileShaders
 #     COMMAND ${CMAKE_COMMAND} -E make_directory ${BinaryPath}/Assets/Shaders/Generated)
