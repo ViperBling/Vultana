@@ -632,7 +632,7 @@ namespace RHI
 
     void RHIDeviceVK::CreatePipelineLayout()
     {
-        vk::DescriptorType mutableDescTypes[6] =
+        std::vector<vk::DescriptorType> mutableDescTypes =
         {
             vk::DescriptorType::eSampledImage,
             vk::DescriptorType::eStorageImage,

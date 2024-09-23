@@ -271,10 +271,10 @@ namespace Renderer
 
         pCmdList->SetPipelineState(mTestPSO);
 
+        pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
         uint32_t posBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
         pCmdList->SetGraphicsConstants(0, &posBuffer, sizeof(posBuffer));
 
-        pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
         pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
         
         RenderBackBufferPass(pCmdList);
