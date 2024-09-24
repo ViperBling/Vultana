@@ -252,7 +252,7 @@ namespace RHI
         if (flags & RHIAccessPresent)         stage |= vk::PipelineStageFlagBits2::eTopOfPipe;
         if (flags & RHIAccessRTV)             stage |= vk::PipelineStageFlagBits2::eColorAttachmentOutput;
         if (flags & RHIAccessMaskDSV)         stage |= vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests;
-        if (flags & RHIAccessMaskVS)          stage |= vk::PipelineStageFlagBits2::eTaskShaderEXT | vk::PipelineStageFlagBits2::eMeshShaderEXT | vk::PipelineStageFlagBits2::eVertexShader;
+        if (flags & RHIAccessMaskVS)          stage |= /* vk::PipelineStageFlagBits2::eTaskShaderEXT | vk::PipelineStageFlagBits2::eMeshShaderEXT | */ vk::PipelineStageFlagBits2::eVertexShader;
         if (flags & RHIAccessMaskPS)          stage |= vk::PipelineStageFlagBits2::eFragmentShader;
         if (flags & RHIAccessMaskCS)          stage |= vk::PipelineStageFlagBits2::eComputeShader;
         if (flags & RHIAccessMaskCopy)        stage |= vk::PipelineStageFlagBits2::eCopy;
@@ -260,7 +260,7 @@ namespace RHI
         if (flags & RHIAccessShadingRate)     stage |= vk::PipelineStageFlagBits2::eFragmentShadingRateAttachmentKHR;
         if (flags & RHIAccessIndexBuffer)     stage |= vk::PipelineStageFlagBits2::eIndexInput;
         if (flags & RHIAccessIndirectArgs)    stage |= vk::PipelineStageFlagBits2::eDrawIndirect;
-        if (flags & RHIAccessMaskAS)          stage |= vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR;
+        // if (flags & RHIAccessMaskAS)          stage |= vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR;
 
         return stage;
     }

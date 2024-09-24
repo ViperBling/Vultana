@@ -82,7 +82,7 @@ namespace Renderer
             mpStagingBufferAllocators[i] = std::make_unique<StagingBufferAllocator>(this);
         }
 
-        // CreateCommonResources();
+        CreateCommonResources();
 
         // For Test
         std::vector<Vertex> vertices = 
@@ -103,7 +103,7 @@ namespace Renderer
         psoDesc.DepthStencilState.bDepthWrite = false;
         psoDesc.DepthStencilState.bDepthTest = false;
         psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA8SRGB;
-        psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+        psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32FS8;
 
         mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
 
@@ -144,6 +144,22 @@ namespace Renderer
     void RendererBase::ReloadShaders()
     {
         mpShaderCache->ReloadShaders();
+    }
+
+    Texture2D *RendererBase::CreateTexture2D(const std::string &file, bool srgb)
+    {
+        return nullptr;
+    }
+
+    Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string &name)
+    {
+        Texture2D* texture = new Texture2D(name);
+        if (!texture->Create(width, height, levels, format, flags))
+        {
+            delete texture;
+            return nullptr;
+        }
+        return texture;
     }
 
     IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const std::string &name, RHI::ERHIMemoryType memoryType)
@@ -204,6 +220,24 @@ namespace Renderer
         upload.Offset = offset;
         upload.SBForUpload = stagingBuffer;
         mPendingBufferUpload.push_back(upload);
+    }
+
+    void RendererBase::CreateCommonResources()
+    {
+        RHI::RHISamplerDesc samplerDesc {};
+        mpPointSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::PointSampler"));
+
+        samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
+        samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
+        samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
+        mpLinearSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::LinearSampler"));
+
+        RHI::RHITexture* pBackBuffer = mpSwapchain->GetBackBuffer();
+        uint32_t width = pBackBuffer->GetDesc().Width;
+        uint32_t height = pBackBuffer->GetDesc().Height;
+
+        mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageRenderTarget | RHI::RHIAccessMaskSRV, "PresentRT"));
+        mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32FS8, RHI::RHITextureUsageDepthStencil | RHI::RHIAccessMaskSRV, "PresentDepthRT"));
     }
 
     void RendererBase::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
@@ -271,24 +305,32 @@ namespace Renderer
 
         mpSwapchain->AcquireNextBackBuffer();
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+        {
+            RHI::RHIRenderPassDesc renderPassDesc {};
+            renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
+            renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Color[0].ClearColor[0] = 0.0f;
+            renderPassDesc.Color[0].ClearColor[1] = 0.0f;
+            renderPassDesc.Color[0].ClearColor[2] = 0.0f;
+            renderPassDesc.Color[0].ClearColor[3] = 1.0f;
+            renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
+            renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+            renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+            pCmdList->BeginRenderPass(renderPassDesc);
 
-        RHI::RHIRenderPassDesc renderPassDesc {};
-        renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
-        renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            pCmdList->SetViewport(0, 0, mpSwapchain->GetDesc()->Width, mpSwapchain->GetDesc()->Height);
+            pCmdList->SetPipelineState(mTestPSO);
 
-        pCmdList->BeginRenderPass(renderPassDesc);
+            pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
+            uint32_t posBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
+            pCmdList->SetGraphicsConstants(0, &posBuffer, sizeof(posBuffer));
 
-        pCmdList->SetPipelineState(mTestPSO);
+            pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
 
-        pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-        uint32_t posBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
-        pCmdList->SetGraphicsConstants(0, &posBuffer, sizeof(posBuffer));
-
-        pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
-
-        pCmdList->EndRenderPass();
-        
+            pCmdList->EndRenderPass();
+        }
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
+        // RenderBackBufferPass(pCmdList);
     }
 
     void RendererBase::EndFrame()
@@ -313,9 +355,9 @@ namespace Renderer
     {
         GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
 
-        // mpSwapchain->AcquireNextBackBuffer();
-        // pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+        mpSwapchain->AcquireNextBackBuffer();
+        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
-        // pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
+        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 } // namespace Vultana::Renderer

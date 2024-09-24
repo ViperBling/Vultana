@@ -34,6 +34,7 @@ namespace Renderer
 
         RHI::RHIShaderResourceViewDesc srvDesc;
         srvDesc.Type = RHI::ERHIShaderResourceViewType::StructuredBuffer;
+        srvDesc.Buffer.Offset = 0;
         srvDesc.Buffer.Size = elementCount * stride;
         mpSRV.reset(device->CreateShaderResourceView(mpBuffer.get(), srvDesc, mName + "_SRV"));
         if (mpSRV == nullptr)
