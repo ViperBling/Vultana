@@ -309,8 +309,6 @@ namespace RHI
 
     struct RHIShaderResourceViewDesc
     {
-        RHIShaderResourceViewDesc() : Texture() {}
-
         ERHIShaderResourceViewType Type = ERHIShaderResourceViewType::Textue2D;
         ERHIFormat Format = ERHIFormat::Unknown;
 
@@ -319,17 +317,19 @@ namespace RHI
             struct
             {
                 uint32_t MipSlice = 0;
-                uint32_t MipLevels = -1;
+                uint32_t MipLevels = uint32_t(-1);
                 uint32_t ArraySlice = 0;
                 uint32_t ArraySize = 1;
                 uint32_t PlaneSlice = 0;
             } Texture;
+
             struct
             {
                 uint32_t Size = 0;
                 uint32_t Offset = 0;
             } Buffer;
         };
+        RHIShaderResourceViewDesc() : Texture() {}
     };
     inline bool operator==(const RHIShaderResourceViewDesc& lhs, const RHIShaderResourceViewDesc& rhs)
     {
@@ -343,8 +343,6 @@ namespace RHI
 
     struct RHIUnorderedAccessViewDesc
     {
-        RHIUnorderedAccessViewDesc() : Texture() {}
-
         ERHIUnorderedAccessViewType Type = ERHIUnorderedAccessViewType::Texture2D;
         ERHIFormat Format = ERHIFormat::Unknown;
 
@@ -364,6 +362,7 @@ namespace RHI
                 uint32_t Offset = 0;
             } Buffer;
         };
+        RHIUnorderedAccessViewDesc() : Texture() {}
     };
     inline bool operator==(const RHIUnorderedAccessViewDesc& lhs, const RHIUnorderedAccessViewDesc& rhs)
     {

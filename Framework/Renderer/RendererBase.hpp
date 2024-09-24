@@ -51,6 +51,9 @@ namespace Renderer
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
         void ReloadShaders();
 
+        Texture2D* CreateTexture2D(const std::string& file, bool srgb);
+        Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
+
         IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
         StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
 
@@ -58,6 +61,7 @@ namespace Renderer
 
 
     private:
+        void CreateCommonResources();
         void OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height);
 
         void BeginFrame();
@@ -73,6 +77,9 @@ namespace Renderer
         std::unique_ptr<class PipelineStateCache> mpPipelineStateCache;
         std::unique_ptr<class ShaderCompiler> mpShaderCompiler;
         std::unique_ptr<class ShaderCache> mpShaderCache;
+
+        std::unique_ptr<RHI::RHIDescriptor> mpPointSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpLinearSampler;
 
         uint32_t mDisplayWidth;
         uint32_t mDisplayHeight;
