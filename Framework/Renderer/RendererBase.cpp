@@ -102,7 +102,7 @@ namespace Renderer
         psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthWrite = false;
         psoDesc.DepthStencilState.bDepthTest = false;
-        psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
+        psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA8SRGB;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
         mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
