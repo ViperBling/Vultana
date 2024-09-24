@@ -2,6 +2,7 @@
 
 #include "RenderResources/IndexBuffer.hpp"
 #include "RenderResources/StructuredBuffer.hpp"
+#include "RenderResources/Texture2D.hpp"
 #include "StagingBufferAllocator.hpp"
 
 #include "RHI/RHI.hpp"
@@ -103,6 +104,9 @@ namespace Renderer
         std::vector<BufferUpload> mPendingBufferUpload;
 
         // For Test
+        std::unique_ptr<Texture2D> mpTestRT;
+        std::unique_ptr<Texture2D> mpTestDepthRT;
+        
         std::unique_ptr<StructuredBuffer> mTestVertexBuffer = nullptr;
         std::unique_ptr<IndexBuffer> mTestIndexBuffer = nullptr;
         RHI::RHIPipelineState* mTestPSO = nullptr;
