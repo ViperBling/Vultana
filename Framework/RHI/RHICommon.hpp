@@ -15,7 +15,7 @@ namespace RHI
     static const uint32_t RHI_MAX_INFLIGHT_FRAMES = 3;
     static const uint32_t RHI_MAX_ROOT_CONSTANTS = 8;
     static const uint32_t RHI_MAX_CBV_BINDING = 3;
-    static const uint32_t RHI_MAX_RESOURCE_DESCRIPTOR_COUNT = 65535;
+    static const uint32_t RHI_MAX_RESOURCE_DESCRIPTOR_COUNT = 65536;
     static const uint32_t RHI_MAX_SAMPLER_DESCRIPTOR_COUNT = 128;
     static const uint32_t RHI_MAX_BUFFER_SIZE = 1024 * 1024 * 64; // 64MB
 
