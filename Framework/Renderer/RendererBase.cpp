@@ -20,7 +20,7 @@ namespace Renderer
     struct Vertex
     {
         Math::Vector3 Position;
-        // Math::Vector3 Color;
+        Math::Vector3 Color;
     };
 
     RendererBase::RendererBase()
@@ -217,18 +217,18 @@ namespace Renderer
         mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
 
         // For Test
-        // std::vector<Vertex> vertices = 
-        // {
-        //     { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-        //     { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-        //     { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-        // };
         std::vector<Vertex> vertices = 
         {
-            { { -0.5f, -0.5f, 0.0f } },
-            { {  0.5f, -0.5f, 0.0f } },
-            { {  0.0f,  0.5f, 0.0f } },
+            { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+            { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
         };
+        // std::vector<Vertex> vertices = 
+        // {
+        //     { { -0.5f, -0.5f, 0.0f } },
+        //     { {  0.5f, -0.5f, 0.0f } },
+        //     { {  0.0f,  0.5f, 0.0f } },
+        // };
 
         std::vector<uint16_t> indices = { 0, 1, 2 };
 
