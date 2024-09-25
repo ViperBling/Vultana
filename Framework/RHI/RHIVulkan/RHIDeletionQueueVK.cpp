@@ -1,5 +1,6 @@
 #include "RHIDeletionQueueVK.hpp"
 #include "RHIDeviceVK.hpp"
+#include "RHIDescriptorAllocatorVK.hpp"
 
 namespace RHI
 {
@@ -61,6 +62,26 @@ namespace RHI
             }
             vmaFreeMemory(allocator, item.first);
             mAllocationQueue.pop();
+        }
+        while (!mResourceDescriptorQueue.empty())
+        {
+            auto item = mResourceDescriptorQueue.front();
+            if (!forceDelete && item.second + RHI_MAX_INFLIGHT_FRAMES > frameID)
+            {
+                break;
+            }
+            mDevice->GetResourceDescriptorAllocator()->Free(item.first);
+            mResourceDescriptorQueue.pop();
+        }
+        while (!mSamplerDescriptorQueue.empty())
+        {
+            auto item = mSamplerDescriptorQueue.front();
+            if (!forceDelete && item.second + RHI_MAX_INFLIGHT_FRAMES > frameID)
+            {
+                break;
+            }
+            mDevice->GetSamplerDescriptorAllocator()->Free(item.first);
+            mSamplerDescriptorQueue.pop();
         }
     }
 

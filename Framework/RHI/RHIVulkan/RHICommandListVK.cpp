@@ -100,12 +100,7 @@ namespace RHI
         vk::CommandBufferBeginInfo cmdBufferBI {};
         cmdBufferBI.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
-        res = mCmdBuffer.begin(&cmdBufferBI);
-        if (res != vk::Result::eSuccess)
-        {
-            VTNA_LOG_ERROR("[RHICommandListVK] Failed to begin command buffer");
-            return;
-        }
+        mCmdBuffer.begin(cmdBufferBI);
 
         ResetState();
     }
@@ -252,19 +247,20 @@ namespace RHI
         copyInfo.srcBuffer = (VkBuffer)srcBuffer->GetNativeHandle();
         copyInfo.dstImage = (VkImage)dstTexture->GetNativeHandle();
         copyInfo.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
-        copyInfo.setRegions(copy2);
+        copyInfo.regionCount = 1;
+        copyInfo.pRegions = &copy2;
 
         mCmdBuffer.copyBufferToImage2(copyInfo);
     }
 
-    void RHICommandListVK::CopyTextureToBuffer(RHITexture *srcTexture, RHIBuffer *dstBuffer, uint32_t mipLevel, uint32_t arraySlice)
+    void RHICommandListVK::CopyTextureToBuffer(RHITexture *srcTexture, RHIBuffer *dstBuffer, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset)
     {
         FlushBarriers();
 
         const RHITextureDesc& desc = srcTexture->GetDesc();
 
         vk::BufferImageCopy2 copy2 {};
-        copy2.bufferOffset = 0;
+        copy2.bufferOffset = offset;
         copy2.imageSubresource.aspectMask = GetAspectFlags(desc.Format);
         copy2.imageSubresource.mipLevel = mipLevel;
         copy2.imageSubresource.baseArrayLayer = arraySlice;
@@ -277,7 +273,8 @@ namespace RHI
         copyInfo.srcImage = (VkImage)srcTexture->GetNativeHandle();
         copyInfo.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
         copyInfo.dstBuffer = (VkBuffer)dstBuffer->GetNativeHandle();
-        copyInfo.setRegions(copy2);
+        copyInfo.regionCount = 1;
+        copyInfo.pRegions = &copy2;
 
         mCmdBuffer.copyImageToBuffer2(copyInfo);
     }
@@ -294,7 +291,8 @@ namespace RHI
         vk::CopyBufferInfo2 copyInfo2 {};
         copyInfo2.srcBuffer = (VkBuffer)src->GetNativeHandle();
         copyInfo2.dstBuffer = (VkBuffer)dst->GetNativeHandle();
-        copyInfo2.setRegions(copy2);
+        copyInfo2.regionCount = 1;
+        copyInfo2.pRegions = &copy2;
 
         mCmdBuffer.copyBuffer2(copyInfo2);
     }
@@ -321,7 +319,8 @@ namespace RHI
         copyInfo2.setSrcImageLayout(vk::ImageLayout::eTransferSrcOptimal);
         copyInfo2.setDstImage((VkImage)dst->GetNativeHandle());
         copyInfo2.setDstImageLayout(vk::ImageLayout::eTransferDstOptimal);
-        copyInfo2.setRegions(copy2);
+        copyInfo2.regionCount = 1;
+        copyInfo2.pRegions = &copy2;
 
         mCmdBuffer.copyImage2(copyInfo2);
     }
@@ -336,11 +335,11 @@ namespace RHI
         // TODO: Implement this
     }
 
-    void RHICommandListVK::WriteBuffer(RHIBuffer *buffer, uint32_t offset, uint32_t size, const void *data)
+    void RHICommandListVK::WriteBuffer(RHIBuffer *buffer, uint32_t offset, uint32_t data)
     {
         FlushBarriers();
 
-        mCmdBuffer.updateBuffer((VkBuffer)buffer->GetNativeHandle(), offset, size, data);
+        mCmdBuffer.updateBuffer((VkBuffer)buffer->GetNativeHandle(), offset, sizeof(uint32_t), &data);
     }
 
     void RHICommandListVK::TextureBarrier(RHITexture *texture, uint32_t subResouce, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter)
@@ -491,11 +490,11 @@ namespace RHI
         renderInfo.setViewMask(0);
         renderInfo.setColorAttachments(colorAttachments);
 
-        if (depthAttachment.imageView)
+        if (depthAttachment.imageView != VK_NULL_HANDLE)
         {
             renderInfo.pDepthAttachment = &depthAttachment;
         }
-        if (stencilAttachment.imageView)
+        if (stencilAttachment.imageView != VK_NULL_HANDLE)
         {
             renderInfo.pStencilAttachment = &stencilAttachment;
         }
@@ -535,9 +534,9 @@ namespace RHI
     {
         vk::Viewport viewport {};
         viewport.x = x;
-        viewport.y = y;
+        viewport.y = (float)height - (float)y;
         viewport.width = width;
-        viewport.height = height;
+        viewport.height = -(float)height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 

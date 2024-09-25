@@ -16,12 +16,9 @@ namespace RHI
         bool Create();
 
         virtual void* GetNativeHandle() const override { return mBuffer; }
-        virtual void* GetCPUAddress() const override;
-        virtual uint64_t GetGPUAddress() const override;
+        virtual void* GetCPUAddress() override;
+        virtual uint64_t GetGPUAddress() override;
         virtual uint32_t GetRequiredStagingBufferSize() const override;
-
-        vk::Buffer GetBuffer() const { return mBuffer; }
-        VmaAllocation GetAllocation() const { return mAllocation; }
     
     private:
         vk::Buffer mBuffer = VK_NULL_HANDLE;

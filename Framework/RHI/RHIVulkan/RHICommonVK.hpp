@@ -247,7 +247,7 @@ namespace RHI
 
     inline vk::PipelineStageFlags2 GetStageMask(ERHIAccessFlags flags)
     {
-        vk::PipelineStageFlags2 stage;
+        vk::PipelineStageFlags2 stage = vk::PipelineStageFlagBits2::eNone;
 
         if (flags & RHIAccessPresent)         stage |= vk::PipelineStageFlagBits2::eTopOfPipe;
         if (flags & RHIAccessRTV)             stage |= vk::PipelineStageFlagBits2::eColorAttachmentOutput;
@@ -267,7 +267,7 @@ namespace RHI
 
     inline vk::AccessFlags2 GetAccessMask(ERHIAccessFlags flags)
     {
-        vk::AccessFlags2 access;
+        vk::AccessFlags2 access = vk::AccessFlagBits2::eNone;
 
         if (flags & RHIAccessDiscard)
         {
