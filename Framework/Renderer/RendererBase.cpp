@@ -20,7 +20,7 @@ namespace Renderer
     struct Vertex
     {
         Math::Vector3 Position;
-        // Math::Vector3 Color;
+        Math::Vector3 Color;
     };
 
     RendererBase::RendererBase()
@@ -217,18 +217,18 @@ namespace Renderer
         mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
 
         // For Test
-        // std::vector<Vertex> vertices = 
-        // {
-        //     { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-        //     { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-        //     { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-        // };
         std::vector<Vertex> vertices = 
         {
-            { { -0.5f, -0.5f, 0.0f } },
-            { {  0.5f, -0.5f, 0.0f } },
-            { {  0.0f,  0.5f, 0.0f } },
+            { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+            { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
         };
+        // std::vector<Vertex> vertices = 
+        // {
+        //     { { -0.5f, -0.5f, 0.0f } },
+        //     { {  0.5f, -0.5f, 0.0f } },
+        //     { {  0.0f,  0.5f, 0.0f } },
+        // };
 
         std::vector<uint16_t> indices = { 0, 1, 2 };
 
@@ -328,11 +328,12 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
-        // pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessMaskSRV, RHI::RHIAccessRTV);
         {
+            GPU_EVENT_DEBUG(pCmdList, "RenderTriangle");
+
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
-            renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
             renderPassDesc.Color[0].ClearColor[0] = 0.3f;
             renderPassDesc.Color[0].ClearColor[1] = 0.3f;
             renderPassDesc.Color[0].ClearColor[2] = 0.3f;
@@ -353,7 +354,6 @@ namespace Renderer
 
             pCmdList->EndRenderPass();
         }
-        // pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessRTV, RHI::RHIAccessMaskSRV | RHI::RHIAccessMaskPS);
 
         RenderBackBufferPass(pCmdList);
     }
@@ -378,12 +378,12 @@ namespace Renderer
 
     void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
     {
-        GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
-
         mpSwapchain->AcquireNextBackBuffer();
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
         {
+            GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
+
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;

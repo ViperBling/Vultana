@@ -34,6 +34,8 @@ namespace Renderer
 
         RHI::RHIShaderResourceViewDesc srvDesc;
         srvDesc.Type = RHI::ERHIShaderResourceViewType::StructuredBuffer;
+        // Union(Buffer or Texture) in RHIShaderResourceViewDesc share the same memory, 
+        // we initialized Texture in constructor, so we need to set buffer offset to 0 here incase it's uninitialized.
         srvDesc.Buffer.Offset = 0;
         srvDesc.Buffer.Size = elementCount * stride;
         mpSRV.reset(device->CreateShaderResourceView(mpBuffer.get(), srvDesc, mName + "_SRV"));
@@ -46,6 +48,9 @@ namespace Renderer
         {
             RHI::RHIUnorderedAccessViewDesc uavDesc;
             uavDesc.Type = RHI::ERHIUnorderedAccessViewType::StructuredBuffer;
+            // Union(Buffer or Texture) in RHIShaderResourceViewDesc share the same memory, 
+            // we initialized Texture in constructor, so we need to set buffer offset to 0 here incase it's uninitialized.
+            srvDesc.Buffer.Offset = 0;
             uavDesc.Buffer.Size = elementCount * stride;
             mpUAV.reset(device->CreateUnorderedAccessView(mpBuffer.get(), uavDesc, mName + "_UAV"));
             if (mpUAV == nullptr)
