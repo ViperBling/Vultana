@@ -1,9 +1,13 @@
-struct Attributes
+cbuffer Attributes : register(b0)
 {
-    uint positionOS;
-    // uint vertexColor;
+    uint PosAndColorIndex;
 };
-ConstantBuffer<Attributes> TriangleCB : register(b0);
+
+struct Vertex
+{
+    float3 positionOS;
+    float3 vertexColor;
+};
 
 struct VSOutput
 {
@@ -13,12 +17,16 @@ struct VSOutput
 
 VSOutput VSMain(uint vertexID : SV_VertexID)
 {
-    StructuredBuffer<float3> posBuffer = ResourceDescriptorHeap[TriangleCB.positionOS];
-    // StructuredBuffer<float3> colorBuffer = ResourceDescriptorHeap[TriangleCB.vertexColor];
+    StructuredBuffer<Vertex> vertexBuffer = ResourceDescriptorHeap[PosAndColorIndex];
+
+    Vertex vertex = vertexBuffer[vertexID];
+
+    float3 positionOS = vertex.positionOS;
+    float3 vertexColor = vertex.vertexColor;
 
     VSOutput vsOut;
-    vsOut.positionCS = float4(posBuffer[vertexID], 1.0);
-    vsOut.vertexColor = float3(0, 1, 1);
+    vsOut.positionCS = float4(positionOS, 1.0);
+    vsOut.vertexColor = vertexColor;
 
     return vsOut;
 }
