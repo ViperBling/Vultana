@@ -15,15 +15,15 @@ namespace RHI
         ~RHIShaderResourceViewVK();
 
         bool Create();
-        const RHIShaderResourceViewDesc& GetDesc() const { return mDesc; }
 
+        const RHIShaderResourceViewDesc& GetDesc() const { return mDesc; }
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
     
     private:
         RHIResource* mResource = nullptr;
         RHIShaderResourceViewDesc mDesc {};
-        vk::ImageView mImageView;
+        vk::ImageView mImageView = VK_NULL_HANDLE;
         uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 
@@ -34,15 +34,15 @@ namespace RHI
         ~RHIUnorderedAccessViewVK();
 
         bool Create();
-        const RHIUnorderedAccessViewDesc& GetDesc() const { return mDesc; }
 
+        const RHIUnorderedAccessViewDesc& GetDesc() const { return mDesc; }
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
 
     private:
         RHIResource* mResource = nullptr;
         RHIUnorderedAccessViewDesc mDesc {};
-        vk::ImageView mImageView;
+        vk::ImageView mImageView = VK_NULL_HANDLE;
         uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 
@@ -54,6 +54,7 @@ namespace RHI
 
         bool Create();
 
+        const RHIConstantBufferViewDesc& GetDesc() const { return mDesc; }
         virtual void* GetNativeHandle() const override { return mBuffer->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
 
@@ -71,12 +72,13 @@ namespace RHI
 
         bool Create();
 
+        const RHISamplerDesc& GetDesc() const { return mDesc; }
         virtual void* GetNativeHandle() const override { return mSampler; }
         virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
     
     private:
         RHISamplerDesc mDesc {};
-        vk::Sampler mSampler;
+        vk::Sampler mSampler = VK_NULL_HANDLE;
         uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
     };
 }

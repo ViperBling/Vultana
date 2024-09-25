@@ -93,15 +93,15 @@ namespace RHI
         void FindQueueFamilyIndex();
 
     private:
-        vk::Instance mInstance;
-        vk::DebugUtilsMessengerEXT mDebugMessenger;
-        vk::DispatchLoaderDynamic mDynamicLoader;
-        vk::PhysicalDevice mPhysicalDevice;
-        vk::Device mDevice;
+        vk::Instance mInstance = VK_NULL_HANDLE;
+        vk::DebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;
+        vk::DispatchLoaderDynamic mDynamicLoader = {};
+        vk::PhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
+        vk::Device mDevice = VK_NULL_HANDLE;
         VmaAllocator mAllocator = VK_NULL_HANDLE;
         vk::DescriptorSetLayout mDescSetLayout[3] = {};
-        vk::PipelineLayout mPipelineLayout;
-        vk::PhysicalDeviceDescriptorBufferPropertiesEXT mDescBufferProps;
+        vk::PipelineLayout mPipelineLayout = {};
+        vk::PhysicalDeviceDescriptorBufferPropertiesEXT mDescBufferProps = {};
 
         uint32_t mGraphicsQueueIndex = -1;
         uint32_t mComputeQueueIndex = -1;

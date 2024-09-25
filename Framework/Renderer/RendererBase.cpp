@@ -346,8 +346,8 @@ namespace Renderer
             pCmdList->SetPipelineState(mTestPSO);
 
             pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-            uint32_t positionBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
-            pCmdList->SetGraphicsConstants(0, &positionBuffer, sizeof(positionBuffer));
+            uint32_t vertexBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
+            pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
 
             pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
 

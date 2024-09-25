@@ -29,12 +29,13 @@ namespace RHI
         vk::BufferCreateInfo bufferCI {};
         bufferCI.size = mDesc.Size;
         bufferCI.sharingMode = vk::SharingMode::eExclusive;
-        bufferCI.usage = vk::BufferUsageFlagBits::eTransferDst |
-                         vk::BufferUsageFlagBits::eTransferSrc |
-                         vk::BufferUsageFlagBits::eIndexBuffer |
-                         vk::BufferUsageFlagBits::eVertexBuffer |
-                         vk::BufferUsageFlagBits::eIndirectBuffer |
-                         vk::BufferUsageFlagBits::eShaderDeviceAddress;
+        bufferCI.usage = 
+            vk::BufferUsageFlagBits::eTransferDst |
+            vk::BufferUsageFlagBits::eTransferSrc |
+            vk::BufferUsageFlagBits::eIndexBuffer |
+            // vk::BufferUsageFlagBits::eVertexBuffer |
+            vk::BufferUsageFlagBits::eIndirectBuffer |
+            vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         if (mDesc.Usage & RHIBufferUsageConstantBuffer)
         {
@@ -98,12 +99,12 @@ namespace RHI
         return true;
     }
 
-    void * RHIBufferVK::GetCPUAddress() const
+    void * RHIBufferVK::GetCPUAddress()
     {
         return mpData;
     }
     
-    uint64_t RHIBufferVK::GetGPUAddress() const
+    uint64_t RHIBufferVK::GetGPUAddress()
     {
         vk::BufferDeviceAddressInfo addressInfo {};
         addressInfo.buffer = mBuffer;

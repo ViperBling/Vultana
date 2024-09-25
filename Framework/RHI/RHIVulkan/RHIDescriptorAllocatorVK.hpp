@@ -19,9 +19,9 @@ namespace RHI
 
     
     private:
-        RHIDeviceVK* mDevice;
-        vk::Buffer mBuffer;
-        VmaAllocation mAllocation;
+        RHIDeviceVK* mDevice = nullptr;
+        vk::Buffer mBuffer = VK_NULL_HANDLE;
+        VmaAllocation mAllocation = VK_NULL_HANDLE;
         vk::DeviceAddress mGPUAddress = 0;
         void* mCPUAddress = nullptr;
         uint32_t mBufferSize = 0;
@@ -41,8 +41,8 @@ namespace RHI
     
     private:
         RHIDeviceVK* mDevice = nullptr;
-        vk::Buffer mBuffer;
-        VmaAllocation mAllocation;
+        vk::Buffer mBuffer = VK_NULL_HANDLE;
+        VmaAllocation mAllocation = VK_NULL_HANDLE;
         vk::DeviceAddress mGPUAddress = 0;
         void* mCPUAddress = nullptr;
         uint32_t mDescriptorSize = 0;

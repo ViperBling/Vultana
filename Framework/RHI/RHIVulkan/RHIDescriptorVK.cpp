@@ -30,7 +30,7 @@ namespace RHI
 
         size_t descSize = 0;
         vk::DescriptorGetInfoEXT descGetInfo {};
-        vk::DescriptorAddressInfoEXT descAddressInfo {};
+        vk::DescriptorAddressInfoEXT descBufferInfo {};
         vk::DescriptorImageInfo descImageInfo {};
         descImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
@@ -102,11 +102,11 @@ namespace RHI
             assert(mDesc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(mDesc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descAddressInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
-            descAddressInfo.range = mDesc.Buffer.Size;
+            descBufferInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
+            descBufferInfo.range = mDesc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
-            descGetInfo.setData(&descAddressInfo);
+            descGetInfo.data.pStorageBuffer = &descBufferInfo;
             descSize = descBufferProps.robustStorageBufferDescriptorSize;
             break;
         }
@@ -117,12 +117,12 @@ namespace RHI
             assert(mDesc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(mDesc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descAddressInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
-            descAddressInfo.range = mDesc.Buffer.Size;
-            descAddressInfo.format = ToVulkanFormat(mDesc.Format);
+            descBufferInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
+            descBufferInfo.range = mDesc.Buffer.Size;
+            descBufferInfo.format = ToVulkanFormat(mDesc.Format);
 
             descGetInfo.setType(vk::DescriptorType::eUniformTexelBuffer);
-            descGetInfo.setData(&descAddressInfo);
+            descGetInfo.data.pStorageBuffer = &descBufferInfo;
             descSize = descBufferProps.robustUniformTexelBufferDescriptorSize;
             break;
         }
@@ -134,11 +134,11 @@ namespace RHI
             assert(mDesc.Buffer.Offset % 4 == 0);
             assert(mDesc.Buffer.Size % 4 == 0);
 
-            descAddressInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
-            descAddressInfo.range = mDesc.Buffer.Size;
+            descBufferInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
+            descBufferInfo.range = mDesc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
-            descGetInfo.setData(&descAddressInfo);
+            descGetInfo.data.pStorageBuffer = &descBufferInfo;
             descSize = descBufferProps.robustStorageBufferDescriptorSize;
             break;
         }
@@ -176,7 +176,7 @@ namespace RHI
 
         size_t descSize = 0;
         vk::DescriptorGetInfoEXT descGetInfo {};
-        vk::DescriptorAddressInfoEXT descAddressInfo {};
+        vk::DescriptorAddressInfoEXT descBufferInfo {};
         vk::DescriptorImageInfo descImageInfo {};
         descImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 
@@ -202,7 +202,7 @@ namespace RHI
             imageViewCI.setSubresourceRange(subresourceRange);
 
             descGetInfo.type = vk::DescriptorType::eStorageImage;
-            descGetInfo.data.pSampledImage = &descImageInfo;
+            descGetInfo.data.pStorageImage = &descImageInfo;
             descSize = descBufferProps.storageImageDescriptorSize;
         }
 
@@ -238,11 +238,11 @@ namespace RHI
             assert(mDesc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(mDesc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descAddressInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
-            descAddressInfo.range = mDesc.Buffer.Size;
+            descBufferInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
+            descBufferInfo.range = mDesc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
-            descGetInfo.setData(&descAddressInfo);
+            descGetInfo.data.pStorageBuffer = &descBufferInfo;
             descSize = descBufferProps.robustStorageBufferDescriptorSize;
             break;
         }
@@ -254,12 +254,12 @@ namespace RHI
             assert(mDesc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(mDesc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descAddressInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
-            descAddressInfo.range = mDesc.Buffer.Size;
-            descAddressInfo.format = ToVulkanFormat(mDesc.Format);
+            descBufferInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
+            descBufferInfo.range = mDesc.Buffer.Size;
+            descBufferInfo.format = ToVulkanFormat(mDesc.Format);
 
             descGetInfo.setType(vk::DescriptorType::eStorageTexelBuffer);
-            descGetInfo.setData(&descAddressInfo);
+            descGetInfo.data.pUniformTexelBuffer = &descBufferInfo;
             descSize = descBufferProps.robustUniformTexelBufferDescriptorSize;
             break;
         }
@@ -272,11 +272,11 @@ namespace RHI
             assert(mDesc.Buffer.Offset % 4 == 0);
             assert(mDesc.Buffer.Size % 4 == 0);
 
-            descAddressInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
-            descAddressInfo.range = mDesc.Buffer.Size;
+            descBufferInfo.address = static_cast<RHIBuffer*>(mResource)->GetGPUAddress() + mDesc.Buffer.Offset;
+            descBufferInfo.range = mDesc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
-            descGetInfo.setData(&descAddressInfo);
+            descGetInfo.data.pStorageBuffer = &descBufferInfo;
             descSize = descBufferProps.robustStorageBufferDescriptorSize;
             break;
         }
@@ -307,13 +307,13 @@ namespace RHI
 
     bool RHIConstantBufferViewVK::Create()
     {
-        vk::DescriptorAddressInfoEXT descAddressInfo {};
-        descAddressInfo.address = mBuffer->GetGPUAddress() + mDesc.Offset;
-        descAddressInfo.range = mDesc.Size;
+        vk::DescriptorAddressInfoEXT descBufferInfo {};
+        descBufferInfo.address = mBuffer->GetGPUAddress() + mDesc.Offset;
+        descBufferInfo.range = mDesc.Size;
 
         vk::DescriptorGetInfoEXT descGetInfo {};
         descGetInfo.setType(vk::DescriptorType::eUniformBuffer);
-        descGetInfo.setData(&descAddressInfo);
+        descGetInfo.setData(&descBufferInfo);
 
         void* pDescriptor = nullptr;
         mHeapIndex = static_cast<RHIDeviceVK *>(mpDevice)->AllocateResourceDescriptor(&pDescriptor);
@@ -323,6 +323,7 @@ namespace RHI
         size_t size = static_cast<RHIDeviceVK *>(mpDevice)->GetDescriptorBufferProperties().robustUniformBufferDescriptorSize;
 
         deviceHandle.getDescriptorEXT(descGetInfo, size, pDescriptor, dynamicLoader);
+
         return true;
     }
 
@@ -337,7 +338,7 @@ namespace RHI
     {
         RHIDeviceVK *device = static_cast<RHIDeviceVK *>(mpDevice);
         device->Delete(mSampler);
-        device->FreeResourceDescriptor(mHeapIndex);
+        device->FreeSamplerDescriptor(mHeapIndex);
     }
 
     bool RHISamplerVK::Create()
@@ -374,7 +375,7 @@ namespace RHI
         }
         else
         {
-            return false;
+            assert(false);
         }
 
         vk::Device deviceHandle = static_cast<RHIDeviceVK *>(mpDevice)->GetDevice();
@@ -387,11 +388,11 @@ namespace RHI
         }
 
         void* pDescriptor = nullptr;
-        mHeapIndex = static_cast<RHIDeviceVK *>(mpDevice)->AllocateResourceDescriptor(&pDescriptor);
+        mHeapIndex = static_cast<RHIDeviceVK *>(mpDevice)->AllocateSamplerDescriptor(&pDescriptor);
 
         vk::DescriptorGetInfoEXT descGetInfo {};
         descGetInfo.setType(vk::DescriptorType::eSampler);
-        descGetInfo.setData(&mSampler);
+        descGetInfo.data.pSampler = &mSampler;
 
         size_t size = static_cast<RHIDeviceVK *>(mpDevice)->GetDescriptorBufferProperties().samplerDescriptorSize;
         deviceHandle.getDescriptorEXT(descGetInfo, size, pDescriptor, dynamicLoader);

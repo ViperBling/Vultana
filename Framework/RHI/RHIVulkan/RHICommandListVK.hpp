@@ -32,12 +32,12 @@ namespace RHI
         virtual void EndEvent() override;
 
         virtual void CopyBufferToTexture(RHIBuffer* srcBuffer, RHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
-        virtual void CopyTextureToBuffer(RHITexture* srcTexture, RHIBuffer* dstBuffer, uint32_t mipLevel, uint32_t arraySlice) override;
+        virtual void CopyTextureToBuffer(RHITexture* srcTexture, RHIBuffer* dstBuffer, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
         virtual void CopyBuffer(RHIBuffer* src, RHIBuffer* dst, uint32_t srcOffset, uint32_t dstOffset, uint32_t size) override;
         virtual void CopyTexture(RHITexture* src, RHITexture* dst, uint32_t srcMipLevel, uint32_t dstMipLevel, uint32_t srcArraySlice, uint32_t dstArraySlice) override;
         virtual void ClearUAV(RHIResource* resource, RHIDescriptor* uav, const float* clearValue) override;
         virtual void ClearUAV(RHIResource* resource, RHIDescriptor* uav, const uint32_t* clearValue) override;
-        virtual void WriteBuffer(RHIBuffer* buffer, uint32_t offset, uint32_t size, const void* data) override;
+        virtual void WriteBuffer(RHIBuffer* buffer, uint32_t offset, uint32_t data) override;
 
         virtual void TextureBarrier(RHITexture* texture, uint32_t subResouce, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
         virtual void BufferBarrier(RHIBuffer* buffer, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;

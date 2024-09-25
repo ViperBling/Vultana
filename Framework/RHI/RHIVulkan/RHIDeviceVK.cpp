@@ -40,8 +40,12 @@ namespace RHI
         {
             delete mTransitionCopyCmdList[i];
             delete mTransitionGraphicsCmdList[i];
+            delete mConstantBufferAllocators[i];
         }
         delete mDeferredDeletionQueue;
+
+        delete mResourceDesAllocator;
+        delete mSamplerDesAllocator;
 
         vmaDestroyAllocator(mAllocator);
         mDevice.destroyDescriptorSetLayout(mDescSetLayout[0]);
@@ -566,7 +570,6 @@ namespace RHI
         vk12Features.setShaderUniformTexelBufferArrayNonUniformIndexing(VK_TRUE);
         vk12Features.setShaderStorageTexelBufferArrayNonUniformIndexing(VK_TRUE);
         vk12Features.setRuntimeDescriptorArray(VK_TRUE);
-        vk12Features.setRuntimeDescriptorArray(VK_TRUE);
         vk12Features.setSamplerFilterMinmax(VK_TRUE);
         vk12Features.setScalarBlockLayout(VK_TRUE);
         vk12Features.setTimelineSemaphore(VK_TRUE);
@@ -603,7 +606,7 @@ namespace RHI
 
         vk::DebugUtilsMessengerCreateInfoEXT debugCI {};
         debugCI.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
-        debugCI.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
+        debugCI.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
         debugCI.setPfnUserCallback(ValidationLayerCallback);
         mDebugMessenger = mInstance.createDebugUtilsMessengerEXT(debugCI, nullptr, mDynamicLoader);
 
@@ -655,7 +658,7 @@ namespace RHI
         constantBufferBinding[0].setDescriptorCount(sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS);
         constantBufferBinding[0].setStageFlags(vk::ShaderStageFlagBits::eAll);
 
-        for (size_t i = 0; i < RHI_MAX_CBV_BINDING; i++)
+        for (size_t i = 1; i < RHI_MAX_CBV_BINDING; i++)
         {
             constantBufferBinding[i].setBinding((uint32_t)i);
             constantBufferBinding[i].setDescriptorType(vk::DescriptorType::eUniformBuffer);

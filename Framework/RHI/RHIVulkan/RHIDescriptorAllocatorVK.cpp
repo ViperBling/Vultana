@@ -38,7 +38,7 @@ namespace RHI
     {
         assert(mAllocatedSize + size <= mBufferSize);
 
-        *cpuAddress = (uint8_t *)mCPUAddress + mAllocatedSize;
+        *cpuAddress = (char *)mCPUAddress + mAllocatedSize;
         *gpuAddress = mGPUAddress + mAllocatedSize;
 
         mAllocatedSize += Math::RoundUpPow2(size, 256);
@@ -90,9 +90,10 @@ namespace RHI
         else
         {
             assert(mAllocatedCount < mDescriptorCount);
-            index = mAllocatedCount++;
+            index = mAllocatedCount;
+            ++mAllocatedCount;
         }
-        *desc = ((uint8_t *)mCPUAddress + mDescriptorSize * index);
+        *desc = (char *)mCPUAddress + mDescriptorSize * index;
 
         return index;
     }
