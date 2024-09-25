@@ -343,7 +343,6 @@ namespace Renderer
             renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
             pCmdList->BeginRenderPass(renderPassDesc);
 
-            pCmdList->SetViewport(0, 0, mpSwapchain->GetDesc()->Width, mpSwapchain->GetDesc()->Height);
             pCmdList->SetPipelineState(mTestPSO);
 
             pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
