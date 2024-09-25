@@ -16,7 +16,7 @@ namespace RHI
         bool Create();
         bool Create(vk::Image image);
         bool IsSwapchainTexture() const { return mbSwapchainImage; }
-        vk::ImageView GetRenderView(uint32_t mipLevel, uint32_t arraySlice);
+        vk::ImageView GetRenderView(uint32_t mipSlice, uint32_t arraySlice);
 
         virtual void* GetNativeHandle() const override { return mImage; }
 

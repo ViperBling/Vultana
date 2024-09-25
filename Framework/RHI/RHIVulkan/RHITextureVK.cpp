@@ -91,7 +91,7 @@ namespace RHI
         return true;
     }
 
-    vk::ImageView RHITextureVK::GetRenderView(uint32_t mipLevel, uint32_t arraySlice)
+    vk::ImageView RHITextureVK::GetRenderView(uint32_t mipSlice, uint32_t arraySlice)
     {
         assert(mDesc.Usage & (RHITextureUsageRenderTarget | RHITextureUsageDepthStencil));
 
@@ -100,14 +100,14 @@ namespace RHI
             mRenderViews.resize(mDesc.ArraySize * mDesc.MipLevels);
         }
 
-        uint32_t index = mDesc.MipLevels * arraySlice + mipLevel;
+        uint32_t index = mDesc.MipLevels * arraySlice + mipSlice;
         if (!mRenderViews[index])
         {
             vk::ImageViewCreateInfo imageViewCI {};
             imageViewCI.setImage(mImage);
             imageViewCI.setViewType(vk::ImageViewType::e2D);
             imageViewCI.setFormat(ToVulkanFormat(mDesc.Format, true));
-            imageViewCI.setSubresourceRange({ GetAspectFlags(mDesc.Format), mipLevel, 1, arraySlice, 1 });
+            imageViewCI.setSubresourceRange({ GetAspectFlags(mDesc.Format), mipSlice, 1, arraySlice, 1 });
 
             mRenderViews[index] = ((RHIDeviceVK*)mpDevice)->GetDevice().createImageView(imageViewCI);
         }

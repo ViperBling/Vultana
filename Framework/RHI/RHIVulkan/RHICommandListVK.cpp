@@ -491,11 +491,11 @@ namespace RHI
         renderInfo.setViewMask(0);
         renderInfo.setColorAttachments(colorAttachments);
 
-        if (!depthAttachment.imageView)
+        if (depthAttachment.imageView)
         {
             renderInfo.pDepthAttachment = &depthAttachment;
         }
-        if (!stencilAttachment.imageView)
+        if (stencilAttachment.imageView)
         {
             renderInfo.pStencilAttachment = &stencilAttachment;
         }

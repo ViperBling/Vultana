@@ -155,15 +155,15 @@ namespace Renderer
             arguments.push_back(L"-spirv");
             arguments.push_back(L"-fspv-target-env=vulkan1.3");
             arguments.push_back(L"-fvk-use-dx-layout");
-            // arguments.push_back(L"-fvk-bind-counter-heap");
-            // arguments.push_back(L"0");
-            // arguments.push_back(L"0");
+            arguments.push_back(L"-fvk-bind-counter-heap");
+            arguments.push_back(L"0");
+            arguments.push_back(L"0");
             arguments.push_back(L"-fvk-bind-resource-heap");
             arguments.push_back(L"0");
             arguments.push_back(L"1");
-            // arguments.push_back(L"-fvk-bind-sampler-heap");
-            // arguments.push_back(L"0");
-            // arguments.push_back(L"2");
+            arguments.push_back(L"-fvk-bind-sampler-heap");
+            arguments.push_back(L"0");
+            arguments.push_back(L"2");
             break;
         default:
             break;
