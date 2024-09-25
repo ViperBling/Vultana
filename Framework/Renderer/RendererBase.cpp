@@ -20,7 +20,7 @@ namespace Renderer
     struct Vertex
     {
         Math::Vector3 Position;
-        Math::Vector3 Color;
+        // Math::Vector3 Color;
     };
 
     RendererBase::RendererBase()
@@ -83,30 +83,7 @@ namespace Renderer
         }
 
         CreateCommonResources();
-
-        // For Test
-        std::vector<Vertex> vertices = 
-        {
-            { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-            { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-        };
-
-        std::vector<uint16_t> indices = { 0, 1, 2 };
-
-        mTestIndexBuffer.reset(CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer"));
-        mTestVertexBuffer.reset(CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer"));
-
-        RHI::RHIGraphicsPipelineStateDesc psoDesc;
-        psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-        psoDesc.DepthStencilState.bDepthWrite = false;
-        psoDesc.DepthStencilState.bDepthTest = false;
-        psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA8SRGB;
-        psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32FS8;
-
-        mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
-
+        
         return true;
     }
 
@@ -236,8 +213,56 @@ namespace Renderer
         uint32_t width = pBackBuffer->GetDesc().Width;
         uint32_t height = pBackBuffer->GetDesc().Height;
 
-        mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageRenderTarget | RHI::RHIAccessMaskSRV, "PresentRT"));
-        mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32FS8, RHI::RHITextureUsageDepthStencil | RHI::RHIAccessMaskSRV, "PresentDepthRT"));
+        mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageRenderTarget, "PresentRT"));
+        mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
+
+        // For Test
+        // std::vector<Vertex> vertices = 
+        // {
+        //     { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+        //     { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+        //     { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+        // };
+        std::vector<Vertex> vertices = 
+        {
+            { { -0.5f, -0.5f, 0.0f } },
+            { {  0.5f, -0.5f, 0.0f } },
+            { {  0.0f,  0.5f, 0.0f } },
+        };
+
+        std::vector<uint16_t> indices = { 0, 1, 2 };
+
+        mTestIndexBuffer.reset(CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer"));
+        mTestVertexBuffer.reset(CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer"));
+
+        RHI::RHIGraphicsPipelineStateDesc psoDesc;
+        psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        psoDesc.DepthStencilState.bDepthWrite = false;
+        psoDesc.DepthStencilState.bDepthTest = true;
+        psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
+        psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+
+        mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
+
+        RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
+        copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        copyPSODesc.DepthStencilState.bDepthWrite = false;
+        copyPSODesc.RTFormats[0] = mpSwapchain->GetDesc()->ColorFormat;
+        copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+        mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
+
+        copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH=1" });
+        copyPSODesc.DepthStencilState.bDepthWrite = true;
+        copyPSODesc.DepthStencilState.bDepthTest = true;
+        copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyDepthPSO");
+
+        RHI::RHIComputePipelineStateDesc computePSODesc;
+        computePSODesc.CS = GetShader("Copy.hlsl", "CSCopyDepth", RHI::ERHIShaderType::CS);
+        mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
     }
 
     void RendererBase::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
@@ -303,15 +328,14 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
-        mpSwapchain->AcquireNextBackBuffer();
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+        // pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessMaskSRV, RHI::RHIAccessRTV);
         {
             RHI::RHIRenderPassDesc renderPassDesc {};
-            renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
+            renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
-            renderPassDesc.Color[0].ClearColor[0] = 0.0f;
-            renderPassDesc.Color[0].ClearColor[1] = 0.0f;
-            renderPassDesc.Color[0].ClearColor[2] = 0.0f;
+            renderPassDesc.Color[0].ClearColor[0] = 0.3f;
+            renderPassDesc.Color[0].ClearColor[1] = 0.3f;
+            renderPassDesc.Color[0].ClearColor[2] = 0.3f;
             renderPassDesc.Color[0].ClearColor[3] = 1.0f;
             renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
             renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
@@ -322,15 +346,16 @@ namespace Renderer
             pCmdList->SetPipelineState(mTestPSO);
 
             pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-            uint32_t posBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
-            pCmdList->SetGraphicsConstants(0, &posBuffer, sizeof(posBuffer));
+            uint32_t positionBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
+            pCmdList->SetGraphicsConstants(0, &positionBuffer, sizeof(positionBuffer));
 
             pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
 
             pCmdList->EndRenderPass();
         }
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
-        // RenderBackBufferPass(pCmdList);
+        // pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessRTV, RHI::RHIAccessMaskSRV | RHI::RHIAccessMaskPS);
+
+        RenderBackBufferPass(pCmdList);
     }
 
     void RendererBase::EndFrame()
@@ -357,6 +382,31 @@ namespace Renderer
 
         mpSwapchain->AcquireNextBackBuffer();
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+
+        {
+            RHI::RHIRenderPassDesc renderPassDesc {};
+            renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
+            renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
+            renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Load;
+            renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Depth.DepthStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
+            renderPassDesc.Depth.StencilStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
+            renderPassDesc.Depth.bReadOnly = true;
+            pCmdList->BeginRenderPass(renderPassDesc);
+
+            uint32_t constants[3] = 
+            {
+                mpTestRT->GetSRV()->GetHeapIndex(),
+                mpTestDepthRT->GetSRV()->GetHeapIndex(),
+                mpPointSampler->GetHeapIndex()
+            };
+            pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));
+            pCmdList->SetPipelineState(mpCopyColorPSO);
+            pCmdList->Draw(3);
+
+            pCmdList->EndRenderPass();
+        }
 
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }

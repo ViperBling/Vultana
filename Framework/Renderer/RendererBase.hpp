@@ -117,5 +117,8 @@ namespace Renderer
         std::unique_ptr<StructuredBuffer> mTestVertexBuffer = nullptr;
         std::unique_ptr<IndexBuffer> mTestIndexBuffer = nullptr;
         RHI::RHIPipelineState* mTestPSO = nullptr;
+        RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
+        RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
+        RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
     };
 }
