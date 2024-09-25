@@ -19,16 +19,6 @@ namespace Scene
 
         void Tick(float deltaTime);
 
-        void AddPrimitive(IPrimitive* primitive);
-        void AddLight(ILight* light);
-
-        void LoadScene(const std::string& file);
-        void SaveScene(const std::string& file);
-
-        Camera* GetCamera() const { return mpCamera.get(); }
-        IPrimitive* GetPrimitive(uint32_t id) const;
-        ILight* GetPrimaryLight() const;
-
     private:
         void ClearScene();
 
@@ -39,10 +29,5 @@ namespace Scene
 
     private:
         std::unique_ptr<Camera> mpCamera;
-
-        std::vector<std::unique_ptr<IPrimitive>> mPrimitives;
-        std::vector<std::unique_ptr<ILight>> mLights;
-
-        ILight* mpPrimaryLight = nullptr;
     };
 }

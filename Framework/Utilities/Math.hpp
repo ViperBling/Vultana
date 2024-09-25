@@ -20,6 +20,7 @@ namespace Math
     using Vector2u = glm::uvec2;
     using Vector3u = glm::uvec3;
     using Vector4u = glm::uvec4;
+    using Quaternion = glm::quat;
 
     using Matrix2x2 = glm::mat2;
     using Matrix3x3 = glm::mat3;
