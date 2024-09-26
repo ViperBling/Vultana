@@ -41,7 +41,7 @@ namespace RHI
         *cpuAddress = (char *)mCPUAddress + mAllocatedSize;
         *gpuAddress = mGPUAddress + mAllocatedSize;
 
-        mAllocatedSize += Math::RoundUpPow2(size, 256);
+        mAllocatedSize += RoundUpPow2(size, 256);
     }
 
     void RHIConstantBufferAllocatorVK::Reset()

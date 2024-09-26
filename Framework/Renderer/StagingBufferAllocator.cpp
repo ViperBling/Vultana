@@ -31,7 +31,7 @@ namespace Renderer
         buffer.Size = size;
         buffer.Offset = mAllocatedSize;
 
-        mAllocatedSize += Math::RoundUpPow2(size, 512);
+        mAllocatedSize += RoundUpPow2(size, 512);
         mLastAllocatedFrame = mpRenderer->GetFrameID();
 
         return buffer;

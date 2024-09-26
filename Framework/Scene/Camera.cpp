@@ -6,6 +6,26 @@
 
 namespace Scene
 {
+    static inline float2 CalcDepthLinearParams(const float4x4& mtxProjection)
+    {
+        // | 1  0  0  0 |
+        // | 0  1  0  0 |
+        // | 0  0  A  1 |
+        // | 0  0  B  0 |
+
+        // Z' = (Z * A + B) / Z     --- perspective divide
+        // Z' = A + B / Z 
+
+        // Z = B / (Z' - A)
+        // Z = 1 / (Z' * C1 - C2)   --- C1 = 1/B, C2 = A/B
+        float A = mtxProjection[2][2];
+        float B = max(mtxProjection[3][2], 0.00000001f);
+        float C1 = 1.0f / B;
+        float C2 = A / B;
+        
+        return float2(C1, C2);
+    }
+
     Camera::Camera()
     {
         mPosition = { 0.0f, 0.0f, 0.0f };
@@ -25,22 +45,22 @@ namespace Scene
         mFov = yFov;
         mNear = near;
 
-        float h = 1.0 / std::tan(0.5f * Math::ToRadians(yFov));
+        float h = 1.0 / std::tan(0.5f * DegreeToRadian(yFov));
         float w = h / aspectRatio;
-        mProjection = Math::Matrix4x4(
-            w,    0.0f,  0.0f,  0.0f,
-            0.0f, h,     0.0f,  0.0f,
-            0.0f, 0.0f,  0.0f,  1.0f,
-            0.0f, 0.0f,  mNear, 0.0f
-        );
+        mProjection = float4x4(0.0);
+        mProjection[0][0] = w;
+        mProjection[1][1] = h;
+        mProjection[2][2] = 0.0f;
+        mProjection[2][3] = 1.0f;
+        mProjection[3][2] = mNear;
     }
 
-    void Camera::SetPosition(const Math::Vector3 &position)
+    void Camera::SetPosition(const float3 &position)
     {
         mPosition = position;
     }
 
-    void Camera::SetRotation(const Math::Vector3 &rotation)
+    void Camera::SetRotation(const float3 &rotation)
     {
         mRotation = rotation;
     }
@@ -53,7 +73,8 @@ namespace Scene
 
     void Camera::Tick(float deltaTime)
     {
-        mbUpdated = false;
+        GUI("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
+        mbMoved = false;
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -62,34 +83,34 @@ namespace Scene
             if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft))
             {
                 mPosition += GetLeft() * mMoveSpeed * deltaTime;
-                mbUpdated = true;
+                mbMoved = true;
             }
 
             if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown))
             {
                 mPosition += GetBackward() * mMoveSpeed * deltaTime;
-                mbUpdated = true;
+                mbMoved = true;
             }
 
             if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight))
             {
                 mPosition += GetRight() * mMoveSpeed * deltaTime;
-                mbUpdated = true;
+                mbMoved = true;
             }
 
             if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp))
             {
                 mPosition += GetForward() * mMoveSpeed * deltaTime;
-                mbUpdated = true;
+                mbMoved = true;
             }
         }
 
         if (!io.WantCaptureMouse)
         {
-            if (!glm::epsilonEqual(io.MouseWheel, 0.0f, 0.00001f))
+            if (!NearlyEqual(io.MouseWheel, 0.0f))
             {
                 mPosition += GetForward() * io.MouseWheel * mMoveSpeed * deltaTime;
-                mbUpdated = true;
+                mbMoved = true;
             }
 
             if (ImGui::IsMouseDragging(1))
@@ -98,7 +119,7 @@ namespace Scene
 
                 mRotation.x = fmodf(mRotation.x + io.MouseDelta.y * rotateSpeed, 360.0f);
                 mRotation.y = fmodf(mRotation.y + io.MouseDelta.x * rotateSpeed, 360.0f);
-                mbUpdated = true;
+                mbMoved = true;
             }
         }
 
@@ -128,22 +149,90 @@ namespace Scene
         }
 
         UpdateMatrix();
+
+        if (!mbFrustumLocked)
+        {
+            mFrustumViewPos = mPosition;
+            // No jitter, use original vp matrix
+            UpdateFrustumPlanes(mViewProjMat);
+        }
     }
 
     void Camera::DrawViewFrustum(RHI::RHICommandList *pCmdList)
     {
     }
 
+    void Camera::UpdateFrustumPlanes(const float4x4 &matrix)
+    {
+        // https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
+
+        // Left clipping plane
+        mFrustumPlanes[0].x = matrix[0][3] + matrix[0][0];
+        mFrustumPlanes[0].y = matrix[1][3] + matrix[1][0];
+        mFrustumPlanes[0].z = matrix[2][3] + matrix[2][0];
+        mFrustumPlanes[0].w = matrix[3][3] + matrix[3][0];
+        mFrustumPlanes[0] = NormalizePlane(mFrustumPlanes[0]);
+
+        // Right clipping plane
+        mFrustumPlanes[1].x = matrix[0][3] - matrix[0][0];
+        mFrustumPlanes[1].y = matrix[1][3] - matrix[1][0];
+        mFrustumPlanes[1].z = matrix[2][3] - matrix[2][0];
+        mFrustumPlanes[1].w = matrix[3][3] - matrix[3][0];
+        mFrustumPlanes[1] = NormalizePlane(mFrustumPlanes[1]);
+
+        // Top clipping plane
+        mFrustumPlanes[2].x = matrix[0][3] - matrix[0][1];
+        mFrustumPlanes[2].y = matrix[1][3] - matrix[1][1];
+        mFrustumPlanes[2].z = matrix[2][3] - matrix[2][1];
+        mFrustumPlanes[2].w = matrix[3][3] - matrix[3][1];
+        mFrustumPlanes[2] = NormalizePlane(mFrustumPlanes[2]);
+
+        // Bottom clipping plane
+        mFrustumPlanes[3].x = matrix[0][3] + matrix[0][1];
+        mFrustumPlanes[3].y = matrix[1][3] + matrix[1][1];
+        mFrustumPlanes[3].z = matrix[2][3] + matrix[2][1];
+        mFrustumPlanes[3].w = matrix[3][3] + matrix[3][1];
+        mFrustumPlanes[3] = NormalizePlane(mFrustumPlanes[3]);
+
+        // far clipping plane (reversed depth)
+        mFrustumPlanes[4].x = matrix[0][2];
+        mFrustumPlanes[4].y = matrix[1][2];
+        mFrustumPlanes[4].z = matrix[2][2];
+        mFrustumPlanes[4].w = matrix[3][2];
+        mFrustumPlanes[4] = NormalizePlane(mFrustumPlanes[4]);
+
+        // near clipping plane (reversed depth)
+        mFrustumPlanes[5].x = matrix[0][3] - matrix[0][2];
+        mFrustumPlanes[5].y = matrix[1][3] - matrix[1][2];
+        mFrustumPlanes[5].z = matrix[2][3] - matrix[2][2];
+        mFrustumPlanes[5].w = matrix[3][3] - matrix[3][2];
+        mFrustumPlanes[5] = NormalizePlane(mFrustumPlanes[5]);
+    }
+
     void Camera::UpdateMatrix()
     {
-        mWorld = Math::MakeTranslationMatrix(mPosition) * Math::MakeRotationMatrix(mRotation);
-        mView = Math::Inverse(mWorld);
-        mVPMat = mProjection * mView;
+        // mWorld = Math::MakeTranslationMatrix(mPosition) * Math::MakeRotationMatrix(mRotation);
+        mView = inverse(mWorld);
+        mViewProjMat = mul(mProjection, mView);
     }
 
     void Camera::OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height)
     {
         mAspectRatio = static_cast<float>(width) / static_cast<float>(height);
         SetPerspective(mAspectRatio, mFov, mNear);
+    }
+
+    void Camera::OnCameraSettingGUI()
+    {
+        ImGui::SliderFloat("Move Speed", &mMoveSpeed, 1.0f, 200.0f, "%.0f");
+
+        bool perspectiveUpdated = false;
+        perspectiveUpdated |= ImGui::SliderFloat("FOV", &mFov, 5.0f, 135.0f, "%.0f");
+        perspectiveUpdated |= ImGui::SliderFloat("Near", &mNear, 0.0001f, 3.0f, "%.4f");
+
+        if (perspectiveUpdated)
+        {
+            SetPerspective(mAspectRatio, mFov, mNear);
+        }
     }
 }

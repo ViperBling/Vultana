@@ -101,28 +101,28 @@ namespace Window
         glfwSetWindowShouldClose(this->mHwnd, true);
     }
 
-    void GLFWindow::SetSize(Math::Vector2 size)
+    void GLFWindow::SetSize(float2 size)
     {
         glfwSetWindowSize(this->mHwnd, (int)size.x, (int)size.y);
     }
 
-    Math::Vector2 GLFWindow::GetSize() const
+    float2 GLFWindow::GetSize() const
     {
         int width = 0, height = 0;
         glfwGetWindowSize(this->mHwnd, &width, &height);
-        return Math::Vector2((float)width, (float)height);
+        return float2((float)width, (float)height);
     }
 
-    void GLFWindow::SetPosition(Math::Vector2 position)
+    void GLFWindow::SetPosition(float2 position)
     {
         glfwSetWindowPos(this->mHwnd, (int)position.x, (int)position.y);
     }
 
-    Math::Vector2 GLFWindow::GetPosition() const
+    float2 GLFWindow::GetPosition() const
     {
         int x = 0, y = 0;
         glfwGetWindowPos(this->mHwnd, &x, &y);
-        return Math::Vector2((float)x, (float)y);
+        return float2((float)x, (float)y);
     }
 
     void GLFWindow::SetTitle(const char *title)
@@ -130,14 +130,14 @@ namespace Window
         glfwSetWindowTitle(this->mHwnd, title);
     }
 
-    Math::Vector2 GLFWindow::GetCursorPosition() const
+    float2 GLFWindow::GetCursorPosition() const
     {
         double x = 0, y = 0;
         glfwGetCursorPos(this->mHwnd, &x, &y);
-        return Math::Vector2((float)x, (float)y);
+        return float2((float)x, (float)y);
     }
 
-    void GLFWindow::SetCursorPosition(Math::Vector2 position)
+    void GLFWindow::SetCursorPosition(float2 position)
     {
         glfwSetCursorPos(this->mHwnd, (int)position.x, (int)position.y);
     }

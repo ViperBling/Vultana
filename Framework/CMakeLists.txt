@@ -3,11 +3,10 @@ set(BinaryPath ${PROJECT_SOURCE_DIR}/Binary)
 set(SourcePath ${PROJECT_SOURCE_DIR}/Framework)
 set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
-find_package(assimp CONFIG REQUIRED)
+# find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanHeaders CONFIG)
-# find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
@@ -16,6 +15,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
+find_path(LINALG_INCLUDE_DIRS "linalg.h")
 
 file(GLOB_RECURSE Common_Head       ${SourcePath}/Common/*.hpp)
 file(GLOB_RECURSE Common_Src        ${SourcePath}/Common/*.cpp)
@@ -60,14 +60,13 @@ add_library(FrameworkLib STATIC
 
 
 
-target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS})
+target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS} ${LINALG_INCLUDE_DIRS})
 target_link_libraries(FrameworkLib PRIVATE
-    assimp::assimp
+    # assimp::assimp
     glfw
     glm::glm
     Vulkan::Vulkan
     Vulkan::Headers
-    # spirv-cross-core
     fmt::fmt-header-only
     tinyxml2
     Microsoft::DirectXShaderCompiler

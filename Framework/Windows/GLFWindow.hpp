@@ -18,8 +18,8 @@ namespace Window
         bool TransparentFramebuffer = false;
         bool Resizeable = true;
         bool TileBar = true;
-        Math::Vector2 Size = { 800.0f, 600.0f };
-        Math::Vector2 Position = { 100.0f, 100.0f };
+        float2 Size = { 800.0f, 600.0f };
+        float2 Position = { 100.0f, 100.0f };
         const char* Title = "Vultana";
     };
 
@@ -40,14 +40,14 @@ namespace Window
         bool ShouldClose() const;
         void Close();
 
-        void SetSize(Math::Vector2 size);
-        Math::Vector2 GetSize() const;
-        void SetPosition(Math::Vector2 position);
-        Math::Vector2 GetPosition() const;
+        void SetSize(float2 size);
+        float2 GetSize() const;
+        void SetPosition(float2 position);
+        float2 GetPosition() const;
         void SetTitle(const char* title);
 
-        Math::Vector2 GetCursorPosition() const;
-        void SetCursorPosition(Math::Vector2 position);
+        float2 GetCursorPosition() const;
+        void SetCursorPosition(float2 position);
 
         Utility::CursorMode GetCursorMode() const;
         void SetCursorMode(Utility::CursorMode mode);
