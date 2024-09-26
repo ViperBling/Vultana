@@ -296,8 +296,8 @@ namespace Renderer
             0, 5, 4,
         };
 
-        mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
-        mTestTriangleVertexBuffer.reset(CreateStructuredBuffer(triVertices.data(), sizeof(Vertex), static_cast<uint32_t>(triVertices.size()), "TriangleVertexBuffer"));
+        // mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
+        // mTestTriangleVertexBuffer.reset(CreateStructuredBuffer(triVertices.data(), sizeof(Vertex), static_cast<uint32_t>(triVertices.size()), "TriangleVertexBuffer"));
 
         mTestBoxIndexBuffer.reset(CreateIndexBuffer(boxIndices.data(), sizeof(uint32_t), static_cast<uint32_t>(boxIndices.size()), "BoxIndexBuffer"));
         mTestBoxPositionBuffer.reset(CreateStructuredBuffer(boxPositions.data(), sizeof(float3), static_cast<uint32_t>(boxPositions.size()), "BoxPositionBuffer"));
@@ -314,7 +314,8 @@ namespace Renderer
         psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
-        mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
+        // mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
+        mTestPSO = GetPipelineState(psoDesc, "BoxPSO");
 
         RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
@@ -422,14 +423,11 @@ namespace Renderer
             // pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
             pCmdList->SetIndexBuffer(mTestBoxIndexBuffer->GetBuffer(), 0, mTestBoxIndexBuffer->GetFormat());
 
-            struct VertexCB
+            uint32_t vertexCB[2] = 
             {
-                uint positionBuffer;
-                uint colorBuffer;
+                mTestBoxPositionBuffer->GetSRV()->GetHeapIndex(),
+                mTestBoxColorBuffer->GetSRV()->GetHeapIndex()
             };
-            VertexCB vertexCB;
-            vertexCB.positionBuffer = mTestBoxPositionBuffer->GetSRV()->GetHeapIndex();
-            vertexCB.colorBuffer = mTestBoxColorBuffer->GetSRV()->GetHeapIndex();
             pCmdList->SetGraphicsConstants(0, &vertexCB, sizeof(vertexCB));
 
             pCmdList->DrawIndexed(mTestBoxIndexBuffer->GetIndexCount());
