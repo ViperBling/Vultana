@@ -7,7 +7,10 @@
 namespace Renderer
 {
     class RendererBase;
+}
 
+namespace RenderResources
+{
     class Texture2D
     {
     public:

@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-namespace Renderer
+namespace RenderResources
 {
     IndexBuffer::IndexBuffer(const std::string &name)
     {
@@ -16,7 +16,7 @@ namespace Renderer
         assert(stride == 2 || stride == 4);
         mIndexCount = indexCount;
 
-        RendererBase *renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase *renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         RHI::RHIDevice *device = renderer->GetDevice();
 
         RHI::RHIBufferDesc desc;

@@ -5,7 +5,7 @@ find_package(GTest CONFIG REQUIRED)
 set(GTestLib GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
 set(MainFile MainTest.cpp)
 
-add_executable(EngineTest ${MainFile} EngineTest.cpp)
+add_executable(EngineTest ${MainFile} EngineTest.cpp ${SHADER_FILES})
 target_link_libraries(EngineTest FrameworkLib ${GTestLib})
 target_include_directories(EngineTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 

@@ -51,11 +51,11 @@ namespace Renderer
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
         void ReloadShaders();
 
-        Texture2D* CreateTexture2D(const std::string& file, bool srgb);
-        Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
+        RenderResources::Texture2D* CreateTexture2D(const std::string& file, bool srgb);
+        RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
 
-        IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
-        StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+        RenderResources::IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
+        RenderResources::StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
 
         void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
@@ -111,11 +111,11 @@ namespace Renderer
         std::vector<BufferUpload> mPendingBufferUpload;
 
         // For Test
-        std::unique_ptr<Texture2D> mpTestRT;
-        std::unique_ptr<Texture2D> mpTestDepthRT;
+        std::unique_ptr<RenderResources::Texture2D> mpTestRT;
+        std::unique_ptr<RenderResources::Texture2D> mpTestDepthRT;
         
-        std::unique_ptr<StructuredBuffer> mTestVertexBuffer = nullptr;
-        std::unique_ptr<IndexBuffer> mTestIndexBuffer = nullptr;
+        std::unique_ptr<RenderResources::StructuredBuffer> mTestVertexBuffer = nullptr;
+        std::unique_ptr<RenderResources::IndexBuffer> mTestIndexBuffer = nullptr;
         RHI::RHIPipelineState* mTestPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
         RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;

@@ -6,6 +6,11 @@
 
 namespace Renderer
 {
+    class RendererBase;
+}
+
+namespace RenderResources
+{
     class IndexBuffer
     {
     public:
