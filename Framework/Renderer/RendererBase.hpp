@@ -59,6 +59,7 @@ namespace Renderer
 
         void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
+        void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
 
     private:
         void CreateCommonResources();
@@ -114,8 +115,13 @@ namespace Renderer
         std::unique_ptr<RenderResources::Texture2D> mpTestRT;
         std::unique_ptr<RenderResources::Texture2D> mpTestDepthRT;
         
-        std::unique_ptr<RenderResources::StructuredBuffer> mTestVertexBuffer = nullptr;
-        std::unique_ptr<RenderResources::IndexBuffer> mTestIndexBuffer = nullptr;
+        std::unique_ptr<RenderResources::StructuredBuffer> mTestTriangleVertexBuffer = nullptr;
+        std::unique_ptr<RenderResources::IndexBuffer> mTestTriangleIndexBuffer = nullptr;
+
+        std::unique_ptr<RenderResources::StructuredBuffer> mTestBoxColorBuffer = nullptr;
+        std::unique_ptr<RenderResources::StructuredBuffer> mTestBoxPositionBuffer = nullptr;
+        std::unique_ptr<RenderResources::IndexBuffer> mTestBoxIndexBuffer = nullptr;
+        
         RHI::RHIPipelineState* mTestPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
         RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;

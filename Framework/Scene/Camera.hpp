@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utilities/Math.hpp"
+#include "Common/GlobalConstants.hlsli"
 
 namespace RHI
 {
@@ -46,6 +47,7 @@ namespace Scene
         float3 GetUp() const { return mWorld[1].xyz(); }
         float3 GetDown() const { return -mWorld[1].xyz(); }
 
+        void SetupCameraCB(FCameraConstants& cameraCB);
         void DrawViewFrustum(RHI::RHICommandList* pCmdList);
         void LockViewFrustum(bool value) { mbFrustumLocked = value; }
         void SetFrustumViewPosition(const float3& pos) { mFrustumViewPos = pos; }
@@ -70,7 +72,7 @@ namespace Scene
 
         float mAspectRatio = 1.0f;
         float mFov = 45.0f;
-        float mNear = 0.1f;
+        float mNear = 0.01f;
         float mFar = 1000.0f;
 
         float mMoveSpeed = 10.0f;

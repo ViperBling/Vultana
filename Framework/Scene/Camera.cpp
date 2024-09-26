@@ -2,6 +2,7 @@
 
 #include "Core/VultanaEngine.hpp"
 #include "Utilities/GUIUtil.hpp"
+#include "Utilities/Log.hpp"
 #include "Windows/GLFWindow.hpp"
 
 namespace Scene
@@ -158,6 +159,19 @@ namespace Scene
         }
     }
 
+    void Camera::SetupCameraCB(FCameraConstants &cameraCB)
+    {
+        cameraCB.CameraPosition = GetPosition();
+        cameraCB.NearPlane = mNear;
+
+        cameraCB.MtxView = mView;
+        cameraCB.MtxViewInverse = Inverse(mView);
+        cameraCB.MtxProjection = mProjection;
+        cameraCB.MtxProjectionInverse = Inverse(mProjection);
+        cameraCB.MtxViewProjection = mViewProjMat;
+        cameraCB.MtxViewProjectionInverse = Inverse(mViewProjMat);
+    }
+
     void Camera::DrawViewFrustum(RHI::RHICommandList *pCmdList)
     {
     }
@@ -211,8 +225,8 @@ namespace Scene
 
     void Camera::UpdateMatrix()
     {
-        // mWorld = Math::MakeTranslationMatrix(mPosition) * Math::MakeRotationMatrix(mRotation);
-        mView = inverse(mWorld);
+        mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
+        mView = Inverse(mWorld);
         mViewProjMat = mul(mProjection, mView);
     }
 

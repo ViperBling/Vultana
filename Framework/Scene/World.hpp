@@ -17,6 +17,8 @@ namespace Scene
         World();
         ~World();
 
+        Camera* GetCamera() { return mpCamera.get(); }
+
         void Tick(float deltaTime);
 
     private:

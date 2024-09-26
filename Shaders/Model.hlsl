@@ -1,5 +1,4 @@
 #include "Common/ModelConstants.hlsli"
-#include "Common/ModelConstants.hlsli"
 
 struct FVertexOutput
 {
