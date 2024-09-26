@@ -19,8 +19,8 @@ namespace Renderer
     // For Test
     struct Vertex
     {
-        Math::Vector3 Position;
-        Math::Vector3 Color;
+        float3 Position;
+        float3 Color;
     };
 
     RendererBase::RendererBase()

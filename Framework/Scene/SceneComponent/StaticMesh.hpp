@@ -5,4 +5,4 @@
 namespace Scene
 {
     
-} // namespace Vultana::Scene
+} // namespace Scene
