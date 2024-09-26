@@ -10,6 +10,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OutputBinary})
 
 file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/Assets DESTINATION ${OutputBinary})
 
+include(${PROJECT_SOURCE_DIR}/Shaders/Shaders.cmake)
+
 add_subdirectory(External)
 add_subdirectory(Framework)
 add_subdirectory(Tests)

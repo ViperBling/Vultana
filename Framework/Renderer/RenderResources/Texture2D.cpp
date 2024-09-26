@@ -2,7 +2,7 @@
 
 #include "Core/VultanaEngine.hpp"
 
-namespace Renderer
+namespace RenderResources
 {
     Texture2D::Texture2D(const std::string &name)
     {
@@ -11,7 +11,7 @@ namespace Renderer
 
     bool Texture2D::Create(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags)
     {
-        RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         RHI::RHIDevice* pDevice = pRenderer->GetDevice();
 
         RHI::RHITextureDesc desc {};

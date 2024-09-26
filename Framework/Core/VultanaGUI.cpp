@@ -11,12 +11,19 @@ namespace Core
     {
         ImGui::CreateContext();
 
+        ImGuiIO& io = ImGui::GetIO();
+        io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+
+        ImGui::StyleColorsDark();
+
         ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->GetNativeHandle());
     }
 
     GUI::~GUI()
     {
         ImGui_ImplWin32_Shutdown();
+
+        ImGui::DestroyContext();
     }
 
     bool GUI::Init()

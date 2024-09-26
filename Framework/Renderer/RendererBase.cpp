@@ -123,14 +123,14 @@ namespace Renderer
         mpShaderCache->ReloadShaders();
     }
 
-    Texture2D *RendererBase::CreateTexture2D(const std::string &file, bool srgb)
+    RenderResources::Texture2D *RendererBase::CreateTexture2D(const std::string &file, bool srgb)
     {
         return nullptr;
     }
 
-    Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string &name)
+    RenderResources::Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string &name)
     {
-        Texture2D* texture = new Texture2D(name);
+        RenderResources::Texture2D* texture = new RenderResources::Texture2D(name);
         if (!texture->Create(width, height, levels, format, flags))
         {
             delete texture;
@@ -139,7 +139,7 @@ namespace Renderer
         return texture;
     }
 
-    IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const std::string &name, RHI::ERHIMemoryType memoryType)
+    RenderResources::IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const std::string &name, RHI::ERHIMemoryType memoryType)
     {
         std::vector<uint16_t> u16IndexBuffer;
         if (stride == 1)
@@ -153,7 +153,7 @@ namespace Renderer
             data = u16IndexBuffer.data();
         }
 
-        IndexBuffer* idBuffer = new IndexBuffer(name);
+        RenderResources::IndexBuffer* idBuffer = new RenderResources::IndexBuffer(name);
         if (!idBuffer->Create(stride, indexCount, memoryType))
         {
             delete idBuffer;
@@ -167,9 +167,9 @@ namespace Renderer
         return idBuffer;
     }
 
-    StructuredBuffer *RendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const std::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    RenderResources::StructuredBuffer *RendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const std::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
-        StructuredBuffer* pBuffer = new StructuredBuffer(name);
+        RenderResources::StructuredBuffer* pBuffer = new RenderResources::StructuredBuffer(name);
         if (!pBuffer->Create(stride, elementCount, memoryType, isUAV))
         {
             delete pBuffer;

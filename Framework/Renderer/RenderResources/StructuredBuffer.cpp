@@ -2,7 +2,7 @@
 #include "Core/VultanaEngine.hpp"
 #include "Renderer/RendererBase.hpp"
 
-namespace Renderer
+namespace RenderResources
 {
     StructuredBuffer::StructuredBuffer(const std::string &name)
     {
@@ -11,7 +11,7 @@ namespace Renderer
 
     bool StructuredBuffer::Create(uint32_t stride, uint32_t elementCount, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
-        RendererBase *renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        Renderer::RendererBase *renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         RHI::RHIDevice *device = renderer->GetDevice();
 
         RHI::RHIBufferDesc desc;
