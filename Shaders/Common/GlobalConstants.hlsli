@@ -3,6 +3,7 @@
 struct FCameraConstants
 {
     float3 CameraPosition;
+    float NearPlane;
 
     float4x4 MtxView;
     float4x4 MtxViewInverse;
@@ -16,17 +17,17 @@ struct FSceneConstants
 {
     FCameraConstants CameraCB;
 
-    uint SceneConstantBufferSRV;
-    uint SceneStaticBufferSRV;
+    // uint SceneConstantBufferSRV;
+    // uint SceneStaticBufferSRV;
 
-    float3 LightDirection;
-    float3 LightColor;
+    // float3 LightDirection;
+    // float3 LightColor;
     // float3 LightRadius;
 };
 
 #ifndef __cplusplus
 
-ConstantBuffer<FSceneConstants> SceneCB : register(b0);
+ConstantBuffer<FSceneConstants> SceneCB : register(b1);
 
 FCameraConstants GetCameraConstants()
 {

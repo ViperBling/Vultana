@@ -24,11 +24,7 @@ namespace Scene
         mpCamera->Tick(deltaTime);
 
         Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-
-        
     }
-
-    
 
     void World::ClearScene()
     {
@@ -46,6 +42,13 @@ namespace Scene
 
     void World::CreateCamera(tinyxml2::XMLElement *element)
     {
+        mpCamera->SetPosition({ 0.0f, 0.0f, -2.0f });
+        mpCamera->SetRotation({ 0.0f, 0.0f, 0.0f });
+
+        Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        uint32_t width = pRenderer->GetRenderWidth();
+        uint32_t height = pRenderer->GetRenderHeight();
+        mpCamera->SetPerspective(static_cast<float>(width) / height, 60.0f, 0.01f);
     }
 
     void World::CreateModel(tinyxml2::XMLElement *element)

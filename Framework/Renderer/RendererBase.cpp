@@ -199,6 +199,21 @@ namespace Renderer
         mPendingBufferUpload.push_back(upload);
     }
 
+    void RendererBase::SetupGlobalConstants(RHI::RHICommandList *pCmdList)
+    {
+        Scene::World* pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
+        Scene::Camera* pCamera = pWorld->GetCamera();
+
+        FSceneConstants sceneConstants {};
+        pCamera->SetupCameraCB(sceneConstants.CameraCB);
+
+        if (pCmdList->GetQueueType() == RHI::ERHICommandQueueType::Graphics)
+        {
+            // slot 0 only for instance data, must less than 8 * sizeof(uint32_t) = 32 bytes
+            pCmdList->SetGraphicsConstants(1, &sceneConstants, sizeof(FSceneConstants));
+        }
+    }
+
     void RendererBase::CreateCommonResources()
     {
         RHI::RHISamplerDesc samplerDesc {};
@@ -217,27 +232,82 @@ namespace Renderer
         mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
 
         // For Test
-        std::vector<Vertex> vertices = 
+        std::vector<Vertex> triVertices = 
         {
             { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
             { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
             { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
         };
-        // std::vector<Vertex> vertices = 
-        // {
-        //     { { -0.5f, -0.5f, 0.0f } },
-        //     { {  0.5f, -0.5f, 0.0f } },
-        //     { {  0.0f,  0.5f, 0.0f } },
-        // };
+        std::vector<uint16_t> triIndices = { 0, 1, 2 };
 
-        std::vector<uint16_t> indices = { 0, 1, 2 };
+        std::vector<float3> boxPositions = 
+        {
+            // 前面
+            { -0.5f, -0.5f,  0.5f }, // 左下前
+            {  0.5f, -0.5f,  0.5f }, // 右下前
+            {  0.5f,  0.5f,  0.5f }, // 右上前
+            { -0.5f,  0.5f,  0.5f }, // 左上前
 
-        mTestIndexBuffer.reset(CreateIndexBuffer(indices.data(), sizeof(uint16_t), static_cast<uint32_t>(indices.size()), "TriangleIndexBuffer"));
-        mTestVertexBuffer.reset(CreateStructuredBuffer(vertices.data(), sizeof(Vertex), static_cast<uint32_t>(vertices.size()), "TriangleVertexBuffer"));
+            // 后面
+            { -0.5f, -0.5f, -0.5f }, // 左下后
+            {  0.5f, -0.5f, -0.5f }, // 右下后
+            {  0.5f,  0.5f, -0.5f }, // 右上后
+            { -0.5f,  0.5f, -0.5f }, // 左上后
+        };
+        std::vector<float3> boxColors = 
+        {
+            // 前面
+            { 1.0f, 0.0f, 0.0f }, // 左下前
+            { 0.0f, 1.0f, 0.0f }, // 右下前
+            { 0.0f, 0.0f, 1.0f }, // 右上前
+            { 1.0f, 1.0f, 0.0f }, // 左上前
+
+            // 后面
+            { 0.0f, 1.0f, 1.0f }, // 左下后
+            { 1.0f, 0.0f, 1.0f }, // 右下后
+            { 1.0f, 1.0f, 1.0f }, // 右上后
+            { 0.5f, 0.5f, 0.5f }, // 左上后
+        };
+    
+        std::vector<uint32_t> boxIndices = 
+        {
+            // 前面
+            0, 1, 2,
+            0, 2, 3,
+
+            // 后面
+            4, 5, 6,
+            4, 6, 7,
+
+            // 左侧
+            0, 4, 7,
+            0, 7, 3,
+
+            // 右侧
+            1, 5, 6,
+            1, 6, 2,
+
+            // 上面
+            3, 2, 6,
+            3, 6, 7,
+
+            // 下面
+            0, 1, 5,
+            0, 5, 4,
+        };
+
+        mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
+        mTestTriangleVertexBuffer.reset(CreateStructuredBuffer(triVertices.data(), sizeof(Vertex), static_cast<uint32_t>(triVertices.size()), "TriangleVertexBuffer"));
+
+        mTestBoxIndexBuffer.reset(CreateIndexBuffer(boxIndices.data(), sizeof(uint32_t), static_cast<uint32_t>(boxIndices.size()), "BoxIndexBuffer"));
+        mTestBoxPositionBuffer.reset(CreateStructuredBuffer(boxPositions.data(), sizeof(float3), static_cast<uint32_t>(boxPositions.size()), "BoxPositionBuffer"));
+        mTestBoxColorBuffer.reset(CreateStructuredBuffer(boxColors.data(), sizeof(float3), static_cast<uint32_t>(boxColors.size()), "BoxColorBuffer"));
 
         RHI::RHIGraphicsPipelineStateDesc psoDesc;
-        psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        // psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        // psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        psoDesc.VS = GetShader("Box.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        psoDesc.PS = GetShader("Box.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthWrite = false;
         psoDesc.DepthStencilState.bDepthTest = true;
         psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
@@ -328,6 +398,8 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
+        SetupGlobalConstants(pCmdList);
+
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderTriangle");
 
@@ -345,11 +417,22 @@ namespace Renderer
 
             pCmdList->SetPipelineState(mTestPSO);
 
-            pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-            uint32_t vertexBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
-            pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
+            // pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
+            // uint32_t vertexBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
+            // pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
+            pCmdList->SetIndexBuffer(mTestBoxIndexBuffer->GetBuffer(), 0, mTestBoxIndexBuffer->GetFormat());
 
-            pCmdList->DrawIndexed(mTestIndexBuffer->GetIndexCount());
+            struct VertexCB
+            {
+                uint positionBuffer;
+                uint colorBuffer;
+            };
+            VertexCB vertexCB;
+            vertexCB.positionBuffer = mTestBoxPositionBuffer->GetSRV()->GetHeapIndex();
+            vertexCB.colorBuffer = mTestBoxColorBuffer->GetSRV()->GetHeapIndex();
+            pCmdList->SetGraphicsConstants(0, &vertexCB, sizeof(vertexCB));
+
+            pCmdList->DrawIndexed(mTestBoxIndexBuffer->GetIndexCount());
 
             pCmdList->EndRenderPass();
         }
