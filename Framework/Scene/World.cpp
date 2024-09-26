@@ -42,7 +42,7 @@ namespace Scene
 
     void World::CreateCamera(tinyxml2::XMLElement *element)
     {
-        mpCamera->SetPosition({ 0.0f, 0.0f, -2.0f });
+        mpCamera->SetPosition({ 0.0f, 0.0f, -1.0f });
         mpCamera->SetRotation({ 0.0f, 0.0f, 0.0f });
 
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
