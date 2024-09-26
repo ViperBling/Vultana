@@ -21,8 +21,8 @@ FVertexOutput VSMain(uint vertexID : SV_VertexID)
     float3 color = colorBuffer[vertexID];
 
     FVertexOutput vsOut;
-    // vsOut.positionCS = mul(GetCameraConstants().MtxViewProjection, positionOS);
-    vsOut.positionCS = positionOS;
+    vsOut.positionCS = mul(GetCameraConstants().MtxViewProjection, positionOS);
+    // vsOut.positionCS = positionOS;
     vsOut.vertexColor = color;
 
     return vsOut;

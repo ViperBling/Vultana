@@ -19,6 +19,11 @@ namespace Scene
     {
     }
 
+    void World::LoadScene(const std::string &file)
+    {
+        CreateCamera(nullptr);
+    }
+
     void World::Tick(float deltaTime)
     {
         mpCamera->Tick(deltaTime);
@@ -42,8 +47,8 @@ namespace Scene
 
     void World::CreateCamera(tinyxml2::XMLElement *element)
     {
-        mpCamera->SetPosition({ 0.0f, 0.0f, -1.0f });
-        mpCamera->SetRotation({ 0.0f, 0.0f, 0.0f });
+        mpCamera->SetPosition({ 0.0f, 1.0f, -2.0f });
+        mpCamera->SetRotation({ 30.0f, 0.0f, 0.0f });
 
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         uint32_t width = pRenderer->GetRenderWidth();

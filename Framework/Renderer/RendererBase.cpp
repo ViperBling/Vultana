@@ -308,9 +308,11 @@ namespace Renderer
         // psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.VS = GetShader("Box.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         psoDesc.PS = GetShader("Box.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-        psoDesc.DepthStencilState.bDepthWrite = false;
-        psoDesc.DepthStencilState.bDepthTest = true;
-        psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        psoDesc.DepthStencilState.bDepthWrite = true;
+        psoDesc.DepthStencilState.bDepthTest = false;
+        psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Less;
+        psoDesc.RasterizerState.bFrontCCW = true;
+        psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::None;
         psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 

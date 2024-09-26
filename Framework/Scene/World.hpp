@@ -19,6 +19,8 @@ namespace Scene
 
         Camera* GetCamera() { return mpCamera.get(); }
 
+        void LoadScene(const std::string& file);
+
         void Tick(float deltaTime);
 
     private:
