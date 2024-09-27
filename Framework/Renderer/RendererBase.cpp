@@ -273,28 +273,28 @@ namespace Renderer
         std::vector<uint32_t> boxIndices = 
         {
             // front face
-		    0, 1, 2,
-		    0, 2, 3,
+		    0, 2, 1,
+		    0, 3, 2,
 
 		    // back face
-		    4, 6, 5,
-		    4, 7, 6,
+		    4, 5, 6,
+		    4, 6, 7,
 
 		    // left face
-		    4, 5, 1,
-		    4, 1, 0,
+		    4, 1, 5,
+		    4, 0, 1,
 
 		    // right face
-		    3, 2, 6,
-		    3, 6, 7,
+		    3, 6, 2,
+		    3, 7, 6,
 
 		    // top face
-		    1, 5, 6,
-		    1, 6, 2,
+		    1, 6, 5,
+		    1, 2, 6,
 
 		    // bottom face
-		    4, 0, 3,
-		    4, 3, 7
+		    4, 3, 0,
+		    4, 7, 3
         };
 
         // mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
@@ -312,8 +312,9 @@ namespace Renderer
         psoDesc.DepthStencilState.bDepthWrite = true;
         psoDesc.DepthStencilState.bDepthTest = true;
         psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
-        psoDesc.RasterizerState.bFrontCCW = false;
+        psoDesc.RasterizerState.bFrontCCW = true;
         psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Back;
+        // psoDesc.RasterizerState.bWireFrame = true;
         psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
@@ -410,9 +411,9 @@ namespace Renderer
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-            renderPassDesc.Color[0].ClearColor[0] = 0.3f;
-            renderPassDesc.Color[0].ClearColor[1] = 0.3f;
-            renderPassDesc.Color[0].ClearColor[2] = 0.3f;
+            renderPassDesc.Color[0].ClearColor[0] = 0.1f;
+            renderPassDesc.Color[0].ClearColor[1] = 0.1f;
+            renderPassDesc.Color[0].ClearColor[2] = 0.1f;
             renderPassDesc.Color[0].ClearColor[3] = 1.0f;
             renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
             renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;

@@ -75,7 +75,8 @@ namespace Scene
         float mNear = 0.01f;
         float mFar = 1000.0f;
 
-        float mMoveSpeed = 10.0f;
+        float mMoveSpeed = 5.0f;
+        float mRotateSpeed = 0.3f;
 
         bool mbFrustumLocked = false;
         float4 mFrustumPlanes[6];

@@ -79,13 +79,40 @@ namespace Scene
         GUI("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
         mbMoved = false;
 
-        auto cursorDelta = wndHandle->GetCursorDelta();
+        if (wndHandle->IsMousePressed(Utility::MouseButton::RIGHT))
+        {
+            auto cursorDelta = wndHandle->GetCursorDelta();
 
-        const float rotateSpeed = 0.1f;
-        mRotation.x = fmodf(mRotation.x + cursorDelta.y * rotateSpeed, 360.0f);
-        mRotation.y = fmodf(mRotation.y + cursorDelta.x * rotateSpeed, 360.0f);
+            mRotation.x = fmodf(mRotation.x + cursorDelta.y * mRotateSpeed, 360.0f);
+            mRotation.y = fmodf(mRotation.y + cursorDelta.x * mRotateSpeed, 360.0f);
 
-        mbMoved = true;
+            mbMoved = true;
+        }
+        if (wndHandle->IsMouseReleased(Utility::MouseButton::RIGHT))
+        {
+            wndHandle->SetLastCursorPosition(wndHandle->GetCursorPosition());
+        }
+
+        if (wndHandle->IsKeyPressed(Utility::KeyCode::W))
+        {
+            mPosition += GetForward() * mMoveSpeed * deltaTime;
+            mbMoved = true;
+        }
+        if (wndHandle->IsKeyPressed(Utility::KeyCode::S))
+        {
+            mPosition += GetBackward() * mMoveSpeed * deltaTime;
+            mbMoved = true;
+        }
+        if (wndHandle->IsKeyPressed(Utility::KeyCode::A))
+        {
+            mPosition += GetLeft() * mMoveSpeed * deltaTime;
+            mbMoved = true;
+        }
+        if (wndHandle->IsKeyPressed(Utility::KeyCode::D))
+        {
+            mPosition += GetRight() * mMoveSpeed * deltaTime;
+            mbMoved = true;
+        }
 
         // ==== Temporarily disable imgui control ====
         // ImGuiIO& io = ImGui::GetIO();
