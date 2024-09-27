@@ -20,6 +20,7 @@ namespace Core
         void Tick();
 
         Scene::World* GetWorld() const { return mpWorld.get(); }
+        GUI* GetGUI() const { return mpGUI.get(); }
         Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
 
         Window::GLFWindow* GetWindowHandle() const { return mWndHandle; }

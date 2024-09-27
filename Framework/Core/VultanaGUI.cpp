@@ -33,5 +33,12 @@ namespace Core
 
     void GUI::Tick()
     {
+        // ImGui_ImplWin32_NewFrame();
+        // ImGui::NewFrame();
+    }
+
+    void GUI::Render(RHI::RHICommandList *pCmdList)
+    {
+        // ImGui::Render();
     }
 }

@@ -62,6 +62,8 @@ namespace Core
     {
         mFrameTime = (float)stm_sec(stm_laptime(&mLastFrameTime));
 
+        mpGUI->Tick();
+
         mpWorld->Tick(mFrameTime);
         mpRenderer->RenderFrame();
     }
