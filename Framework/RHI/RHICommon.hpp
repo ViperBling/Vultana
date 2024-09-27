@@ -14,6 +14,7 @@ namespace RHI
 
     static const uint32_t RHI_MAX_INFLIGHT_FRAMES = 3;
     static const uint32_t RHI_MAX_ROOT_CONSTANTS = 8;
+    static const uint32_t RHI_MAX_COLOR_ATTACHMENT_COUNT = 8;
     static const uint32_t RHI_MAX_CBV_BINDING = 3;
     static const uint32_t RHI_MAX_RESOURCE_DESCRIPTOR_COUNT = 65536;
     static const uint32_t RHI_MAX_SAMPLER_DESCRIPTOR_COUNT = 128;
@@ -400,7 +401,7 @@ namespace RHI
 
     struct RHIRenderPassDesc
     {
-        RHIRenderPassColorAttachment Color[8];
+        RHIRenderPassColorAttachment Color[RHI_MAX_COLOR_ATTACHMENT_COUNT];
         RHIRenderPassDepthAttachment Depth;
     };
 
@@ -530,7 +531,8 @@ namespace RHI
         float DepthBias = 0.0f;
         float DepthBiasClamp = 0.0f;
         float DepthSlopeScale = 0.0f;
-        bool bWireframe = false;
+        float lineWidth = 1.0f;
+        bool bWireFrame = false;
         bool bFrontCCW = false;
         bool bDepthClip = true;
     };
@@ -573,8 +575,8 @@ namespace RHI
         RHIShader* PS = nullptr;
         RHIRasterizerState RasterizerState;
         RHIDepthStencilState DepthStencilState;
-        RHIBlendState BlendState[8];
-        ERHIFormat RTFormats[8] = { ERHIFormat::Unknown };
+        RHIBlendState BlendState[RHI_MAX_COLOR_ATTACHMENT_COUNT];
+        ERHIFormat RTFormats[RHI_MAX_COLOR_ATTACHMENT_COUNT] = { ERHIFormat::Unknown };
         ERHIFormat DepthStencilFormat = ERHIFormat::Unknown;
         ERHIPrimitiveType PrimitiveType = ERHIPrimitiveType::TriangleList;
     };

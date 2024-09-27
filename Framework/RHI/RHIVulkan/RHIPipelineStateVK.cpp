@@ -58,10 +58,10 @@ namespace RHI
         vk::PipelineRasterizationStateCreateInfo rsStateCI = ToVKPipelineRSStateCreateInfo(mDesc.RasterizerState);
         vk::PipelineDepthStencilStateCreateInfo dsStateCI = ToVKPipelineDSStateCreateInfo(mDesc.DepthStencilState);
 
-        vk::PipelineColorBlendAttachmentState blendAttachmentState[8] {};
+        vk::PipelineColorBlendAttachmentState blendAttachmentState[RHI_MAX_COLOR_ATTACHMENT_COUNT] {};
         vk::PipelineColorBlendStateCreateInfo cbStateCI = ToVKPipelineCBStateCreateInfo(mDesc.BlendState, blendAttachmentState);
 
-        vk::Format colorFormats[8];
+        vk::Format colorFormats[RHI_MAX_COLOR_ATTACHMENT_COUNT];
         vk::PipelineRenderingCreateInfo renderingCI = ToVKPipelineRenderingCreateInfo(mDesc, colorFormats);
 
         vk::GraphicsPipelineCreateInfo pipelineCI {};

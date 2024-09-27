@@ -375,13 +375,14 @@ namespace RHI
     {
         vk::PipelineRasterizationStateCreateInfo createInfo;
         createInfo.depthClampEnable = !state.bDepthClip;
-        createInfo.polygonMode = state.bWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill;
+        createInfo.polygonMode = state.bWireFrame ? vk::PolygonMode::eLine : vk::PolygonMode::eFill;
         createInfo.cullMode = ToVKCullMode(state.CullMode);
         createInfo.frontFace = state.bFrontCCW ? vk::FrontFace::eCounterClockwise : vk::FrontFace::eClockwise;
         createInfo.depthBiasEnable = state.DepthBias != 0.0f || state.DepthSlopeScale != 0.0f;
         createInfo.depthBiasConstantFactor = state.DepthBias;
         createInfo.depthBiasClamp = state.DepthBiasClamp;
         createInfo.depthBiasSlopeFactor = state.DepthSlopeScale;
+        createInfo.lineWidth = state.bWireFrame ? state.lineWidth : 0.0f;
 
         return createInfo;
     }
@@ -407,7 +408,7 @@ namespace RHI
         case RHICompareFunc::Always:
             return vk::CompareOp::eAlways;
         default:
-            return vk::CompareOp::eNever;
+            return vk::CompareOp::eAlways;
         }
     }
 
@@ -518,7 +519,7 @@ namespace RHI
 
     inline vk::PipelineColorBlendStateCreateInfo ToVKPipelineCBStateCreateInfo(const RHIBlendState* states, vk::PipelineColorBlendAttachmentState* vkStates)
     {
-        for (uint32_t i = 0; i < 8; i++)
+        for (uint32_t i = 0; i < RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
         {
             vkStates[i].blendEnable = states[i].bBlendEnable;
             vkStates[i].srcColorBlendFactor = ToVKBlendFactor(states[i].ColorSrc);
@@ -531,7 +532,7 @@ namespace RHI
         }
 
         vk::PipelineColorBlendStateCreateInfo createInfo;
-        createInfo.attachmentCount = 8;
+        createInfo.attachmentCount = RHI_MAX_COLOR_ATTACHMENT_COUNT;
         createInfo.pAttachments = vkStates;
 
         return createInfo;
@@ -540,13 +541,13 @@ namespace RHI
     template<typename T>
     inline vk::PipelineRenderingCreateInfo ToVKPipelineRenderingCreateInfo(const T& pipelineDesc, vk::Format* colorFormats)
     {
-        for (uint32_t i = 0; i < 8; i++)
+        for (uint32_t i = 0; i < RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
         {
             colorFormats[i] = ToVulkanFormat(pipelineDesc.RTFormats[i], true);
         }
 
         vk::PipelineRenderingCreateInfo renderingCI {};
-        renderingCI.colorAttachmentCount = 8;
+        renderingCI.colorAttachmentCount = RHI_MAX_COLOR_ATTACHMENT_COUNT;
         renderingCI.pColorAttachmentFormats = colorFormats;
         renderingCI.depthAttachmentFormat = ToVulkanFormat(pipelineDesc.DepthStencilFormat);
 

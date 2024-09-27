@@ -428,12 +428,12 @@ namespace RHI
     {
         FlushBarriers();
 
-        vk::RenderingAttachmentInfo colorAttachments[8] {};
+        vk::RenderingAttachmentInfo colorAttachments[RHI_MAX_COLOR_ATTACHMENT_COUNT] {};
         vk::RenderingAttachmentInfo depthAttachment {};
         vk::RenderingAttachmentInfo stencilAttachment {};
         uint32_t width = 0, height = 0;
 
-        for (uint32_t i = 0; i < 8; i++)
+        for (uint32_t i = 0; i < RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
         {
             if (desc.Color[i].Texture)
             {
