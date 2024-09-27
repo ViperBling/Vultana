@@ -74,80 +74,91 @@ namespace Scene
 
     void Camera::Tick(float deltaTime)
     {
+        auto wndHandle = Core::VultanaEngine::GetEngineInstance()->GetWindowHandle();
+
         GUI("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
         mbMoved = false;
 
-        ImGuiIO& io = ImGui::GetIO();
+        auto cursorDelta = wndHandle->GetCursorDelta();
 
-        if (!io.WantCaptureKeyboard && !io.NavActive)
-        {
-            if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft))
-            {
-                mPosition += GetLeft() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
+        const float rotateSpeed = 0.1f;
+        mRotation.x = fmodf(mRotation.x + cursorDelta.y * rotateSpeed, 360.0f);
+        mRotation.y = fmodf(mRotation.y + cursorDelta.x * rotateSpeed, 360.0f);
 
-            if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown))
-            {
-                mPosition += GetBackward() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
+        mbMoved = true;
 
-            if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight))
-            {
-                mPosition += GetRight() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
+        // ==== Temporarily disable imgui control ====
+        // ImGuiIO& io = ImGui::GetIO();
 
-            if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp))
-            {
-                mPosition += GetForward() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
-        }
+        // if (!io.WantCaptureKeyboard && !io.NavActive)
+        // {
+        //     if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft))
+        //     {
+        //         mPosition += GetLeft() * mMoveSpeed * deltaTime;
+        //         mbMoved = true;
+        //     }
 
-        if (!io.WantCaptureMouse)
-        {
-            if (!NearlyEqual(io.MouseWheel, 0.0f))
-            {
-                mPosition += GetForward() * io.MouseWheel * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
+        //     if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown))
+        //     {
+        //         mPosition += GetBackward() * mMoveSpeed * deltaTime;
+        //         mbMoved = true;
+        //     }
 
-            if (ImGui::IsMouseDragging(1))
-            {
-                const float rotateSpeed = 0.1f;
+        //     if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight))
+        //     {
+        //         mPosition += GetRight() * mMoveSpeed * deltaTime;
+        //         mbMoved = true;
+        //     }
 
-                mRotation.x = fmodf(mRotation.x + io.MouseDelta.y * rotateSpeed, 360.0f);
-                mRotation.y = fmodf(mRotation.y + io.MouseDelta.x * rotateSpeed, 360.0f);
-                mbMoved = true;
-            }
-        }
+        //     if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp))
+        //     {
+        //         mPosition += GetForward() * mMoveSpeed * deltaTime;
+        //         mbMoved = true;
+        //     }
+        // }
 
-        if (!io.NavActive)
-        {
-            const float rotateSpeed = 120.0f;
+        // if (!io.WantCaptureMouse)
+        // {
+        //     if (!NearlyEqual(io.MouseWheel, 0.0f))
+        //     {
+        //         mPosition += GetForward() * io.MouseWheel * mMoveSpeed * deltaTime;
+        //         mbMoved = true;
+        //     }
 
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickRight))
-            {
-                mRotation.y = fmodf(mRotation.y + deltaTime * rotateSpeed, 360.0f);
-            }
+        //     if (ImGui::IsMouseDragging(1))
+        //     {
+        //         const float rotateSpeed = 0.1f;
 
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickLeft))
-            {
-                mRotation.y = fmodf(mRotation.y - deltaTime * rotateSpeed, 360.0f);
-            }
+        //         mRotation.x = fmodf(mRotation.x + io.MouseDelta.y * rotateSpeed, 360.0f);
+        //         mRotation.y = fmodf(mRotation.y + io.MouseDelta.x * rotateSpeed, 360.0f);
+        //         mbMoved = true;
+        //     }
+        // }
 
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickDown))
-            {
-                mRotation.x = fmodf(mRotation.x + deltaTime * rotateSpeed, 360.0f);
-            }
+        // if (!io.NavActive)
+        // {
+        //     const float rotateSpeed = 120.0f;
 
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickUp))
-            {
-                mRotation.x = fmodf(mRotation.x - deltaTime * rotateSpeed, 360.0f);
-            }
-        }
+        //     if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickRight))
+        //     {
+        //         mRotation.y = fmodf(mRotation.y + deltaTime * rotateSpeed, 360.0f);
+        //     }
+
+        //     if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickLeft))
+        //     {
+        //         mRotation.y = fmodf(mRotation.y - deltaTime * rotateSpeed, 360.0f);
+        //     }
+
+        //     if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickDown))
+        //     {
+        //         mRotation.x = fmodf(mRotation.x + deltaTime * rotateSpeed, 360.0f);
+        //     }
+
+        //     if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickUp))
+        //     {
+        //         mRotation.x = fmodf(mRotation.x - deltaTime * rotateSpeed, 360.0f);
+        //     }
+        // }
 
         UpdateMatrix();
 

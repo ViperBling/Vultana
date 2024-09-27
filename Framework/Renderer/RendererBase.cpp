@@ -4,6 +4,7 @@
 #include "ShaderCache.hpp"
 #include "RHI/RHI.hpp"
 #include "Core/VultanaEngine.hpp"
+#include "Core/VultanaGUI.hpp"
 #include "Utilities/Log.hpp"
 #include "Windows/GLFWindow.hpp"
 
@@ -243,16 +244,16 @@ namespace Renderer
         std::vector<float3> boxPositions = 
         {
             // 前面
-            { -0.5f, -0.5f,  0.5f }, // 左下前
-            {  0.5f, -0.5f,  0.5f }, // 右下前
-            {  0.5f,  0.5f,  0.5f }, // 右上前
-            { -0.5f,  0.5f,  0.5f }, // 左上前
+            { -0.5f, -0.5f, -0.5f }, // 左下前
+            { -0.5f,  0.5f, -0.5f }, // 右下前
+            {  0.5f,  0.5f, -0.5f }, // 右上前
+            {  0.5f, -0.5f, -0.5f }, // 左上前
 
             // 后面
-            { -0.5f, -0.5f, -0.5f }, // 左下后
-            {  0.5f, -0.5f, -0.5f }, // 右下后
-            {  0.5f,  0.5f, -0.5f }, // 右上后
-            { -0.5f,  0.5f, -0.5f }, // 左上后
+            { -0.5f, -0.5f,  0.5f }, // 左下后
+            { -0.5f,  0.5f,  0.5f }, // 右下后
+            {  0.5f,  0.5f,  0.5f }, // 右上后
+            {  0.5f, -0.5f,  0.5f }, // 左上后
         };
         std::vector<float3> boxColors = 
         {
@@ -271,29 +272,29 @@ namespace Renderer
     
         std::vector<uint32_t> boxIndices = 
         {
-            // 前面
-            0, 1, 2,
-            0, 2, 3,
+            // front face
+		    0, 1, 2,
+		    0, 2, 3,
 
-            // 后面
-            4, 5, 6,
-            4, 6, 7,
+		    // back face
+		    4, 6, 5,
+		    4, 7, 6,
 
-            // 左侧
-            0, 4, 7,
-            0, 7, 3,
+		    // left face
+		    4, 5, 1,
+		    4, 1, 0,
 
-            // 右侧
-            1, 5, 6,
-            1, 6, 2,
+		    // right face
+		    3, 2, 6,
+		    3, 6, 7,
 
-            // 上面
-            3, 2, 6,
-            3, 6, 7,
+		    // top face
+		    1, 5, 6,
+		    1, 6, 2,
 
-            // 下面
-            0, 1, 5,
-            0, 5, 4,
+		    // bottom face
+		    4, 0, 3,
+		    4, 3, 7
         };
 
         // mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
@@ -309,10 +310,10 @@ namespace Renderer
         psoDesc.VS = GetShader("Box.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         psoDesc.PS = GetShader("Box.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthWrite = true;
-        psoDesc.DepthStencilState.bDepthTest = false;
-        psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Less;
-        psoDesc.RasterizerState.bFrontCCW = true;
-        psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::None;
+        psoDesc.DepthStencilState.bDepthTest = true;
+        psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
+        psoDesc.RasterizerState.bFrontCCW = false;
+        psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Back;
         psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
@@ -327,15 +328,15 @@ namespace Renderer
         copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
         mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
 
-        copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH=1" });
-        copyPSODesc.DepthStencilState.bDepthWrite = true;
-        copyPSODesc.DepthStencilState.bDepthTest = true;
-        copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
-        mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyDepthPSO");
+        // copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH=1" });
+        // copyPSODesc.DepthStencilState.bDepthWrite = true;
+        // copyPSODesc.DepthStencilState.bDepthTest = true;
+        // copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        // mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyDepthPSO");
 
-        RHI::RHIComputePipelineStateDesc computePSODesc;
-        computePSODesc.CS = GetShader("Copy.hlsl", "CSCopyDepth", RHI::ERHIShaderType::CS);
-        mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
+        // RHI::RHIComputePipelineStateDesc computePSODesc;
+        // computePSODesc.CS = GetShader("Copy.hlsl", "CSCopyDepth", RHI::ERHIShaderType::CS);
+        // mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
     }
 
     void RendererBase::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
@@ -486,6 +487,8 @@ namespace Renderer
             pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));
             pCmdList->SetPipelineState(mpCopyColorPSO);
             pCmdList->Draw(3);
+
+            Core::VultanaEngine::GetEngineInstance()->GetGUI()->Render(pCmdList);
 
             pCmdList->EndRenderPass();
         }

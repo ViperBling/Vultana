@@ -57,6 +57,8 @@ namespace Window
             auto& window = *(GLFWindow*)glfwGetWindowUserPointer(handle);
             if (window.mOnMouseChanged) window.mOnMouseChanged(window, (Utility::MouseButton)button, action == GLFW_PRESS);
         });
+
+        mLastCursorPosition = GetCursorPosition();
     }
 
     GLFWindow::GLFWindow(GLFWindow&& other) noexcept
@@ -140,6 +142,22 @@ namespace Window
     void GLFWindow::SetCursorPosition(float2 position)
     {
         glfwSetCursorPos(this->mHwnd, (int)position.x, (int)position.y);
+    }
+
+    float2 GLFWindow::GetCursorDelta()
+    {
+        if (IsMousePressed(Utility::MouseButton::LEFT) || IsMousePressed(Utility::MouseButton::RIGHT))
+        {
+            auto curPos = GetCursorPosition();
+            auto delta = curPos - mLastCursorPosition;
+            mLastCursorPosition = curPos;
+            return delta;
+        }
+        else if (IsMouseReleased(Utility::MouseButton::LEFT) || IsMouseReleased(Utility::MouseButton::RIGHT))
+        {
+            mLastCursorPosition = GetCursorPosition();
+        }
+        return float2(0.0f);
     }
 
     Utility::CursorMode GLFWindow::GetCursorMode() const

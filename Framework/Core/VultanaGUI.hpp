@@ -13,7 +13,7 @@ namespace Core
 
         bool Init();
         void Tick();
-        
+        void Render(RHI::RHICommandList* pCmdList);
     
     private:
         // TODO

@@ -48,6 +48,9 @@ namespace Window
 
         float2 GetCursorPosition() const;
         void SetCursorPosition(float2 position);
+        float2 GetLastCursorPosition() const { return mLastCursorPosition; }
+        void SetLastCursorPosition(float2 position) { mLastCursorPosition = position; }
+        float2 GetCursorDelta();
 
         Utility::CursorMode GetCursorMode() const;
         void SetCursorMode(Utility::CursorMode mode);
@@ -74,6 +77,8 @@ namespace Window
         std::vector<std::function<void(GLFWindow&, uint32_t width, uint32_t height)>> mOnResizeCallbacks;
         std::function<void(GLFWindow&, Utility::KeyCode, bool)> mOnKeyChanged;
         std::function<void(GLFWindow&, Utility::MouseButton, bool)> mOnMouseChanged;
+
+        float2 mLastCursorPosition = { 0.0f, 0.0f };
     };
 
     // const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, vk::Instance instance);
