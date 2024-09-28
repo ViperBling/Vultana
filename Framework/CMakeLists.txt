@@ -4,7 +4,6 @@ set(SourcePath ${PROJECT_SOURCE_DIR}/Framework)
 set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
 
-
 # find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
@@ -15,6 +14,7 @@ find_package(fmt CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
 
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 find_path(LINALG_INCLUDE_DIRS "linalg.h")
@@ -29,10 +29,10 @@ file(GLOB_RECURSE RHI_Head          ${SourcePath}/RHI/*.hpp)
 file(GLOB_RECURSE RHI_Src           ${SourcePath}/RHI/*.cpp)
 file(GLOB_RECURSE Scene_Head        ${SourcePath}/Scene/*.hpp)
 file(GLOB_RECURSE Scene_Src         ${SourcePath}/Scene/*.cpp)
-file(GLOB_RECURSE Window_Head       ${SourcePath}/Windows/*.hpp)
-file(GLOB_RECURSE Window_Src        ${SourcePath}/Windows/*.cpp)
-file(GLOB_RECURSE Utilities_Head       ${SourcePath}/Utilities/*.hpp)
-file(GLOB_RECURSE Utilities_Src        ${SourcePath}/Utilities/*.cpp)
+file(GLOB_RECURSE Window_Head       ${SourcePath}/Window/*.hpp)
+file(GLOB_RECURSE Window_Src        ${SourcePath}/Window/*.cpp)
+file(GLOB_RECURSE Utilities_Head    ${SourcePath}/Utilities/*.hpp)
+file(GLOB_RECURSE Utilities_Src     ${SourcePath}/Utilities/*.cpp)
 
 add_library(FrameworkLib STATIC 
     ${Common_Head}      ${Common_Src}
@@ -73,4 +73,5 @@ target_link_libraries(FrameworkLib PRIVATE
     cityhash
     spdlog::spdlog
     imgui::imgui
+    imguizmo::imguizmo
 )

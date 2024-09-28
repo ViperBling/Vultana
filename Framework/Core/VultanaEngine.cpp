@@ -1,5 +1,6 @@
 #include "VultanaEngine.hpp"
 #include "VultanaGUI.hpp"
+#include "VultanaEditor.hpp"
 #include "Utilities/Log.hpp"
 
 #include <spdlog/sinks/msvc_sink.h>
@@ -46,6 +47,8 @@ namespace Core
 
         mpGUI = std::make_unique<GUI>();
         mpGUI->Init();
+
+        mpEditor = std::make_unique<VultanaEditor>();
 
         stm_setup();
     }

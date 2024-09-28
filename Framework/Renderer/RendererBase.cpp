@@ -6,7 +6,7 @@
 #include "Core/VultanaEngine.hpp"
 #include "Core/VultanaGUI.hpp"
 #include "Utilities/Log.hpp"
-#include "Windows/GLFWindow.hpp"
+#include "Window/GLFWindow.hpp"
 
 // For Test
 #include "RHI/RHIBuffer.hpp"

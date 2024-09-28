@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "Core/VultanaEngine.hpp"
-#include "Windows/GLFWindow.hpp"
+#include "Window/GLFWindow.hpp"
 #include "Scene/ModelLoader.hpp"
 #include "Scene/World.hpp"
 
