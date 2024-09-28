@@ -2,9 +2,8 @@
 
 #include "VultanaEngine.hpp"
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_win32.h>
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_impl_win32.h>
 
 namespace Core
 {
