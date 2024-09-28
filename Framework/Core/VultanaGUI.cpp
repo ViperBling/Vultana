@@ -3,6 +3,7 @@
 #include "VultanaEngine.hpp"
 
 #include <imgui.h>
+#include <imgui_impl_glfw.h>
 #include <imgui_impl_win32.h>
 
 namespace Core
@@ -12,6 +13,8 @@ namespace Core
         ImGui::CreateContext();
 
         ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
         io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 
         ImGui::StyleColorsDark();
@@ -39,6 +42,25 @@ namespace Core
 
     void GUI::Render(RHI::RHICommandList *pCmdList)
     {
+        // for (size_t i = 0; i < mCommands.size(); i++)
+        // {
+        //     mCommands[i]();
+        // }
+        // mCommands.clear();
+
         // ImGui::Render();
+    }
+
+    void GUI::SetupRenderStates(RHI::RHICommandList *pCmdList, uint32_t frameIdx)
+    {
+        // ImDrawData* drawData = ImGui::GetDrawData();
+
+        // pCmdList->SetViewport(0, 0, 
+        //     (uin32_t)(drawData->DisplaySize.x * drawData->FramebufferScale.x),
+        //     (uin32_t)(drawData->DisplaySize.y * drawData->FramebufferScale.y));
+        // pCmdList->SetPipelineState(mpPSO);
+        // pCmdList->SetIndexBuffer(mpIndexBuffer[frameIdx]->GetBuffer(), 0, mpIndexBuffer[frameIdx]->GetFormat());
+
+        // TODO
     }
 }

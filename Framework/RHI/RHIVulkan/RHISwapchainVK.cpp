@@ -3,7 +3,7 @@
 #include "RHITextureVK.hpp"
 #include "RHI/RHICommon.hpp"
 #include "Utilities/Log.hpp"
-#include "Windows/GLFWindow.hpp"
+#include "Window/GLFWindow.hpp"
 
 namespace RHI
 {

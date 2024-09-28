@@ -2,20 +2,35 @@
 
 #include "Renderer/RendererBase.hpp"
 
+#include <unordered_map>
 #include <functional>
 
 namespace Core
 {
-    // class VultanaEditor
-    // {
-    // public:
-    //     VultanaEditor();
-    //     ~VultanaEditor();
+    class VultanaEditor
+    {
+    public:
+        VultanaEditor();
+        ~VultanaEditor();
 
-    //     void Tick();
-    //     void AddGUICommand(const std::string& window, const std::string& section, const std::function<void()>& command);
+        void Tick();
+        void AddGUICommand(const std::string& window, const std::string& section, const std::function<void()>& command);
+    
+    private:
+        void DrawFrameStats();
+        void FlushPendingTextureDeletions();
 
-    // private:
-    //     Renderer::RendererBase* mpRenderer;
-    // };
+        void DrawWindow(const std::string& window, bool* pOpen);
+
+    private:
+        struct Command
+        {
+            std::string Section;
+            std::function<void()> Function;
+        };
+        using WindowCmd = std::vector<Command>;
+        std::unordered_map<std::string, WindowCmd> mCommands;
+
+        std::vector<RHI::RHIDescriptor*> mPendingDeletions;
+    };
 }

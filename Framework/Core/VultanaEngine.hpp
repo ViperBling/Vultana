@@ -2,13 +2,14 @@
 
 #include "Scene/World.hpp"
 #include "Renderer/RendererBase.hpp"
-#include "Windows/GLFWindow.hpp"
+#include "Window/GLFWindow.hpp"
 
 #include <iostream>
 
 namespace Core
 {
     class GUI;
+    class VultanaEditor;
     
     class VultanaEngine
     {
@@ -22,6 +23,7 @@ namespace Core
         Scene::World* GetWorld() const { return mpWorld.get(); }
         GUI* GetGUI() const { return mpGUI.get(); }
         Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
+        VultanaEditor* GetEditor() const { return mpEditor.get(); }
 
         Window::GLFWindow* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
@@ -39,6 +41,7 @@ namespace Core
         std::unique_ptr<Scene::World> mpWorld;
         std::unique_ptr<GUI> mpGUI;
         std::unique_ptr<Renderer::RendererBase> mpRenderer;
+        std::unique_ptr<VultanaEditor> mpEditor;
 
         Window::GLFWindow* mWndHandle = nullptr;
 
