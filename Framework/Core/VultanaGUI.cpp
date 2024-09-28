@@ -18,7 +18,7 @@ namespace Core
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->GetNativeHandle());
+        ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->GetWin32WindowHandle());
     }
 
     GUI::~GUI()
@@ -35,7 +35,7 @@ namespace Core
 
     void GUI::Tick()
     {
-        // ImGui_ImplWin32_NewFrame();
+        ImGui_ImplWin32_NewFrame();
         // ImGui::NewFrame();
     }
 
