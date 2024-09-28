@@ -9,6 +9,8 @@
 #include "RHI/RHIVulkan/RHICommonVK.hpp"
 #include "Renderer/RendererBase.hpp"
 
+#include <Windows.h>
+
 struct GLFWwindow;
 
 namespace Window
@@ -34,6 +36,7 @@ namespace Window
         ~GLFWindow();
 
         GLFWwindow* GetNativeHandle() const { return this->mHwnd; }
+        HWND GetWin32WindowHandle();
         std::vector<const char*> GetRequiredExtensions() const;
 
         void PollEvents() const;

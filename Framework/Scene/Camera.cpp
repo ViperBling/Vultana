@@ -40,11 +40,11 @@ namespace Scene
     {
     }
 
-    void Camera::SetPerspective(float aspectRatio, float yFov, float near)
+    void Camera::SetPerspective(float aspectRatio, float yFov, float zNear)
     {
         mAspectRatio = aspectRatio;
         mFov = yFov;
-        mNear = near;
+        mNear = zNear;
 
         float h = 1.0 / std::tan(0.5f * DegreeToRadian(yFov));
         float w = h / aspectRatio;
