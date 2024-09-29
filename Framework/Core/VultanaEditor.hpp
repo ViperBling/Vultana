@@ -26,6 +26,8 @@ namespace Core
 
     private:
         bool mbShowImGuiDemo = false;
+
+        bool mbShowInspector = false;
         bool mbShowSettings = false;
 
         struct Command
