@@ -63,7 +63,7 @@ namespace Renderer
 
     private:
         void CreateCommonResources();
-        void OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height);
+        void OnWindowResize(void* wndHandle, uint32_t width, uint32_t height);
 
         void BeginFrame();
         void UploadResource();

@@ -18,6 +18,7 @@ find_package(imguizmo CONFIG REQUIRED)
 
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 find_path(LINALG_INCLUDE_DIRS "linalg.h")
+find_path(SIGSLOT_INCLUDE_DIRS "sigslot.h")
 
 file(GLOB_RECURSE Common_Head       ${SourcePath}/Common/*.hpp)
 file(GLOB_RECURSE Common_Src        ${SourcePath}/Common/*.cpp)
@@ -60,7 +61,7 @@ add_library(FrameworkLib STATIC
 
 # add_dependencies(FrameworkLib CompileShaders)
 
-target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS} ${LINALG_INCLUDE_DIRS} ${SHADER_ROOT})
+target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS} ${LINALG_INCLUDE_DIRS} ${SIGSLOT_INCLUDE_DIRS} ${SHADER_ROOT})
 target_link_libraries(FrameworkLib PRIVATE
     # assimp::assimp
     glfw

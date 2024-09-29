@@ -32,12 +32,12 @@ namespace Scene
         mPosition = { 0.0f, 0.0f, 0.0f };
         mRotation = { 0.0f, 0.0f, 0.0f };
 
-        auto onResizeCallback = std::bind(&Camera::OnWindowResize, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-        Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(onResizeCallback);
+        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&Camera::OnWindowResize, this);
     }
 
     Camera::~Camera()
     {
+        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
     }
 
     void Camera::SetPerspective(float aspectRatio, float yFov, float zNear)
@@ -74,7 +74,7 @@ namespace Scene
 
     void Camera::Tick(float deltaTime)
     {
-        auto wndHandle = Core::VultanaEngine::GetEngineInstance()->GetWindowHandle();
+        // auto wndHandle = Core::VultanaEngine::GetEngineInstance()->GetWindowHandle();
 
         GUI("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
         mbMoved = false;
@@ -268,7 +268,7 @@ namespace Scene
         mViewProjMat = mul(mProjection, mView);
     }
 
-    void Camera::OnWindowResize(Window::GLFWindow& wndHandle, uint32_t width, uint32_t height)
+    void Camera::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
     {
         mAspectRatio = static_cast<float>(width) / static_cast<float>(height);
         SetPerspective(mAspectRatio, mFov, mNear);

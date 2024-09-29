@@ -30,13 +30,14 @@ namespace Renderer
         mpShaderCompiler = std::make_unique<ShaderCompiler>(this);
         mpPipelineStateCache = std::make_unique<PipelineStateCache>(this);
         
-        auto onResizeCallback = std::bind(&RendererBase::OnWindowResize, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-        Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->OnResize(onResizeCallback);
+        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&RendererBase::OnWindowResize, this);
     }
 
     RendererBase::~RendererBase()
     {
         WaitGPU();
+
+        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
     }
 
     bool RendererBase::CreateDevice(RHI::ERHIRenderBackend backend, void *windowHandle, uint32_t width, uint32_t height)
@@ -340,15 +341,18 @@ namespace Renderer
         // mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
     }
 
-    void RendererBase::OnWindowResize(Window::GLFWindow &wndHandle, uint32_t width, uint32_t height)
+    void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
     {
         WaitGPU();
         
-        mpSwapchain->Resize(width, height);
-        mDisplayWidth = width;
-        mDisplayHeight = height;
-        mRenderWidth = mDisplayWidth;
-        mRenderHeight = mDisplayHeight;
+        if (mpSwapchain->GetDesc()->WindowHandle == wndHandle)
+        {
+            mpSwapchain->Resize(width, height);
+            mDisplayWidth = width;
+            mDisplayHeight = height;
+            mRenderWidth = mDisplayWidth;
+            mRenderHeight = mDisplayHeight;
+        }
     }
 
     void RendererBase::BeginFrame()

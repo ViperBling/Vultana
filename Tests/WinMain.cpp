@@ -1,8 +1,8 @@
-#include "WinPCH.hpp"
-
 #include "Core/VultanaEngine.hpp"
 
 #include <ImGui/imgui_impl_win32.h>
+
+#include <Windows.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -19,7 +19,7 @@ static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
     {
         if (wParam != SIZE_MINIMIZED)
         {
-
+            Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal(hWnd, LOWORD(lParam), HIWORD(lParam));
         }
         return 0;
     }
@@ -46,11 +46,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     wndClass.lpszClassName = "VultanaEngine";
     RegisterClassEx(&wndClass);
 
-    HWND hWnd = CreateWindow(wndClass.lpszClassName, "Vultana Engine", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 720, nullptr, nullptr, hInstance, nullptr);
+    RECT desktopRect;
+    GetClientRect(GetDesktopWindow(), &desktopRect);
+
+    const unsigned int desktopWidth = desktopRect.right - desktopRect.left;
+    const unsigned int desktopHeight = desktopRect.bottom - desktopRect.top;
+
+    const unsigned int windowWidth = min(desktopWidth * 0.6, 1920);
+    const unsigned int windowHeight = min(desktopHeight * 0.6, 1080);
+
+    RECT windowRect = { 0, 0, (LONG)windowWidth, (LONG)windowHeight };
+    AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
+
+    int x = (desktopWidth - (windowRect.right - windowRect.left)) / 2;
+    int y = (desktopHeight - (windowRect.bottom - windowRect.top)) / 2;
+
+    HWND hWnd = CreateWindow(
+        wndClass.lpszClassName, 
+        "VultanaEngine", 
+        WS_OVERLAPPEDWINDOW, 
+        x, y, 
+        windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, 
+        nullptr, nullptr, hInstance, nullptr);
 
     ShowWindow(hWnd, nShowCmd);
 
-    Core::VultanaEngine::GetEngineInstance()->Init(hWnd, 1280, 720);
+    Core::VultanaEngine::GetEngineInstance()->Init(hWnd, windowWidth, windowHeight);
 
     MSG msg = { };
     while (msg.message != WM_QUIT)
