@@ -461,6 +461,8 @@ namespace Renderer
         pCmdList->Signal(mpFrameFence.get(), mCurrentFrameFenceValue);
         pCmdList->Submit();
 
+        mpStagingBufferAllocators[frameIndex]->Reset();
+
         mpDevice->EndFrame();
     }
 
