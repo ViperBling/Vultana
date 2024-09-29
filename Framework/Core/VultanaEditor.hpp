@@ -17,12 +17,17 @@ namespace Core
         void AddGUICommand(const std::string& window, const std::string& section, const std::function<void()>& command);
     
     private:
+        void DrawMenu();
+
         void DrawFrameStats();
         void FlushPendingTextureDeletions();
 
         void DrawWindow(const std::string& window, bool* pOpen);
 
     private:
+        bool mbShowImGuiDemo = false;
+        bool mbShowSettings = false;
+
         struct Command
         {
             std::string Section;

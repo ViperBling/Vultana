@@ -3,13 +3,12 @@ set(BinaryPath ${PROJECT_SOURCE_DIR}/Binary)
 set(SourcePath ${PROJECT_SOURCE_DIR}/Framework)
 set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
-
 # find_package(assimp CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
+# find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanHeaders CONFIG)
 find_package(directx-dxc CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
+# find_package(glm CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -64,8 +63,8 @@ add_library(FrameworkLib STATIC
 target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS} ${LINALG_INCLUDE_DIRS} ${SIGSLOT_INCLUDE_DIRS} ${SHADER_ROOT})
 target_link_libraries(FrameworkLib PRIVATE
     # assimp::assimp
-    glfw
-    glm::glm
+    # glfw
+    # glm::glm
     Vulkan::Vulkan
     Vulkan::Headers
     fmt::fmt-header-only

@@ -1,5 +1,6 @@
 #include "VultanaEditor.hpp"
 #include "Core/VultanaEngine.hpp"
+#include "Core/VultanaGUI.hpp"
 #include "Renderer/RendererBase.hpp"
 
 #include <imgui.h>
@@ -22,12 +23,40 @@ namespace Core
         FlushPendingTextureDeletions();
         mCommands.clear();
 
+        DrawMenu();
         DrawFrameStats();
     }
 
     void VultanaEditor::AddGUICommand(const std::string &window, const std::string &section, const std::function<void()> &command)
     {
         mCommands[window].push_back({ section, command });
+    }
+
+    void VultanaEditor::DrawMenu()
+    {
+        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            ImGui::MenuItem("ImGui Demo", "", &mbShowImGuiDemo);
+            if (ImGui::BeginMenu("Window"))
+            {
+                ImGui::MenuItem("Settings", "", &mbShowSettings);
+                
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+
+        if (mbShowImGuiDemo)
+        {
+            ImGui::ShowDemoWindow(&mbShowImGuiDemo);
+        }
+
+        if (mbShowSettings)
+        {
+            Core::VultanaEngine::GetEngineInstance()->GetGUI()->AddCommand([&]() { DrawWindow("Settings", &mbShowSettings); });
+        }
     }
 
     void VultanaEditor::DrawFrameStats()
