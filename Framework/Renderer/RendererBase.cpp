@@ -184,6 +184,71 @@ namespace Renderer
         return pBuffer;
     }
 
+    inline void imageCopy(char* srcData, char* dstData, uint32_t srcRowPitch, uint32_t dstRowPitch, uint32_t rowNum, uint32_t d)
+    {
+        uint32_t srcSliceSize = srcRowPitch * rowNum;
+        uint32_t dstSliceSize = dstRowPitch * rowNum;
+
+        for (uint32_t z = 0; z < d; z++)
+        {
+            char* srcSlice = srcData + z * srcSliceSize;
+            char* dstSlice = dstData + z * dstSliceSize;
+
+            for (uint32_t row = 0; row < rowNum; row++)
+            {
+                memcpy(dstSlice + row * dstRowPitch, srcSlice + row * srcRowPitch, srcRowPitch);
+            }
+        }
+    }
+
+    void RendererBase::UploadTexture(RHI::RHITexture* pTexture, const void *pData)
+    {
+        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        StagingBufferAllocator* pAllocator = mpStagingBufferAllocators[frameIndex].get();
+
+        uint32_t requiredSize = pTexture->GetRequiredStagingBufferSize();
+        StagingBuffer buffer = pAllocator->Allocate(requiredSize);
+
+        const RHI::RHITextureDesc& desc = pTexture->GetDesc();
+
+        char* dstData = (char*)buffer.Buffer->GetCPUAddress() + buffer.Offset;
+        uint32_t dstOffset = 0;
+        uint32_t srcOffset = 0;
+
+        const uint32_t minWidth = GetFormatBlockWidth(desc.Format);
+        const uint32_t minHeight = GetFormatBlockHeight(desc.Format);
+        const uint32_t alignment = mpDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::D3D12 ? 512 : 1;
+
+        for (uint32_t slice = 0; slice < desc.ArraySize; ++slice)
+        {
+            for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
+            {
+                uint32_t w = max(desc.Width >> mip, minWidth);
+                uint32_t h = max(desc.Height >> mip, minHeight);
+                uint32_t d = max(desc.Depth >> mip, 1u);
+
+                uint32_t srcRowPitch = GetFormatRowPitch(desc.Format, w) * GetFormatBlockHeight(desc.Format);
+                uint32_t dstRowPitch = pTexture->GetRowPitch(mip);
+
+                uint32_t rowNum = h / GetFormatBlockHeight(desc.Format);
+
+                imageCopy((char*)pData + srcOffset, dstData + dstOffset, srcRowPitch, dstRowPitch, rowNum, d);
+
+                TextureUpload upload;
+                upload.Texture = pTexture;
+                upload.MipLevel = mip;
+                upload.ArraySlice = slice;
+                upload.Offset = dstOffset;
+                upload.SBForUpload = buffer;
+                mPendingTextureUpload.push_back(upload);
+
+                srcOffset += srcRowPitch * rowNum;
+                dstOffset += RoundUpPow2(dstRowPitch * rowNum, alignment);
+            }
+        }
+
+    }
+
     void RendererBase::UploadBuffer(RHI::RHIBuffer *pBuffer, const void *pData, uint32_t offset, uint32_t dataSize)
     {
         uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
@@ -374,7 +439,7 @@ namespace Renderer
 
     void RendererBase::UploadResource()
     {
-        if (mPendingBufferUpload.empty()) return;
+        if (mPendingTextureUpload.empty() && mPendingBufferUpload.empty()) return;
 
         uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
         RHI::RHICommandList* pUploadeCmdList = mpUploadCmdList[frameIndex].get();
@@ -389,6 +454,12 @@ namespace Renderer
                 const BufferUpload& upload = mPendingBufferUpload[i];
                 pUploadeCmdList->CopyBuffer(upload.SBForUpload.Buffer, upload.Buffer, upload.SBForUpload.Offset, upload.Offset, upload.SBForUpload.Size);
             }
+
+            for (size_t i = 0; i < mPendingTextureUpload.size(); i++)
+            {
+                const TextureUpload& upload = mPendingTextureUpload[i];
+                pUploadeCmdList->CopyBufferToTexture(upload.SBForUpload.Buffer, upload.Texture, upload.MipLevel, upload.ArraySlice, upload.SBForUpload.Offset + upload.Offset);
+            }
         }
 
         pUploadeCmdList->End();
@@ -398,7 +469,17 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         pCmdList->Wait(mpUploadFence.get(), mCurrentUploadFenceValue);
 
+        if (mpDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::Vulkan)
+        {
+            for (size_t i = 0; i < mPendingTextureUpload.size(); i++)
+            {
+                const TextureUpload& upload = mPendingTextureUpload[i];
+                pCmdList->TextureBarrier(upload.Texture, CalcSubresource(upload.Texture->GetDesc(), upload.MipLevel, upload.ArraySlice), RHI::RHIAccessCopyDst, RHI::RHIAccessMaskSRV);
+            }
+        }
+
         mPendingBufferUpload.clear();
+        mPendingTextureUpload.clear();
     }
 
     void RendererBase::Render()

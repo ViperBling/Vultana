@@ -57,6 +57,7 @@ namespace Renderer
         RenderResources::IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
         RenderResources::StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
 
+        void UploadTexture(RHI::RHITexture* pTexture, const void* pData);
         void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
         void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
@@ -102,6 +103,16 @@ namespace Renderer
         std::unique_ptr<RHI::RHIFence> mpUploadFence;
         std::unique_ptr<RHI::RHICommandList> mpUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
         std::unique_ptr<StagingBufferAllocator> mpStagingBufferAllocators[RHI::RHI_MAX_INFLIGHT_FRAMES];
+
+        struct TextureUpload
+        {
+            RHI::RHITexture* Texture;
+            uint32_t MipLevel;
+            uint32_t ArraySlice;
+            uint32_t Offset;
+            StagingBuffer SBForUpload;
+        };
+        std::vector<TextureUpload> mPendingTextureUpload;
 
         struct BufferUpload
         {

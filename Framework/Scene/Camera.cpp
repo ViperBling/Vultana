@@ -74,47 +74,10 @@ namespace Scene
 
     void Camera::Tick(float deltaTime)
     {
-        // auto wndHandle = Core::VultanaEngine::GetEngineInstance()->GetWindowHandle();
-
         GUI("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
+
         mbMoved = false;
 
-        // if (wndHandle->IsMousePressed(Utility::MouseButton::RIGHT))
-        // {
-        //     auto cursorDelta = wndHandle->GetCursorDelta();
-
-        //     mRotation.x = fmodf(mRotation.x + cursorDelta.y * mRotateSpeed, 360.0f);
-        //     mRotation.y = fmodf(mRotation.y + cursorDelta.x * mRotateSpeed, 360.0f);
-
-        //     mbMoved = true;
-        // }
-        // if (wndHandle->IsMouseReleased(Utility::MouseButton::RIGHT))
-        // {
-        //     wndHandle->SetLastCursorPosition(wndHandle->GetCursorPosition());
-        // }
-
-        // if (wndHandle->IsKeyPressed(Utility::KeyCode::W))
-        // {
-        //     mPosition += GetForward() * mMoveSpeed * deltaTime;
-        //     mbMoved = true;
-        // }
-        // if (wndHandle->IsKeyPressed(Utility::KeyCode::S))
-        // {
-        //     mPosition += GetBackward() * mMoveSpeed * deltaTime;
-        //     mbMoved = true;
-        // }
-        // if (wndHandle->IsKeyPressed(Utility::KeyCode::A))
-        // {
-        //     mPosition += GetLeft() * mMoveSpeed * deltaTime;
-        //     mbMoved = true;
-        // }
-        // if (wndHandle->IsKeyPressed(Utility::KeyCode::D))
-        // {
-        //     mPosition += GetRight() * mMoveSpeed * deltaTime;
-        //     mbMoved = true;
-        // }
-
-        // ==== Temporarily disable imgui control ====
         ImGuiIO& io = ImGui::GetIO();
 
         if (!io.WantCaptureKeyboard && !io.NavActive)
@@ -148,7 +111,7 @@ namespace Scene
         {
             if (!NearlyEqual(io.MouseWheel, 0.0f))
             {
-                mPosition += GetForward() * io.MouseWheel * mMoveSpeed * deltaTime;
+                mPosition += GetForward() * io.MouseWheel * 10.0f * mMoveSpeed * deltaTime;
                 mbMoved = true;
             }
 
