@@ -38,12 +38,24 @@ namespace Core
 
         if (ImGui::BeginMainMenuBar())
         {
-            ImGui::MenuItem("ImGui Demo", "", &mbShowImGuiDemo);
+            if (ImGui::BeginMenu("Debug"))
+            {
+                if (ImGui::MenuItem("Reload Shaders"))
+                {
+                    pRenderer->ReloadShaders();
+                }
+
+                ImGui::EndMenu();   // End Debug Menu
+            }
+            
+            // ImGui::MenuItem("ImGui Demo", "", &mbShowImGuiDemo);
+
             if (ImGui::BeginMenu("Window"))
             {
+                ImGui::MenuItem("Inspector", "", &mbShowInspector);
                 ImGui::MenuItem("Settings", "", &mbShowSettings);
                 
-                ImGui::EndMenu();
+                ImGui::EndMenu();   // End Window Menu
             }
             ImGui::EndMainMenuBar();
         }
@@ -53,6 +65,10 @@ namespace Core
             ImGui::ShowDemoWindow(&mbShowImGuiDemo);
         }
 
+        if (mbShowInspector)
+        {
+            Core::VultanaEngine::GetEngineInstance()->GetGUI()->AddCommand([&]() { DrawWindow("Inspector", &mbShowInspector); });
+        }
         if (mbShowSettings)
         {
             Core::VultanaEngine::GetEngineInstance()->GetGUI()->AddCommand([&]() { DrawWindow("Settings", &mbShowSettings); });
