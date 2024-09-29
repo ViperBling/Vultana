@@ -50,6 +50,8 @@ namespace Renderer
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const std::string& name);
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
         void ReloadShaders();
+        RHI::RHIDescriptor* GetPointSampler() const { return mpPointSampler.get(); }
+        RHI::RHIDescriptor* GetLinearSampler() const { return mpLinearSampler.get(); }
 
         RenderResources::Texture2D* CreateTexture2D(const std::string& file, bool srgb);
         RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
@@ -79,9 +81,6 @@ namespace Renderer
         std::unique_ptr<class PipelineStateCache> mpPipelineStateCache;
         std::unique_ptr<class ShaderCompiler> mpShaderCompiler;
         std::unique_ptr<class ShaderCache> mpShaderCache;
-
-        std::unique_ptr<RHI::RHIDescriptor> mpPointSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpLinearSampler;
 
         uint32_t mDisplayWidth;
         uint32_t mDisplayHeight;
@@ -121,6 +120,9 @@ namespace Renderer
             StagingBuffer SBForUpload;
         };
         std::vector<BufferUpload> mPendingBufferUpload;
+
+        std::unique_ptr<RHI::RHIDescriptor> mpPointSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpLinearSampler;
 
         // For Test
         std::unique_ptr<RenderResources::Texture2D> mpTestRT;

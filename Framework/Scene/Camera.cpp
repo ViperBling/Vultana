@@ -74,7 +74,7 @@ namespace Scene
 
     void Camera::Tick(float deltaTime)
     {
-        GUI("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
+        GUICommand("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
 
         mbMoved = false;
 

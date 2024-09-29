@@ -289,7 +289,7 @@ namespace Renderer
         samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
-        mpLinearSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::LinearSampler"));
+        mpLinearSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::BilinearRepeatSampler"));
 
         RHI::RHITexture* pBackBuffer = mpSwapchain->GetBackBuffer();
         uint32_t width = pBackBuffer->GetDesc().Width;

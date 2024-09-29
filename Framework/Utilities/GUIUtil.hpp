@@ -4,7 +4,7 @@
 #include "Core/VultanaEditor.hpp"
 #include <imgui.h>
 
-inline void GUI(const std::string& window, const std::string& section, const std::function<void()>& cmd)
+inline void GUICommand(const std::string& window, const std::string& section, const std::function<void()>& cmd)
 {
     Core::VultanaEditor* pEditor = Core::VultanaEngine::GetEngineInstance()->GetEditor();
     pEditor->AddGUICommand(window, section, cmd);

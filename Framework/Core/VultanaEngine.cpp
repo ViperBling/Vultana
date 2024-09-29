@@ -10,6 +10,8 @@
 #define SOKOL_IMPL
 #include <sokol/sokol_time.h>
 
+#include <ImGui/imgui.h>
+
 namespace Core
 {
     VultanaEngine *VultanaEngine::GetEngineInstance()
@@ -69,8 +71,21 @@ namespace Core
 
         mpGUI->Tick();
 
-        mpWorld->Tick(mFrameTime);
-        mpRenderer->RenderFrame();
+        ImGuiIO& io = ImGui::GetIO();
+        bool isMinimized = io.DisplaySize.x <= 0.0f || io.DisplaySize.y <= 0.0f;
+
+        if (isMinimized)
+        {
+            ImGui::Render();
+        }
+        else
+        {
+            mpEditor->Tick();
+            mpWorld->Tick(mFrameTime);
+            mpRenderer->RenderFrame();
+        }
+
+        
     }
     
     VultanaEngine::~VultanaEngine()

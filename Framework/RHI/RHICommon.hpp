@@ -548,7 +548,7 @@ namespace RHI
     struct RHIDepthStencilState
     {
         RHICompareFunc DepthFunc = RHICompareFunc::Always;
-        bool bDepthTest = true;
+        bool bDepthTest = false;
         bool bDepthWrite = true;
         RHIDepthStencilOp FrontFace;
         RHIDepthStencilOp BackFace;
