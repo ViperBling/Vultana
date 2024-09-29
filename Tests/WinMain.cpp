@@ -23,7 +23,7 @@ static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
         }
         return 0;
     }
-    case WM_DESTROY:
+    case WM_CLOSE:
     {
         PostQuitMessage(0);
         return 0;
@@ -46,26 +46,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     wndClass.lpszClassName = "VultanaEngine";
     RegisterClassEx(&wndClass);
 
-    RECT desktopRect;
-    GetClientRect(GetDesktopWindow(), &desktopRect);
-
-    const unsigned int desktopWidth = desktopRect.right - desktopRect.left;
-    const unsigned int desktopHeight = desktopRect.bottom - desktopRect.top;
-
-    const unsigned int windowWidth = min(desktopWidth * 0.6, 1920);
-    const unsigned int windowHeight = min(desktopHeight * 0.6, 1080);
+    const unsigned int windowWidth = 1280;
+    const unsigned int windowHeight = 720;
 
     RECT windowRect = { 0, 0, (LONG)windowWidth, (LONG)windowHeight };
     AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
-
-    int x = (desktopWidth - (windowRect.right - windowRect.left)) / 2;
-    int y = (desktopHeight - (windowRect.bottom - windowRect.top)) / 2;
 
     HWND hWnd = CreateWindow(
         wndClass.lpszClassName, 
         "VultanaEngine", 
         WS_OVERLAPPEDWINDOW, 
-        x, y, 
+        CW_USEDEFAULT, CW_USEDEFAULT, 
         windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, 
         nullptr, nullptr, hInstance, nullptr);
 
