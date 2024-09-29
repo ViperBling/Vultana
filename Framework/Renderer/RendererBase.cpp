@@ -558,18 +558,11 @@ namespace Renderer
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
-            renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
-            renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Load;
-            renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
-            renderPassDesc.Depth.DepthStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
-            renderPassDesc.Depth.StencilStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
-            renderPassDesc.Depth.bReadOnly = true;
             pCmdList->BeginRenderPass(renderPassDesc);
 
-            uint32_t constants[3] = 
+            uint32_t constants[2] = 
             {
                 mpTestRT->GetSRV()->GetHeapIndex(),
-                mpTestDepthRT->GetSRV()->GetHeapIndex(),
                 mpPointSampler->GetHeapIndex()
             };
             pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));

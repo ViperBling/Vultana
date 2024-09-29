@@ -229,7 +229,7 @@ namespace RHI
             vk::Result res = device.createSemaphore(&semaphoreCI, nullptr, &semaphore);
             if (res != vk::Result::eSuccess)
             {
-                VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create semaphore");
+                VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create AcquireSemaphore.");
                 return false;
             }
             SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} acquire semaphore {}", mName, i).c_str(), dynamicLoader);
@@ -243,7 +243,7 @@ namespace RHI
             vk::Result res = device.createSemaphore(&semaphoreCI, nullptr, &semaphore);
             if (res != vk::Result::eSuccess)
             {
-                VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create semaphore");
+                VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create PresentSemaphore.");
                 return false;
             }
             SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} present semaphore {}", mName, i).c_str(), dynamicLoader);
