@@ -2,8 +2,8 @@
 
 #include "Scene/World.hpp"
 #include "Renderer/RendererBase.hpp"
-#include "Window/GLFWindow.hpp"
 
+#include <sigslot/signal.hpp>
 #include <iostream>
 
 namespace Core
@@ -16,7 +16,7 @@ namespace Core
     public:
         static VultanaEngine* GetEngineInstance();
 
-        void Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height);
+        void Init(void* windowHandle, uint32_t width, uint32_t height);
         void Shutdown();
         void Tick();
 
@@ -25,7 +25,7 @@ namespace Core
         Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
         VultanaEditor* GetEditor() const { return mpEditor.get(); }
 
-        Window::GLFWindow* GetWindowHandle() const { return mWndHandle; }
+        void* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
 
         const std::string& GetAssetsPath() const { return mAssetsPath; }
@@ -35,7 +35,7 @@ namespace Core
         ~VultanaEngine();
 
     public:
-        
+        sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
 
     private:
         std::unique_ptr<Scene::World> mpWorld;
@@ -43,7 +43,7 @@ namespace Core
         std::unique_ptr<Renderer::RendererBase> mpRenderer;
         std::unique_ptr<VultanaEditor> mpEditor;
 
-        Window::GLFWindow* mWndHandle = nullptr;
+        void* mWndHandle = nullptr;
 
         uint64_t mLastFrameTime = 0;
         float mFrameTime = 0.0f;

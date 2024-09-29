@@ -18,7 +18,7 @@ namespace Core
         return &engine;
     }
 
-    void VultanaEngine::Init(Window::GLFWindow* windowHandle, uint32_t width, uint32_t height)
+    void VultanaEngine::Init(void* windowHandle, uint32_t width, uint32_t height)
     {
         mAssetsPath = "../Assets/";
         mShaderPath = "../Shaders/";
@@ -56,6 +56,8 @@ namespace Core
     void VultanaEngine::Shutdown()
     {
         mpWorld.reset();
+        mpGUI.reset();
+        mpEditor.reset();
         mpRenderer.reset();
 
         spdlog::shutdown();

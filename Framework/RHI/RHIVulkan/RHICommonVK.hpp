@@ -1,7 +1,10 @@
 #pragma once
+#define NOMINMAX
 
 #include "RHI/RHICommon.hpp"
 
+// #define VK_NO_PROTOTYPES
+#define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.hpp>
 #include <vma/vk_mem_alloc.h>
 
@@ -10,9 +13,6 @@
 
 namespace RHI
 {
-    #define VK_NO_PROTOTYPES
-    #define VK_USE_PLATFORM_WIN32_KHR
-
     template<typename T>
     inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name, vk::DispatchLoaderDynamic& dynamicLoader)
     {

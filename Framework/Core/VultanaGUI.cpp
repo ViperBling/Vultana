@@ -18,7 +18,7 @@ namespace Core
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle()->GetWin32WindowHandle());
+        ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
     }
 
     GUI::~GUI()

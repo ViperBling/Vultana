@@ -121,14 +121,13 @@ namespace RHI
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
         vk::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
         
-        // VkWin32SurfaceCreateInfoKHR surfaceCI {};
-        auto wnd = (Window::GLFWindow*)mDesc.WindowHandle;
-        vk::Result res = wnd->CreateVulkanSurface(instance, mSurface);
-        if (res != vk::Result::eSuccess)
-        {
-            VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create surface");
-            return false;
-        }
+        vk::Win32SurfaceCreateInfoKHR surfaceCI {};
+        surfaceCI.hinstance = GetModuleHandle(nullptr);
+        surfaceCI.hwnd = (HWND)mDesc.WindowHandle;
+        // auto wnd = (Window::GLFWindow*)mDesc.WindowHandle;
+        // vk::Result res = wnd->CreateVulkanSurface(instance, mSurface);
+        mSurface = instance.createWin32SurfaceKHR(surfaceCI, nullptr);
+
         SetDebugName(device, vk::ObjectType::eSurfaceKHR, (uint64_t)(VkSurfaceKHR)mSurface, mName.c_str(), dynamicLoader);
 
         return true;
@@ -144,10 +143,11 @@ namespace RHI
         auto presentMode = physcialDevice.getSurfacePresentModesKHR(mSurface);
         auto surfaceCaps = physcialDevice.getSurfaceCapabilitiesKHR(mSurface);
 
-        vk::Extent2D extent = vk::Extent2D(
-            std::clamp(mDesc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
-            std::clamp(mDesc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
-        );
+        // vk::Extent2D extent = vk::Extent2D(
+        //     std::clamp(mDesc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
+        //     std::clamp(mDesc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
+        // );
+        vk::Extent2D extent = vk::Extent2D(mDesc.Width, mDesc.Height);
 
         vk::Format viewFormats[2];
         viewFormats[0] = ToVulkanFormat(mDesc.ColorFormat);

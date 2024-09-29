@@ -20,3 +20,7 @@ target_include_directories(EngineTest PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 add_custom_target(RunEngineTest COMMAND EngineTest)
 # add_custom_target(RunShaderTest COMMAND ShaderTest)
 # add_custom_target(RunRenderGraphTest COMMAND RenderGraphTest)
+
+add_executable(VultanaEngine WIN32 WinMain.cpp ${SHADER_FILES})
+target_link_libraries(VultanaEngine FrameworkLib)
+target_include_directories(VultanaEngine PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
