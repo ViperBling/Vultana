@@ -64,14 +64,12 @@ inline float4x4 Inverse(const float4x4& m)
 template<class T>
 inline T DegreeToRadian(T degree)
 {
-    const float PI = 3.141592653f;
     return degree * PI / 180.0f;
 }
 
 template<class T>
 inline T RadianToDegree(T radian)
 {
-    const float PI = 3.141592653f;
     return radian * 180.0f / PI;
 }
 
