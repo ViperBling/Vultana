@@ -243,7 +243,7 @@ namespace RHI
         uint32_t Width = 1;
         uint32_t Height = 1;
         uint32_t BufferCount = RHI_MAX_INFLIGHT_FRAMES;
-        ERHIFormat ColorFormat = ERHIFormat::BGRA8SRGB;
+        ERHIFormat ColorFormat = ERHIFormat::RGBA8SRGB;
     };
 
     struct RHIHeapDesc

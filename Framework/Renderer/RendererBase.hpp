@@ -3,6 +3,7 @@
 #include "RenderResources/IndexBuffer.hpp"
 #include "RenderResources/StructuredBuffer.hpp"
 #include "RenderResources/Texture2D.hpp"
+#include "RenderBatch.hpp"
 #include "StagingBufferAllocator.hpp"
 
 #include "RHI/RHI.hpp"
@@ -63,6 +64,8 @@ namespace Renderer
         void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
         void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
+
+        void AddForwardRenderBatch(const RenderBatch& batch) { mForwardRenderBatches.push_back(batch); }
 
     private:
         void CreateCommonResources();
@@ -139,5 +142,7 @@ namespace Renderer
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
         RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
+
+        std::vector<RenderBatch> mForwardRenderBatches;
     };
 }
