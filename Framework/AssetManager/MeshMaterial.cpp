@@ -1,7 +1,7 @@
 #include "MeshMaterial.hpp"
 #include "Core/VultanaEngine.hpp"
 
-namespace Scene
+namespace Assets
 {
     MeshMaterial::~MeshMaterial()
     {

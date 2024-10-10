@@ -19,29 +19,32 @@ find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 find_path(LINALG_INCLUDE_DIRS "linalg.h")
 find_path(SIGSLOT_INCLUDE_DIRS "sigslot.h")
 
-file(GLOB_RECURSE Common_Head       ${SourcePath}/Common/*.hpp)
-file(GLOB_RECURSE Common_Src        ${SourcePath}/Common/*.cpp)
-file(GLOB_RECURSE Core_Head         ${SourcePath}/Core/*.hpp)
-file(GLOB_RECURSE Core_Src          ${SourcePath}/Core/*.cpp)
-file(GLOB_RECURSE Renderer_Head     ${SourcePath}/Renderer/*.hpp)
-file(GLOB_RECURSE Renderer_Src      ${SourcePath}/Renderer/*.cpp)
-file(GLOB_RECURSE RHI_Head          ${SourcePath}/RHI/*.hpp)
-file(GLOB_RECURSE RHI_Src           ${SourcePath}/RHI/*.cpp)
-file(GLOB_RECURSE Scene_Head        ${SourcePath}/Scene/*.hpp)
-file(GLOB_RECURSE Scene_Src         ${SourcePath}/Scene/*.cpp)
-file(GLOB_RECURSE Window_Head       ${SourcePath}/Window/*.hpp)
-file(GLOB_RECURSE Window_Src        ${SourcePath}/Window/*.cpp)
-file(GLOB_RECURSE Utilities_Head    ${SourcePath}/Utilities/*.hpp)
-file(GLOB_RECURSE Utilities_Src     ${SourcePath}/Utilities/*.cpp)
+file(GLOB_RECURSE AssetManager_Head       ${SourcePath}/AssetManager/*.hpp)
+file(GLOB_RECURSE AssetManager_Src        ${SourcePath}/AssetManager/*.cpp)
+file(GLOB_RECURSE Common_Head             ${SourcePath}/Common/*.hpp)
+file(GLOB_RECURSE Common_Src              ${SourcePath}/Common/*.cpp)
+file(GLOB_RECURSE Core_Head               ${SourcePath}/Core/*.hpp)
+file(GLOB_RECURSE Core_Src                ${SourcePath}/Core/*.cpp)
+file(GLOB_RECURSE Renderer_Head           ${SourcePath}/Renderer/*.hpp)
+file(GLOB_RECURSE Renderer_Src            ${SourcePath}/Renderer/*.cpp)
+file(GLOB_RECURSE RHI_Head                ${SourcePath}/RHI/*.hpp)
+file(GLOB_RECURSE RHI_Src                 ${SourcePath}/RHI/*.cpp)
+file(GLOB_RECURSE Scene_Head              ${SourcePath}/Scene/*.hpp)
+file(GLOB_RECURSE Scene_Src               ${SourcePath}/Scene/*.cpp)
+file(GLOB_RECURSE Window_Head             ${SourcePath}/Window/*.hpp)
+file(GLOB_RECURSE Window_Src              ${SourcePath}/Window/*.cpp)
+file(GLOB_RECURSE Utilities_Head          ${SourcePath}/Utilities/*.hpp)
+file(GLOB_RECURSE Utilities_Src           ${SourcePath}/Utilities/*.cpp)
 
 add_library(FrameworkLib STATIC 
-    ${Common_Head}      ${Common_Src}
-    ${Core_Head}        ${Core_Src}
-    ${Renderer_Head}    ${Renderer_Src}
-    ${RHI_Head}         ${RHI_Src}
-    ${Scene_Head}       ${Scene_Src}
-    ${Window_Head}      ${Window_Src}
-    ${Utilities_Head}   ${Utilities_Src}
+    ${AssetManager_Head} ${AssetManager_Src}
+    ${Common_Head}       ${Common_Src}
+    ${Core_Head}         ${Core_Src}
+    ${Renderer_Head}     ${Renderer_Src}
+    ${RHI_Head}          ${RHI_Src}
+    ${Scene_Head}        ${Scene_Src}
+    ${Window_Head}       ${Window_Src}
+    ${Utilities_Head}    ${Utilities_Src}
 )
 
 # file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)

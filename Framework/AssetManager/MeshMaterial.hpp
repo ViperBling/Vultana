@@ -6,6 +6,11 @@
 
 namespace Scene
 {
+    class World;
+}
+
+namespace Assets
+{
     enum class MaterialWorkFlow
     {
         PBRMetallicRoughness,
@@ -14,7 +19,7 @@ namespace Scene
 
     class MeshMaterial
     {
-        friend class World;
+        friend class Scene::World;
 
     public:
         ~MeshMaterial();

@@ -1,5 +1,5 @@
 #include "ModelLoader.hpp"
-#include "SceneComponent/StaticMesh.hpp"
+#include "Scene/SceneComponent/StaticMesh.hpp"
 #include "MeshMaterial.hpp"
 #include "Core/VultanaEngine.hpp"
 
@@ -65,9 +65,9 @@ inline uint32_t GetMeshIndex(const cgltf_data* data, const cgltf_mesh* mesh)
     return 0;
 }
 
-namespace Scene
+namespace Assets
 {
-    ModelLoader::ModelLoader(World *pWorld)
+    ModelLoader::ModelLoader(Scene::World *pWorld)
     {
         mpWorld = pWorld;
         // TODO : File path
@@ -132,7 +132,7 @@ namespace Scene
 
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
-                StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], node->name ? node->name : "");
+                Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], node->name ? node->name : "");
                 mesh->SetPosition(position);
                 mesh->SetRotation(rotation);
                 mesh->SetScale(scale);
@@ -144,7 +144,7 @@ namespace Scene
         }
     }
 
-    StaticMesh *ModelLoader::LoadStaticMesh(cgltf_primitive *primitive, const std::string &name)
+    Scene::StaticMesh *ModelLoader::LoadStaticMesh(cgltf_primitive *primitive, const std::string &name)
     {
         return nullptr;
     }
@@ -154,14 +154,14 @@ namespace Scene
         return nullptr;
     }
 
-    RendererResources::Texture2D *ModelLoader::LoadTexture(const cgltf_texture_view& textureView, bool srgb)
+    RenderResources::Texture2D *ModelLoader::LoadTexture(const cgltf_texture_view& textureView, bool srgb)
     {
-        // if (textureView.texture == nullptr || textureView.texture->image->uri == nullptr) return nullptr;
+        if (textureView.texture == nullptr || textureView.texture->image->uri == nullptr) return nullptr;
 
-        // size_t lastSlash = mFile.find_last_of('/');
-        // std::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + mFile.substr(0, lastSlash + 1);
-        // Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        // auto texture = pRenderer->CreateTexture2D(texturePath + textureView.texture->image->uri, srgb);
-        // return texture;
+        size_t lastSlash = mFile.find_last_of('/');
+        std::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + mFile.substr(0, lastSlash + 1);
+        Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto texture = pRenderer->CreateTexture2D(texturePath + textureView.texture->image->uri, srgb);
+        return texture;
     }
 }

@@ -4,10 +4,14 @@
 #include "Utilities/Math.hpp"
 #include "Common/ModelConstants.hlsli"
 
+namespace Assets
+{
+    class MeshMaterial;
+}
+
 namespace Scene
 {
     class Camera;
-    class MeshMaterial;
 
     class StaticMesh : public IVisibleObject
     {
@@ -27,7 +31,7 @@ namespace Scene
     
     private:
         std::string mName;
-        std::unique_ptr<MeshMaterial> mpMaterial = nullptr;
+        std::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
 
         std::unique_ptr<RenderResources::IndexBuffer> mpIndexBuffer = nullptr;
         std::unique_ptr<RenderResources::StructuredBuffer> mpPositionBuffer = nullptr;

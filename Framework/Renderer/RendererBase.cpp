@@ -7,6 +7,7 @@
 #include "Core/VultanaGUI.hpp"
 #include "Utilities/Log.hpp"
 #include "Window/GLFWindow.hpp"
+#include "AssetManager/TextureLoader.hpp"
 
 // For Test
 #include "RHI/RHIBuffer.hpp"
@@ -127,7 +128,17 @@ namespace Renderer
 
     RenderResources::Texture2D *RendererBase::CreateTexture2D(const std::string &file, bool srgb)
     {
-        return nullptr;
+        Assets::TextureLoader loader;
+        if (!loader.Load(file, srgb))
+        {
+            return nullptr;
+        }
+        RenderResources::Texture2D* texture = CreateTexture2D(loader.GetWidth(), loader.GetHeight(), loader.GetMipLevels(), loader.GetFormat(), 0, file);
+        if (texture)
+        {
+            UploadTexture(texture->GetTexture(), loader.GetData());
+        }
+        return texture;
     }
 
     RenderResources::Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string &name)
