@@ -1,5 +1,5 @@
 #include "StaticMesh.hpp"
-#include "Scene/MeshMaterial.hpp"
+#include "AssetManager/MeshMaterial.hpp"
 #include "Scene/Camera.hpp"
 
 namespace Scene
