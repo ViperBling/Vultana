@@ -7,7 +7,7 @@
 #include <fstream>
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include <stb_image_resize.h>
+#include <stb_image_resize2.h>
 
 static inline RHI::ERHITextureType GetTextureType(ddspp::TextureType type, bool array)
 {
@@ -191,7 +191,7 @@ namespace Assets
         }
 
         unsigned char* outputData = (unsigned char*)malloc(width * height * 4);
-        int res = stbir_resize_uint8((const unsigned char*)mpDecompressedData, mWidth, mHeight, 0, outputData, width, height, 0, 4);
+        auto res = stbir_resize_uint8_linear((const unsigned char*)mpDecompressedData, mWidth, mHeight, 0, outputData, width, height, 0, STBIR_RGBA);
         if (!res || outputData == nullptr)
         {
             free(outputData);
