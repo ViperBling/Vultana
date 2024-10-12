@@ -21,17 +21,22 @@ namespace Scene
 
         void LoadScene(const std::string& file);
 
+        void AddObject(IVisibleObject* object);
+
         void Tick(float deltaTime);
 
     private:
         void ClearScene();
 
-        void CreatePrimitive(tinyxml2::XMLElement* element);
+        void CreateSceneObject(tinyxml2::XMLElement* element);
         void CreateLight(tinyxml2::XMLElement* element);
         void CreateCamera(tinyxml2::XMLElement* element);
         void CreateModel(tinyxml2::XMLElement* element);
 
     private:
         std::unique_ptr<Camera> mpCamera;
+
+        std::list<std::unique_ptr<IVisibleObject>> mObjects;
+        // std::list<std::unique_ptr<Light>> mLights;
     };
 }

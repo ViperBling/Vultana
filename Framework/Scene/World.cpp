@@ -1,6 +1,7 @@
 #include "World.hpp"
 #include "Renderer/RendererBase.hpp"
 #include "Core/VultanaEngine.hpp"
+#include "AssetManager/ModelLoader.hpp"
 
 #include <atomic>
 
@@ -10,8 +11,6 @@ namespace Scene
 {
     World::World()
     {
-        Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-
         mpCamera = std::make_unique<Camera>();
     }
 
@@ -21,21 +20,39 @@ namespace Scene
 
     void World::LoadScene(const std::string &file)
     {
+        // TODO : Load scene from file
         CreateCamera(nullptr);
+        CreateModel(nullptr);
+    }
+
+    void World::AddObject(IVisibleObject *object)
+    {
+        assert(object != nullptr);
+        mObjects.push_back(std::unique_ptr<IVisibleObject>(object));
     }
 
     void World::Tick(float deltaTime)
     {
         mpCamera->Tick(deltaTime);
 
+        for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
+        {
+            (*iter)->Tick(deltaTime);
+        }
+
         Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
+        {
+            (*iter)->Render(pRender);
+        }
     }
 
     void World::ClearScene()
     {
+        mObjects.clear();
     }
 
-    void World::CreatePrimitive(tinyxml2::XMLElement *element)
+    void World::CreateSceneObject(tinyxml2::XMLElement *element)
     {
         
     }
@@ -58,5 +75,7 @@ namespace Scene
 
     void World::CreateModel(tinyxml2::XMLElement *element)
     {
+        Assets::ModelLoader loader(this);
+        loader.LoadGLTF();
     }
 }

@@ -44,8 +44,8 @@ namespace Assets
 
     private:
         void LoadNode(const cgltf_data* data, cgltf_node* node, const float4x4& parentMtx);
-        Scene::StaticMesh* LoadStaticMesh(cgltf_primitive* primitive, const std::string& name);
-        MeshMaterial* LoadMaterial(cgltf_material* material);
+        Scene::StaticMesh* LoadStaticMesh(const cgltf_primitive* primitive, const std::string& name, bool bFrontFaceCCW);
+        MeshMaterial* LoadMaterial(const cgltf_material* gltfMaterial);
         RenderResources::Texture2D* LoadTexture(const cgltf_texture_view& textureView, bool srgb);
 
     private:

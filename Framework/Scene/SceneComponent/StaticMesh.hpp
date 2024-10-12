@@ -7,6 +7,7 @@
 namespace Assets
 {
     class MeshMaterial;
+    class ModelLoader;
 }
 
 namespace Scene
@@ -15,7 +16,7 @@ namespace Scene
 
     class StaticMesh : public IVisibleObject
     {
-        friend class ModelLoader;
+        friend class Assets::ModelLoader;
     public:
         StaticMesh(const std::string& name);
 
