@@ -132,7 +132,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
-                Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], node->name ? node->name : "");
+                Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], node->name ? node->name : "", bFrontFaceCCW);
                 mesh->SetPosition(position);
                 mesh->SetRotation(rotation);
                 mesh->SetScale(scale);
@@ -144,14 +144,135 @@ namespace Assets
         }
     }
 
-    Scene::StaticMesh *ModelLoader::LoadStaticMesh(cgltf_primitive *primitive, const std::string &name)
+    RenderResources::IndexBuffer* LoadIndexBuffer(const cgltf_accessor* accessor, const std::string& name)
     {
-        return nullptr;
+        assert(accessor->component_type == cgltf_component_type_r_16u || accessor->component_type == cgltf_component_type_r_32u);
+        uint32_t stride = (uint32_t)accessor->stride;
+        uint32_t indexCount = (uint32_t)accessor->count;
+        void* data = (char*)accessor->buffer_view->buffer->data + accessor->buffer_view->offset + accessor->offset;
+
+        auto renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto indexBuffer = renderer->CreateIndexBuffer(data, stride, indexCount, name);
+        return indexBuffer;
     }
 
-    MeshMaterial *ModelLoader::LoadMaterial(cgltf_material *material)
+    RenderResources::StructuredBuffer* LoadVertexBuffer(const cgltf_accessor* accessor, const std::string& name, bool bConvertToLH)
     {
-        return nullptr;
+        assert(accessor->component_type == cgltf_component_type_r_32f || accessor->component_type == cgltf_component_type_r_16u);
+        uint32_t stride = (uint32_t)accessor->stride;
+        uint32_t size = stride * (uint32_t)accessor->count;
+        void* data = (char*)accessor->buffer_view->buffer->data + accessor->buffer_view->offset + accessor->offset;
+
+        if (bConvertToLH)
+        {
+            for (uint32_t i = 0; i < (uint32_t)accessor->count; i++)
+            {
+                float3* v = (float3*)data + i;
+                v->z = -v->z;
+            }
+        }
+        auto renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto vertexBuffer = renderer->CreateStructuredBuffer(data, stride, (uint32_t)accessor->count, name);
+        return vertexBuffer;
+    }
+
+    Scene::StaticMesh *ModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const std::string &name, bool bFrontFaceCCW)
+    {
+        Scene::StaticMesh* mesh = new Scene::StaticMesh(mFile + " " + name);
+        mesh->mpMaterial.reset(LoadMaterial(primitive->material));
+        mesh->mpIndexBuffer.reset(LoadIndexBuffer(primitive->indices, "model(" + mFile + "_" + name + ")" + "_IndexBuffer"));
+
+        for (cgltf_size i = 0; i < primitive->attributes_count; i++)
+        {
+            switch (primitive->attributes[i].type)
+            {
+            case cgltf_attribute_type_position:
+                mesh->mpPositionBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_Position", bFrontFaceCCW));
+                break;
+            case cgltf_attribute_type_texcoord:
+                if (primitive->attributes[i].index == 0)
+                {
+                    mesh->mpTexCoordBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_TexCoord", bFrontFaceCCW));
+                }
+                break;
+            case cgltf_attribute_type_normal:
+                mesh->mpNormalBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_Normal", bFrontFaceCCW));
+                break;
+            case cgltf_attribute_type_tangent:
+                mesh->mpTangentBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_Tangent", bFrontFaceCCW));
+                break;
+            default:
+                break;
+            }
+        }
+        mpWorld->AddObject(mesh);
+        return mesh;
+    }
+
+    inline FMaterialTextureInfo LoadTextureInfo(const RenderResources::Texture2D* texture, const cgltf_texture_view& textureView)
+    {
+        FMaterialTextureInfo info;
+        if (texture)
+        {
+            info.Index = texture->GetSRV()->GetHeapIndex();
+            info.Width = texture->GetTexture()->GetDesc().Width;
+            info.Height = texture->GetTexture()->GetDesc().Height;
+            if (textureView.has_transform)
+            {
+                info.IsTransform = true;
+                info.Offset = float2(textureView.transform.offset);
+                info.Scale = float2(textureView.transform.scale);
+                info.Rotation = textureView.transform.rotation;
+            }
+        }
+        return info;
+    }
+
+    MeshMaterial *ModelLoader::LoadMaterial(const cgltf_material *gltfMaterial)
+    {
+        MeshMaterial* material = new MeshMaterial;
+        if (gltfMaterial == nullptr)
+        {
+            return material;
+        }
+        material->mName = gltfMaterial->name ? gltfMaterial->name : "";
+
+        if (gltfMaterial->has_pbr_metallic_roughness)
+        {
+            material->mWorkFlow = MaterialWorkFlow::PBRMetallicRoughness;
+            material->mpAlbedoTexture = LoadTexture(gltfMaterial->pbr_metallic_roughness.base_color_texture, true);
+            material->mMaterialCB.AlbedoTexture = LoadTextureInfo(material->mpAlbedoTexture, gltfMaterial->pbr_metallic_roughness.base_color_texture);
+            material->mpMetallicRoughTexture = LoadTexture(gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture, false);
+            material->mMaterialCB.MetallicRoughnessTexture = LoadTextureInfo(material->mpMetallicRoughTexture, gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture);
+            material->mAlbedoColor = float3(gltfMaterial->pbr_metallic_roughness.base_color_factor);
+            material->mMetallic = gltfMaterial->pbr_metallic_roughness.metallic_factor;
+            material->mRoughness = gltfMaterial->pbr_metallic_roughness.roughness_factor;
+        }
+        else if (gltfMaterial->has_pbr_specular_glossiness)
+        {
+            material->mWorkFlow = MaterialWorkFlow::PBRSpecularGlossiness;
+            material->mpDiffuseTexture = LoadTexture(gltfMaterial->pbr_specular_glossiness.diffuse_texture, true);
+            material->mMaterialCB.DiffuseTexture = LoadTextureInfo(material->mpDiffuseTexture, gltfMaterial->pbr_specular_glossiness.diffuse_texture);
+            material->mpSpecularGlossinessTexture = LoadTexture(gltfMaterial->pbr_specular_glossiness.specular_glossiness_texture, false);
+            material->mMaterialCB.SpecularGlossinessTexture = LoadTextureInfo(material->mpSpecularGlossinessTexture, gltfMaterial->pbr_specular_glossiness.specular_glossiness_texture);
+            material->mDiffuseColor = float3(gltfMaterial->pbr_specular_glossiness.diffuse_factor);
+            material->mSpecularColor = float3(gltfMaterial->pbr_specular_glossiness.specular_factor);
+            material->mGlossiness = gltfMaterial->pbr_specular_glossiness.glossiness_factor;
+        }
+        material->mpNormalTexture = LoadTexture(gltfMaterial->normal_texture, false);
+        material->mMaterialCB.NormalTexture = LoadTextureInfo(material->mpNormalTexture, gltfMaterial->normal_texture);
+        material->mpEmissiveTexture = LoadTexture(gltfMaterial->emissive_texture, true);
+        material->mMaterialCB.EmissiveTexture = LoadTextureInfo(material->mpEmissiveTexture, gltfMaterial->emissive_texture);
+        material->mpAOTexture = LoadTexture(gltfMaterial->occlusion_texture, false);
+        material->mMaterialCB.AmbientOcclusionTexture = LoadTextureInfo(material->mpAOTexture, gltfMaterial->occlusion_texture);
+
+        material->mEmissiveColor = float3(gltfMaterial->emissive_factor);
+        material->mAlphaCutout = gltfMaterial->alpha_cutoff;
+        material->mbAlphaTest = gltfMaterial->alpha_mode == cgltf_alpha_mode_mask;
+        material->mbAlphaBlend = gltfMaterial->alpha_mode == cgltf_alpha_mode_blend;
+        material->mbFrontFaceCCW = gltfMaterial->double_sided;
+
+        return material;
     }
 
     RenderResources::Texture2D *ModelLoader::LoadTexture(const cgltf_texture_view& textureView, bool srgb)

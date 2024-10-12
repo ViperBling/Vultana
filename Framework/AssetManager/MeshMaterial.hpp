@@ -20,6 +20,7 @@ namespace Assets
     class MeshMaterial
     {
         friend class Scene::World;
+        friend class ModelLoader;
 
     public:
         ~MeshMaterial();

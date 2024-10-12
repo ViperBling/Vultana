@@ -10,6 +10,7 @@ struct FModelConstants
     uint TangentBuffer;
 
     float4x4 MtxWorld;
+    float4x4 MtxWorldInverse;
 };
 
 struct FModelMaterialConstants
