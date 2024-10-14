@@ -21,8 +21,8 @@ namespace Scene
         virtual float3 GetPosition() const { return mPosition; }
         virtual void SetPosition(const float3& position) { mPosition = position; }
 
-        virtual float3 GetRotation() const { return mRotation; }
-        virtual void SetRotation(const float3& rotation) { mRotation = rotation; }
+        virtual quaternion GetRotation() const { return mRotation; }
+        virtual void SetRotation(const quaternion& rotation) { mRotation = rotation; }
 
         virtual float3 GetScale() const { return mScale; }
         virtual void SetScale(const float3& scale) { mScale = scale; }
@@ -32,7 +32,7 @@ namespace Scene
     protected:
         uint32_t mID = 0;
         float3 mPosition = float3(0.0f);
-        float3 mRotation = float3(0.0f);
+        quaternion mRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
         float3 mScale = float3(1.0f);
     };
 }

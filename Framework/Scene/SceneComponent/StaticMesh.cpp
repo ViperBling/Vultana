@@ -1,5 +1,6 @@
 #include "StaticMesh.hpp"
 #include "AssetManager/MeshMaterial.hpp"
+#include "AssetManager/ResourceCache.hpp"
 #include "Scene/Camera.hpp"
 
 namespace Scene
@@ -9,6 +10,16 @@ namespace Scene
         mName = name;
     }
 
+    StaticMesh::~StaticMesh()
+    {
+        auto resourceCache = Assets::ResourceCache::GetInstance();
+        resourceCache->ReleaseSceneBuffer(mPositionBuffer);
+        resourceCache->ReleaseSceneBuffer(mTexCoordBuffer);
+        resourceCache->ReleaseSceneBuffer(mNormalBuffer);
+        resourceCache->ReleaseSceneBuffer(mTangentBuffer);
+        resourceCache->ReleaseSceneBuffer(mIndexBuffer);
+    }
+
     bool StaticMesh::Create()
     {
         return true;
@@ -16,12 +27,8 @@ namespace Scene
 
     void StaticMesh::Tick(float deltaTime)
     {
-        float4x4 T = translation_matrix(mPosition);
-        float4x4 R = rotation_matrix((RotationQuat(mRotation)));
-        float4x4 S = scaling_matrix(mScale);
-        mMtxWorld = mul(T, mul(R, S));
-
         UpdateConstants();
+        mInstanceIndex = mpRenderer->AddInstance(mInstanceData);
     }
 
     void StaticMesh::Render(Renderer::RendererBase *pRenderer)
@@ -39,20 +46,39 @@ namespace Scene
     void StaticMesh::UpdateConstants()
     {
         mpMaterial->UpdateConstants();
-        // mModelCB.MtxWorld = mMtxWorld;
-        // mModelCB.MtxWorldInverse = transpose(inverse(mMtxWorld));
-        mModelCB.PositionBuffer = mpPositionBuffer->GetSRV()->GetHeapIndex();
-        mModelCB.TexCoordBuffer = mpTexCoordBuffer ? mpTexCoordBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
-        // mModelCB.NormalBuffer = mpNormalBuffer ? mpNormalBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
-        // mModelCB.TangentBuffer = mpTangentBuffer ? mpTangentBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
+
+        mInstanceData.IndexBufferAddress = mIndexBuffer.offset;
+        mInstanceData.IndexStride = mIndexBufferFormat == RHI::ERHIFormat::R16UI ? 2 : 4;
+        mInstanceData.TriangleCount = mIndexCount / 3;
+
+        mInstanceData.PositionBufferAddress = mPositionBuffer.offset;
+        mInstanceData.TexCoordBufferAddress = mTexCoordBuffer.offset;
+        mInstanceData.NormalBufferAddress = mNormalBuffer.offset;
+        mInstanceData.TangentBufferAddress = mTangentBuffer.offset;
+
+        mInstanceData.MaterialDataAddress = mpRenderer->AllocateSceneConstantBuffer((void*)mpMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
+        mInstanceData.ObjectID = mID;
+        mInstanceData.Scale = std::max(std::max(abs(mScale.x), abs(mScale.y)), abs(mScale.z));
+
+        float4x4 T = translation_matrix(mPosition);
+        float4x4 R = rotation_matrix(mRotation);
+        float4x4 S = scaling_matrix(mScale);
+        float4x4 mtxWorld = mul(T, mul(R, S));
+
+        mInstanceData.Center = mul(mtxWorld, float4(mCenter, 1.0f)).xyz();
+        mInstanceData.Radius = mRadius * mInstanceData.Scale;
+
+        mInstanceData.MtxWorld = mtxWorld;
+        mInstanceData.MtxWorldInverseTranspose = transpose(inverse(mtxWorld));
     }
 
     void StaticMesh::Draw(RHI::RHICommandList *pCmdList, RHI::RHIPipelineState *pPSO)
     {
+        uint32_t rootConsts[1] = { mInstanceIndex };
+
         pCmdList->SetPipelineState(pPSO);
-        pCmdList->SetGraphicsConstants(0, &mModelCB, sizeof(FModelConstants));
-        pCmdList->SetGraphicsConstants(2, &mpMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
-        pCmdList->SetIndexBuffer(mpIndexBuffer->GetBuffer(), 0, mpIndexBuffer->GetFormat());
-        pCmdList->DrawIndexed(mpIndexBuffer->GetIndexCount());
+        pCmdList->SetGraphicsConstants(0, rootConsts, sizeof(rootConsts));
+        pCmdList->SetIndexBuffer(mpRenderer->GetSceneStaticBuffer(), mIndexBuffer.offset, mIndexBufferFormat);
+        pCmdList->DrawIndexed(mIndexCount);
     }
 }

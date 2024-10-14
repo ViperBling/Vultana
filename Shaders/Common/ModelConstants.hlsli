@@ -2,16 +2,16 @@
 
 #include "Texture.hlsli"
 
-struct FModelConstants
-{
-    uint PositionBuffer;
-    uint TexCoordBuffer;
-    // uint NormalBuffer;
-    // uint TangentBuffer;
+// struct FModelConstants
+// {
+//     uint PositionBuffer;
+//     uint TexCoordBuffer;
+//     uint NormalBuffer;
+//     uint TangentBuffer;
 
-    // float4x4 MtxWorld;
-    // float4x4 MtxWorldInverse;
-};
+//     float4x4 MtxWorld;
+//     float4x4 MtxWorldInverse;
+// };
 
 struct FModelMaterialConstants
 {

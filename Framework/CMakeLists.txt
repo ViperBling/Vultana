@@ -5,15 +5,14 @@ set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
 # find_package(assimp CONFIG REQUIRED)
 # find_package(glfw3 CONFIG REQUIRED)
+find_package(cityhash CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(directx-dxc CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
+find_package(meshoptimizer CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanHeaders CONFIG)
-find_package(directx-dxc CONFIG REQUIRED)
-# find_package(glm CONFIG REQUIRED)
-find_package(fmt CONFIG REQUIRED)
-find_package(cityhash CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
-# find_package(imgui CONFIG REQUIRED)
-find_package(imguizmo CONFIG REQUIRED)
 
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 find_path(LINALG_INCLUDE_DIRS "linalg.h")
@@ -68,13 +67,16 @@ target_link_libraries(FrameworkLib PRIVATE
     # assimp::assimp
     # glfw
     # glm::glm
-    Vulkan::Vulkan
-    Vulkan::Headers
-    fmt::fmt-header-only
-    tinyxml2
-    Microsoft::DirectXShaderCompiler
     cityhash
-    spdlog::spdlog
+    Microsoft::DirectXShaderCompiler
+    fmt::fmt-header-only
     ImGui
     imguizmo::imguizmo
+    meshoptimizer::meshoptimizer
+    OffsetAllocator
+    RPMalloc
+    spdlog::spdlog
+    tinyxml2
+    Vulkan::Vulkan
+    Vulkan::Headers
 )

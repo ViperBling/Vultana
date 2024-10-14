@@ -5,11 +5,13 @@
 #include "Core/VultanaEngine.hpp"
 
 #include "Utilities/Log.hpp"
+#include "Utilities/Memory.hpp"
 
 #define CGLTF_IMPLEMENTATION
 #include <cgltf/cgltf.h>
 
 #include <tinyxml2/tinyxml2.h>
+#include <meshoptimizer.h>
 
 #include <cassert>
 
@@ -124,7 +126,7 @@ namespace Assets
         if (node->mesh)
         {
             float3 position;
-            float3 rotation;
+            float4 rotation;
             float3 scale;
             Decompose(mtxWorld, position, rotation, scale);
 
@@ -133,7 +135,8 @@ namespace Assets
 
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
-                Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], node->name ? node->name : "", bFrontFaceCCW);
+                std::string name = fmt::format("Mesh_{}_{} {}", meshIdx, i, (node->name ? node->name : "")).c_str();
+                Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
                 mesh->mpMaterial->mbFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
                 mesh->SetRotation(rotation);
@@ -178,11 +181,38 @@ namespace Assets
         return vertexBuffer;
     }
 
+    meshopt_Stream LoadBufferStream(const cgltf_accessor* accessor, bool convertToLH, size_t& count)
+    {
+        uint32_t stride = (uint32_t)accessor->stride;
+
+        meshopt_Stream stream = {};
+        stream.data = VTNA_ALLOC(stride * accessor->count);
+        stream.size = stride;
+        stream.stride = stride;
+
+        void* data = (char*)accessor->buffer_view->buffer->data + accessor->buffer_view->offset + accessor->offset;
+        memcpy((void*)stream.data, data, stride * accessor->count);
+
+        //convert right-hand to left-hand
+        if (convertToLH)
+        {
+            assert(stride >= sizeof(float3));
+
+            for (uint32_t i = 0; i < (uint32_t)accessor->count; ++i)
+            {
+                float3* v = (float3*)stream.data + i;
+                v->z = -v->z;
+            }
+        }
+        count = accessor->count;
+
+        return stream;
+    }
+
     Scene::StaticMesh *ModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const std::string &name, bool bFrontFaceCCW)
     {
         Scene::StaticMesh* mesh = new Scene::StaticMesh(mFile + " " + name);
         mesh->mpMaterial.reset(LoadMaterial(primitive->material));
-        mesh->mpIndexBuffer.reset(LoadIndexBuffer(primitive->indices, "model(" + mFile + "_" + name + ")" + "_IndexBuffer"));
 
         for (cgltf_size i = 0; i < primitive->attributes_count; i++)
         {

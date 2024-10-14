@@ -28,7 +28,7 @@ namespace Assets
         RHI::RHIPipelineState* GetPSO();
 
         void UpdateConstants();
-        const FModelMaterialConstants& GetMaterialConstants() const { return mMaterialCB; }
+        const FModelMaterialConstants* GetMaterialConstants() const { return &mMaterialCB; }
         void OnGUI();
 
         bool IsFrontFaceCCW() const { return mbFrontFaceCCW; }

@@ -1,4 +1,5 @@
 #include "RendererBase.hpp"
+#include "GPUScene.hpp"
 #include "PipelineStateCache.hpp"
 #include "ShaderCompiler.hpp"
 #include "ShaderCache.hpp"
@@ -8,9 +9,6 @@
 #include "Utilities/Log.hpp"
 #include "Window/GLFWindow.hpp"
 #include "AssetManager/TextureLoader.hpp"
-
-// For Test
-#include "RHI/RHIBuffer.hpp"
 
 #include <optional>
 #include <algorithm>
@@ -193,6 +191,57 @@ namespace Renderer
             UploadBuffer(pBuffer->GetBuffer(), data, 0, stride * elementCount);
         }
         return pBuffer;
+    }
+
+    RenderResources::RawBuffer *RendererBase::CreateRawBuffer(const void *data, uint32_t size, const std::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    {
+        auto buffer = new RenderResources::RawBuffer(name);
+        if (!buffer->Create(size, memoryType, isUAV))
+        {
+            delete buffer;
+            return nullptr;
+        }
+        if (data)
+        {
+            UploadBuffer(buffer->GetBuffer(), data, 0, size);
+        }
+        return buffer;
+    }
+
+    RHI::RHIBuffer *RendererBase::GetSceneStaticBuffer() const
+    {
+        return mpGPUScene->GetSceneStaticBuffer();
+    }
+
+    OffsetAllocator::Allocation RendererBase::AllocateSceneStaticBuffer(const void *data, uint32_t size)
+    {
+        OffsetAllocator::Allocation allocation = mpGPUScene->AllocateStaticBuffer(size);
+        if (data)
+        {
+            UploadBuffer(mpGPUScene->GetSceneStaticBuffer(), data, allocation.offset, size);
+        }
+        return allocation;
+    }
+
+    void RendererBase::FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation)
+    {
+        mpGPUScene->FreeStaticBuffer(allocation);
+    }
+
+    uint32_t RendererBase::AllocateSceneConstantBuffer(const void *data, uint32_t size)
+    {
+        uint32_t address = mpGPUScene->AllocateConstantBuffer(size);
+        if (data)
+        {
+            void* dst = (char*)mpGPUScene->GetSceneConstantBuffer()->GetCPUAddress() + address;
+            memcpy(dst, data, size);
+        }
+        return address;
+    }
+
+    uint32_t RendererBase::AddInstance(const FInstanceData &instanceData)
+    {
+        return mpGPUScene->AddInstance(instanceData);
     }
 
     inline void imageCopy(char* srcData, char* dstData, uint32_t srcRowPitch, uint32_t dstRowPitch, uint32_t rowNum, uint32_t d)
