@@ -1,6 +1,7 @@
 #include "ModelLoader.hpp"
 #include "Scene/SceneComponent/StaticMesh.hpp"
 #include "MeshMaterial.hpp"
+#include "ResourceCache.hpp"
 #include "Core/VultanaEngine.hpp"
 
 #include "Utilities/Log.hpp"
@@ -71,7 +72,7 @@ namespace Assets
     {
         mpWorld = pWorld;
         // TODO : File path
-        mFile = "";
+        mFile = "Models/BusterDrone/busterDrone.gltf";
 
         float3 position = { 0.0f, 0.0f, 0.0f };
         float3 rotation = { 0.0f, 0.0f, 0.0f };
@@ -282,7 +283,7 @@ namespace Assets
         size_t lastSlash = mFile.find_last_of('/');
         std::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + mFile.substr(0, lastSlash + 1);
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto texture = pRenderer->CreateTexture2D(texturePath + textureView.texture->image->uri, srgb);
+        auto texture = ResourceCache::GetInstance()->GetTexture2D(texturePath + textureView.texture->image->uri, srgb);
         return texture;
     }
 }
