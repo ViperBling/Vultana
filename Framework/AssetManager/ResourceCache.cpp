@@ -48,4 +48,45 @@ namespace Assets
         }
         assert(false);
     }
+
+    OffsetAllocator::Allocation ResourceCache::GetSceneBuffer(const std::string &name, const void *data, uint32_t size)
+    {
+        auto iter = mCachedSceneBuffer.find(name);
+        if (iter != mCachedSceneBuffer.end())
+        {
+            iter->second.RefCount++;
+            return iter->second.Allocation;
+        }
+        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+        SceneBuffer buffer;
+        buffer.RefCount = 1;
+        buffer.Allocation = pRenderer->AllocateSceneStaticBuffer(data, size);
+        mCachedSceneBuffer.insert({name, buffer});
+        return buffer.Allocation;
+    }
+
+    void ResourceCache::ReleaseSceneBuffer(OffsetAllocator::Allocation allocation)
+    {
+        if (allocation.metadata == OffsetAllocator::Allocation::NO_SPACE)
+        {
+            return;
+        }
+        for (auto iter = mCachedSceneBuffer.begin(); iter != mCachedSceneBuffer.end(); iter++)
+        {
+            if (iter->second.Allocation.metadata == allocation.metadata &&
+                iter->second.Allocation.offset == allocation.offset)
+            {
+                iter->second.RefCount--;
+                if (iter->second.RefCount == 0)
+                {
+                    auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+                    pRenderer->FreeSceneStaticBuffer(iter->second.Allocation);
+                    mCachedSceneBuffer.erase(iter);
+                }
+                return;
+            }
+        }
+        assert(false);
+    }
 }

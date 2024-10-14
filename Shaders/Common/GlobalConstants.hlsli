@@ -17,12 +17,16 @@ struct FSceneConstants
 {
     FCameraConstants CameraCB;
 
-    // uint SceneConstantBufferSRV;
-    // uint SceneStaticBufferSRV;
+    uint SceneConstantBufferSRV;
+    uint SceneStaticBufferSRV;
+    uint instanceDataAddress;
+    uint Padding00;
 
-    // float3 LightDirection;
-    // float3 LightColor;
-    // float3 LightRadius;
+    float3 LightDirection;
+    uint Padding01;
+
+    float3 LightColor;
+    float LightRadius;
 };
 
 #ifndef __cplusplus

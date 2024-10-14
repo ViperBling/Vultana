@@ -1,8 +1,10 @@
 #pragma once
 
 #include "RenderResources/IndexBuffer.hpp"
+#include "RenderResources/RawBuffer.hpp"
 #include "RenderResources/StructuredBuffer.hpp"
 #include "RenderResources/Texture2D.hpp"
+#include "GPUScene.hpp"
 #include "RenderBatch.hpp"
 #include "StagingBufferAllocator.hpp"
 
@@ -59,6 +61,15 @@ namespace Renderer
 
         RenderResources::IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
         RenderResources::StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+        RenderResources::RawBuffer* CreateRawBuffer(const void* data, uint32_t size, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+
+        RHI::RHIBuffer* GetSceneStaticBuffer() const;
+        OffsetAllocator::Allocation AllocateSceneStaticBuffer(const void* data, uint32_t size);
+        void FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation);
+        
+        uint32_t AllocateSceneConstantBuffer(const void* data, uint32_t size);
+        uint32_t AddInstance(const FInstanceData& instanceData);
+        uint32_t GetInstanceCount() const { return mpGPUScene->GetInstanceCount(); }
 
         void UploadTexture(RHI::RHITexture* pTexture, const void* pData);
         void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
@@ -84,6 +95,7 @@ namespace Renderer
         std::unique_ptr<class PipelineStateCache> mpPipelineStateCache;
         std::unique_ptr<class ShaderCompiler> mpShaderCompiler;
         std::unique_ptr<class ShaderCache> mpShaderCache;
+        std::unique_ptr<GPUScene> mpGPUScene;
 
         uint32_t mDisplayWidth;
         uint32_t mDisplayHeight;

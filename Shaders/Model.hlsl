@@ -14,15 +14,15 @@ FVertexOutput VSMain(uint vertexID : SV_VertexID)
 {
     StructuredBuffer<float3> positionBuffer = ResourceDescriptorHeap[ModelCB.PositionBuffer];
     StructuredBuffer<float2> texCoordBuffer = ResourceDescriptorHeap[ModelCB.TexCoordBuffer];
-    // StructuredBuffer<float3> normalBuffer = ResourceDescriptorHeap[ModelCB.NormalBuffer];
-    // StructuredBuffer<float3> tangentBuffer = ResourceDescriptorHeap[ModelCB.TangentBuffer];
+    StructuredBuffer<float3> normalBuffer = ResourceDescriptorHeap[ModelCB.NormalBuffer];
+    StructuredBuffer<float3> tangentBuffer = ResourceDescriptorHeap[ModelCB.TangentBuffer];
 
     float4 positionOS = float4(positionBuffer[vertexID], 1.0f);
     FVertexOutput vsOut = (FVertexOutput)0;
     vsOut.positionCS = mul(GetCameraConstants().MtxViewProjection, positionOS);
     vsOut.texCoord = texCoordBuffer[vertexID];
-    // vsOut.normalWS = mul(ModelCB.MtxWorldInverse, float4(normalBuffer[vertexID], 0.0f)).xyz;
-    // vsOut.tangentWS = mul(ModelCB.MtxWorldInverse, float4(tangentBuffer[vertexID], 0.0f)).xyz;
+    vsOut.normalWS = mul(ModelCB.MtxWorldInverse, float4(normalBuffer[vertexID], 0.0f)).xyz;
+    vsOut.tangentWS = mul(ModelCB.MtxWorldInverse, float4(tangentBuffer[vertexID], 0.0f)).xyz;
     vsOut.positionWS = positionOS.xyz;
 
     return vsOut;
