@@ -4,9 +4,7 @@
 #include <new>
 #include <rpmalloc.h>
 
-#ifndef __CRTDECL
-#define __CRTDECL
-#endif
+#ifdef _WIN32
 
 extern void __CRTDECL
 operator delete(void* p) noexcept {
@@ -86,25 +84,27 @@ operator delete[](void* p, std::size_t size, std::align_val_t align) noexcept {
 
 extern void* __CRTDECL
 operator new(std::size_t size, std::align_val_t align) noexcept(false) {
-	return rpaligned_alloc(static_cast<size_t>(align), size);
+	return rpaligned_alloc((size_t)align, size);
 }
 
 extern void* __CRTDECL
 operator new[](std::size_t size, std::align_val_t align) noexcept(false) {
-	return rpaligned_alloc(static_cast<size_t>(align), size);
+	return rpaligned_alloc((size_t)align, size);
 }
 
 extern void* __CRTDECL
 operator new(std::size_t size, std::align_val_t align, const std::nothrow_t& tag) noexcept {
 	(void)sizeof(tag);
-	return rpaligned_alloc(static_cast<size_t>(align), size);
+	return rpaligned_alloc((size_t)align, size);
 }
 
 extern void* __CRTDECL
 operator new[](std::size_t size, std::align_val_t align, const std::nothrow_t& tag) noexcept {
 	(void)sizeof(tag);
-	return rpaligned_alloc(static_cast<size_t>(align), size);
+	return rpaligned_alloc((size_t)align, size);
 }
+
+#endif
 
 #endif
 

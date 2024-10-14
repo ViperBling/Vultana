@@ -3,6 +3,7 @@
 #include "VultanaEditor.hpp"
 #include "Utilities/Log.hpp"
 
+#include <rpmalloc/rpmalloc.h>
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
@@ -90,5 +91,6 @@ namespace Core
     
     VultanaEngine::~VultanaEngine()
     {
+        rpmalloc_finalize();
     }
 }

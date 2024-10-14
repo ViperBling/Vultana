@@ -149,38 +149,6 @@ namespace Assets
         }
     }
 
-    RenderResources::IndexBuffer* LoadIndexBuffer(const cgltf_accessor* accessor, const std::string& name)
-    {
-        assert(accessor->component_type == cgltf_component_type_r_16u || accessor->component_type == cgltf_component_type_r_32u);
-        uint32_t stride = (uint32_t)accessor->stride;
-        uint32_t indexCount = (uint32_t)accessor->count;
-        void* data = (char*)accessor->buffer_view->buffer->data + accessor->buffer_view->offset + accessor->offset;
-
-        auto renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto indexBuffer = renderer->CreateIndexBuffer(data, stride, indexCount, name);
-        return indexBuffer;
-    }
-
-    RenderResources::StructuredBuffer* LoadVertexBuffer(const cgltf_accessor* accessor, const std::string& name, bool bConvertToLH)
-    {
-        assert(accessor->component_type == cgltf_component_type_r_32f || accessor->component_type == cgltf_component_type_r_16u);
-        uint32_t stride = (uint32_t)accessor->stride;
-        uint32_t size = stride * (uint32_t)accessor->count;
-        void* data = (char*)accessor->buffer_view->buffer->data + accessor->buffer_view->offset + accessor->offset;
-
-        if (bConvertToLH)
-        {
-            for (uint32_t i = 0; i < (uint32_t)accessor->count; i++)
-            {
-                float3* v = (float3*)data + i;
-                v->z = -v->z;
-            }
-        }
-        auto renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto vertexBuffer = renderer->CreateStructuredBuffer(data, stride, (uint32_t)accessor->count, name);
-        return vertexBuffer;
-    }
-
     meshopt_Stream LoadBufferStream(const cgltf_accessor* accessor, bool convertToLH, size_t& count)
     {
         uint32_t stride = (uint32_t)accessor->stride;
@@ -214,30 +182,151 @@ namespace Assets
         Scene::StaticMesh* mesh = new Scene::StaticMesh(mFile + " " + name);
         mesh->mpMaterial.reset(LoadMaterial(primitive->material));
 
+        size_t indexCount;
+        meshopt_Stream indices = LoadBufferStream(primitive->indices, false, indexCount);
+
+        size_t vertexCount;
+        std::vector<meshopt_Stream> vertexStreams;
+        std::vector<cgltf_attribute_type> vertexTypes;
+
         for (cgltf_size i = 0; i < primitive->attributes_count; i++)
         {
             switch (primitive->attributes[i].type)
             {
             case cgltf_attribute_type_position:
-                mesh->mpPositionBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_Position", bFrontFaceCCW));
+                vertexStreams.push_back(LoadBufferStream(primitive->attributes[i].data, true, vertexCount));
+                vertexTypes.push_back(primitive->attributes[i].type);
+                {
+                    float3 min = float3(primitive->attributes[i].data->min);
+                    min.z = -min.z;
+                    float3 max = float3(primitive->attributes[i].data->max);
+                    max.z = -max.z;
+                    float3 center = (min + max) * 0.5f;
+                    float radius = length(max - min) * 0.5f;
+                    mesh->mCenter = center;
+                    mesh->mRadius = radius;
+                }
                 break;
             case cgltf_attribute_type_texcoord:
                 if (primitive->attributes[i].index == 0)
                 {
-                    mesh->mpTexCoordBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_TexCoord", bFrontFaceCCW));
+                    vertexStreams.push_back(LoadBufferStream(primitive->attributes[i].data, false, vertexCount));
+                    vertexTypes.push_back(primitive->attributes[i].type);
                 }
                 break;
             case cgltf_attribute_type_normal:
-                mesh->mpNormalBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_Normal", bFrontFaceCCW));
+                vertexStreams.push_back(LoadBufferStream(primitive->attributes[i].data, true, vertexCount));
+                vertexTypes.push_back(primitive->attributes[i].type);
                 break;
             case cgltf_attribute_type_tangent:
-                mesh->mpTangentBuffer.reset(LoadVertexBuffer(primitive->attributes[i].data, "model(" + mFile + "_" + name + ")" + "_Tangent", bFrontFaceCCW));
+                vertexStreams.push_back(LoadBufferStream(primitive->attributes[i].data, true, vertexCount));
+                vertexTypes.push_back(primitive->attributes[i].type);
                 break;
             default:
                 break;
             }
         }
+        std::vector<unsigned int> remap(indexCount);
+
+        void* remappedIndices = VTNA_ALLOC(indices.stride * indexCount);
+        std::vector<void*> remappedVertices;
+        size_t remappedVertexCount;
+
+        switch (indices.stride)
+        {
+        case 4:
+            remappedVertexCount = meshopt_generateVertexRemapMulti(&remap[0], (const unsigned int*)indices.data, indexCount, vertexCount, vertexStreams.data(), vertexStreams.size());
+            meshopt_remapIndexBuffer((unsigned int*)remappedIndices, (const unsigned int*)indices.data, indexCount, &remap[0]);
+            break;
+        case 2:
+            remappedVertexCount = meshopt_generateVertexRemapMulti(&remap[0], (const unsigned short*)indices.data, indexCount, vertexCount, vertexStreams.data(), vertexStreams.size());
+            meshopt_remapIndexBuffer((unsigned short*)remappedIndices, (const unsigned short*)indices.data, indexCount, &remap[0]);
+            break;
+        case 1:
+            remappedVertexCount = meshopt_generateVertexRemapMulti(&remap[0], (const unsigned char*)indices.data, indexCount, vertexCount, vertexStreams.data(), vertexStreams.size());
+            meshopt_remapIndexBuffer((unsigned char*)remappedIndices, (const unsigned char*)indices.data, indexCount, &remap[0]);
+            break;
+        default:
+            assert(false);
+            break;
+        }
+
+        void* posVertices = nullptr;
+        size_t posStride = 0;
+        for (size_t i = 0; i < vertexStreams.size(); i++)
+        {
+            void* vertices = VTNA_ALLOC(vertexStreams[i].stride * remappedVertexCount);
+            meshopt_remapVertexBuffer(vertices, vertexStreams[i].data, vertexCount, vertexStreams[i].stride, &remap[0]);
+            remappedVertices.push_back(vertices);
+            if (vertexTypes[i] == cgltf_attribute_type_position)
+            {
+                posVertices = vertices;
+                posStride = vertexStreams[i].stride;
+            }
+        }
+
+        size_t maxVertices = 64;
+        size_t maxTriangles = 124;
+        // const float coneWeight = 0.5f;
+
+        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto resourceCache = ResourceCache::GetInstance();
+
+        mesh->mpRenderer = pRenderer;
+
+        if (indices.stride == 1)
+        {
+            uint16_t* data = (uint16_t*)VTNA_ALLOC(sizeof(uint16_t) * indexCount);
+            for (uint32_t i = 0; i < indexCount; i++)
+            {
+                data[i] = ((const char*)indices.data)[i];
+            }
+            indices.stride = 2;
+            VTNA_FREE((void*)indices.data);
+            indices.data = data;
+        }
+        
+        mesh->mIndexBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_IndexBuffer", remappedIndices, (uint32_t)indices.stride * (uint32_t)indexCount);
+        mesh->mIndexBufferFormat = indices.stride == 4 ? RHI::ERHIFormat::R32UI : RHI::ERHIFormat::R16UI;
+        mesh->mIndexCount = (uint32_t)indexCount;
+        mesh->mVertexCount = (uint32_t)remappedVertexCount;
+
+        for (size_t i = 0; i < vertexTypes.size(); i++)
+        {
+            switch (vertexTypes[i])
+            {
+            case cgltf_attribute_type_position:
+                mesh->mPositionBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_PositionBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                break;
+            case cgltf_attribute_type_texcoord:
+                mesh->mTexCoordBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_TexCoordBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                break;
+            case cgltf_attribute_type_normal:
+                mesh->mNormalBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_NormalBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                break;
+            case cgltf_attribute_type_tangent:
+                mesh->mTangentBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_TangentBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                break;
+            default:
+                break;
+            }
+        }
+
+        mesh->Create();
+
         mpWorld->AddObject(mesh);
+
+        VTNA_FREE((void*)indices.data);
+        for (size_t i = 0; i < vertexStreams.size(); i++)
+        {
+            VTNA_FREE((void*)vertexStreams[i].data);
+        }
+        VTNA_FREE(remappedIndices);
+        for (size_t i = 0; i < remappedVertices.size(); i++)
+        {
+            VTNA_FREE(remappedVertices[i]);
+        }
+
         return mesh;
     }
 

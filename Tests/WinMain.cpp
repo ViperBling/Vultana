@@ -1,11 +1,14 @@
 #include "Core/VultanaEngine.hpp"
 #include "Window/Win32Window.hpp"
 
+#include <rpmalloc/rpmalloc.h>
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
     _In_ LPWSTR    lpCmdLine,
     _In_ int       nShowCmd)
 {
+    rpmalloc_initialize();
     Window::Win32WindowDesc wndDesc;
     wndDesc.Position = { 100.0f, 100.0f };
     wndDesc.Size = { 1280.0f, 720.0f };
