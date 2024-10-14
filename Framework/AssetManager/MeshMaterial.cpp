@@ -1,11 +1,19 @@
 #include "MeshMaterial.hpp"
+#include "ResourceCache.hpp"
 #include "Core/VultanaEngine.hpp"
 
 namespace Assets
 {
     MeshMaterial::~MeshMaterial()
     {
-        
+        auto resourceCache = ResourceCache::GetInstance();
+        resourceCache->ReleaseTexture2D(mpDiffuseTexture);
+        resourceCache->ReleaseTexture2D(mpSpecularGlossinessTexture);
+        resourceCache->ReleaseTexture2D(mpAlbedoTexture);
+        resourceCache->ReleaseTexture2D(mpMetallicRoughTexture);
+        resourceCache->ReleaseTexture2D(mpNormalTexture);
+        resourceCache->ReleaseTexture2D(mpEmissiveTexture);
+        resourceCache->ReleaseTexture2D(mpAOTexture);
     }
 
     RHI::RHIPipelineState *MeshMaterial::GetPSO()
