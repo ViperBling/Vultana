@@ -33,11 +33,12 @@ namespace Assets
             psoDesc.RasterizerState.bFrontCCW = mbFrontFaceCCW;
             psoDesc.DepthStencilState.bDepthTest = true;
             psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
+            // For now, we only implement forward rendering, so we only need one RT format
             psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA8SRGB;          // Diffuse RT
-            psoDesc.RTFormats[1] = RHI::ERHIFormat::RGBA8SRGB;          // Specular RT
-            psoDesc.RTFormats[2] = RHI::ERHIFormat::RGBA8UNORM;         // Normal RT
-            psoDesc.RTFormats[3] = RHI::ERHIFormat::R11G11B10F;         // Emissive RT
-            psoDesc.RTFormats[4] = RHI::ERHIFormat::RGBA32F;            // CustomDataRT
+            // psoDesc.RTFormats[1] = RHI::ERHIFormat::RGBA8SRGB;          // Specular RT
+            // psoDesc.RTFormats[2] = RHI::ERHIFormat::RGBA8UNORM;         // Normal RT
+            // psoDesc.RTFormats[3] = RHI::ERHIFormat::R11G11B10F;         // Emissive RT
+            // psoDesc.RTFormats[4] = RHI::ERHIFormat::RGBA32F;            // CustomDataRT
             psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
             mpPSO = pRenderer->GetPipelineState(psoDesc, mName + "_ModelPSO");

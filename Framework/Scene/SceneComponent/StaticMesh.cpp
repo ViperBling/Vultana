@@ -22,7 +22,6 @@ namespace Scene
         mMtxWorld = mul(T, mul(R, S));
 
         UpdateConstants();
-        mpMaterial->UpdateConstants();
     }
 
     void StaticMesh::Render(Renderer::RendererBase *pRenderer)
@@ -39,17 +38,19 @@ namespace Scene
 
     void StaticMesh::UpdateConstants()
     {
-        mModelCB.MtxWorld = mMtxWorld;
+        mpMaterial->UpdateConstants();
+        // mModelCB.MtxWorld = mMtxWorld;
+        // mModelCB.MtxWorldInverse = transpose(inverse(mMtxWorld));
         mModelCB.PositionBuffer = mpPositionBuffer->GetSRV()->GetHeapIndex();
         mModelCB.TexCoordBuffer = mpTexCoordBuffer ? mpTexCoordBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
-        mModelCB.NormalBuffer = mpNormalBuffer ? mpNormalBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
-        mModelCB.TangentBuffer = mpTangentBuffer ? mpTangentBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
+        // mModelCB.NormalBuffer = mpNormalBuffer ? mpNormalBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
+        // mModelCB.TangentBuffer = mpTangentBuffer ? mpTangentBuffer->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
     }
 
     void StaticMesh::Draw(RHI::RHICommandList *pCmdList, RHI::RHIPipelineState *pPSO)
     {
         pCmdList->SetPipelineState(pPSO);
-        pCmdList->SetGraphicsConstants(1, &mModelCB, sizeof(FModelConstants));
+        pCmdList->SetGraphicsConstants(0, &mModelCB, sizeof(FModelConstants));
         pCmdList->SetGraphicsConstants(2, &mpMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
         pCmdList->SetIndexBuffer(mpIndexBuffer->GetBuffer(), 0, mpIndexBuffer->GetFormat());
         pCmdList->DrawIndexed(mpIndexBuffer->GetIndexCount());
