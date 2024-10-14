@@ -306,97 +306,97 @@ namespace Renderer
         uint32_t width = pBackBuffer->GetDesc().Width;
         uint32_t height = pBackBuffer->GetDesc().Height;
 
-        mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageRenderTarget, "PresentRT"));
+        mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8SRGB, RHI::RHITextureUsageRenderTarget, "PresentRT"));
         mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
 
-        // For Test
-        std::vector<Vertex> triVertices = 
-        {
-            { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-            { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-            { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-        };
-        std::vector<uint16_t> triIndices = { 0, 1, 2 };
+        // // For Test
+        // std::vector<Vertex> triVertices = 
+        // {
+        //     { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+        //     { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+        //     { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+        // };
+        // std::vector<uint16_t> triIndices = { 0, 1, 2 };
 
-        std::vector<float3> boxPositions = 
-        {
-            // 前面
-            { -0.5f, -0.5f, -0.5f }, // 左下前
-            { -0.5f,  0.5f, -0.5f }, // 右下前
-            {  0.5f,  0.5f, -0.5f }, // 右上前
-            {  0.5f, -0.5f, -0.5f }, // 左上前
+        // std::vector<float3> boxPositions = 
+        // {
+        //     // 前面
+        //     { -0.5f, -0.5f, -0.5f }, // 左下前
+        //     { -0.5f,  0.5f, -0.5f }, // 右下前
+        //     {  0.5f,  0.5f, -0.5f }, // 右上前
+        //     {  0.5f, -0.5f, -0.5f }, // 左上前
 
-            // 后面
-            { -0.5f, -0.5f,  0.5f }, // 左下后
-            { -0.5f,  0.5f,  0.5f }, // 右下后
-            {  0.5f,  0.5f,  0.5f }, // 右上后
-            {  0.5f, -0.5f,  0.5f }, // 左上后
-        };
-        std::vector<float3> boxColors = 
-        {
-            // 前面
-            { 1.0f, 0.0f, 0.0f }, // 左下前
-            { 0.0f, 1.0f, 0.0f }, // 右下前
-            { 0.0f, 0.0f, 1.0f }, // 右上前
-            { 1.0f, 1.0f, 0.0f }, // 左上前
+        //     // 后面
+        //     { -0.5f, -0.5f,  0.5f }, // 左下后
+        //     { -0.5f,  0.5f,  0.5f }, // 右下后
+        //     {  0.5f,  0.5f,  0.5f }, // 右上后
+        //     {  0.5f, -0.5f,  0.5f }, // 左上后
+        // };
+        // std::vector<float3> boxColors = 
+        // {
+        //     // 前面
+        //     { 1.0f, 0.0f, 0.0f }, // 左下前
+        //     { 0.0f, 1.0f, 0.0f }, // 右下前
+        //     { 0.0f, 0.0f, 1.0f }, // 右上前
+        //     { 1.0f, 1.0f, 0.0f }, // 左上前
 
-            // 后面
-            { 0.0f, 1.0f, 1.0f }, // 左下后
-            { 1.0f, 0.0f, 1.0f }, // 右下后
-            { 1.0f, 1.0f, 1.0f }, // 右上后
-            { 0.5f, 0.5f, 0.5f }, // 左上后
-        };
+        //     // 后面
+        //     { 0.0f, 1.0f, 1.0f }, // 左下后
+        //     { 1.0f, 0.0f, 1.0f }, // 右下后
+        //     { 1.0f, 1.0f, 1.0f }, // 右上后
+        //     { 0.5f, 0.5f, 0.5f }, // 左上后
+        // };
     
-        std::vector<uint32_t> boxIndices = 
-        {
-            // front face
-		    0, 2, 1,
-		    0, 3, 2,
+        // std::vector<uint32_t> boxIndices = 
+        // {
+        //     // front face
+		//     0, 2, 1,
+		//     0, 3, 2,
 
-		    // back face
-		    4, 5, 6,
-		    4, 6, 7,
+		//     // back face
+		//     4, 5, 6,
+		//     4, 6, 7,
 
-		    // left face
-		    4, 1, 5,
-		    4, 0, 1,
+		//     // left face
+		//     4, 1, 5,
+		//     4, 0, 1,
 
-		    // right face
-		    3, 6, 2,
-		    3, 7, 6,
+		//     // right face
+		//     3, 6, 2,
+		//     3, 7, 6,
 
-		    // top face
-		    1, 6, 5,
-		    1, 2, 6,
+		//     // top face
+		//     1, 6, 5,
+		//     1, 2, 6,
 
-		    // bottom face
-		    4, 3, 0,
-		    4, 7, 3
-        };
+		//     // bottom face
+		//     4, 3, 0,
+		//     4, 7, 3
+        // };
 
-        // mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
-        // mTestTriangleVertexBuffer.reset(CreateStructuredBuffer(triVertices.data(), sizeof(Vertex), static_cast<uint32_t>(triVertices.size()), "TriangleVertexBuffer"));
+        // // mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
+        // // mTestTriangleVertexBuffer.reset(CreateStructuredBuffer(triVertices.data(), sizeof(Vertex), static_cast<uint32_t>(triVertices.size()), "TriangleVertexBuffer"));
 
-        mTestBoxIndexBuffer.reset(CreateIndexBuffer(boxIndices.data(), sizeof(uint32_t), static_cast<uint32_t>(boxIndices.size()), "BoxIndexBuffer"));
-        mTestBoxPositionBuffer.reset(CreateStructuredBuffer(boxPositions.data(), sizeof(float3), static_cast<uint32_t>(boxPositions.size()), "BoxPositionBuffer"));
-        mTestBoxColorBuffer.reset(CreateStructuredBuffer(boxColors.data(), sizeof(float3), static_cast<uint32_t>(boxColors.size()), "BoxColorBuffer"));
+        // mTestBoxIndexBuffer.reset(CreateIndexBuffer(boxIndices.data(), sizeof(uint32_t), static_cast<uint32_t>(boxIndices.size()), "BoxIndexBuffer"));
+        // mTestBoxPositionBuffer.reset(CreateStructuredBuffer(boxPositions.data(), sizeof(float3), static_cast<uint32_t>(boxPositions.size()), "BoxPositionBuffer"));
+        // mTestBoxColorBuffer.reset(CreateStructuredBuffer(boxColors.data(), sizeof(float3), static_cast<uint32_t>(boxColors.size()), "BoxColorBuffer"));
 
-        RHI::RHIGraphicsPipelineStateDesc psoDesc;
-        // psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        // psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-        psoDesc.VS = GetShader("Box.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        psoDesc.PS = GetShader("Box.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-        psoDesc.DepthStencilState.bDepthWrite = true;
-        psoDesc.DepthStencilState.bDepthTest = true;
-        psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
-        psoDesc.RasterizerState.bFrontCCW = true;
-        psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Back;
-        // psoDesc.RasterizerState.bWireFrame = true;
-        psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
-        psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+        // RHI::RHIGraphicsPipelineStateDesc psoDesc;
+        // // psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        // // psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        // psoDesc.VS = GetShader("Box.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        // psoDesc.PS = GetShader("Box.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        // psoDesc.DepthStencilState.bDepthWrite = true;
+        // psoDesc.DepthStencilState.bDepthTest = true;
+        // psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
+        // psoDesc.RasterizerState.bFrontCCW = true;
+        // psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Back;
+        // // psoDesc.RasterizerState.bWireFrame = true;
+        // psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
+        // psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
-        // mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
-        mTestPSO = GetPipelineState(psoDesc, "BoxPSO");
+        // // mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
+        // mTestPSO = GetPipelineState(psoDesc, "BoxPSO");
 
         RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
@@ -499,40 +499,69 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
+        Scene::Camera* camera = Core::VultanaEngine::GetEngineInstance()->GetWorld()->GetCamera();
+
         SetupGlobalConstants(pCmdList);
 
+        // {
+        //     GPU_EVENT_DEBUG(pCmdList, "RenderTriangle");
+
+        //     RHI::RHIRenderPassDesc renderPassDesc {};
+        //     renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
+        //     renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+        //     renderPassDesc.Color[0].ClearColor[0] = 0.1f;
+        //     renderPassDesc.Color[0].ClearColor[1] = 0.1f;
+        //     renderPassDesc.Color[0].ClearColor[2] = 0.1f;
+        //     renderPassDesc.Color[0].ClearColor[3] = 1.0f;
+        //     renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
+        //     renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+        //     renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+        //     pCmdList->BeginRenderPass(renderPassDesc);
+
+        //     pCmdList->SetPipelineState(mTestPSO);
+
+        //     // pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
+        //     // uint32_t vertexBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
+        //     // pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
+        //     pCmdList->SetIndexBuffer(mTestBoxIndexBuffer->GetBuffer(), 0, mTestBoxIndexBuffer->GetFormat());
+
+        //     uint32_t vertexCB[2] = 
+        //     {
+        //         mTestBoxPositionBuffer->GetSRV()->GetHeapIndex(),
+        //         mTestBoxColorBuffer->GetSRV()->GetHeapIndex()
+        //     };
+        //     pCmdList->SetGraphicsConstants(0, &vertexCB, sizeof(vertexCB));
+
+        //     pCmdList->DrawIndexed(mTestBoxIndexBuffer->GetIndexCount());
+
+        //     pCmdList->EndRenderPass();
+        // }
+
         {
-            GPU_EVENT_DEBUG(pCmdList, "RenderTriangle");
+            GPU_EVENT_DEBUG(pCmdList, "RenderBasePass");
 
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-            renderPassDesc.Color[0].ClearColor[0] = 0.1f;
-            renderPassDesc.Color[0].ClearColor[1] = 0.1f;
-            renderPassDesc.Color[0].ClearColor[2] = 0.1f;
+            renderPassDesc.Color[0].ClearColor[0] = 0.0f;
+            renderPassDesc.Color[0].ClearColor[1] = 0.0f;
+            renderPassDesc.Color[0].ClearColor[2] = 0.0f;
             renderPassDesc.Color[0].ClearColor[3] = 1.0f;
             renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
             renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
             renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+            
             pCmdList->BeginRenderPass(renderPassDesc);
+            pCmdList->SetViewport(0, 0, mRenderWidth, mRenderHeight);
 
-            pCmdList->SetPipelineState(mTestPSO);
-
-            // pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-            // uint32_t vertexBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
-            // pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
-            pCmdList->SetIndexBuffer(mTestBoxIndexBuffer->GetBuffer(), 0, mTestBoxIndexBuffer->GetFormat());
-
-            uint32_t vertexCB[2] = 
+            for (size_t i = 0; i < mForwardRenderBatches.size(); i++)
             {
-                mTestBoxPositionBuffer->GetSRV()->GetHeapIndex(),
-                mTestBoxColorBuffer->GetSRV()->GetHeapIndex()
-            };
-            pCmdList->SetGraphicsConstants(0, &vertexCB, sizeof(vertexCB));
-
-            pCmdList->DrawIndexed(mTestBoxIndexBuffer->GetIndexCount());
+                mForwardRenderBatches[i](pCmdList, camera);
+            }
+            mForwardRenderBatches.clear();
 
             pCmdList->EndRenderPass();
+            // pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessRTV, RHI::RHIAccessMaskSRV);
         }
 
         RenderBackBufferPass(pCmdList);

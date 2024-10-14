@@ -134,6 +134,7 @@ namespace Assets
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
                 Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], node->name ? node->name : "", bFrontFaceCCW);
+                mesh->mpMaterial->mbFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
                 mesh->SetRotation(rotation);
                 mesh->SetScale(scale);
