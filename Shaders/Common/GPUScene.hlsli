@@ -42,7 +42,7 @@ T LoadSceneStaticBuffer(uint bufferAddress, uint elementID)
     return buffer.Load<T>(bufferAddress + elementID * sizeof(T));
 }
 
-FInstanceData LoadInstanceData(uint instanceID)
+FInstanceData GetInstanceData(uint instanceID)
 {
     return LoadSceneConstantBuffer<FInstanceData>(SceneCB.instanceDataAddress + sizeof(FInstanceData) * instanceID);
 }

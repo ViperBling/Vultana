@@ -2,17 +2,6 @@
 
 #include "Texture.hlsli"
 
-// struct FModelConstants
-// {
-//     uint PositionBuffer;
-//     uint TexCoordBuffer;
-//     uint NormalBuffer;
-//     uint TangentBuffer;
-
-//     float4x4 MtxWorld;
-//     float4x4 MtxWorldInverse;
-// };
-
 struct FModelMaterialConstants
 {
     float3 Albedo;
@@ -45,15 +34,10 @@ struct FModelMaterialConstants
 };
 
 #ifndef __cplusplus
-ConstantBuffer<FModelConstants> ModelCB : register(b0);
-ConstantBuffer<FModelMaterialConstants> ModelMaterialCB : register(b2);
 
-// cbuffer ModelVertexConstants : register(b2)
-// {
-//     uint cPositionBuffer;
-//     uint cTexCoordBuffer;
-//     uint cNormalBuffer;
-//     uint cTangentBuffer;
-// };
+cbuffer RootConstants : register(b0)
+{
+    uint cInstanceIndex;
+};
 
 #endif

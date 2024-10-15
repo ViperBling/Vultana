@@ -78,6 +78,7 @@ namespace Scene
 
         pCmdList->SetPipelineState(pPSO);
         pCmdList->SetGraphicsConstants(0, rootConsts, sizeof(rootConsts));
+        pCmdList->SetGraphicsConstants(1, &mInstanceData, sizeof(FInstanceData));
         pCmdList->SetIndexBuffer(mpRenderer->GetSceneStaticBuffer(), mIndexBuffer.offset, mIndexBufferFormat);
         pCmdList->DrawIndexed(mIndexCount);
     }
