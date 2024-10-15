@@ -25,6 +25,13 @@ namespace Scene
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
         virtual void Render(Renderer::RendererBase* pRenderer) override;
+        
+        virtual void OnGUI() override;
+        virtual void SetPosition(const float3& position) override;
+        virtual void SetRotation(const quaternion& rotation) override;
+        virtual void SetScale(const float3& scale) override;
+
+        Assets::MeshMaterial* GetMaterial() const { return mpMaterial.get(); }
 
     private:
         void RenderBassPass(RHI::RHICommandList* pCmdList, const Camera* pCamera);
@@ -36,12 +43,6 @@ namespace Scene
         Renderer::RendererBase* mpRenderer = nullptr;
         std::string mName;
         std::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
-
-        // std::unique_ptr<RenderResources::IndexBuffer> mpIndexBuffer = nullptr;
-        // std::unique_ptr<RenderResources::StructuredBuffer> mpPositionBuffer = nullptr;
-        // std::unique_ptr<RenderResources::StructuredBuffer> mpTexCoordBuffer = nullptr;
-        // std::unique_ptr<RenderResources::StructuredBuffer> mpNormalBuffer = nullptr;
-        // std::unique_ptr<RenderResources::StructuredBuffer> mpTangentBuffer = nullptr;
 
         OffsetAllocator::Allocation mIndexBuffer;
         OffsetAllocator::Allocation mPositionBuffer;

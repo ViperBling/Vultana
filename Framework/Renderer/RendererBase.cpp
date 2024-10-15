@@ -344,6 +344,17 @@ namespace Renderer
         sceneConstants.LightDirection = float3(0.0f, -1.0f, 0.0f);
         sceneConstants.LightRadius = 100.0f;
 
+        sceneConstants.PointRepeatSampler = mpPointRepeatSampler->GetHeapIndex();
+        sceneConstants.PointClampSampler = mpPointClampSampler->GetHeapIndex();
+        sceneConstants.BilinearRepeatSampler = mpBilinearRepeatSampler->GetHeapIndex();
+        sceneConstants.BilinearClampSampler = mpBilinearClampSampler->GetHeapIndex();
+        sceneConstants.TrilinearRepeatSampler = mpTrilinearRepeatSampler->GetHeapIndex();
+        sceneConstants.TrilinearClampSampler = mpTrilinearClampSampler->GetHeapIndex();
+        sceneConstants.Aniso2xSampler = mpAniso2xSampler->GetHeapIndex();
+        sceneConstants.Aniso4xSampler = mpAniso4xSampler->GetHeapIndex();
+        sceneConstants.Aniso8xSampler = mpAniso8xSampler->GetHeapIndex();
+        sceneConstants.Aniso16xSampler = mpAniso16xSampler->GetHeapIndex();
+
         if (pCmdList->GetQueueType() == RHI::ERHICommandQueueType::Graphics)
         {
             // slot 0 only for instance data, must less than 8 * sizeof(uint32_t) = 32 bytes
@@ -354,12 +365,48 @@ namespace Renderer
     void RendererBase::CreateCommonResources()
     {
         RHI::RHISamplerDesc samplerDesc {};
-        mpPointSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::PointSampler"));
+        mpPointRepeatSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::PointRepeatSampler"));
+
+        samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
+        samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
+        mpBilinearRepeatSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::BilinearRepeatSampler"));
+
+        samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
+        mpTrilinearRepeatSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::TrilinearRepeatSampler"));
+
+        samplerDesc.MinFilter = RHI::ERHIFilter::Point;
+        samplerDesc.MagFilter = RHI::ERHIFilter::Point;
+        samplerDesc.MipFilter = RHI::ERHIFilter::Point;
+        samplerDesc.AddressU = RHI::ERHISamplerAddressMode::ClampToEdge;
+        samplerDesc.AddressV = RHI::ERHISamplerAddressMode::ClampToEdge;
+        samplerDesc.AddressW = RHI::ERHISamplerAddressMode::ClampToEdge;
+        mpPointClampSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::PointClampSampler"));
+
+        samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
+        samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
+        mpBilinearClampSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::BilinearClampSampler"));
+
+        samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
+        mpTrilinearClampSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::TrilinearClampSampler"));
 
         samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
-        mpLinearSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::BilinearRepeatSampler"));
+        samplerDesc.AddressU = RHI::ERHISamplerAddressMode::Repeat;
+        samplerDesc.AddressV = RHI::ERHISamplerAddressMode::Repeat;
+        samplerDesc.AddressW = RHI::ERHISamplerAddressMode::Repeat;
+        samplerDesc.bEnableAnisotropy = true;
+        samplerDesc.MaxAnisotropy = 2.0f;
+        mpAniso2xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso2xSampler"));
+
+        samplerDesc.MaxAnisotropy = 4.0f;
+        mpAniso4xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso4xSampler"));
+
+        samplerDesc.MaxAnisotropy = 8.0f;
+        mpAniso8xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso8xSampler"));
+
+        samplerDesc.MaxAnisotropy = 16.0f;
+        mpAniso16xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso16xSampler"));
 
         RHI::RHITexture* pBackBuffer = mpSwapchain->GetBackBuffer();
         uint32_t width = pBackBuffer->GetDesc().Width;
@@ -367,95 +414,6 @@ namespace Renderer
 
         mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8SRGB, RHI::RHITextureUsageRenderTarget, "PresentRT"));
         mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
-
-        // // For Test
-        // std::vector<Vertex> triVertices = 
-        // {
-        //     { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-        //     { {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-        //     { {  0.0f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-        // };
-        // std::vector<uint16_t> triIndices = { 0, 1, 2 };
-
-        // std::vector<float3> boxPositions = 
-        // {
-        //     // 前面
-        //     { -0.5f, -0.5f, -0.5f }, // 左下前
-        //     { -0.5f,  0.5f, -0.5f }, // 右下前
-        //     {  0.5f,  0.5f, -0.5f }, // 右上前
-        //     {  0.5f, -0.5f, -0.5f }, // 左上前
-
-        //     // 后面
-        //     { -0.5f, -0.5f,  0.5f }, // 左下后
-        //     { -0.5f,  0.5f,  0.5f }, // 右下后
-        //     {  0.5f,  0.5f,  0.5f }, // 右上后
-        //     {  0.5f, -0.5f,  0.5f }, // 左上后
-        // };
-        // std::vector<float3> boxColors = 
-        // {
-        //     // 前面
-        //     { 1.0f, 0.0f, 0.0f }, // 左下前
-        //     { 0.0f, 1.0f, 0.0f }, // 右下前
-        //     { 0.0f, 0.0f, 1.0f }, // 右上前
-        //     { 1.0f, 1.0f, 0.0f }, // 左上前
-
-        //     // 后面
-        //     { 0.0f, 1.0f, 1.0f }, // 左下后
-        //     { 1.0f, 0.0f, 1.0f }, // 右下后
-        //     { 1.0f, 1.0f, 1.0f }, // 右上后
-        //     { 0.5f, 0.5f, 0.5f }, // 左上后
-        // };
-    
-        // std::vector<uint32_t> boxIndices = 
-        // {
-        //     // front face
-		//     0, 2, 1,
-		//     0, 3, 2,
-
-		//     // back face
-		//     4, 5, 6,
-		//     4, 6, 7,
-
-		//     // left face
-		//     4, 1, 5,
-		//     4, 0, 1,
-
-		//     // right face
-		//     3, 6, 2,
-		//     3, 7, 6,
-
-		//     // top face
-		//     1, 6, 5,
-		//     1, 2, 6,
-
-		//     // bottom face
-		//     4, 3, 0,
-		//     4, 7, 3
-        // };
-
-        // // mTestTriangleIndexBuffer.reset(CreateIndexBuffer(triIndices.data(), sizeof(uint16_t), static_cast<uint32_t>(triIndices.size()), "TriangleIndexBuffer"));
-        // // mTestTriangleVertexBuffer.reset(CreateStructuredBuffer(triVertices.data(), sizeof(Vertex), static_cast<uint32_t>(triVertices.size()), "TriangleVertexBuffer"));
-
-        // mTestBoxIndexBuffer.reset(CreateIndexBuffer(boxIndices.data(), sizeof(uint32_t), static_cast<uint32_t>(boxIndices.size()), "BoxIndexBuffer"));
-        // mTestBoxPositionBuffer.reset(CreateStructuredBuffer(boxPositions.data(), sizeof(float3), static_cast<uint32_t>(boxPositions.size()), "BoxPositionBuffer"));
-        // mTestBoxColorBuffer.reset(CreateStructuredBuffer(boxColors.data(), sizeof(float3), static_cast<uint32_t>(boxColors.size()), "BoxColorBuffer"));
-
-        // RHI::RHIGraphicsPipelineStateDesc psoDesc;
-        // // psoDesc.VS = GetShader("Triangle.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        // // psoDesc.PS = GetShader("Triangle.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-        // psoDesc.VS = GetShader("Box.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        // psoDesc.PS = GetShader("Box.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-        // psoDesc.DepthStencilState.bDepthWrite = true;
-        // psoDesc.DepthStencilState.bDepthTest = true;
-        // psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
-        // psoDesc.RasterizerState.bFrontCCW = true;
-        // psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Back;
-        // // psoDesc.RasterizerState.bWireFrame = true;
-        // psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;
-        // psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
-
-        // // mTestPSO = GetPipelineState(psoDesc, "TrianglePSO");
-        // mTestPSO = GetPipelineState(psoDesc, "BoxPSO");
 
         RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
@@ -465,15 +423,15 @@ namespace Renderer
         copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
         mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
 
-        // copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH=1" });
-        // copyPSODesc.DepthStencilState.bDepthWrite = true;
-        // copyPSODesc.DepthStencilState.bDepthTest = true;
-        // copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
-        // mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyDepthPSO");
+        copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH=1" });
+        copyPSODesc.DepthStencilState.bDepthWrite = true;
+        copyPSODesc.DepthStencilState.bDepthTest = true;
+        copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyDepthPSO");
 
-        // RHI::RHIComputePipelineStateDesc computePSODesc;
-        // computePSODesc.CS = GetShader("Copy.hlsl", "CSCopyDepth", RHI::ERHIShaderType::CS);
-        // mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
+        RHI::RHIComputePipelineStateDesc computePSODesc;
+        computePSODesc.CS = GetShader("Copy.hlsl", "CSCopyDepth", RHI::ERHIShaderType::CS);
+        mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
     }
 
     void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
@@ -562,40 +520,6 @@ namespace Renderer
 
         SetupGlobalConstants(pCmdList);
 
-        // {
-        //     GPU_EVENT_DEBUG(pCmdList, "RenderTriangle");
-
-        //     RHI::RHIRenderPassDesc renderPassDesc {};
-        //     renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
-        //     renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-        //     renderPassDesc.Color[0].ClearColor[0] = 0.1f;
-        //     renderPassDesc.Color[0].ClearColor[1] = 0.1f;
-        //     renderPassDesc.Color[0].ClearColor[2] = 0.1f;
-        //     renderPassDesc.Color[0].ClearColor[3] = 1.0f;
-        //     renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
-        //     renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-        //     renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-        //     pCmdList->BeginRenderPass(renderPassDesc);
-
-        //     pCmdList->SetPipelineState(mTestPSO);
-
-        //     // pCmdList->SetIndexBuffer(mTestIndexBuffer->GetBuffer(), 0, mTestIndexBuffer->GetFormat());
-        //     // uint32_t vertexBuffer = mTestVertexBuffer->GetSRV()->GetHeapIndex();
-        //     // pCmdList->SetGraphicsConstants(0, &vertexBuffer, sizeof(vertexBuffer));
-        //     pCmdList->SetIndexBuffer(mTestBoxIndexBuffer->GetBuffer(), 0, mTestBoxIndexBuffer->GetFormat());
-
-        //     uint32_t vertexCB[2] = 
-        //     {
-        //         mTestBoxPositionBuffer->GetSRV()->GetHeapIndex(),
-        //         mTestBoxColorBuffer->GetSRV()->GetHeapIndex()
-        //     };
-        //     pCmdList->SetGraphicsConstants(0, &vertexCB, sizeof(vertexCB));
-
-        //     pCmdList->DrawIndexed(mTestBoxIndexBuffer->GetIndexCount());
-
-        //     pCmdList->EndRenderPass();
-        // }
-
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderBasePass");
 
@@ -620,7 +544,6 @@ namespace Renderer
             mForwardRenderBatches.clear();
 
             pCmdList->EndRenderPass();
-            // pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessRTV, RHI::RHIAccessMaskSRV);
         }
 
         RenderBackBufferPass(pCmdList);
@@ -663,7 +586,7 @@ namespace Renderer
             uint32_t constants[2] = 
             {
                 mpTestRT->GetSRV()->GetHeapIndex(),
-                mpPointSampler->GetHeapIndex()
+                mpPointRepeatSampler->GetHeapIndex()
             };
             pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));
             pCmdList->SetPipelineState(mpCopyColorPSO);
