@@ -9,5 +9,14 @@ FVertexOutput VSMain(uint vertexID : SV_VertexID)
 
 float4 PSMain(FVertexOutput psIn) : SV_Target
 {
-    return float4(psIn.TexCoord.xy, 0, 1.0f);
+    FModelMaterialConstants material = GetMaterialConstants(cInstanceIndex);
+#if ALBEDO_TEXTURE
+    float4 albedo = SampleMaterialTexture(material.AlbedoTexture, psIn.TexCoord, 0);
+#elif DIFFUSE_TEXTURE
+    float4 albedo = SampleMaterialTexture(material.DiffuseTexture, psIn.TexCoord, 0);
+#else
+    float4 albedo = 0.0f;
+#endif
+
+    return float4(albedo.rgb, 1.0f);
 }
