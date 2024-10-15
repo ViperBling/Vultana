@@ -84,12 +84,16 @@ namespace Renderer
         }
 
         CreateCommonResources();
+
+        mpGPUScene = std::make_unique<GPUScene>(this);
         
         return true;
     }
 
     void RendererBase::RenderFrame()
     {
+        mpGPUScene->Update();
+
         BeginFrame();
         UploadResource();
         Render();
@@ -333,11 +337,17 @@ namespace Renderer
 
         FSceneConstants sceneConstants {};
         pCamera->SetupCameraCB(sceneConstants.CameraCB);
+        sceneConstants.SceneConstantBufferSRV = mpGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex();
+        sceneConstants.SceneStaticBufferSRV = mpGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex();
+        sceneConstants.instanceDataAddress = mpGPUScene->GetInstanceDataAddress();
+        sceneConstants.LightColor = float3(1.0f, 1.0f, 1.0f);
+        sceneConstants.LightDirection = float3(0.0f, -1.0f, 0.0f);
+        sceneConstants.LightRadius = 100.0f;
 
         if (pCmdList->GetQueueType() == RHI::ERHICommandQueueType::Graphics)
         {
             // slot 0 only for instance data, must less than 8 * sizeof(uint32_t) = 32 bytes
-            pCmdList->SetGraphicsConstants(1, &sceneConstants, sizeof(FSceneConstants));
+            pCmdList->SetGraphicsConstants(2, &sceneConstants, sizeof(FSceneConstants));
         }
     }
 
@@ -632,6 +642,7 @@ namespace Renderer
         pCmdList->Submit();
 
         mpStagingBufferAllocators[frameIndex]->Reset();
+        mpGPUScene->ResetFrameData();
 
         mpDevice->EndFrame();
     }

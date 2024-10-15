@@ -31,7 +31,7 @@ struct FSceneConstants
 
 #ifndef __cplusplus
 
-ConstantBuffer<FSceneConstants> SceneCB : register(b1);
+ConstantBuffer<FSceneConstants> SceneCB : register(b2);
 
 FCameraConstants GetCameraConstants()
 {
