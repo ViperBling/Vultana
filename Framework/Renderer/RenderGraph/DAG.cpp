@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-namespace Renderer
+namespace RenderGraph
 {
     DAGEdge::DAGEdge(DirectedAcyclicGraph &graph, DAGNode *from, DAGNode *to)
         : mFromNode(from->GetID())
@@ -14,13 +14,13 @@ namespace Renderer
         graph.RegisterEdge(this);
     }
 
-    DAGNode::DAGNode(DirectedAcyclicGraph &graph, const std::string &name)
+    DAGNode::DAGNode(DirectedAcyclicGraph &graph)
     {
         mID = graph.GenerateNodeID();
         graph.RegisterNode(this);
     }
 
-    DAGEdge *DirectedAcyclicGraph::GetEdge(DAGNodeID from, DAGNodeID to) const
+    DAGEdge* DirectedAcyclicGraph::GetEdge(DAGNodeID from, DAGNodeID to) const
     {
         for (size_t i = 0; i < mEdges.size(); ++i)
         {

@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-namespace Renderer
+namespace RenderGraph
 {
     using DAGNodeID = uint32_t;
 
@@ -31,7 +31,7 @@ namespace Renderer
         friend class DirectedAcyclicGraph;
 
     public:
-        DAGNode(DirectedAcyclicGraph& graph, const std::string& name);
+        DAGNode(DirectedAcyclicGraph& graph);
         virtual ~DAGNode() {}
 
         DAGNodeID GetID() const { return mID; }
@@ -67,9 +67,6 @@ namespace Renderer
 
         void GetIncomingEdges(const DAGNode* node, std::vector<DAGEdge*>& edges) const;
         void GetOutgoingEdges(const DAGNode* node, std::vector<DAGEdge*>& edges) const;
-
-        //dot.exe -Tpng -O file
-        // std::string ExportGraphviz();
 
     private:
         std::vector<DAGNode*> mNodes;

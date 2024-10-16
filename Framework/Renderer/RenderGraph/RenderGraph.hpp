@@ -1,13 +1,9 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <functional>
-#include <optional>
+#include "RenderGraphPass.hpp"
+#include "Utilities/Math.hpp"
 
-#include "Utilities/Hash.hpp"
+#include <memory>
 
 namespace Renderer
 {
