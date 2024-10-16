@@ -352,7 +352,6 @@ namespace RHI
             struct
             {
                 uint32_t MipSlice = 0;
-                uint32_t MipLevels = -1;
                 uint32_t ArraySlice = 0;
                 uint32_t ArraySize = 1;
                 uint32_t PlaneSlice = 0;
@@ -369,7 +368,6 @@ namespace RHI
     {
         return lhs.Type == rhs.Type &&
             lhs.Texture.MipSlice == rhs.Texture.MipSlice &&
-            lhs.Texture.MipLevels == rhs.Texture.MipLevels &&
             lhs.Texture.ArraySlice == rhs.Texture.ArraySlice &&
             lhs.Texture.ArraySize == rhs.Texture.ArraySize &&
             lhs.Texture.PlaneSlice == rhs.Texture.PlaneSlice;

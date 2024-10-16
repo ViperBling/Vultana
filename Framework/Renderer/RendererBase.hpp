@@ -152,8 +152,8 @@ namespace Renderer
         std::unique_ptr<RenderResources::Texture2D> mpTestDepthRT;
         
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
-        RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
-        RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
+        // RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
+        // RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
         std::vector<RenderBatch> mForwardRenderBatches;
     };

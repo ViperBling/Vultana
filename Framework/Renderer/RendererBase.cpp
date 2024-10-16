@@ -422,16 +422,6 @@ namespace Renderer
         copyPSODesc.RTFormats[0] = mpSwapchain->GetDesc()->ColorFormat;
         copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
         mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
-
-        copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH=1" });
-        copyPSODesc.DepthStencilState.bDepthWrite = true;
-        copyPSODesc.DepthStencilState.bDepthTest = true;
-        copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
-        mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyDepthPSO");
-
-        RHI::RHIComputePipelineStateDesc computePSODesc;
-        computePSODesc.CS = GetShader("Copy.hlsl", "CSCopyDepth", RHI::ERHIShaderType::CS);
-        mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthComputePSO");
     }
 
     void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
@@ -456,11 +446,10 @@ namespace Renderer
         mpDevice->BeginFrame();
 
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
-        RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
-
         pCmdList->ResetAllocator();
         pCmdList->Begin();
 
+        RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
         pComputeCmdList->ResetAllocator();
         pComputeCmdList->Begin();
     }
