@@ -508,15 +508,12 @@ namespace Renderer
         Scene::Camera* camera = Core::VultanaEngine::GetEngineInstance()->GetWorld()->GetCamera();
 
         SetupGlobalConstants(pCmdList);
-        mpSwapchain->AcquireNextBackBuffer();
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
-
 
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderBasePass");
 
             RHI::RHIRenderPassDesc renderPassDesc {};
-            renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
+            renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
             renderPassDesc.Color[0].ClearColor[0] = 0.0f;
             renderPassDesc.Color[0].ClearColor[1] = 0.0f;
@@ -539,9 +536,8 @@ namespace Renderer
 
             pCmdList->EndRenderPass();
         }
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
-
-        // RenderBackBufferPass(pCmdList);
+        
+        RenderBackBufferPass(pCmdList);
     }
 
     void RendererBase::EndFrame()
@@ -568,6 +564,7 @@ namespace Renderer
     void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
     {
         mpSwapchain->AcquireNextBackBuffer();
+        pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessRTV, RHI::RHIAccessMaskSRV);
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
         {
@@ -592,6 +589,7 @@ namespace Renderer
             pCmdList->EndRenderPass();
         }
 
+        pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessMaskSRV, RHI::RHIAccessRTV);
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 } // namespace Vultana::Renderer
