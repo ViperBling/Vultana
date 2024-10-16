@@ -56,3 +56,39 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
 
     return vsOut;
 }
+
+struct FPBRMetallicRoughness
+{
+    float3 Albedo;
+    float Alpha;
+    float Metallic;
+    float Roughness;
+    float AmbientOcclusion;
+};
+
+struct FPBRSpecularGlossiness
+{
+    float3 Diffuse;
+    float Alpha;
+    float3 Specular;
+    float Glossiness;
+};
+
+Texture2D GetMaterialTexture2D(uint heapIndex)
+{
+    return ResourceDescriptorHeap[heapIndex];
+}
+
+SamplerState GetMaterialSampler()
+{
+    return SamplerDescriptorHeap[SceneCB.Aniso8xSampler];
+}
+
+float4 SampleMaterialTexture(FMaterialTextureInfo textureInfo, float2 texCoord, float mipLOD)
+{
+    Texture2D texture = GetMaterialTexture2D(textureInfo.Index);
+    SamplerState anisoSampler = GetMaterialSampler();
+    texCoord = textureInfo.TransformUV(texCoord);
+
+    return texture.SampleLevel(anisoSampler, texCoord, mipLOD);
+}

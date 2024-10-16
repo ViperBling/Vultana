@@ -27,6 +27,21 @@ struct FSceneConstants
 
     float3 LightColor;
     float LightRadius;
+
+    uint PointRepeatSampler;
+    uint PointClampSampler;
+    uint BilinearRepeatSampler;
+    uint BilinearClampSampler;
+
+    uint TrilinearRepeatSampler;
+    uint TrilinearClampSampler;
+    uint Padding02;
+    uint Padding03;
+
+    uint Aniso2xSampler;
+    uint Aniso4xSampler;
+    uint Aniso8xSampler;
+    uint Aniso16xSampler;
 };
 
 #ifndef __cplusplus

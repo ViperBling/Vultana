@@ -2,6 +2,7 @@
 #include "AssetManager/MeshMaterial.hpp"
 #include "AssetManager/ResourceCache.hpp"
 #include "Scene/Camera.hpp"
+#include "Utilities/GUIUtil.hpp"
 
 namespace Scene
 {
@@ -35,6 +36,28 @@ namespace Scene
     {
         Renderer::RenderBatch bassPassBatch = std::bind(&StaticMesh::RenderBassPass, this, std::placeholders::_1, std::placeholders::_2);
         pRenderer->AddForwardRenderBatch(bassPassBatch);
+    }
+
+    void StaticMesh::OnGUI()
+    {
+        IVisibleObject::OnGUI();
+
+        mpMaterial->OnGUI();
+    }
+
+    void StaticMesh::SetPosition(const float3 &position)
+    {
+        IVisibleObject::SetPosition(position);
+    }
+
+    void StaticMesh::SetRotation(const quaternion &rotation)
+    {
+        IVisibleObject::SetRotation(rotation);
+    }
+
+    void StaticMesh::SetScale(const float3 &scale)
+    {
+        IVisibleObject::SetScale(scale);
     }
 
     void StaticMesh::RenderBassPass(RHI::RHICommandList *pCmdList, const Camera *pCamera)

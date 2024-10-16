@@ -53,8 +53,8 @@ namespace Renderer
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const std::string& name);
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
         void ReloadShaders();
-        RHI::RHIDescriptor* GetPointSampler() const { return mpPointSampler.get(); }
-        RHI::RHIDescriptor* GetLinearSampler() const { return mpLinearSampler.get(); }
+        RHI::RHIDescriptor* GetPointSampler() const { return mpPointRepeatSampler.get(); }
+        RHI::RHIDescriptor* GetLinearSampler() const { return mpBilinearRepeatSampler.get(); }
 
         RenderResources::Texture2D* CreateTexture2D(const std::string& file, bool srgb);
         RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
@@ -136,21 +136,21 @@ namespace Renderer
         };
         std::vector<BufferUpload> mPendingBufferUpload;
 
-        std::unique_ptr<RHI::RHIDescriptor> mpPointSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpLinearSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpAniso2xSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpAniso4xSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpAniso8xSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpAniso16xSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpPointRepeatSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpPointClampSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpBilinearRepeatSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpBilinearClampSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpTrilinearRepeatSampler;
+        std::unique_ptr<RHI::RHIDescriptor> mpTrilinearClampSampler;
 
         // For Test
         std::unique_ptr<RenderResources::Texture2D> mpTestRT;
         std::unique_ptr<RenderResources::Texture2D> mpTestDepthRT;
         
-        std::unique_ptr<RenderResources::StructuredBuffer> mTestTriangleVertexBuffer = nullptr;
-        std::unique_ptr<RenderResources::IndexBuffer> mTestTriangleIndexBuffer = nullptr;
-
-        std::unique_ptr<RenderResources::StructuredBuffer> mTestBoxColorBuffer = nullptr;
-        std::unique_ptr<RenderResources::StructuredBuffer> mTestBoxPositionBuffer = nullptr;
-        std::unique_ptr<RenderResources::IndexBuffer> mTestBoxIndexBuffer = nullptr;
-        
-        RHI::RHIPipelineState* mTestPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
         RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
