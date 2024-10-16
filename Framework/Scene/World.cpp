@@ -64,8 +64,7 @@ namespace Scene
 
     void World::CreateCamera(tinyxml2::XMLElement *element)
     {
-        mpCamera->SetPosition({ 0.5f, 1.0f, -1.0f });
-        mpCamera->SetRotation({ 60.0f, 10.0f, 0.0f });
+        mpCamera->SetPosition({ 0.0f, 0.0f, -3.0f });
 
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         uint32_t width = pRenderer->GetRenderWidth();
