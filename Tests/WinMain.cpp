@@ -11,7 +11,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     rpmalloc_initialize();
     Window::Win32WindowDesc wndDesc;
     wndDesc.Position = { 100.0f, 100.0f };
-    wndDesc.Size = { 1280.0f, 720.0f };
+    wndDesc.Size = { 600.0f, 600.0f };
     wndDesc.Instance = hInstance;
     wndDesc.ShowCmd = nShowCmd;
     wndDesc.Title = "VultanaEngine";
