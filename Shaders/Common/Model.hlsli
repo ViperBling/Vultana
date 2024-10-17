@@ -92,3 +92,14 @@ float4 SampleMaterialTexture(FMaterialTextureInfo textureInfo, float2 texCoord, 
 
     return texture.SampleLevel(anisoSampler, texCoord, mipLOD);
 }
+
+void AlphaTest(uint instanceID, float2 uv)
+{
+    float alpha = 1.0;
+#if ALBEDO_TEXTURE
+    alpha = SampleMaterialTexture(GetMaterialConstants(instanceID).AlbedoTexture, uv, 0).a;
+#elif DIFFUSE_TEXTURE
+    alpha = SampleMaterialTexture(GetMaterialConstants(instanceID).DiffuseTexture, uv, 0).a;
+#endif
+    clip(alpha - GetMaterialConstants(instanceID).AlphaCutout);
+}

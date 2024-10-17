@@ -456,16 +456,16 @@ namespace RHI
         auto supportExtens = vk::enumerateInstanceExtensionProperties();
         auto supportLayers = vk::enumerateInstanceLayerProperties();
 
-        VTNA_LOG_DEBUG("Available instance layers:");
-        for (uint32_t i = 0; i < supportLayers.size(); i++)
-        {
-            VTNA_LOG_DEBUG("  {}", (char*)supportLayers[i].layerName);
-        }
-        VTNA_LOG_DEBUG("Available instance extensions:");
-        for (uint32_t i = 0; i < supportExtens.size(); i++)
-        {
-            VTNA_LOG_DEBUG("  {}", (char*)supportExtens[i].extensionName);
-        }
+        // VTNA_LOG_DEBUG("Available instance layers:");
+        // for (uint32_t i = 0; i < supportLayers.size(); i++)
+        // {
+        //     VTNA_LOG_DEBUG("  {}", (char*)supportLayers[i].layerName);
+        // }
+        // VTNA_LOG_DEBUG("Available instance extensions:");
+        // for (uint32_t i = 0; i < supportExtens.size(); i++)
+        // {
+        //     VTNA_LOG_DEBUG("  {}", (char*)supportExtens[i].extensionName);
+        // }
 
         std::vector<const char*> requiredLayers = 
         {

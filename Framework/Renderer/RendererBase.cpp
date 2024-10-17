@@ -334,15 +334,16 @@ namespace Renderer
     {
         Scene::World* pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
         Scene::Camera* pCamera = pWorld->GetCamera();
+        Scene::ILight* pMainLight = pWorld->GetMainLight();
 
         FSceneConstants sceneConstants {};
         pCamera->SetupCameraCB(sceneConstants.CameraCB);
         sceneConstants.SceneConstantBufferSRV = mpGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex();
         sceneConstants.SceneStaticBufferSRV = mpGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex();
         sceneConstants.instanceDataAddress = mpGPUScene->GetInstanceDataAddress();
-        sceneConstants.LightColor = float3(1.0f, 1.0f, 1.0f);
-        sceneConstants.LightDirection = float3(0.0f, -1.0f, 0.0f);
-        sceneConstants.LightRadius = 100.0f;
+        sceneConstants.LightColor = pMainLight->GetLightColor();
+        sceneConstants.LightDirection = pMainLight->GetLightDirection();
+        sceneConstants.LightRadius = pMainLight->GetLightRadius();
 
         sceneConstants.PointRepeatSampler = mpPointRepeatSampler->GetHeapIndex();
         sceneConstants.PointClampSampler = mpPointClampSampler->GetHeapIndex();

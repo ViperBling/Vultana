@@ -34,7 +34,7 @@ namespace Scene
 
     void StaticMesh::Render(Renderer::RendererBase *pRenderer)
     {
-        Renderer::RenderBatch bassPassBatch = std::bind(&StaticMesh::RenderBassPass, this, std::placeholders::_1, std::placeholders::_2);
+        Renderer::GraphicBatch bassPassBatch = std::bind(&StaticMesh::RenderBassPass, this, std::placeholders::_1, std::placeholders::_2);
         pRenderer->AddForwardRenderBatch(bassPassBatch);
     }
 

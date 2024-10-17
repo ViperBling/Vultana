@@ -76,7 +76,7 @@ namespace Renderer
 
         void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
 
-        void AddForwardRenderBatch(const RenderBatch& batch) { mForwardRenderBatches.push_back(batch); }
+        void AddForwardRenderBatch(const GraphicBatch& batch) { mForwardRenderBatches.push_back(batch); }
 
     private:
         void CreateCommonResources();
@@ -155,6 +155,6 @@ namespace Renderer
         // RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
         // RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
-        std::vector<RenderBatch> mForwardRenderBatches;
+        std::vector<GraphicBatch> mForwardRenderBatches;
     };
 }
