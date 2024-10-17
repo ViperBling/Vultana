@@ -22,8 +22,11 @@ namespace Scene
         void LoadScene(const std::string& file);
 
         void AddObject(IVisibleObject* object);
+        void AddLight(ILight* light);
 
         void Tick(float deltaTime);
+
+        ILight* GetMainLight();
 
     private:
         void ClearScene();
@@ -37,6 +40,7 @@ namespace Scene
         std::unique_ptr<Camera> mpCamera;
 
         std::list<std::unique_ptr<IVisibleObject>> mObjects;
-        // std::list<std::unique_ptr<Light>> mLights;
+        std::list<std::unique_ptr<ILight>> mLights;
+        ILight* mpMainLight = nullptr;
     };
 }

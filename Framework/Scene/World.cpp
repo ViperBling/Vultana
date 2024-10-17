@@ -1,4 +1,5 @@
 #include "World.hpp"
+#include "SceneComponent/DirectionalLight.hpp"
 #include "Renderer/RendererBase.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "AssetManager/ModelLoader.hpp"
@@ -21,14 +22,20 @@ namespace Scene
     void World::LoadScene(const std::string &file)
     {
         // TODO : Load scene from file
-        CreateCamera(nullptr);
-        CreateModel(nullptr);
+        CreateSceneObject(nullptr);
     }
 
     void World::AddObject(IVisibleObject *object)
     {
         assert(object != nullptr);
+        object->SetID(static_cast<uint32_t>(mObjects.size()));
         mObjects.push_back(std::unique_ptr<IVisibleObject>(object));
+    }
+
+    void World::AddLight(ILight *light)
+    {
+        assert(light != nullptr);
+        mLights.push_back(std::unique_ptr<ILight>(light));
     }
 
     void World::Tick(float deltaTime)
@@ -40,6 +47,11 @@ namespace Scene
             (*iter)->Tick(deltaTime);
         }
 
+        for (auto iter = mLights.begin(); iter != mLights.end(); ++iter)
+        {
+            (*iter)->Tick(deltaTime);
+        }
+
         Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
         {
@@ -47,19 +59,45 @@ namespace Scene
         }
     }
 
+    ILight *World::GetMainLight()
+    {
+        assert(mpMainLight != nullptr);
+        return mpMainLight;
+    }
+
     void World::ClearScene()
     {
         mObjects.clear();
+        mLights.clear();
+        mpMainLight = nullptr;
     }
 
     void World::CreateSceneObject(tinyxml2::XMLElement *element)
     {
-        
+        CreateLight(element);
+        CreateCamera(element);
+        CreateModel(element);
     }
 
     void World::CreateLight(tinyxml2::XMLElement *element)
     {
-        
+        ILight* light = new DirectionalLight();
+
+        if (!light->Create())
+        {
+            delete light;
+            return;
+        }
+
+        light->SetLightColor({ 1.0f, 1.0f, 1.0f });
+        light->SetLightDirection({ 0.0f, 1.0f, 0.0f });
+
+        AddLight(light);
+
+        if (mpMainLight == nullptr)
+        {
+            mpMainLight = light;
+        }
     }
 
     void World::CreateCamera(tinyxml2::XMLElement *element)

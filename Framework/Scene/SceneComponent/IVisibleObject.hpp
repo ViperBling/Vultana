@@ -14,7 +14,7 @@ namespace Scene
 
         virtual bool Create() = 0;
         virtual void Tick(float deltaTime) = 0;
-        virtual void Render(Renderer::RendererBase* pRenderer) = 0;
+        virtual void Render(Renderer::RendererBase* pRenderer) {};
         virtual bool FrustumCull(const float4* plane, uint32_t planeCount) const { return true; }
         virtual void OnGUI();
 
