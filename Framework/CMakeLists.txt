@@ -26,6 +26,7 @@ file(GLOB_RECURSE Core_Head               ${SourcePath}/Core/*.hpp)
 file(GLOB_RECURSE Core_Src                ${SourcePath}/Core/*.cpp)
 file(GLOB_RECURSE Renderer_Head           ${SourcePath}/Renderer/*.hpp)
 file(GLOB_RECURSE Renderer_Src            ${SourcePath}/Renderer/*.cpp)
+file(GLOB_RECURSE Renderer_Inline         ${SourcePath}/Renderer/*.inl)
 file(GLOB_RECURSE RHI_Head                ${SourcePath}/RHI/*.hpp)
 file(GLOB_RECURSE RHI_Src                 ${SourcePath}/RHI/*.cpp)
 file(GLOB_RECURSE Scene_Head              ${SourcePath}/Scene/*.hpp)
@@ -39,7 +40,7 @@ add_library(FrameworkLib STATIC
     ${AssetManager_Head} ${AssetManager_Src}
     ${Common_Head}       ${Common_Src}
     ${Core_Head}         ${Core_Src}
-    ${Renderer_Head}     ${Renderer_Src}
+    ${Renderer_Head}     ${Renderer_Src}      ${Renderer_Inline}
     ${RHI_Head}          ${RHI_Src}
     ${Scene_Head}        ${Scene_Src}
     ${Window_Head}       ${Window_Src}
