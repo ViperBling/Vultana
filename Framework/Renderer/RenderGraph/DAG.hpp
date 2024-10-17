@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-namespace RenderGraph
+namespace RG
 {
     using DAGNodeID = uint32_t;
 

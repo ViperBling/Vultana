@@ -76,6 +76,7 @@ namespace Renderer
 
         void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
 
+        LinearAllocator* GetConstantAllocator() { return mCBAllocator.get(); }
         void AddForwardRenderBatch(const GraphicBatch& batch) { mForwardRenderBatches.push_back(batch); }
 
     private:
@@ -103,6 +104,8 @@ namespace Renderer
         uint32_t mRenderHeight;
         float mUpscaleRatio = 1.0f;
         float mMipBias = 0.0f;
+
+        std::unique_ptr<LinearAllocator> mCBAllocator;
 
         uint64_t mCurrentFrameFenceValue = 0;
         uint64_t mFrameFenceValue[RHI::RHI_MAX_INFLIGHT_FRAMES] = {};

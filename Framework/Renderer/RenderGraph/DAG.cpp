@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-namespace RenderGraph
+namespace RG
 {
     DAGEdge::DAGEdge(DirectedAcyclicGraph &graph, DAGNode *from, DAGNode *to)
         : mFromNode(from->GetID())

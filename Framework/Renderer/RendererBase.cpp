@@ -28,6 +28,7 @@ namespace Renderer
         mpShaderCache = std::make_unique<ShaderCache>(this);
         mpShaderCompiler = std::make_unique<ShaderCompiler>(this);
         mpPipelineStateCache = std::make_unique<PipelineStateCache>(this);
+        mCBAllocator = std::make_unique<LinearAllocator>(1024 * 1024 * 8);
         
         Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&RendererBase::OnWindowResize, this);
     }
@@ -557,6 +558,7 @@ namespace Renderer
         pCmdList->Submit();
 
         mpStagingBufferAllocators[frameIndex]->Reset();
+        mCBAllocator->Reset();
         mpGPUScene->ResetFrameData();
 
         mpDevice->EndFrame();
