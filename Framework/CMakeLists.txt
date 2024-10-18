@@ -71,6 +71,7 @@ target_link_libraries(FrameworkLib PRIVATE
     cityhash
     Microsoft::DirectXShaderCompiler
     fmt::fmt-header-only
+    ImFileDialog
     ImGui
     imguizmo::imguizmo
     meshoptimizer::meshoptimizer

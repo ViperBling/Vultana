@@ -17,6 +17,7 @@ namespace Core
         void AddGUICommand(const std::string& window, const std::string& section, const std::function<void()>& command);
     
     private:
+        void BuildDockLayout();
         void DrawMenu();
 
         void DrawFrameStats();
@@ -26,9 +27,13 @@ namespace Core
 
     private:
         bool mbShowImGuiDemo = false;
+        bool mbResetLayout = false;
 
         bool mbShowInspector = false;
         bool mbShowSettings = false;
+        bool mbShowRenderer = false;
+
+        unsigned int mDockSpace = 0;
 
         struct Command
         {
@@ -38,6 +43,7 @@ namespace Core
         using WindowCmd = std::vector<Command>;
         std::unordered_map<std::string, WindowCmd> mCommands;
 
+        std::unordered_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> mFileDialogIcons;
         std::vector<RHI::RHIDescriptor*> mPendingDeletions;
     };
 }
