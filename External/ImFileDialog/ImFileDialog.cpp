@@ -433,7 +433,7 @@ namespace ifd {
 		thisPC->Read = true;
 		for (const auto& entry : std::filesystem::directory_iterator("/", ec)) {
 			if (std::filesystem::is_directory(entry, ec))
-				thisPC->Children.push_back(new FileTreeNode(entry.path().string()));
+				thisPC->Children.push_back(new FileTreeNode(entry.path().u8string()));
 		}
 		m_treeCache.push_back(thisPC);
 #endif
@@ -763,10 +763,10 @@ namespace ifd {
 
 		return m_icons[pathU8];
 #else
-		if (m_icons.count(path.string()) > 0)
-			return m_icons[path.string()];
+		if (m_icons.count(path.u8string()) > 0)
+			return m_icons[path.u8string()];
 
-		std::string pathU8 = path.string();
+		std::string pathU8 = path.u8string();
 
 		m_icons[pathU8] = nullptr;
 
@@ -923,7 +923,7 @@ namespace ifd {
 		m_currentDirectory = p;
 #ifdef _WIN32
 		// drives don't work well without the backslash symbol
-		if (p.string().size() == 2 && p.string()[1] == ':')
+		if (p.u8string().size() == 2 && p.u8string()[1] == ':')
 			m_currentDirectory = std::filesystem::u8path(p.string() + "\\");
 #endif
 
@@ -1223,7 +1223,7 @@ namespace ifd {
 				ImGui::CloseCurrentPopup();
 			else {
 				const FileData& data = m_content[m_selectedFileItem];
-				ImGui::TextWrapped("Are you sure you want to delete %s?", data.Path.filename().string().c_str());
+				ImGui::TextWrapped("Are you sure you want to delete %s?", data.Path.filename().u8string().c_str());
 				if (ImGui::Button("Yes")) {
 					std::error_code ec;
 					std::filesystem::remove_all(data.Path, ec);

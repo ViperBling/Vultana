@@ -3,13 +3,59 @@
 #include "Renderer/RendererBase.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "AssetManager/ModelLoader.hpp"
+#include "Utilities/Math.hpp"
+#include "Utilities/Log.hpp"
+#include "Utilities/String.hpp"
 
 #include <atomic>
 
 #include <tinyxml2/tinyxml2.h>
 
+inline float3 strToFloat3(const std::string& str)
+{
+    std::vector<float> v;
+    v.reserve(3);
+    StringUtils::StringToFloatArray(str, v);
+    return float3(v[0], v[1], v[2]);
+}
+
 namespace Scene
 {
+    inline void LoadVisibleObject(tinyxml2::XMLElement *element, IVisibleObject* object)
+    {
+        const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
+        if (position)
+        {
+            object->SetPosition(strToFloat3(position->Value()));
+        }
+        const tinyxml2::XMLAttribute* rotation = element->FindAttribute("Rotation");
+        if (rotation)
+        {
+            object->SetRotation(RotationQuat(strToFloat3(rotation->Value())));
+        }
+        const tinyxml2::XMLAttribute* scale = element->FindAttribute("Scale");
+        if (scale)
+        {
+            object->SetScale(strToFloat3(scale->Value()));
+        }
+    }
+
+    inline void LoadLight(tinyxml2::XMLElement *element, ILight* light)
+    {
+        LoadVisibleObject(element, light);
+
+        const tinyxml2::XMLAttribute* color = element->FindAttribute("Color");
+        if (color)
+        {
+            light->SetLightColor(strToFloat3(color->Value()));
+        }
+        const tinyxml2::XMLAttribute* intensity = element->FindAttribute("Intensity");
+        if (intensity)
+        {
+            light->SetLightIntensity(std::stof(intensity->Value()));
+        }
+    }
+
     World::World()
     {
         mpCamera = std::make_unique<Camera>();
@@ -22,7 +68,22 @@ namespace Scene
     void World::LoadScene(const std::string &file)
     {
         // TODO : Load scene from file
-        CreateSceneObject(nullptr);
+        VTNA_LOG_INFO("Loading scene from file: {}", file);
+
+        tinyxml2::XMLDocument xmlDoc;
+        if (tinyxml2::XML_SUCCESS != xmlDoc.LoadFile(file.c_str()))
+        {
+            VTNA_LOG_ERROR("Failed to load scene file: {}", file);
+            return;
+        }
+        ClearScene();
+
+        tinyxml2::XMLNode* rootNode = xmlDoc.FirstChild();
+        assert(rootNode != nullptr && strcmp(rootNode->Value(), "Scene") == 0);
+        for (tinyxml2::XMLElement* element = rootNode->FirstChildElement(); element != nullptr; element = (tinyxml2::XMLElement*)element->NextSibling())
+        {
+            CreateSceneObject(element);
+        }
     }
 
     void World::AddObject(IVisibleObject *object)
@@ -74,27 +135,47 @@ namespace Scene
 
     void World::CreateSceneObject(tinyxml2::XMLElement *element)
     {
-        CreateLight(element);
-        CreateCamera(element);
-        CreateModel(element);
+        if (strcmp(element->Value(), "Light") == 0)
+        {
+            CreateLight(element);
+        }
+        else if (strcmp(element->Value(), "Camera") == 0)
+        {
+            CreateCamera(element);
+        }
+        else if (strcmp(element->Value(), "Model") == 0)
+        {
+            CreateModel(element);
+        }
     }
 
     void World::CreateLight(tinyxml2::XMLElement *element)
     {
-        ILight* light = new DirectionalLight();
+        ILight* light = nullptr;
 
+        const tinyxml2::XMLAttribute* type = element->FindAttribute("Type");
+        assert(type != nullptr);
+        if (strcmp(type->Value(), "Directional") == 0)
+        {
+            light = new DirectionalLight();
+        }
+        else
+        {
+            // TODO
+            // light = new DirectionalLight();
+            assert(false);
+        }
+        LoadLight(element, light);
         if (!light->Create())
         {
             delete light;
             return;
         }
 
-        light->SetLightColor({ 1.0f, 1.0f, 1.0f });
-        light->SetLightDirection({ 0.0f, 1.0f, 0.0f });
-
         AddLight(light);
 
-        if (mpMainLight == nullptr)
+        const tinyxml2::XMLAttribute* mainLight = element->FindAttribute("IsMainLight");
+        if (mainLight && mainLight->BoolValue())
         {
             mpMainLight = light;
         }
@@ -102,17 +183,27 @@ namespace Scene
 
     void World::CreateCamera(tinyxml2::XMLElement *element)
     {
-        mpCamera->SetPosition({ 0.0f, 0.0f, -3.0f });
+        const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
+        if (position)
+        {
+            mpCamera->SetPosition(strToFloat3(position->Value()));
+        }
+        const tinyxml2::XMLAttribute* rotation = element->FindAttribute("Rotation");
+        if (rotation)
+        {
+            mpCamera->SetRotation(strToFloat3(rotation->Value()));
+        }
 
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         uint32_t width = pRenderer->GetRenderWidth();
         uint32_t height = pRenderer->GetRenderHeight();
-        mpCamera->SetPerspective(static_cast<float>(width) / height, 60.0f, 0.01f);
+        mpCamera->SetPerspective(static_cast<float>(width) / height, element->FindAttribute("Fov")->FloatValue(), element->FindAttribute("ZNear")->FloatValue());
     }
 
     void World::CreateModel(tinyxml2::XMLElement *element)
     {
         Assets::ModelLoader loader(this);
+        loader.LoadModelSettings(element);
         loader.LoadGLTF();
     }
 }

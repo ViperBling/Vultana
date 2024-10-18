@@ -46,7 +46,7 @@ namespace Core
         }
 
         mpWorld = std::make_unique<Scene::World>();
-        mpWorld->LoadScene("scene.xml");
+        mpWorld->LoadScene(mAssetsPath + "Scene_Sponza.xml");
 
         mpGUI = std::make_unique<GUI>();
         mpGUI->Init();
