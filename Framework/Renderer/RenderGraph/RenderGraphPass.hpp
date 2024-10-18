@@ -54,7 +54,7 @@ namespace RG
     public:
         RenderGraphPassBase(const std::string& name, RenderPassType type, DirectedAcyclicGraph& graph);
         
-        void ResolveBarrier(const DirectedAcyclicGraph& graph);
+        void ResolveBarriers(const DirectedAcyclicGraph& graph);
         void ResolveAsyncComputeBarrier(const DirectedAcyclicGraph& graph, RenderGraphAsyncResolveContext& context);
         void Execute(const RenderGraph& graph, RenderGraphPassExecuteContext& context);
 
