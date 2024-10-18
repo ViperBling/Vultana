@@ -3,19 +3,38 @@
 #include "Core/VultanaGUI.hpp"
 #include "Renderer/RendererBase.hpp"
 
+#include "ImFileDialog/ImFileDialog.h"
+
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <ImGuizmo.h>
 
 namespace Core
 {
     VultanaEditor::VultanaEditor()
     {
-        // std::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
-        // Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        ifd::FileDialog::Instance().CreateTexture = [this](uint8_t* data, int w, int h, char fmt) -> void*
+        {
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            RenderResources::Texture2D* pTexture = pRenderer->CreateTexture2D(w, h, 1, fmt == 1 ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::BGRA8SRGB, RHI::RHITextureUsageShaderResource, "ImFileDialogIcon");
+            pRenderer->UploadTexture(pTexture->GetTexture(), data);
+            mFileDialogIcons.insert(std::make_pair(pTexture->GetSRV(), pTexture));
+
+            return pTexture->GetSRV();
+        };
+        ifd::FileDialog::Instance().DeleteTexture = [this](void* tex)
+        {
+            mPendingDeletions.push_back(static_cast<RHI::RHIDescriptor*>(tex));
+        };
     }
 
     VultanaEditor::~VultanaEditor()
     {
+        for (auto iter = mFileDialogIcons.begin(); iter != mFileDialogIcons.end(); iter++)
+        {
+            delete iter->first;
+            delete iter->second;
+        }
     }
 
     void VultanaEditor::Tick()
@@ -23,13 +42,42 @@ namespace Core
         FlushPendingTextureDeletions();
         mCommands.clear();
 
+        BuildDockLayout();
         DrawMenu();
         DrawFrameStats();
+
+        if (mbShowRenderer)
+        {
+            ImGui::Begin("Renderer", &mbShowRenderer);
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            // pRenderer->On
+            ImGui::End();
+        }
     }
 
     void VultanaEditor::AddGUICommand(const std::string &window, const std::string &section, const std::function<void()> &command)
     {
         mCommands[window].push_back({ section, command });
+    }
+
+    void VultanaEditor::BuildDockLayout()
+    {
+        mDockSpace = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+        if (mbResetLayout)
+        {
+            ImGui::DockBuilderRemoveNode(mDockSpace);
+            ImGui::DockBuilderAddNode(mDockSpace, ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(mDockSpace, ImGui::GetMainViewport()->Size);
+            mbResetLayout = false;
+        }
+        if (ImGui::DockBuilderGetNode(mDockSpace)->IsLeafNode())
+        {
+            ImGuiID left, right;
+            ImGui::DockBuilderSplitNode(mDockSpace, ImGuiDir_Right, 0.2, &right, &left);
+            ImGui::DockBuilderDockWindow("Renderer", right);
+            ImGui::DockBuilderFinish(mDockSpace);
+        }
     }
 
     void VultanaEditor::DrawMenu()
@@ -38,6 +86,14 @@ namespace Core
 
         if (ImGui::BeginMainMenuBar())
         {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("Open Scene"))
+                {
+                    ifd::FileDialog::Instance().Open("OpenScene", "Open Scene", "XML file (*.xml){.xml},.*");
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Debug"))
             {
                 if (ImGui::MenuItem("Reload Shaders"))
@@ -54,10 +110,22 @@ namespace Core
             {
                 ImGui::MenuItem("Inspector", "", &mbShowInspector);
                 ImGui::MenuItem("Settings", "", &mbShowSettings);
-                
+                ImGui::MenuItem("Renderer", "", &mbShowRenderer);
+                mbResetLayout = ImGui::MenuItem("Reset Layout");
+
                 ImGui::EndMenu();   // End Window Menu
             }
             ImGui::EndMainMenuBar();
+        }
+
+        if (ifd::FileDialog::Instance().IsDone("SceneOpenDialog"))
+        {
+            if (ifd::FileDialog::Instance().HasResult())
+            {
+                std::string res = ifd::FileDialog::Instance().GetResult().string();
+                // TODO Load Scene
+            }
+            ifd::FileDialog::Instance().Close();
         }
 
         if (mbShowImGuiDemo)
@@ -90,7 +158,12 @@ namespace Core
     {
         for (size_t i = 0; i < mPendingDeletions.size(); i++)
         {
-            // RHI::RHIDescriptor* srv = mPendingDeletions[i];
+            RHI::RHIDescriptor* srv = mPendingDeletions[i];
+            auto iter = mFileDialogIcons.find(srv);
+            assert(iter != mFileDialogIcons.end());
+            auto texture = iter->second;
+            mFileDialogIcons.erase(srv);
+            delete texture;
         }
         mPendingDeletions.clear();
     }

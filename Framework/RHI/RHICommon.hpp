@@ -135,7 +135,7 @@ namespace RHI
         RHITextureUsageRenderTarget     = 1 << 0,
         RHITextureUsageDepthStencil     = 1 << 1,
         RHITextureUsageUnorderedAccess  = 1 << 2,
-        RHITextureUsageShared           = 1 << 3,
+        RHITextureUsageShaderResource   = 1 << 3,
     };
     using ERHITextureUsageFlags = uint32_t;
 
