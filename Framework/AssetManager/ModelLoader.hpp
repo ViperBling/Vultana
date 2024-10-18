@@ -40,6 +40,7 @@ namespace Assets
         ModelLoader(Scene::World* pWorld);
         ~ModelLoader();
 
+        void LoadModelSettings(tinyxml2::XMLElement* element);
         void LoadGLTF(const char* gltfFile = nullptr);
 
     private:
@@ -52,6 +53,9 @@ namespace Assets
         Scene::World* mpWorld = nullptr;
         std::string mFile;
 
+        float3 mPosition = float3(0.0f);
+        quaternion mRotation = quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        float3 mScale = float3(1.0f);
         float4x4 mMtxWorld;
     };
 }

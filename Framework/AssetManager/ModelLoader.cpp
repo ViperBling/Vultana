@@ -6,6 +6,7 @@
 
 #include "Utilities/Log.hpp"
 #include "Utilities/Memory.hpp"
+#include "Utilities/String.hpp"
 
 #define CGLTF_IMPLEMENTATION
 #include <cgltf/cgltf.h>
@@ -14,6 +15,14 @@
 #include <meshoptimizer.h>
 
 #include <cassert>
+
+inline float3 strToFloat3(const std::string& str)
+{
+    std::vector<float> v;
+    v.reserve(3);
+    StringUtils::StringToFloatArray(str, v);
+    return float3(v[0], v[1], v[2]);
+}
 
 inline void GetTransform(cgltf_node* node, float4x4& matrix)
 {
@@ -73,22 +82,42 @@ namespace Assets
     ModelLoader::ModelLoader(Scene::World *pWorld)
     {
         mpWorld = pWorld;
-        // TODO : File path
-        mFile = "Models/BusterDrone/busterDrone.gltf";
 
-        float3 position = { 0.0f, 0.0f, 0.0f };
-        float3 rotation = { 0.0f, 0.0f, 0.0f };
-        float3 scale = { 1.0f, 1.0f, 1.0f };
-
-        float4x4 T = translation_matrix(position);
-        float4x4 R = rotation_matrix(RotationQuat(rotation));
-        float4x4 S = scaling_matrix(scale);
+        float4x4 T = translation_matrix(mPosition);
+        float4x4 R = rotation_matrix(mRotation);
+        float4x4 S = scaling_matrix(mScale);
 
         mMtxWorld = mul(T, mul(R, S));
     }
 
     ModelLoader::~ModelLoader()
     {
+    }
+
+    void ModelLoader::LoadModelSettings(tinyxml2::XMLElement *element)
+    {
+        mFile = element->FindAttribute("File")->Value();
+
+        const tinyxml2::XMLAttribute* positionAttr = element->FindAttribute("Position");
+        if (positionAttr)
+        {
+            mPosition = strToFloat3(positionAttr->Value());
+        }
+        const tinyxml2::XMLAttribute* rotationAttr = element->FindAttribute("Rotation");
+        if (rotationAttr)
+        {
+            mRotation = RotationQuat(strToFloat3(rotationAttr->Value()));
+        }
+        const tinyxml2::XMLAttribute* scaleAttr = element->FindAttribute("Scale");
+        if (scaleAttr)
+        {
+            mScale = strToFloat3(scaleAttr->Value());
+        }
+
+        float4x4 T = translation_matrix(mPosition);
+        float4x4 R = rotation_matrix(mRotation);
+        float4x4 S = scaling_matrix(mScale);
+        mMtxWorld = mul(T, mul(R, S));
     }
 
     void ModelLoader::LoadGLTF(const char *gltfFile)

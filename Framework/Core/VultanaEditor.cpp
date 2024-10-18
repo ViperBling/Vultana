@@ -16,8 +16,9 @@ namespace Core
         ifd::FileDialog::Instance().CreateTexture = [this](uint8_t* data, int w, int h, char fmt) -> void*
         {
             auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-            RenderResources::Texture2D* pTexture = pRenderer->CreateTexture2D(w, h, 1, fmt == 1 ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::BGRA8SRGB, RHI::RHITextureUsageShaderResource, "ImFileDialogIcon");
+            auto pTexture = pRenderer->CreateTexture2D(w, h, 1, fmt == 1 ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::BGRA8SRGB, 0, "ImFileDialogIcon");
             pRenderer->UploadTexture(pTexture->GetTexture(), data);
+
             mFileDialogIcons.insert(std::make_pair(pTexture->GetSRV(), pTexture));
 
             return pTexture->GetSRV();
@@ -90,7 +91,7 @@ namespace Core
             {
                 if (ImGui::MenuItem("Open Scene"))
                 {
-                    ifd::FileDialog::Instance().Open("OpenScene", "Open Scene", "XML file (*.xml){.xml},.*");
+                    ifd::FileDialog::Instance().Open("SceneOpenDialog", "Open Scene", "XML file (*.xml){.xml},.*");
                 }
                 ImGui::EndMenu();
             }
@@ -123,7 +124,7 @@ namespace Core
             if (ifd::FileDialog::Instance().HasResult())
             {
                 std::string res = ifd::FileDialog::Instance().GetResult().string();
-                // TODO Load Scene
+                Core::VultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
             }
             ifd::FileDialog::Instance().Close();
         }
