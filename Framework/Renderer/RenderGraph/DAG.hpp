@@ -43,6 +43,12 @@ namespace RG
         bool IsCulled() const { return mRefCount == 0; }
         uint32_t GetRefCount() const { return IsTarget() ? 1 : mRefCount; }
 
+        virtual std::string GetGraphVizName() const { return mName; }
+        virtual const char* GetGraphVizColor() const { return !IsCulled() ? "Skyblue" : "Skyblue4"; }
+        virtual const char* GetGraphVizEdgeColor() const { return "Darkolivegreen"; }
+        virtual const char* GetGraphVizShape() const { return "Rectangle"; }
+        std::string GraphVizify() const;
+
     private:
         DAGNodeID mID;
         uint32_t mRefCount = 0;
@@ -67,6 +73,8 @@ namespace RG
 
         void GetIncomingEdges(const DAGNode* node, std::vector<DAGEdge*>& edges) const;
         void GetOutgoingEdges(const DAGNode* node, std::vector<DAGEdge*>& edges) const;
+
+        std::string ExportGraphViz();
 
     private:
         std::vector<DAGNode*> mNodes;

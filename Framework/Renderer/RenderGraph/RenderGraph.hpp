@@ -43,7 +43,7 @@ namespace RG
         RGBuffer* GetBuffer(const RGHandle& handle);
 
         const DirectedAcyclicGraph& GetDAG() const { return mGraph; }
-        std::string Export() {}
+        std::string Export();
     
     private:
         template<typename T, typename... ArgsT>

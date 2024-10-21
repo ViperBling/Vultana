@@ -56,6 +56,7 @@ namespace Renderer
         void ReloadShaders();
         RHI::RHIDescriptor* GetPointSampler() const { return mpPointRepeatSampler.get(); }
         RHI::RHIDescriptor* GetLinearSampler() const { return mpBilinearRepeatSampler.get(); }
+        RG::RenderGraph* GetRenderGraph() const { return mpRenderGraph.get(); }
 
         RenderResources::Texture2D* CreateTexture2D(const std::string& file, bool srgb);
         RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
@@ -164,7 +165,7 @@ namespace Renderer
         
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
         // RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
-        // RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
+        RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
         std::unique_ptr<class ForwardBasePass> mpForwardBasePass;
         std::vector<RenderBatch> mForwardRenderBatches;

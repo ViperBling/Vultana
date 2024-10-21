@@ -104,9 +104,14 @@ namespace Core
 
                 ImGui::EndMenu();   // End Debug Menu
             }
-            
-            // ImGui::MenuItem("ImGui Demo", "", &mbShowImGuiDemo);
-
+            if (ImGui::BeginMenu("Tools"))
+            {
+                if (ImGui::MenuItem("RenderGraph", ""))
+                {
+                    ShowRenderGraph();
+                }
+                ImGui::EndMenu();   // End Tools Menu
+            }
             if (ImGui::BeginMenu("Window"))
             {
                 ImGui::MenuItem("Inspector", "", &mbShowInspector);
@@ -146,6 +151,14 @@ namespace Core
 
     void VultanaEditor::DrawFrameStats()
     {
+        ImVec2 windowPos(ImGui::GetIO().DisplaySize.x - 200.0f, 50.0f);
+        ImGuiDockNode* dockSpace = ImGui::DockBuilderGetNode(mDockSpace);
+        ImGuiDockNode* centralNode = dockSpace->CentralNode;
+        if (centralNode)
+        {
+            windowPos.x = centralNode->Size.x - 200.0f;
+        }
+
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 200.0f, 50.0f));
         ImGui::SetNextWindowSize(ImVec2(200.0f, 50.0f));
         ImGui::Begin("Frame Stats", nullptr, 
@@ -153,6 +166,47 @@ namespace Core
             ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus);
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
+    }
+
+    void VultanaEditor::ShowRenderGraph()
+    {
+        auto pEngine = Core::VultanaEngine::GetEngineInstance();
+        auto pRenderer = pEngine->GetRenderer();
+
+        std::string file = pEngine->GetWorkingPath() + "Tools/GraphViz/RenderGraph.html";
+        std::string graph = pRenderer->GetRenderGraph()->Export();
+
+        std::ofstream stream;
+        stream.open(file);
+        stream << R"(<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Render Graph</title>
+      </head>
+      <body>
+        <script src="Viz-Standalone.js"></script>
+        <script>
+            Viz.instance()
+                .then(viz => {
+                    document.body.appendChild(viz.renderSVGElement(`
+    )";
+        stream << graph.c_str();
+        stream << R"(
+                    `));
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        </script>
+      </body>
+    </html>
+    )";
+    
+        stream.close();
+
+        std::string command = "start " + file;
+        system(command.c_str());
     }
 
     void VultanaEditor::FlushPendingTextureDeletions()

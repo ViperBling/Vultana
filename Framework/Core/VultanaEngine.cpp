@@ -23,6 +23,7 @@ namespace Core
 
     void VultanaEngine::Init(void* windowHandle, uint32_t width, uint32_t height)
     {
+        mWorkingPath = "../";
         mAssetsPath = "../Assets/";
         mShaderPath = "../Shaders/";
 

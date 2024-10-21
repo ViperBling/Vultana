@@ -20,15 +20,24 @@ FVSOutput VSMain(uint vertexID : SV_VertexID)
 cbuffer CB : register(b0)
 {
     uint cInputTexture;
+    uint cDepthTexture;
     uint cPointSampler;
     uint padding0;
     uint padding1;
 };
 
-float4 PSMain(FVSOutput psIn) : SV_Target
+float4 PSMain(FVSOutput psIn
+#if OUTPUT_DEPTH
+    , out float outDepth : SV_DEPTH
+#endif
+    ) : SV_Target
 {
     Texture2D inputTexture = ResourceDescriptorHeap[cInputTexture];
     SamplerState pointSampler = SamplerDescriptorHeap[cPointSampler];
 
+#if OUTPUT_DEPTH
+    Texture2D<float> depthTexture = ResourceDescriptorHeap[cDepthTexture];
+    outDepth = depthTexture.SampleLevel(pointSampler, psIn.TexCoord, 0);
+#endif
     return inputTexture.SampleLevel(pointSampler, psIn.TexCoord, 0);
 }

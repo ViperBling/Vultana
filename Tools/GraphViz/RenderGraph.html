@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Render Graph</title>
+      </head>
+      <body>
+        <script src="Viz-Standalone.js"></script>
+        <script>
+            Viz.instance()
+                .then(viz => {
+                    document.body.appendChild(viz.renderSVGElement(`
+    digraph DAG {
+  rankdir=LR;
+  node [fontname="helvetica", fontsize=10]
+
+  "N0" [label="", style=filled, shape=Rectangle, fillcolor=Skyblue]
+  "N1" [label="", style=filled, shape=Rectangle, fillcolor=Skyblue]
+  "N2" [label="", style=filled, shape=Rectangle, fillcolor=Skyblue]
+  "N3" [label="", style=filled, shape=Rectangle, fillcolor=Skyblue]
+  "N4" [label="", style=filled, shape=Rectangle, fillcolor=Skyblue]
+
+  N0 -> { N3 N4 } [color=Darkolivegreen2]
+  N1 -> { N0 } [color=Darkolivegreen2]
+  N2 -> { N0 } [color=Darkolivegreen2]
+}
+
+                    `));
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        </script>
+      </body>
+    </html>
+    
