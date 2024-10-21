@@ -1,4 +1,5 @@
 #include "RHICommandListVK.hpp"
+#include "RHIDescriptorVK.hpp"
 #include "RHIDescriptorAllocatorVK.hpp"
 #include "RHIDeviceVK.hpp"
 #include "RHIHeapVK.hpp"
@@ -8,6 +9,7 @@
 
 #include "RHI/RHI.hpp"
 
+#include "Renderer/ClearUAV.hpp"
 #include "Utilities/Log.hpp"
 
 namespace RHI
@@ -327,12 +329,14 @@ namespace RHI
 
     void RHICommandListVK::ClearUAV(RHIResource *resource, RHIDescriptor *uav, const float *clearValue)
     {
-        // TODO: Implement this
+        const RHI::RHIUnorderedAccessViewDesc& uavDesc = static_cast<RHI::RHIUnorderedAccessViewVK*>(uav)->GetDesc();
+        Renderer::ClearUAV(this, resource, uav, uavDesc, clearValue);
     }
 
     void RHICommandListVK::ClearUAV(RHIResource *resource, RHIDescriptor *uav, const uint32_t *clearValue)
     {
-        // TODO: Implement this
+        const RHI::RHIUnorderedAccessViewDesc& uavDesc = static_cast<RHI::RHIUnorderedAccessViewVK*>(uav)->GetDesc();
+        Renderer::ClearUAV(this, resource, uav, uavDesc, clearValue);
     }
 
     void RHICommandListVK::WriteBuffer(RHIBuffer *buffer, uint32_t offset, uint32_t data)

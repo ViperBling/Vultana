@@ -159,7 +159,7 @@ namespace Core
             windowPos.x = centralNode->Size.x - 200.0f;
         }
 
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 200.0f, 50.0f));
+        ImGui::SetNextWindowPos(windowPos);
         ImGui::SetNextWindowSize(ImVec2(200.0f, 50.0f));
         ImGui::Begin("Frame Stats", nullptr, 
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | 
