@@ -21,6 +21,7 @@ namespace Core
         void DrawMenu();
 
         void DrawFrameStats();
+        void ShowRenderGraph();
         void FlushPendingTextureDeletions();
 
         void DrawWindow(const std::string& window, bool* pOpen);

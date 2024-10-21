@@ -212,6 +212,11 @@ namespace RG
         return static_cast<RGBuffer*>(resource);
     }
 
+    std::string RenderGraph::Export()
+    {
+        return mGraph.ExportGraphViz();
+    }
+
     RGHandle RenderGraph::Read(RenderGraphPassBase *pass, const RGHandle &input, RHI::ERHIAccessFlags usage, uint32_t subresource)
     {
         assert(input.IsValid());

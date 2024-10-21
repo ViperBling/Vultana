@@ -17,13 +17,6 @@
 
 namespace Renderer
 {
-    // For Test
-    struct Vertex
-    {
-        float3 Position;
-        float3 Color;
-    };
-
     RendererBase::RendererBase()
     {
         mpShaderCache = std::make_unique<ShaderCache>(this);
@@ -425,13 +418,6 @@ namespace Renderer
         samplerDesc.MaxAnisotropy = 16.0f;
         mpAniso16xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso16xSampler"));
 
-        RHI::RHITexture* pBackBuffer = mpSwapchain->GetBackBuffer();
-        uint32_t width = pBackBuffer->GetDesc().Width;
-        uint32_t height = pBackBuffer->GetDesc().Height;
-
-        mpTestRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8SRGB, RHI::RHITextureUsageRenderTarget, "PresentRT"));
-        mpTestDepthRT.reset(CreateTexture2D(width, height, 1, RHI::ERHIFormat::D32F, RHI::RHITextureUsageDepthStencil, "PresentDepthRT"));
-
         RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS);
@@ -439,6 +425,12 @@ namespace Renderer
         copyPSODesc.RTFormats[0] = mpSwapchain->GetDesc()->ColorFormat;
         copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
         mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
+
+        // copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH = 1"});
+        // copyPSODesc.DepthStencilState.bDepthWrite = true;
+        // copyPSODesc.DepthStencilState.bDepthTest = true;
+        // copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        // mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyColorDepthPSO");
     }
 
     void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
@@ -481,7 +473,7 @@ namespace Renderer
         pUploadeCmdList->Begin();
 
         {
-            GPU_EVENT_DEBUG(pUploadeCmdList, "RendererBase::UploadResource");
+            GPU_EVENT_DEBUG(pUploadeCmdList, "RendererBase::UploadResources");
             
             for (size_t i = 0; i < mPendingBufferUpload.size(); i++)
             {
@@ -528,34 +520,6 @@ namespace Renderer
 
         SetupGlobalConstants(pCmdList);
 
-        // {
-        //     GPU_EVENT_DEBUG(pCmdList, "RenderBasePass");
-
-        //     RHI::RHIRenderPassDesc renderPassDesc {};
-        //     renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
-        //     renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-        //     renderPassDesc.Color[0].ClearColor[0] = 0.0f;
-        //     renderPassDesc.Color[0].ClearColor[1] = 0.0f;
-        //     renderPassDesc.Color[0].ClearColor[2] = 0.0f;
-        //     renderPassDesc.Color[0].ClearColor[3] = 1.0f;
-        //     renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
-        //     renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-        //     renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-            
-        //     pCmdList->BeginRenderPass(renderPassDesc);
-        //     pCmdList->SetViewport(0, 0, mRenderWidth, mRenderHeight);
-
-        //     for (size_t i = 0; i < mForwardRenderBatches.size(); i++)
-        //     {
-        //         mForwardRenderBatches[i](pCmdList, camera);
-        //     }
-        //     mForwardRenderBatches.clear();
-
-        //     Core::VultanaEngine::GetEngineInstance()->GetGUI()->Render(pCmdList);
-
-        //     pCmdList->EndRenderPass();
-        // }
-
         mpRenderGraph->Execute(this, pCmdList, pComputeCmdList);
         
         RenderBackBufferPass(pCmdList);
@@ -590,6 +554,7 @@ namespace Renderer
         mpSwapchain->AcquireNextBackBuffer();
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
+        RG::RGTexture* pColorRT = mpRenderGraph->GetTexture(mOutputColorHandle);
         RG::RGTexture* pDepthRT = mpRenderGraph->GetTexture(mOutputDepthHandle);
 
         {
@@ -598,13 +563,18 @@ namespace Renderer
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Depth.Texture = pDepthRT->GetTexture();
+            renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Load;
+            renderPassDesc.Depth.DepthStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
+            renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Depth.StencilStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
+            renderPassDesc.Depth.bReadOnly = true;
             pCmdList->BeginRenderPass(renderPassDesc);
 
-            RG::RGTexture* colorRT = mpRenderGraph->GetTexture(mOutputColorHandle);
-
-            uint32_t constants[2] = 
+            uint32_t constants[3] = 
             {
-                colorRT->GetSRV()->GetHeapIndex(),
+                pColorRT->GetSRV()->GetHeapIndex(),
+                pDepthRT->GetSRV()->GetHeapIndex(),
                 mpPointRepeatSampler->GetHeapIndex()
             };
             pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));

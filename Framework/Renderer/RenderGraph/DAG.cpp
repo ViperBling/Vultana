@@ -1,6 +1,8 @@
 ﻿#include "DAG.hpp"
 
 #include <cassert>
+#include <sstream>
+#include <algorithm>
 
 namespace RG
 {
@@ -18,6 +20,23 @@ namespace RG
     {
         mID = graph.GenerateNodeID();
         graph.RegisterNode(this);
+    }
+
+    std::string DAGNode::GraphVizify() const
+    {
+        std::string str;
+        str.reserve(128);
+
+        str.append("[label=\"");
+        str.append(GetGraphVizName());
+        str.append("\", style=filled, shape=");
+        str.append(GetGraphVizShape());
+        str.append(", fillcolor=");
+        str.append(GetGraphVizColor());
+        str.append("]");
+        str.shrink_to_fit();
+
+        return str;
     }
 
     DAGEdge* DirectedAcyclicGraph::GetEdge(DAGNodeID from, DAGNodeID to) const
@@ -114,6 +133,61 @@ namespace RG
                 edges.push_back(mEdges[i]);
             }
         }
+    }
+
+    std::string DirectedAcyclicGraph::ExportGraphViz()
+    {
+        std::stringstream ssOut;
+
+        ssOut << "digraph DAG {\n";
+        ssOut << "  rankdir=LR;\n";
+        ssOut << "  node [fontname=\"helvetica\", fontsize=10]\n\n";
+
+        for (size_t i = 0; i < mNodes.size(); i++)
+        {
+            uint32_t id = mNodes[i]->GetID();
+            std::string s = mNodes[i]->GraphVizify();
+            ssOut << "  \"N" << id << "\" " << s.c_str() << "\n";
+        }
+        ssOut << "\n";
+        for (size_t i = 0; i < mNodes.size(); i++)
+        {
+            DAGNode* node = mNodes[i];
+            uint32_t id = node->GetID();
+
+            std::vector<DAGEdge*> edges;
+            GetOutgoingEdges(node, edges);
+
+            auto first = edges.begin();
+            auto pos = std::partition(first, edges.end(), [this](auto const& edge) { return IsEdgeValid(edge); });
+            
+            std::string s = node->GetGraphVizEdgeColor();
+
+            if (first != pos)
+            {
+                ssOut << "  N" << id << " -> { ";
+                while (first != pos)
+                {
+                    DAGNode const* ref = GetNode((*first++)->mToNode);
+                    ssOut << "N" << ref->GetID() << " ";
+                }
+                ssOut << "} [color=" << s.c_str() << "2]\n";
+            }
+
+            if (first != edges.end())
+            {
+                ssOut << "  N" << id << " -> { ";
+                while (first != edges.end())
+                {
+                    DAGNode const* ref = GetNode((*first++)->mToNode);
+                    ssOut << "N" << ref->GetID() << " ";
+                }
+                ssOut << "} [color=" << s.c_str() << "4 style=dashed]\n";
+            }
+        }
+        ssOut << "}" << std::endl;
+
+        return ssOut.str().c_str();
     }
 
 } // namespace Vultana::Renderer
