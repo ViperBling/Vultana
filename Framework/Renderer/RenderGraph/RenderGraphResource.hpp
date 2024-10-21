@@ -22,7 +22,7 @@ namespace RG
         virtual RHI::RHIResource* GetResource() = 0;
         virtual RHI::ERHIAccessFlags GetInitialState() = 0;
 
-        const char* GetName() const { return mName.c_str(); }
+        const std::string& GetName() const { return mName; }
         DAGNodeID GetFirstPassID() const { return mFirstPass; }
         DAGNodeID GetLastPassID() const { return mLastPass; }
 
