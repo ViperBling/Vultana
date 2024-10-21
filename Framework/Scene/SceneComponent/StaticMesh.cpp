@@ -34,8 +34,9 @@ namespace Scene
 
     void StaticMesh::Render(Renderer::RendererBase *pRenderer)
     {
-        Renderer::GraphicBatch bassPassBatch = std::bind(&StaticMesh::RenderBassPass, this, std::placeholders::_1, std::placeholders::_2);
-        pRenderer->AddForwardRenderBatch(bassPassBatch);
+        Renderer::RenderBatch& batch = pRenderer->AddBasePassBatch();
+
+        Draw(batch, mpMaterial->GetPSO());
     }
 
     void StaticMesh::OnGUI()
@@ -58,12 +59,6 @@ namespace Scene
     void StaticMesh::SetScale(const float3 &scale)
     {
         IVisibleObject::SetScale(scale);
-    }
-
-    void StaticMesh::RenderBassPass(RHI::RHICommandList *pCmdList, const Camera *pCamera)
-    {
-        GPU_EVENT_DEBUG(pCmdList, mName + "::RenderBassPass");
-        Draw(pCmdList, mpMaterial->GetPSO());
     }
 
     void StaticMesh::UpdateConstants()
@@ -95,14 +90,14 @@ namespace Scene
         mInstanceData.MtxWorldInverseTranspose = transpose(inverse(mtxWorld));
     }
 
-    void StaticMesh::Draw(RHI::RHICommandList *pCmdList, RHI::RHIPipelineState *pPSO)
+    void StaticMesh::Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState *pPSO)
     {
         uint32_t rootConsts[1] = { mInstanceIndex };
 
-        pCmdList->SetPipelineState(pPSO);
-        pCmdList->SetGraphicsConstants(0, rootConsts, sizeof(rootConsts));
-        pCmdList->SetGraphicsConstants(1, &mInstanceData, sizeof(FInstanceData));
-        pCmdList->SetIndexBuffer(mpRenderer->GetSceneStaticBuffer(), mIndexBuffer.offset, mIndexBufferFormat);
-        pCmdList->DrawIndexed(mIndexCount);
+        batch.Label = mName.c_str();
+        batch.SetPipelineState(pPSO);
+        batch.SetConstantBuffer(0, rootConsts, sizeof(rootConsts));
+        batch.SetIndexBuffer(mpRenderer->GetSceneStaticBuffer(), mIndexBuffer.offset, mIndexBufferFormat);
+        batch.DrawIndexed(mIndexCount);
     }
 }

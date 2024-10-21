@@ -34,10 +34,8 @@ namespace Scene
         Assets::MeshMaterial* GetMaterial() const { return mpMaterial.get(); }
 
     private:
-        void RenderBassPass(RHI::RHICommandList* pCmdList, const Camera* pCamera);
-
         void UpdateConstants();
-        void Draw(RHI::RHICommandList* pCmdList, RHI::RHIPipelineState* pPSO);
+        void Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState* pPSO);
     
     private:
         Renderer::RendererBase* mpRenderer = nullptr;

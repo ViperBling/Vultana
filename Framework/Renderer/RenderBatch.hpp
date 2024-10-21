@@ -66,11 +66,11 @@ namespace Renderer
             memcpy(Cb[slot].Data, data, size);
         }
 
-        void SetIndexBuffer(RHI::RHIBuffer* buffer, RHI::ERHIFormat format, uint32_t offset)
+        void SetIndexBuffer(RHI::RHIBuffer* buffer, uint32_t offset, RHI::ERHIFormat format)
         {
             IndexBuffer = buffer;
-            IndexFormat = format;
             IndexOffset = offset;
+            IndexFormat = format;
         }
 
         void DrawIndexed(uint32_t count)
@@ -90,6 +90,8 @@ namespace Renderer
     inline void DrawBatch(RHI::RHICommandList* pCmdList, const RenderBatch& batch)
     {
         GPU_EVENT_DEBUG(pCmdList, batch.Label);
+
+        pCmdList->SetPipelineState(batch.PSO);
 
         for (int i = 0; i < MAX_RENDER_BATCH_CB_COUNT; i++)
         {
@@ -159,6 +161,8 @@ namespace Renderer
     inline void DispatchComputeBatch(RHI::RHICommandList* pCmdList, const ComputeBatch& batch)
     {
         GPU_EVENT_DEBUG(pCmdList, batch.Label);
+
+        pCmdList->SetPipelineState(batch.PSO);
 
         for (int i = 0; i < MAX_RENDER_BATCH_CB_COUNT; i++)
         {
