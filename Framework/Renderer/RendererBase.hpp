@@ -36,7 +36,7 @@ namespace Renderer
         ~RendererBase();
 
         bool CreateDevice(RHI::ERHIRenderBackend backend, void* windowHandle, uint32_t width, uint32_t height);
-        void RenderFrame();
+        virtual void RenderFrame();
         void WaitGPU();
 
         uint64_t GetFrameID() const { return mpDevice->GetFrameID(); }
@@ -83,18 +83,20 @@ namespace Renderer
 
         class ForwardBasePass* GetForwardBasePass() { return mpForwardBasePass.get(); }
 
-    private:
-        void CreateCommonResources();
+    protected:
+        virtual void CreateCommonResources();
         void OnWindowResize(void* wndHandle, uint32_t width, uint32_t height);
 
-        void BeginFrame();
-        void UploadResource();
-        void Render();
-        void BuildRenderGraph(RG::RGHandle& outputColor, RG::RGHandle& outputDepth);
-        void EndFrame();
+        virtual void BeginFrame();
+        virtual void UploadResource();
+        virtual void Render();
+        virtual void EndFrame();
 
-        void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
-        
+        virtual void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
+    
+    private:
+        void BuildRenderGraph(RG::RGHandle& outputColor, RG::RGHandle& outputDepth);
+
     private:
         std::unique_ptr<RHI::RHIDevice> mpDevice;
         std::unique_ptr<RHI::RHISwapchain> mpSwapchain;
@@ -155,10 +157,6 @@ namespace Renderer
         std::unique_ptr<RHI::RHIDescriptor> mpBilinearClampSampler;
         std::unique_ptr<RHI::RHIDescriptor> mpTrilinearRepeatSampler;
         std::unique_ptr<RHI::RHIDescriptor> mpTrilinearClampSampler;
-
-        // For Test
-        std::unique_ptr<RenderResources::Texture2D> mpTestRT;
-        std::unique_ptr<RenderResources::Texture2D> mpTestDepthRT;
 
         RG::RGHandle mOutputColorHandle;
         RG::RGHandle mOutputDepthHandle;

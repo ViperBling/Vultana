@@ -514,8 +514,6 @@ namespace Renderer
         RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
         RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
 
-        Scene::Camera* camera = Core::VultanaEngine::GetEngineInstance()->GetWorld()->GetCamera();
-
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", mpDevice->GetFrameID()).c_str());
 
         SetupGlobalConstants(pCmdList);
