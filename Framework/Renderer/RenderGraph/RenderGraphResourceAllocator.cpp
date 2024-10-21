@@ -15,13 +15,13 @@ namespace RG
     {
         for (auto iter = mAllocatedHeaps.begin(); iter != mAllocatedHeaps.end(); ++iter)
         {
-            const Heap& heap = *iter;
+            const FHeap& heap = *iter;
             for (size_t i = 0; i < heap.Resources.size(); i++)
             {
                 DeleteDescriptor(heap.Resources[i].Resource);
                 delete heap.Resources[i].Resource;
             }
-            delete heap.mHeap;
+            delete heap.Heap;
         }
 
         for (auto iter = mFreeOverlappingTextures.begin(); iter != mFreeOverlappingTextures.end(); ++iter)
@@ -35,11 +35,11 @@ namespace RG
     {
         for (auto iter = mAllocatedHeaps.begin(); iter != mAllocatedHeaps.end();)
         {
-            Heap& heap = *iter;
+            FHeap& heap = *iter;
             CheckHeapUsage(heap);
             if (heap.Resources.empty())
             {
-                delete heap.mHeap;
+                delete heap.Heap;
                 iter = mAllocatedHeaps.erase(iter);
             }
             else
@@ -63,7 +63,7 @@ namespace RG
         }
     }
 
-    RHI::RHITexture *RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::RHITextureDesc &desc, const std::string &name, RHI::ERHIAccessFlags &initialState)
+    RHI::RHITexture *RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const std::string& name, RHI::ERHIAccessFlags& initialState)
     {
         for (auto iter = mFreeOverlappingTextures.begin(); iter != mFreeOverlappingTextures.end(); ++iter)
         {
@@ -104,8 +104,8 @@ namespace RG
         uint32_t textureSize = mpDevice->GetAllocationSize(desc);
         for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
         {
-            Heap& heap = mAllocatedHeaps[i];
-            if (heap.mHeap->GetDesc().Size < textureSize || heap.IsOverlapping(lifeTime)) continue;
+            FHeap& heap = mAllocatedHeaps[i];
+            if (heap.Heap->GetDesc().Size < textureSize || heap.IsOverlapping(lifeTime)) continue;
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
             {
@@ -119,7 +119,7 @@ namespace RG
                 }
             }
             RHI::RHITextureDesc newDesc = desc;
-            newDesc.Heap = heap.mHeap;
+            newDesc.Heap = heap.Heap;
 
             AliasedResource aliasedTexture;
             aliasedTexture.Resource = mpDevice->CreateTexture(newDesc, "RGTexture_" + name);
@@ -153,8 +153,8 @@ namespace RG
 
         for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
         {
-            Heap& heap = mAllocatedHeaps[i];
-            if (heap.mHeap->GetDesc().Size < bufferSize || heap.IsOverlapping(lifeTime)) continue;
+            FHeap& heap = mAllocatedHeaps[i];
+            if (heap.Heap->GetDesc().Size < bufferSize || heap.IsOverlapping(lifeTime)) continue;
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
             {
@@ -168,7 +168,7 @@ namespace RG
                 }
             }
             RHI::RHIBufferDesc newDesc = desc;
-            newDesc.Heap = heap.mHeap;
+            newDesc.Heap = heap.Heap;
 
             AliasedResource aliasedBuffer;
             aliasedBuffer.Resource = mpDevice->CreateBuffer(newDesc, "RGBuffer_" + name);
@@ -190,7 +190,7 @@ namespace RG
         {
             for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
             {
-                Heap& heap = mAllocatedHeaps[i];
+                FHeap& heap = mAllocatedHeaps[i];
                 for (size_t j = 0; j < heap.Resources.size(); j++)
                 {
                     AliasedResource& aliasedRes = heap.Resources[j];
@@ -214,7 +214,7 @@ namespace RG
     {
         for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
         {
-            Heap& heap = mAllocatedHeaps[i];
+            FHeap& heap = mAllocatedHeaps[i];
             if (!heap.Contains(resource)) continue;
 
             AliasedResource* aliasedRes = nullptr;
@@ -270,7 +270,7 @@ namespace RG
         return uav;
     }
 
-    void RenderGraphResourceAllocator::CheckHeapUsage(Heap &heap)
+    void RenderGraphResourceAllocator::CheckHeapUsage(FHeap &heap)
     {
         uint64_t currentFrame = mpDevice->GetFrameID();
         for (auto iter = heap.Resources.begin(); iter != heap.Resources.end();)
@@ -324,8 +324,8 @@ namespace RG
 
         std::string heapName = fmt::format("RG Heap {:.1} MB", heapDesc.Size / (1024.0f * 1024.0f)).c_str();
 
-        Heap heap;
-        heap.mHeap = mpDevice->CreateHeap(heapDesc, heapName);
+        FHeap heap;
+        heap.Heap = mpDevice->CreateHeap(heapDesc, heapName);
         mAllocatedHeaps.push_back(heap);
     }
 }

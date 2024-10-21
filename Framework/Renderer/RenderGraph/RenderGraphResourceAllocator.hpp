@@ -28,9 +28,9 @@ namespace RG
             RHI::ERHIAccessFlags LastUsedState = RHI::RHIAccessDiscard;
         };
 
-        struct Heap
+        struct FHeap
         {
-            RHI::RHIHeap* mHeap = nullptr;
+            RHI::RHIHeap* Heap = nullptr;
             std::vector<AliasedResource> Resources;
 
             bool IsOverlapping(const LifeTimeRange& lifeTime) const
@@ -85,14 +85,14 @@ namespace RG
         RHI::RHIDescriptor* GetDescriptor(RHI::RHIResource* resource, const RHI::RHIUnorderedAccessViewDesc& desc);
 
     private:
-        void CheckHeapUsage(Heap& heap);
+        void CheckHeapUsage(FHeap& heap);
         void DeleteDescriptor(RHI::RHIResource* resource);
         void AllocateHeap(uint32_t size);
 
     private:
         RHI::RHIDevice* mpDevice = nullptr;
 
-        std::vector<Heap> mAllocatedHeaps;
+        std::vector<FHeap> mAllocatedHeaps;
 
         struct NonOverlappingTexture
         {

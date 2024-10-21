@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RenderGraph/RenderGraph.hpp"
 #include "RenderResources/IndexBuffer.hpp"
 #include "RenderResources/RawBuffer.hpp"
 #include "RenderResources/StructuredBuffer.hpp"
@@ -77,7 +78,9 @@ namespace Renderer
         void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
 
         LinearAllocator* GetConstantAllocator() { return mCBAllocator.get(); }
-        void AddForwardRenderBatch(const GraphicBatch& batch) { mForwardRenderBatches.push_back(batch); }
+        RenderBatch& AddBasePassBatch();
+
+        class ForwardBasePass* GetForwardBasePass() { return mpForwardBasePass.get(); }
 
     private:
         void CreateCommonResources();
@@ -86,6 +89,7 @@ namespace Renderer
         void BeginFrame();
         void UploadResource();
         void Render();
+        void BuildRenderGraph(RG::RGHandle& outputColor, RG::RGHandle& outputDepth);
         void EndFrame();
 
         void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
@@ -97,6 +101,7 @@ namespace Renderer
         std::unique_ptr<class ShaderCompiler> mpShaderCompiler;
         std::unique_ptr<class ShaderCache> mpShaderCache;
         std::unique_ptr<GPUScene> mpGPUScene;
+        std::unique_ptr<RG::RenderGraph> mpRenderGraph;
 
         uint32_t mDisplayWidth;
         uint32_t mDisplayHeight;
@@ -153,11 +158,15 @@ namespace Renderer
         // For Test
         std::unique_ptr<RenderResources::Texture2D> mpTestRT;
         std::unique_ptr<RenderResources::Texture2D> mpTestDepthRT;
+
+        RG::RGHandle mOutputColorHandle;
+        RG::RGHandle mOutputDepthHandle;
         
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
         // RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
         // RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
-        std::vector<GraphicBatch> mForwardRenderBatches;
+        std::unique_ptr<class ForwardBasePass> mpForwardBasePass;
+        std::vector<RenderBatch> mForwardRenderBatches;
     };
 }

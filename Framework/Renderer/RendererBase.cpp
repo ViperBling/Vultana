@@ -9,6 +9,7 @@
 #include "Utilities/Log.hpp"
 #include "Window/GLFWindow.hpp"
 #include "AssetManager/TextureLoader.hpp"
+#include "ForwardPath/ForwardBasePass.hpp"
 
 #include <optional>
 #include <algorithm>
@@ -36,6 +37,11 @@ namespace Renderer
     RendererBase::~RendererBase()
     {
         WaitGPU();
+
+        if (mpRenderGraph)
+        {
+            mpRenderGraph->Clear();
+        }
 
         Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
     }
@@ -86,7 +92,9 @@ namespace Renderer
 
         CreateCommonResources();
 
+        mpRenderGraph = std::make_unique<RG::RenderGraph>(this);
         mpGPUScene = std::make_unique<GPUScene>(this);
+        mpForwardBasePass = std::make_unique<ForwardBasePass>(this);
         
         return true;
     }
@@ -94,6 +102,8 @@ namespace Renderer
     void RendererBase::RenderFrame()
     {
         mpGPUScene->Update();
+
+        BuildRenderGraph(mOutputColorHandle, mOutputDepthHandle);
 
         BeginFrame();
         UploadResource();
@@ -364,6 +374,11 @@ namespace Renderer
         }
     }
 
+    RenderBatch &RendererBase::AddBasePassBatch()
+    {
+        return mpForwardBasePass->AddBatch();
+    }
+
     void RendererBase::CreateCommonResources()
     {
         RHI::RHISamplerDesc samplerDesc {};
@@ -509,35 +524,39 @@ namespace Renderer
 
         Scene::Camera* camera = Core::VultanaEngine::GetEngineInstance()->GetWorld()->GetCamera();
 
+        GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", mpDevice->GetFrameID()).c_str());
+
         SetupGlobalConstants(pCmdList);
 
-        {
-            GPU_EVENT_DEBUG(pCmdList, "RenderBasePass");
+        // {
+        //     GPU_EVENT_DEBUG(pCmdList, "RenderBasePass");
 
-            RHI::RHIRenderPassDesc renderPassDesc {};
-            renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
-            renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-            renderPassDesc.Color[0].ClearColor[0] = 0.0f;
-            renderPassDesc.Color[0].ClearColor[1] = 0.0f;
-            renderPassDesc.Color[0].ClearColor[2] = 0.0f;
-            renderPassDesc.Color[0].ClearColor[3] = 1.0f;
-            renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
-            renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
-            renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+        //     RHI::RHIRenderPassDesc renderPassDesc {};
+        //     renderPassDesc.Color[0].Texture = mpTestRT->GetTexture();
+        //     renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+        //     renderPassDesc.Color[0].ClearColor[0] = 0.0f;
+        //     renderPassDesc.Color[0].ClearColor[1] = 0.0f;
+        //     renderPassDesc.Color[0].ClearColor[2] = 0.0f;
+        //     renderPassDesc.Color[0].ClearColor[3] = 1.0f;
+        //     renderPassDesc.Depth.Texture = mpTestDepthRT->GetTexture();
+        //     renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+        //     renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
             
-            pCmdList->BeginRenderPass(renderPassDesc);
-            pCmdList->SetViewport(0, 0, mRenderWidth, mRenderHeight);
+        //     pCmdList->BeginRenderPass(renderPassDesc);
+        //     pCmdList->SetViewport(0, 0, mRenderWidth, mRenderHeight);
 
-            for (size_t i = 0; i < mForwardRenderBatches.size(); i++)
-            {
-                mForwardRenderBatches[i](pCmdList, camera);
-            }
-            mForwardRenderBatches.clear();
+        //     for (size_t i = 0; i < mForwardRenderBatches.size(); i++)
+        //     {
+        //         mForwardRenderBatches[i](pCmdList, camera);
+        //     }
+        //     mForwardRenderBatches.clear();
 
-            Core::VultanaEngine::GetEngineInstance()->GetGUI()->Render(pCmdList);
+        //     Core::VultanaEngine::GetEngineInstance()->GetGUI()->Render(pCmdList);
 
-            pCmdList->EndRenderPass();
-        }
+        //     pCmdList->EndRenderPass();
+        // }
+
+        mpRenderGraph->Execute(this, pCmdList, pComputeCmdList);
         
         RenderBackBufferPass(pCmdList);
     }
@@ -561,14 +580,17 @@ namespace Renderer
         mCBAllocator->Reset();
         mpGPUScene->ResetFrameData();
 
+        mForwardRenderBatches.clear();
+
         mpDevice->EndFrame();
     }
 
     void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
     {
         mpSwapchain->AcquireNextBackBuffer();
-        pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessRTV, RHI::RHIAccessMaskSRV);
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+
+        RG::RGTexture* pDepthRT = mpRenderGraph->GetTexture(mOutputDepthHandle);
 
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
@@ -578,9 +600,11 @@ namespace Renderer
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
             pCmdList->BeginRenderPass(renderPassDesc);
 
+            RG::RGTexture* colorRT = mpRenderGraph->GetTexture(mOutputColorHandle);
+
             uint32_t constants[2] = 
             {
-                mpTestRT->GetSRV()->GetHeapIndex(),
+                colorRT->GetSRV()->GetHeapIndex(),
                 mpPointRepeatSampler->GetHeapIndex()
             };
             pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));
@@ -591,8 +615,6 @@ namespace Renderer
 
             pCmdList->EndRenderPass();
         }
-
-        pCmdList->TextureBarrier(mpTestRT->GetTexture(), 0, RHI::RHIAccessMaskSRV, RHI::RHIAccessRTV);
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 } // namespace Vultana::Renderer

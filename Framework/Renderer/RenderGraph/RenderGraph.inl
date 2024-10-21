@@ -103,7 +103,7 @@ namespace RG
     template <typename Data, typename Setup, typename Execution>
     inline RenderGraphPass<Data> &RenderGraph::AddPass(const std::string &name, RenderPassType type, const Setup &setup, const Execution &execution)
     {
-        auto pass = Allocate<RenderGraphPass<Data>>(name, type, mGraph, setup, execution);
+        auto pass = Allocate<RenderGraphPass<Data>>(name, type, mGraph, execution);
         for (size_t i = 0; i < mEventNames.size(); i++)
         {
             pass->BeginEvent(mEventNames[i]);
