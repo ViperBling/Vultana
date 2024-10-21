@@ -32,6 +32,7 @@ namespace RG
         {
             mpResource = resource;
             mVersion = version;
+            mName = resource->GetName();
         }
     
         RenderGraphResource* GetResource() const { return mpResource; }

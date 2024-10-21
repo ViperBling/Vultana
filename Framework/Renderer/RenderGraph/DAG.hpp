@@ -49,10 +49,12 @@ namespace RG
         virtual const char* GetGraphVizShape() const { return "Rectangle"; }
         std::string GraphVizify() const;
 
+    protected:
+        std::string mName;
+        
     private:
         DAGNodeID mID;
         uint32_t mRefCount = 0;
-        std::string mName;
 
         static const uint32_t TARGET = 0x80000000u;
     };

@@ -74,7 +74,6 @@ namespace RG
         virtual void ExecuteImpl(RHI::RHICommandList* pCmdList) = 0;
     
     private:
-        std::string mName;
         RenderPassType mType;
 
         std::vector<std::string> mEventNames;
