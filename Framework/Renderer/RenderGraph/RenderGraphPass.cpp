@@ -10,6 +10,7 @@ namespace RG
         : DAGNode(graph)
     {
         mName = name;
+        mNodeType = FNodeType::Pass;
         mType = type;
     }
 

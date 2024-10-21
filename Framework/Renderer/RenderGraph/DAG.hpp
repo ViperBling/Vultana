@@ -46,12 +46,18 @@ namespace RG
         virtual std::string GetGraphVizName() const { return mName; }
         virtual const char* GetGraphVizColor() const { return !IsCulled() ? "Skyblue" : "Skyblue4"; }
         virtual const char* GetGraphVizEdgeColor() const { return "Darkolivegreen"; }
-        virtual const char* GetGraphVizShape() const { return "Rectangle"; }
+        virtual const char* GetGraphVizShape() const;
         std::string GraphVizify() const;
 
     protected:
+        enum class FNodeType
+        {
+            Resource,
+            Pass,
+        };
         std::string mName;
-        
+        FNodeType mNodeType;
+
     private:
         DAGNodeID mID;
         uint32_t mRefCount = 0;

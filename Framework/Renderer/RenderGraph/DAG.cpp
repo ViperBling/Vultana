@@ -22,6 +22,19 @@ namespace RG
         graph.RegisterNode(this);
     }
 
+    const char* DAGNode::GetGraphVizShape() const
+    {
+        switch (mNodeType)
+        {
+        case FNodeType::Resource:
+            return "ellipse";
+        case FNodeType::Pass:
+            return "rectangle";
+        default:
+            return "ellipse";
+        }
+    }
+
     std::string DAGNode::GraphVizify() const
     {
         std::string str;
