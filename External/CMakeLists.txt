@@ -34,3 +34,11 @@ target_include_directories(ImFileDialog PUBLIC
     ${Stb_INCLUDE_DIR}
 )
 target_link_libraries(ImFileDialog PUBLIC ImGui)
+
+file (GLOB_RECURSE ImGUIZmo_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.h)
+file (GLOB_RECURSE ImGUIZmo_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.cpp)
+add_library(ImGuizmo STATIC)
+target_sources(ImGuizmo PRIVATE ${ImGUIZmo_Head} ${ImGUIZmo_Src})
+target_include_directories(ImGuizmo PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImGui)
