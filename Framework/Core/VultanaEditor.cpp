@@ -2,6 +2,8 @@
 #include "Core/VultanaEngine.hpp"
 #include "Core/VultanaGUI.hpp"
 #include "Renderer/RendererBase.hpp"
+#include "Utilities/Log.hpp"
+#include "Utilities/String.hpp"
 
 #include "ImFileDialog/ImFileDialog.h"
 
@@ -242,6 +244,8 @@ namespace Core
         pSelected->SetPosition(position);
         pSelected->SetRotation(RotationQuat(rotation));
         pSelected->SetScale(scale);
+        
+        // VTNA_LOG_DEBUG("Position: {}", StringUtils::FloatArrayToString(std::vector<float>{position.x, position.y, position.z}));
 
         pSelected->OnGUI();
     }
