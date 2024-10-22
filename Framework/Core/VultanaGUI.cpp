@@ -21,6 +21,8 @@ namespace Core
         io.BackendRendererName = "imgui_impl_vultana";
         io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 
+        io.IniFilename = nullptr;
+
         ImGui::StyleColorsDark();
 
         ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
@@ -37,6 +39,9 @@ namespace Core
     {
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         auto pDevice = pRenderer->GetDevice();
+
+        std::string iniPath = Core::VultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
+        ImGui::LoadIniSettingsFromDisk(iniPath.c_str());
 
         float scaling = ImGui_ImplWin32_GetDpiScaleForHwnd(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
         ImGui::GetStyle().ScaleAllSizes(scaling);

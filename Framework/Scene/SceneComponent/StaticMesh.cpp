@@ -37,6 +37,18 @@ namespace Scene
         Renderer::RenderBatch& batch = pRenderer->AddBasePassBatch();
 
         Draw(batch, mpMaterial->GetPSO());
+
+        if (mpRenderer->IsEnableMouseHitTest())
+        {
+            Renderer::RenderBatch& idBatch = mpRenderer->AddObjectIDPassBatch();
+            Draw(idBatch, mpMaterial->GetIDPSO());
+        }
+
+        if (mID == mpRenderer->GetMouseHitObjectID())
+        {
+            Renderer::RenderBatch& outlineBatch = mpRenderer->AddOutlinePassBatch();
+            Draw(outlineBatch, mpMaterial->GetOutlinePSO());
+        }
     }
 
     void StaticMesh::OnGUI()

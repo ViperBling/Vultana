@@ -18,7 +18,9 @@ namespace Core
     
     private:
         void BuildDockLayout();
+        void DrawToolBar();
         void DrawMenu();
+        void DrawGizmo();
 
         void DrawFrameStats();
         void ShowRenderGraph();
@@ -46,5 +48,16 @@ namespace Core
 
         std::unordered_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> mFileDialogIcons;
         std::vector<RHI::RHIDescriptor*> mPendingDeletions;
+
+        enum class ESelectEditMode
+        {
+            Translate,
+            Rotate,
+            Scale,
+        };
+        ESelectEditMode mSelectEditMode = ESelectEditMode::Translate;
+        std::unique_ptr<RenderResources::Texture2D> mpTranslateIcon;
+        std::unique_ptr<RenderResources::Texture2D> mpRotateIcon;
+        std::unique_ptr<RenderResources::Texture2D> mpScaleIcon;
     };
 }

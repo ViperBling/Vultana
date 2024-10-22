@@ -26,7 +26,7 @@ namespace RHI
 
     private:
         vk::Image mImage = VK_NULL_HANDLE;
-        VmaAllocation mAllocation;
+        VmaAllocation mAllocation = VK_NULL_HANDLE;
         bool mbSwapchainImage = false;
 
         std::vector<vk::ImageView> mRenderViews;
