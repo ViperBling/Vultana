@@ -4,7 +4,7 @@
 
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_impl_win32.h>
-#include <ImGuizmo.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 namespace Core
 {

@@ -8,7 +8,7 @@ set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 find_package(cityhash CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
-find_package(imguizmo CONFIG REQUIRED)
+# find_package(imguizmo CONFIG REQUIRED)
 find_package(meshoptimizer CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
@@ -73,7 +73,7 @@ target_link_libraries(FrameworkLib PRIVATE
     fmt::fmt-header-only
     ImFileDialog
     ImGui
-    imguizmo::imguizmo
+    ImGuizmo
     meshoptimizer::meshoptimizer
     OffsetAllocator
     RPMalloc
