@@ -19,11 +19,11 @@ struct FSceneConstants
 
     uint SceneConstantBufferSRV;
     uint SceneStaticBufferSRV;
-    uint instanceDataAddress;
-    uint Padding00;
+    uint SceneAnimationBufferSRV;
+    uint SceneAnimationBufferUAV;
 
     float3 LightDirection;
-    uint Padding01;
+    uint instanceDataAddress;
 
     float3 LightColor;
     float LightRadius;
@@ -35,8 +35,8 @@ struct FSceneConstants
 
     uint TrilinearRepeatSampler;
     uint TrilinearClampSampler;
-    uint Padding02;
-    uint Padding03;
+    float FrameTime;
+    uint FrameIndex;
 
     uint Aniso2xSampler;
     uint Aniso4xSampler;

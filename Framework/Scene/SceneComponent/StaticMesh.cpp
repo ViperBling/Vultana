@@ -74,6 +74,7 @@ namespace Scene
         mInstanceData.NormalBufferAddress = mNormalBuffer.offset;
         mInstanceData.TangentBufferAddress = mTangentBuffer.offset;
 
+        mInstanceData.bVertexAnimation = false;
         mInstanceData.MaterialDataAddress = mpRenderer->AllocateSceneConstantBuffer((void*)mpMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
         mInstanceData.ObjectID = mID;
         mInstanceData.Scale = std::max(std::max(abs(mScale.x), abs(mScale.y)), abs(mScale.z));

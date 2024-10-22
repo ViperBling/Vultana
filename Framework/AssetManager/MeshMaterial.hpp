@@ -27,6 +27,8 @@ namespace Assets
 
         RHI::RHIPipelineState* GetPSO();
 
+        RHI::RHIPipelineState* GetVertexSkinningPSO();
+
         void UpdateConstants();
         const FModelMaterialConstants* GetMaterialConstants() const { return &mMaterialCB; }
         void OnGUI();
@@ -35,6 +37,7 @@ namespace Assets
         bool IsDoubleSided() const { return mbDoubleSided; }
         bool IsAlphaBlend() const { return mbAlphaBlend; }
         bool IsAlphaTest() const { return mbAlphaTest; }
+        bool IsVertexSkinned() const { return mbSkeletalAnim; }
 
     private:
         void AddMaterialDefines(std::vector<std::string>& defines);
@@ -44,6 +47,8 @@ namespace Assets
         FModelMaterialConstants mMaterialCB = {};
 
         RHI::RHIPipelineState* mpPSO = nullptr;
+
+        RHI::RHIPipelineState* mpVertexSkinningPSO = nullptr;
 
         EShadingModel mShadingModel = EShadingModel::DefaultPBR;
 
@@ -67,6 +72,7 @@ namespace Assets
         float mbAlphaTest = false;
 
         bool mbAlphaBlend = false;
+        bool mbSkeletalAnim = false;
         bool mbFrontFaceCCW = false;
         bool mbDoubleSided = false;
         bool mbPBRSpecularGlossiness = false;

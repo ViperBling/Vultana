@@ -20,7 +20,7 @@ namespace Renderer
 
     private:
         RendererBase* mpRenderer;
-        std::vector<RenderBatch> mBatches;
+        std::vector<RenderBatch> mInstance;
 
         RG::RGHandle mBasePassColorRT;
         RG::RGHandle mBasePassDepthRT;
