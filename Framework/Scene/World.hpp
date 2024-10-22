@@ -26,6 +26,7 @@ namespace Scene
 
         void Tick(float deltaTime);
 
+        IVisibleObject* GetVisibleObject(uint32_t index) const;
         ILight* GetMainLight();
 
     private:
@@ -39,8 +40,8 @@ namespace Scene
     private:
         std::unique_ptr<Camera> mpCamera;
 
-        std::list<std::unique_ptr<IVisibleObject>> mObjects;
-        std::list<std::unique_ptr<ILight>> mLights;
+        std::vector<std::unique_ptr<IVisibleObject>> mObjects;
+        std::vector<std::unique_ptr<ILight>> mLights;
         ILight* mpMainLight = nullptr;
     };
 }

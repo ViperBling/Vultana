@@ -28,6 +28,12 @@ struct FSceneConstants
     float3 LightColor;
     float LightRadius;
 
+    uint2 RenderSize;
+    float2 RenderSizeInv;
+
+    uint2 DisplaySize;
+    float2 DisplaySizeInv;
+
     uint PointRepeatSampler;
     uint PointClampSampler;
     uint BilinearRepeatSampler;

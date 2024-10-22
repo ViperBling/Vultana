@@ -26,6 +26,8 @@ namespace Assets
         ~MeshMaterial();
 
         RHI::RHIPipelineState* GetPSO();
+        RHI::RHIPipelineState* GetIDPSO();
+        RHI::RHIPipelineState* GetOutlinePSO();
 
         RHI::RHIPipelineState* GetVertexSkinningPSO();
 
@@ -47,6 +49,8 @@ namespace Assets
         FModelMaterialConstants mMaterialCB = {};
 
         RHI::RHIPipelineState* mpPSO = nullptr;
+        RHI::RHIPipelineState* mpIDPSO = nullptr;
+        RHI::RHIPipelineState* mpOutlinePSO = nullptr;
 
         RHI::RHIPipelineState* mpVertexSkinningPSO = nullptr;
 

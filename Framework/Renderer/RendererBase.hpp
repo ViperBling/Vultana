@@ -85,6 +85,12 @@ namespace Renderer
         LinearAllocator* GetConstantAllocator() { return mCBAllocator.get(); }
         RenderBatch& AddBasePassBatch();
         ComputeBatch& AddAnimationBatch() { return mAnimationBatches.emplace_back(*mCBAllocator); }
+        RenderBatch& AddOutlinePassBatch() { return mOutlinePassBatches.emplace_back(*mCBAllocator); }
+        RenderBatch& AddObjectIDPassBatch() { return mIDPassBatches.emplace_back(*mCBAllocator); }
+
+        void RequestMouseHitTest(uint32_t x, uint32_t y);
+        bool IsEnableMouseHitTest() const { return mbEnableObjectIDRendering; }
+        uint32_t GetMouseHitObjectID() const { return mMouseHitObjectID; }
 
         class ForwardBasePass* GetForwardBasePass() { return mpForwardBasePass.get(); }
 
@@ -97,11 +103,16 @@ namespace Renderer
         virtual void Render();
         virtual void EndFrame();
 
+        void ObjectIDPass(RG::RGHandle& depth);
+        void OutlinePass(RG::RGHandle& color, RG::RGHandle& depth);
+
         void FlushComputePass(RHI::RHICommandList* pCmdList);
         virtual void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
     
     private:
         void BuildRenderGraph(RG::RGHandle& outputColor, RG::RGHandle& outputDepth);
+
+        void MouseHitTest();
 
     private:
         std::unique_ptr<RHI::RHIDevice> mpDevice;
@@ -164,6 +175,13 @@ namespace Renderer
         std::unique_ptr<RHI::RHIDescriptor> mpTrilinearRepeatSampler;
         std::unique_ptr<RHI::RHIDescriptor> mpTrilinearClampSampler;
 
+        bool mbEnableObjectIDRendering = false;
+        uint32_t mMouseX = 0;
+        uint32_t mMouseY = 0;
+        uint32_t mMouseHitObjectID = UINT32_MAX;
+        std::unique_ptr<RHI::RHIBuffer> mpObjectIDBuffer;
+        uint32_t mObjectIDRowPitch = 0;
+
         RG::RGHandle mOutputColorHandle;
         RG::RGHandle mOutputDepthHandle;
         
@@ -175,6 +193,7 @@ namespace Renderer
 
         std::vector<ComputeBatch> mAnimationBatches;
 
-        std::vector<RenderBatch> mForwardPassBatches;
+        std::vector<RenderBatch> mOutlinePassBatches;
+        std::vector<RenderBatch> mIDPassBatches;
     };
 }

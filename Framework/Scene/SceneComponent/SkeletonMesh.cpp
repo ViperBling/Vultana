@@ -70,7 +70,10 @@ namespace Scene
         float4x4 S = scaling_matrix(mScale);
         mMtxWorld = mul(T, mul(R, S));
 
-        mpAnimation->Update(this, deltaTime);
+        if (mbAnimated)
+        {
+            mpAnimation->Update(this, deltaTime);
+        }
 
         for (size_t i = 0; i < mRootNodes.size(); i++)
         {
@@ -108,7 +111,12 @@ namespace Scene
 
     void SkeletonMesh::OnGUI()
     {
-        // TODO
+        IVisibleObject::OnGUI();
+        
+        GUICommand("Inspector", "SkeletonMesh", [&]()
+        {
+            ImGui::Checkbox("Animated", &mbAnimated);
+        });
     }
 
     FSkeletonMeshNode *SkeletonMesh::GetNode(uint32_t nodeID) const
@@ -211,6 +219,18 @@ namespace Scene
         }
         Renderer::RenderBatch& batch = mpRenderer->AddBasePassBatch();
         Draw(batch, mesh, mesh->Material->GetPSO());
+
+        if (mpRenderer->IsEnableMouseHitTest())
+        {
+            Renderer::RenderBatch& idBatch = mpRenderer->AddObjectIDPassBatch();
+            Draw(idBatch, mesh, mesh->Material->GetIDPSO());
+        }
+
+        if (mID == mpRenderer->GetMouseHitObjectID())
+        {
+            Renderer::RenderBatch& outlineBatch = mpRenderer->AddOutlinePassBatch();
+            Draw(outlineBatch, mesh, mesh->Material->GetOutlinePSO());
+        }
     }
 
     void SkeletonMesh::UpdateVertexSkinning(Renderer::ComputeBatch &batch, const FSkeletonMeshData *mesh)

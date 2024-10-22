@@ -26,6 +26,10 @@ namespace Assets
             AddMaterialDefines(defines);
             defines.push_back("UNIFORM_RESOURCE=1");
 
+            if (mpAlbedoTexture) defines.push_back("ALBEDO_TEXTURE=1");
+            if (mpDiffuseTexture) defines.push_back("DIFFUSE_TEXTURE=1");
+            if (mbAlphaTest) defines.push_back("ALPHA_TEST=1");
+
             RHI::RHIGraphicsPipelineStateDesc psoDesc {};
             psoDesc.VS = pRenderer->GetShader("Model.hlsl", "VSMain", RHI::ERHIShaderType::VS, defines);
             psoDesc.PS = pRenderer->GetShader("Model.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
@@ -44,6 +48,64 @@ namespace Assets
             mpPSO = pRenderer->GetPipelineState(psoDesc, mName + "_ModelPSO");
         }
         return mpPSO;
+    }
+
+    RHI::RHIPipelineState *MeshMaterial::GetIDPSO()
+    {
+        if (mpIDPSO == nullptr)
+        {
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+            std::vector<std::string> defines;
+            defines.push_back("UNIFORM_RESOURCE=1");
+
+            if (mpAlbedoTexture) defines.push_back("ALBEDO_TEXTURE=1");
+            if (mpDiffuseTexture) defines.push_back("DIFFUSE_TEXTURE=1");
+            if (mbAlphaTest) defines.push_back("ALPHA_TEST=1");
+
+            RHI::RHIGraphicsPipelineStateDesc psoDesc {};
+            psoDesc.VS = pRenderer->GetShader("ModelID.hlsl", "VSMain", RHI::ERHIShaderType::VS, defines);
+            psoDesc.PS = pRenderer->GetShader("ModelID.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
+            psoDesc.RasterizerState.CullMode = mbDoubleSided ? RHI::ERHICullMode::None : RHI::ERHICullMode::Back;
+            psoDesc.RasterizerState.bFrontCCW = mbFrontFaceCCW;
+            psoDesc.DepthStencilState.bDepthTest = true;
+            psoDesc.DepthStencilState.bDepthWrite = false;
+            psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
+            psoDesc.RTFormats[0] = RHI::ERHIFormat::R32UI;
+            psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+
+            mpIDPSO = pRenderer->GetPipelineState(psoDesc, mName + "_ModelIDPSO");
+        }
+        return mpIDPSO;
+    }
+
+    RHI::RHIPipelineState *MeshMaterial::GetOutlinePSO()
+    {
+        if (mpOutlinePSO == nullptr)
+        {
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+            std::vector<std::string> defines;
+            defines.push_back("UNIFORM_RESOURCE=1");
+
+            if (mpAlbedoTexture) defines.push_back("ALBEDO_TEXTURE=1");
+            if (mpDiffuseTexture) defines.push_back("DIFFUSE_TEXTURE=1");
+            if (mbAlphaTest) defines.push_back("ALPHA_TEST=1");
+
+            RHI::RHIGraphicsPipelineStateDesc psoDesc {};
+            psoDesc.VS = pRenderer->GetShader("ModelOutline.hlsl", "VSMain", RHI::ERHIShaderType::VS, defines);
+            psoDesc.PS = pRenderer->GetShader("ModelOutline.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
+            psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Front;
+            psoDesc.RasterizerState.bFrontCCW = mbFrontFaceCCW;
+            psoDesc.DepthStencilState.bDepthTest = true;
+            psoDesc.DepthStencilState.bDepthWrite = false;
+            psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
+            psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA8SRGB;
+            psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+
+            mpOutlinePSO = pRenderer->GetPipelineState(psoDesc, mName + "_ModelOutlinePSO");
+        }
+        return mpOutlinePSO;
     }
 
     RHI::RHIPipelineState *MeshMaterial::GetVertexSkinningPSO()

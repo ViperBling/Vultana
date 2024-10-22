@@ -67,7 +67,6 @@ namespace Scene
 
     void World::LoadScene(const std::string &file)
     {
-        // TODO : Load scene from file
         VTNA_LOG_INFO("Loading scene from file: {}", file);
 
         tinyxml2::XMLDocument xmlDoc;
@@ -118,6 +117,15 @@ namespace Scene
         {
             (*iter)->Render(pRender);
         }
+    }
+
+    IVisibleObject *World::GetVisibleObject(uint32_t index) const
+    {
+        if (index >= mObjects.size())
+        {
+            return nullptr;
+        }
+        return mObjects[index].get();
     }
 
     ILight *World::GetMainLight()

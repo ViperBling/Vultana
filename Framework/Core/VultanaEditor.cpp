@@ -27,6 +27,12 @@ namespace Core
         {
             mPendingDeletions.push_back(static_cast<RHI::RHIDescriptor*>(tex));
         };
+
+        std::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
+        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        mpTranslateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/TranslateIcon.png", true));
+        mpRotateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/RotateIcon.png", true));
+        mpScaleIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/ScaleIcon.png", true));
     }
 
     VultanaEditor::~VultanaEditor()
@@ -43,15 +49,26 @@ namespace Core
         FlushPendingTextureDeletions();
         mCommands.clear();
 
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse && io.MouseClicked[0])
+        {
+            ImVec2 mousePos = io.MouseClickedPos[0];
+
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
+        }
+
         BuildDockLayout();
         DrawMenu();
+        DrawToolBar();
+        DrawGizmo();
         DrawFrameStats();
 
         if (mbShowRenderer)
         {
             ImGui::Begin("Renderer", &mbShowRenderer);
             auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-            // pRenderer->On
+            // pRenderer->OnG
             ImGui::End();
         }
     }
@@ -69,7 +86,7 @@ namespace Core
         {
             ImGui::DockBuilderRemoveNode(mDockSpace);
             ImGui::DockBuilderAddNode(mDockSpace, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderSetNodeSize(mDockSpace, ImGui::GetMainViewport()->Size);
+            ImGui::DockBuilderSetNodeSize(mDockSpace, ImGui::GetMainViewport()->WorkSize);
             mbResetLayout = false;
         }
         if (ImGui::DockBuilderGetNode(mDockSpace)->IsLeafNode())
@@ -79,6 +96,39 @@ namespace Core
             ImGui::DockBuilderDockWindow("Renderer", right);
             ImGui::DockBuilderFinish(mDockSpace);
         }
+    }
+
+    void VultanaEditor::DrawToolBar()
+    {
+        ImGui::SetNextWindowPos(ImVec2(100, 20));
+        ImGui::SetNextWindowSize(ImVec2(300, 30));
+
+        ImGui::Begin("EditorToolBar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+
+        ImVec4 focusedBG(1.0f, 0.6f, 0.2f, 0.5f);
+        ImVec4 normalBG(0.0f, 0.0f, 0.0f, 0.0f);
+
+        if (ImGui::ImageButton("translate_button##editor", (ImTextureID)mpTranslateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Translate ? focusedBG : normalBG))
+        {
+            mSelectEditMode = ESelectEditMode::Translate;
+        }
+
+        ImGui::SameLine(0.0f, 0.0f);
+        if (ImGui::ImageButton("rotate_button##editor", (ImTextureID)mpRotateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Rotate ? focusedBG : normalBG))
+        {
+            mSelectEditMode = ESelectEditMode::Rotate;
+        }
+
+        ImGui::SameLine(0.0f, 0.0f);
+        if (ImGui::ImageButton("scale_button##editor", (ImTextureID)mpScaleIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Scale ? focusedBG : normalBG))
+        {
+            mSelectEditMode = ESelectEditMode::Scale;
+        }
+        ImGui::PopStyleVar();
+
+        ImGui::End();
     }
 
     void VultanaEditor::DrawMenu()
@@ -147,6 +197,53 @@ namespace Core
         {
             Core::VultanaEngine::GetEngineInstance()->GetGUI()->AddCommand([&]() { DrawWindow("Settings", &mbShowSettings); });
         }
+    }
+
+    void VultanaEditor::DrawGizmo()
+    {
+        auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
+        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+        auto pSelected = pWorld->GetVisibleObject(pRenderer->GetMouseHitObjectID());
+        if (pSelected == nullptr) return;
+
+        float3 position = pSelected->GetPosition();
+        float3 rotation = RotationAngles(pSelected->GetRotation());
+        float3 scale = pSelected->GetScale();
+
+        float4x4 mtxWorld;
+        ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&mtxWorld);
+
+        ImGuizmo::OPERATION operation;
+        switch (mSelectEditMode)
+        {
+        case ESelectEditMode::Translate:
+            operation = ImGuizmo::TRANSLATE;
+            break;
+        case ESelectEditMode::Rotate:
+            operation = ImGuizmo::ROTATE;
+            break;
+        case ESelectEditMode::Scale:
+            operation = ImGuizmo::SCALE;
+            break;
+        default:
+            assert(false);
+            break;
+        }
+
+        Scene::Camera* pCamera = pWorld->GetCamera();
+        float4x4 view = pCamera->GetViewMatrix();
+        float4x4 proj = pCamera->GetProjectionMatrix();
+
+        ImGuizmo::AllowAxisFlip(false);
+        ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
+
+        ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
+        pSelected->SetPosition(position);
+        pSelected->SetRotation(RotationQuat(rotation));
+        pSelected->SetScale(scale);
+
+        pSelected->OnGUI();
     }
 
     void VultanaEditor::DrawFrameStats()

@@ -19,10 +19,16 @@
   "N2" [label="BasePassDepthRT", style=filled, shape=ellipse, fillcolor=Skyblue]
   "N3" [label="BasePassColorRT", style=filled, shape=ellipse, fillcolor=Skyblue]
   "N4" [label="BasePassDepthRT", style=filled, shape=ellipse, fillcolor=Skyblue]
+  "N5" [label="Outline Pass", style=filled, shape=rectangle, fillcolor=Skyblue]
+  "N6" [label="BasePassColorRT", style=filled, shape=ellipse, fillcolor=Skyblue]
+  "N7" [label="BasePassDepthRT", style=filled, shape=ellipse, fillcolor=Skyblue]
 
   N0 -> { N3 N4 } [color=Darkolivegreen2]
   N1 -> { N0 } [color=Darkolivegreen2]
   N2 -> { N0 } [color=Darkolivegreen2]
+  N3 -> { N5 } [color=Darkolivegreen2]
+  N4 -> { N5 } [color=Darkolivegreen2]
+  N5 -> { N6 N7 } [color=Darkolivegreen2]
 }
 
                     `));

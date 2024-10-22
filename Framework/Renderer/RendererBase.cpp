@@ -102,6 +102,8 @@ namespace Renderer
         UploadResource();
         Render();
         EndFrame();
+
+        MouseHitTest();
     }
 
     void RendererBase::WaitGPU()
@@ -366,6 +368,11 @@ namespace Renderer
         sceneConstants.LightDirection = pMainLight->GetLightDirection();
         sceneConstants.LightRadius = pMainLight->GetLightRadius();
 
+        sceneConstants.RenderSize = uint2(mRenderWidth, mRenderHeight);
+        sceneConstants.RenderSizeInv = float2(1.0f / mRenderWidth, 1.0f / mRenderHeight);
+        sceneConstants.DisplaySize = uint2(mDisplayWidth, mDisplayHeight);
+        sceneConstants.DisplaySizeInv = float2(1.0f / mDisplayWidth, 1.0f / mDisplayHeight);
+
         sceneConstants.PointRepeatSampler = mpPointRepeatSampler->GetHeapIndex();
         sceneConstants.PointClampSampler = mpPointClampSampler->GetHeapIndex();
         sceneConstants.BilinearRepeatSampler = mpBilinearRepeatSampler->GetHeapIndex();
@@ -377,6 +384,9 @@ namespace Renderer
         sceneConstants.Aniso8xSampler = mpAniso8xSampler->GetHeapIndex();
         sceneConstants.Aniso16xSampler = mpAniso16xSampler->GetHeapIndex();
 
+        sceneConstants.FrameTime = Core::VultanaEngine::GetEngineInstance()->GetDeltaTime();
+        sceneConstants.FrameIndex = (uint32_t)GetFrameID();
+
         if (pCmdList->GetQueueType() == RHI::ERHICommandQueueType::Graphics)
         {
             // slot 0 only for instance data, must less than 8 * sizeof(uint32_t) = 32 bytes
@@ -387,6 +397,13 @@ namespace Renderer
     RenderBatch &RendererBase::AddBasePassBatch()
     {
         return mpForwardBasePass->AddBatch();
+    }
+
+    void RendererBase::RequestMouseHitTest(uint32_t x, uint32_t y)
+    {
+        mMouseX = x;
+        mMouseY = y;
+        mbEnableObjectIDRendering = true;
     }
 
     void RendererBase::CreateCommonResources()
@@ -560,7 +577,9 @@ namespace Renderer
         mCBAllocator->Reset();
         mpGPUScene->ResetFrameData();
 
-        mForwardPassBatches.clear();
+        mAnimationBatches.clear();
+        mIDPassBatches.clear();
+        mOutlinePassBatches.clear();
 
         mpDevice->EndFrame();
     }
@@ -617,5 +636,22 @@ namespace Renderer
             pCmdList->EndRenderPass();
         }
         pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
+    }
+
+    void RendererBase::MouseHitTest()
+    {
+        if (mbEnableObjectIDRendering)
+        {
+            WaitGPU();
+            
+            uint32_t x = mMouseX;
+            uint32_t y = mMouseY;
+
+            uint8_t* data = (uint8_t*)mpObjectIDBuffer->GetCPUAddress();
+            uint32_t dataOffset = mObjectIDRowPitch * y + x * sizeof(uint32_t);
+            memcpy(&mMouseHitObjectID, data + dataOffset, sizeof(uint32_t));
+
+            mbEnableObjectIDRendering = false;
+        }
     }
 } // namespace Vultana::Renderer
