@@ -125,4 +125,14 @@ namespace StringUtils
             first = std::next(second);
         }
     }
+
+    static inline std::string FloatArrayToString(const std::vector<float>& floats)
+    {
+        std::string result;
+        for (const auto& f : floats)
+        {
+            result += std::to_string(f) + " ,";
+        }
+        return result;
+    }
 }
