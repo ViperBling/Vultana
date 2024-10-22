@@ -68,6 +68,10 @@ namespace Renderer
         RHI::RHIBuffer* GetSceneStaticBuffer() const;
         OffsetAllocator::Allocation AllocateSceneStaticBuffer(const void* data, uint32_t size);
         void FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation);
+
+        RHI::RHIBuffer* GetSceneAnimationBuffer() const;
+        OffsetAllocator::Allocation AllocateSceneAnimationBuffer(uint32_t size);
+        void FreeSceneAnimationBuffer(OffsetAllocator::Allocation allocation);
         
         uint32_t AllocateSceneConstantBuffer(const void* data, uint32_t size);
         uint32_t AddInstance(const FInstanceData& instanceData);
@@ -80,6 +84,7 @@ namespace Renderer
 
         LinearAllocator* GetConstantAllocator() { return mCBAllocator.get(); }
         RenderBatch& AddBasePassBatch();
+        ComputeBatch& AddAnimationBatch() { return mAnimationBatches.emplace_back(*mCBAllocator); }
 
         class ForwardBasePass* GetForwardBasePass() { return mpForwardBasePass.get(); }
 
@@ -92,6 +97,7 @@ namespace Renderer
         virtual void Render();
         virtual void EndFrame();
 
+        void FlushComputePass(RHI::RHICommandList* pCmdList);
         virtual void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
     
     private:
@@ -166,6 +172,9 @@ namespace Renderer
         RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
         std::unique_ptr<class ForwardBasePass> mpForwardBasePass;
-        std::vector<RenderBatch> mForwardRenderBatches;
+
+        std::vector<ComputeBatch> mAnimationBatches;
+
+        std::vector<RenderBatch> mForwardPassBatches;
     };
 }

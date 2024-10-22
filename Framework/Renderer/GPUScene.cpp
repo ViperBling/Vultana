@@ -14,6 +14,10 @@ namespace Renderer
         mpSceneStaticBuffer.reset(pRenderer->CreateRawBuffer(nullptr, staticBufferSize, "GPUScene::StaticBuffer"));
         mpSceneStaticBufferAllocator = std::make_unique<OffsetAllocator::Allocator>(staticBufferSize);
 
+        const uint32_t animationBufferSize = 1024 * 1024 * 32;
+        mpSceneAnimationBuffer.reset(pRenderer->CreateRawBuffer(nullptr, animationBufferSize, "GPUScene::AnimationBuffer", RHI::ERHIMemoryType::GPUOnly, true));
+        mpSceneAnimationBufferAllocator = std::make_unique<OffsetAllocator::Allocator>(animationBufferSize);
+
         for (int i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
             mpSceneConstantBuffers[i].reset(pRenderer->CreateRawBuffer(nullptr, MAX_CONSTANT_BUFFER_SIZE, "GPUScene::ConstantBuffer", RHI::ERHIMemoryType::CPUToGPU, false));
@@ -38,6 +42,20 @@ namespace Renderer
         mpSceneStaticBufferAllocator->free(allocation);
     }
 
+    OffsetAllocator::Allocation GPUScene::AllocateAnimationBuffer(uint32_t size)
+    {
+        return mpSceneAnimationBufferAllocator->allocate(RoundUpPow2(size, ALLOCATION_ALIGNMENT));
+    }
+
+    void GPUScene::FreeAnimationBuffer(OffsetAllocator::Allocation allocation)
+    {
+        if (allocation.offset >= mpSceneAnimationBuffer->GetBuffer()->GetDesc().Size)
+        {
+            return;
+        }
+        mpSceneAnimationBufferAllocator->free(allocation);
+    }
+
     uint32_t GPUScene::AllocateConstantBuffer(uint32_t size)
     {
         assert(mConstantBufferOffset + size <= MAX_CONSTANT_BUFFER_SIZE);
@@ -57,6 +75,16 @@ namespace Renderer
     {
         uint32_t instanceCount = (uint32_t)mInstanceData.size();
         mInstanceDataAddress = mpRenderer->AllocateSceneConstantBuffer(mInstanceData.data(), sizeof(FInstanceData) * instanceCount);
+    }
+
+    void GPUScene::BeginAnimationUpdate(RHI::RHICommandList *pCmdList)
+    {
+        pCmdList->BufferBarrier(mpSceneAnimationBuffer->GetBuffer(), RHI::RHIAccessVertexShaderSRV, RHI::RHIAccessComputeUAV);
+    }
+
+    void GPUScene::EndAnimationUpdate(RHI::RHICommandList *pCmdList)
+    {
+        pCmdList->BufferBarrier(mpSceneAnimationBuffer->GetBuffer(), RHI::RHIAccessComputeUAV, RHI::RHIAccessVertexShaderSRV);
     }
 
     void GPUScene::ResetFrameData()

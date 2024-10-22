@@ -32,10 +32,19 @@ FVertexAttributes GetVertexAttributes(uint instanceID, uint vertexID)
 
     FVertexAttributes vtx = (FVertexAttributes)0;
     vtx.TexCoord = LoadSceneStaticBuffer<float2>(instanceData.TexCoordBufferAddress, vertexID);
-    vtx.Position = LoadSceneStaticBuffer<float3>(instanceData.PositionBufferAddress, vertexID);
-    vtx.Normal = LoadSceneStaticBuffer<float3>(instanceData.NormalBufferAddress, vertexID);
-    vtx.Tangent = LoadSceneStaticBuffer<float4>(instanceData.TangentBufferAddress, vertexID);
 
+    if (instanceData.bVertexAnimation)
+    {
+        vtx.Position = LoadSceneAnimationBuffer<float3>(instanceData.PositionBufferAddress, vertexID);
+        vtx.Normal = LoadSceneAnimationBuffer<float3>(instanceData.NormalBufferAddress, vertexID);
+        vtx.Tangent = LoadSceneAnimationBuffer<float4>(instanceData.TangentBufferAddress, vertexID);
+    }
+    else
+    {
+        vtx.Position = LoadSceneStaticBuffer<float3>(instanceData.PositionBufferAddress, vertexID);
+        vtx.Normal = LoadSceneStaticBuffer<float3>(instanceData.NormalBufferAddress, vertexID);
+        vtx.Tangent = LoadSceneStaticBuffer<float4>(instanceData.TangentBufferAddress, vertexID);
+    }
     return vtx;
 }
 

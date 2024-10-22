@@ -26,8 +26,12 @@ namespace RenderResources
 
 namespace Scene
 {
+    class Animation;
     class World;
     class StaticMesh;
+    class Skeleton;
+    struct FSkeletonMeshNode;
+    struct FSkeletonMeshData;
 }
 
 namespace Assets
@@ -44,8 +48,14 @@ namespace Assets
         void LoadGLTF(const char* gltfFile = nullptr);
 
     private:
-        void LoadNode(const cgltf_data* data, cgltf_node* node, const float4x4& parentMtx);
+        void LoadStaticMeshNode(const cgltf_data* data, cgltf_node* node, const float4x4& parentMtx);
         Scene::StaticMesh* LoadStaticMesh(const cgltf_primitive* primitive, const std::string& name, bool bFrontFaceCCW);
+        
+        Scene::Animation* LoadAnimation(const cgltf_data* data, const cgltf_animation* gltfAnimation);
+        Scene::Skeleton* LoadSkeleton(const cgltf_data* data, const cgltf_skin* gltfSkin);
+        Scene::FSkeletonMeshData* LoadSkeletonMesh(const cgltf_primitive* primitive, const std::string& name);
+        Scene::FSkeletonMeshNode* LoadSkeletonMeshNode(const cgltf_data* data, cgltf_node* gltfNode);
+
         MeshMaterial* LoadMaterial(const cgltf_material* gltfMaterial);
         RenderResources::Texture2D* LoadTexture(const cgltf_texture_view& textureView, bool srgb);
 

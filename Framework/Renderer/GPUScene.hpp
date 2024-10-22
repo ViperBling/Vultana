@@ -18,6 +18,9 @@ namespace Renderer
         OffsetAllocator::Allocation AllocateStaticBuffer(uint32_t size);
         void FreeStaticBuffer(OffsetAllocator::Allocation allocation);
 
+        OffsetAllocator::Allocation AllocateAnimationBuffer(uint32_t size);
+        void FreeAnimationBuffer(OffsetAllocator::Allocation allocation);
+
         uint32_t AllocateConstantBuffer(uint32_t size);
 
         uint32_t AddInstance(const FInstanceData& instanceData);
@@ -26,8 +29,15 @@ namespace Renderer
         void Update();
         void ResetFrameData();
 
+        void BeginAnimationUpdate(RHI::RHICommandList* pCmdList);
+        void EndAnimationUpdate(RHI::RHICommandList* pCmdList);
+
         RHI::RHIBuffer* GetSceneStaticBuffer() const { return mpSceneStaticBuffer->GetBuffer(); }
         RHI::RHIDescriptor* GetSceneStaticBufferSRV() const { return mpSceneStaticBuffer->GetSRV(); }
+
+        RHI::RHIBuffer* GetSceneAnimationBuffer() const { return mpSceneAnimationBuffer->GetBuffer(); }
+        RHI::RHIDescriptor* GetSceneAnimationBufferSRV() const { return mpSceneAnimationBuffer->GetSRV(); }
+        RHI::RHIDescriptor* GetSceneAnimationBufferUAV() const { return mpSceneAnimationBuffer->GetUAV(); }
 
         RHI::RHIBuffer* GetSceneConstantBuffer() const;
         RHI::RHIDescriptor* GetSceneConstantBufferSRV() const;
@@ -42,6 +52,9 @@ namespace Renderer
 
         std::unique_ptr<RenderResources::RawBuffer> mpSceneStaticBuffer;
         std::unique_ptr<OffsetAllocator::Allocator> mpSceneStaticBufferAllocator;
+
+        std::unique_ptr<RenderResources::RawBuffer> mpSceneAnimationBuffer;
+        std::unique_ptr<OffsetAllocator::Allocator> mpSceneAnimationBufferAllocator;
 
         std::unique_ptr<RenderResources::RawBuffer> mpSceneConstantBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
         uint32_t mConstantBufferOffset = 0;

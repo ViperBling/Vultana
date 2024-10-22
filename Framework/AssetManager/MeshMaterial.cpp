@@ -46,6 +46,19 @@ namespace Assets
         return mpPSO;
     }
 
+    RHI::RHIPipelineState *MeshMaterial::GetVertexSkinningPSO()
+    {
+        if (mpVertexSkinningPSO == nullptr)
+        {
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+            RHI::RHIComputePipelineStateDesc desc {};
+            desc.CS = pRenderer->GetShader("VertexSkinning.hlsl", "CSMain", RHI::ERHIShaderType::CS);
+            mpVertexSkinningPSO = pRenderer->GetPipelineState(desc, mName + "_VertexSkinningPSO");
+        }
+        return mpVertexSkinningPSO;
+    }
+
     void MeshMaterial::UpdateConstants()
     {
         mMaterialCB.ShadingModel = (uint)mShadingModel;

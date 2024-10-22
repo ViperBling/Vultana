@@ -236,6 +236,21 @@ namespace Renderer
         mpGPUScene->FreeStaticBuffer(allocation);
     }
 
+    RHI::RHIBuffer *RendererBase::GetSceneAnimationBuffer() const
+    {
+        return mpGPUScene->GetSceneAnimationBuffer();
+    }
+
+    OffsetAllocator::Allocation RendererBase::AllocateSceneAnimationBuffer(uint32_t size)
+    {
+        return mpGPUScene->AllocateAnimationBuffer(size);
+    }
+
+    void RendererBase::FreeSceneAnimationBuffer(OffsetAllocator::Allocation allocation)
+    {
+        mpGPUScene->FreeAnimationBuffer(allocation);
+    }
+
     uint32_t RendererBase::AllocateSceneConstantBuffer(const void *data, uint32_t size)
     {
         uint32_t address = mpGPUScene->AllocateConstantBuffer(size);
@@ -344,6 +359,8 @@ namespace Renderer
         pCamera->SetupCameraCB(sceneConstants.CameraCB);
         sceneConstants.SceneConstantBufferSRV = mpGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex();
         sceneConstants.SceneStaticBufferSRV = mpGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex();
+        sceneConstants.SceneAnimationBufferSRV = mpGPUScene->GetSceneAnimationBufferSRV()->GetHeapIndex();
+        sceneConstants.SceneAnimationBufferUAV = mpGPUScene->GetSceneAnimationBufferUAV()->GetHeapIndex();
         sceneConstants.instanceDataAddress = mpGPUScene->GetInstanceDataAddress();
         sceneConstants.LightColor = pMainLight->GetLightColor();
         sceneConstants.LightDirection = pMainLight->GetLightDirection();
@@ -517,6 +534,7 @@ namespace Renderer
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", mpDevice->GetFrameID()).c_str());
 
         SetupGlobalConstants(pCmdList);
+        FlushComputePass(pCmdList);
 
         mpRenderGraph->Execute(this, pCmdList, pComputeCmdList);
         
@@ -542,9 +560,24 @@ namespace Renderer
         mCBAllocator->Reset();
         mpGPUScene->ResetFrameData();
 
-        mForwardRenderBatches.clear();
+        mForwardPassBatches.clear();
 
         mpDevice->EndFrame();
+    }
+
+    void RendererBase::FlushComputePass(RHI::RHICommandList *pCmdList)
+    {
+        if (!mAnimationBatches.empty())
+        {
+            GPU_EVENT_DEBUG(pCmdList, "Animation Pass");
+            
+            mpGPUScene->BeginAnimationUpdate(pCmdList);
+            for (size_t i = 0; i < mAnimationBatches.size(); i++)
+            {
+                DispatchComputeBatch(pCmdList, mAnimationBatches[i]);
+            }
+            mpGPUScene->EndAnimationUpdate(pCmdList);
+        }
     }
 
     void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
