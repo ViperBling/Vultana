@@ -38,6 +38,7 @@ struct FModelMaterialConstants
 cbuffer RootConstants : register(b0)
 {
     uint cInstanceIndex;
+    uint cPrevAnimPositionBufferAddress;
 };
 
 #endif

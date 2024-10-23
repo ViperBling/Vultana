@@ -41,7 +41,7 @@ void CSMain(uint3 dispatchID : SV_DispatchThreadID)
                              mul(jointMatrix2, float4(position, 1.0f)) * jointWeight.z + 
                              mul(jointMatrix3, float4(position, 1.0f)) * jointWeight.w;
 
-    StoreSceneAnimationBuffer<float3>(cAnimationPositionBufferAddress, vertexID, position.xyz);
+    StoreSceneAnimationBuffer<float3>(cAnimationPositionBufferAddress, vertexID, skinnedPosition.xyz);
 
     if (cStaticNormalBufferAddress != INVALID_ADDRESS)
     {
