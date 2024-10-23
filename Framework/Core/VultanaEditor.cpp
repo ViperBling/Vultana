@@ -2,6 +2,8 @@
 #include "Core/VultanaEngine.hpp"
 #include "Core/VultanaGUI.hpp"
 #include "Renderer/RendererBase.hpp"
+#include "Utilities/Log.hpp"
+#include "Utilities/String.hpp"
 
 #include "ImFileDialog/ImFileDialog.h"
 
@@ -100,7 +102,7 @@ namespace Core
 
     void VultanaEditor::DrawToolBar()
     {
-        ImGui::SetNextWindowPos(ImVec2(100, 20));
+        ImGui::SetNextWindowPos(ImVec2(200, 20));
         ImGui::SetNextWindowSize(ImVec2(300, 30));
 
         ImGui::Begin("EditorToolBar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
@@ -204,12 +206,12 @@ namespace Core
         auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
-        auto pSelected = pWorld->GetVisibleObject(pRenderer->GetMouseHitObjectID());
-        if (pSelected == nullptr) return;
+        auto pSelectedObject = pWorld->GetVisibleObject(pRenderer->GetMouseHitObjectID());
+        if (pSelectedObject == nullptr) return;
 
-        float3 position = pSelected->GetPosition();
-        float3 rotation = RotationAngles(pSelected->GetRotation());
-        float3 scale = pSelected->GetScale();
+        float3 position = pSelectedObject->GetPosition();
+        float3 rotation = RotationAngles(pSelectedObject->GetRotation());
+        float3 scale = pSelectedObject->GetScale();
 
         float4x4 mtxWorld;
         ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&mtxWorld);
@@ -239,11 +241,11 @@ namespace Core
         ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
 
         ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
-        pSelected->SetPosition(position);
-        pSelected->SetRotation(RotationQuat(rotation));
-        pSelected->SetScale(scale);
+        pSelectedObject->SetPosition(position);
+        pSelectedObject->SetRotation(RotationQuat(rotation));
+        pSelectedObject->SetScale(scale);
         
-        pSelected->OnGUI();
+        pSelectedObject->OnGUI();
     }
 
     void VultanaEditor::DrawFrameStats()

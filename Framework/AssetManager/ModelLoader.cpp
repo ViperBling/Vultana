@@ -205,7 +205,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
-                std::string name = fmt::format("Mesh_{}_{} {}", meshIdx, i, (node->name ? node->name : "")).c_str();
+                std::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->name ? node->name : "")).c_str();
                 Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
                 mesh->mpMaterial->mbFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
@@ -642,7 +642,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < gltfNode->mesh->primitives_count; i++)
             {
-                std::string name = fmt::format("Mesh_{}_{} {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
+                std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
 
                 auto mesh = LoadSkeletonMesh(&gltfNode->mesh->primitives[i], name);
                 mesh->NodeID = node->ID;

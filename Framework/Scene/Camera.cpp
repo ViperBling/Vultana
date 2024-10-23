@@ -78,77 +78,8 @@ namespace Scene
 
         mbMoved = false;
 
-        ImGuiIO& io = ImGui::GetIO();
-
-        if (!io.WantCaptureKeyboard && !io.NavActive)
-        {
-            if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft))
-            {
-                mPosition += GetLeft() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
-
-            if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown))
-            {
-                mPosition += GetBackward() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
-
-            if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight))
-            {
-                mPosition += GetRight() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
-
-            if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp))
-            {
-                mPosition += GetForward() * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
-        }
-
-        if (!io.WantCaptureMouse)
-        {
-            if (!NearlyEqual(io.MouseWheel, 0.0f))
-            {
-                mPosition += GetForward() * io.MouseWheel * 10.0f * mMoveSpeed * deltaTime;
-                mbMoved = true;
-            }
-
-            if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
-            {
-                const float rotateSpeed = 0.1f;
-
-                mRotation.x = fmodf(mRotation.x + io.MouseDelta.y * rotateSpeed, 360.0f);
-                mRotation.y = fmodf(mRotation.y + io.MouseDelta.x * rotateSpeed, 360.0f);
-                mbMoved = true;
-            }
-        }
-
-        if (!io.NavActive)
-        {
-            const float rotateSpeed = 120.0f;
-
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickRight))
-            {
-                mRotation.y = fmodf(mRotation.y + deltaTime * rotateSpeed, 360.0f);
-            }
-
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickLeft))
-            {
-                mRotation.y = fmodf(mRotation.y - deltaTime * rotateSpeed, 360.0f);
-            }
-
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickDown))
-            {
-                mRotation.x = fmodf(mRotation.x + deltaTime * rotateSpeed, 360.0f);
-            }
-
-            if (ImGui::IsKeyDown(ImGuiKey_GamepadRStickUp))
-            {
-                mRotation.x = fmodf(mRotation.x - deltaTime * rotateSpeed, 360.0f);
-            }
-        }
+        UpdateCameraPosition(deltaTime);
+        UpdateCameraRotation(deltaTime);
 
         UpdateMatrix();
 
@@ -239,15 +170,97 @@ namespace Scene
 
     void Camera::OnCameraSettingGUI()
     {
-        ImGui::SliderFloat("Move Speed", &mMoveSpeed, 1.0f, 200.0f, "%.0f");
-
         bool perspectiveUpdated = false;
         perspectiveUpdated |= ImGui::SliderFloat("FOV", &mFov, 5.0f, 135.0f, "%.0f");
-        perspectiveUpdated |= ImGui::SliderFloat("Near", &mNear, 0.0001f, 3.0f, "%.4f");
+        perspectiveUpdated |= ImGui::SliderFloat("Near Plane", &mNear, 0.0001f, 3.0f, "%.4f");
 
         if (perspectiveUpdated)
         {
             SetPerspective(mAspectRatio, mFov, mNear);
         }
+
+        ImGui::SliderFloat("Movement Speed", &mMoveSpeed, 1.0f, 200.0f, "%.0f");
+        ImGui::SliderFloat("Rotation Speed", &mRotateSpeed, 1.0f, 10.0f, "%.1f");
+        ImGui::SliderFloat("Movement Smoothness", &mMoveSmoothness, 0.01f, 1.0f, "%.2f");
+        ImGui::SliderFloat("Rotation Smoothness", &mRotateSmoothness, 0.01f, 1.0f, "%.2f");
+    }
+
+    void Camera::UpdateCameraPosition(float deltaTime)
+    {
+        bool moveLeft = false;
+        bool moveRight = false;
+        bool moveForward = false;
+        bool moveBackward = false;
+        float moveSpeed = mMoveSpeed;
+
+        ImGuiIO& io = ImGui::GetIO();
+
+        if (!io.WantCaptureKeyboard && !io.NavActive)
+        {
+            moveLeft = ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft);
+            moveRight = ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight);
+            moveForward = ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp);
+            moveBackward = ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown);
+        }
+        if (!io.WantCaptureMouse)
+        {
+            if (!NearlyEqual(io.MouseWheel, 0.0f))
+            {
+                moveForward |= io.MouseWheel > 0.0f;
+                moveBackward |= io.MouseWheel < 0.0f;
+
+                moveSpeed *= abs(io.MouseWheel);
+            }
+            if (ImGui::IsMouseDragging(1) && ImGui::IsKeyDown(ImGuiKey_LeftAlt))
+            {
+                moveForward |= io.MouseDelta.y > 0.0f;
+                moveBackward |= io.MouseDelta.y < 0.0f;
+
+                moveSpeed *= abs(io.MouseDelta.y) * 0.1f;
+            }
+        }
+
+        float3 moveVelocity = float3(0, 0, 0);
+        if (moveForward) moveVelocity += GetForward();
+        if (moveBackward) moveVelocity += GetBackward();
+        if (moveLeft) moveVelocity += GetLeft();
+        if (moveRight) moveVelocity += GetRight();
+
+        if (length(moveVelocity) > 0.0f)
+        {
+            moveVelocity = normalize(moveVelocity) * moveSpeed;
+        }
+
+        moveVelocity = lerp(mPrevMoveVelocity, moveVelocity, 1.0f - exp(-deltaTime * 10.0f / mMoveSmoothness));
+        mPrevMoveVelocity = moveVelocity;
+
+        mPosition += moveVelocity * deltaTime;
+        mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
+
+        mbMoved |= length(moveVelocity * deltaTime) > 0.0001f;
+    }
+
+    void Camera::UpdateCameraRotation(float deltaTime)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+
+        float2 rotateVelocity = {};
+
+        if (!io.WantCaptureMouse)
+        {
+            if (ImGui::IsMouseDragging(1) && !ImGui::IsKeyDown(ImGuiKey_LeftAlt))
+            {
+                rotateVelocity.x = io.MouseDelta.y * mRotateSpeed;
+                rotateVelocity.y = io.MouseDelta.x * mRotateSpeed;
+            }
+        }
+        rotateVelocity = lerp(mPrevRotateVelocity, rotateVelocity, 1.0f - exp(-deltaTime * 10.0f / mRotateSmoothness));
+        mPrevRotateVelocity = rotateVelocity;
+
+        mRotation.x += rotateVelocity.x * deltaTime * 100.0f;
+        mRotation.y += rotateVelocity.y * deltaTime * 100.0f;
+        mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
+
+        mbMoved |= length(rotateVelocity * deltaTime) > 0.0001f;
     }
 }
