@@ -533,9 +533,9 @@ namespace Assets
                 mesh->StaticPositionBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_PositionBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
                 {
                     float3 min = float3(primitive->attributes[i].data->min);
-                    min.z *= -1;
+                    min.z = -min.z;
                     float3 max = float3(primitive->attributes[i].data->max);
-                    max.z *= -1;
+                    max.z = -max.z;
 
                     float3 center = (min + max) * 0.5f;
                     float radius = length(max - min) * 0.5f;
@@ -579,7 +579,7 @@ namespace Assets
                     cgltf_accessor_read_uint(accessor, j, id, 4);
                     jointIDs.push_back(ushort4(id[0], id[1], id[2], id[3]));
                 }
-                mesh->JointIDBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_JointIDBuffer", jointIDs.data(), (uint32_t)sizeof(ushort4) * (uint32_t)accessor->count);
+                mesh->JointIDBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_JointIDBuffer", jointIDs.data(), sizeof(ushort4) * (uint32_t)accessor->count);
                 break;
             }
             case cgltf_attribute_type_weights:
@@ -595,7 +595,7 @@ namespace Assets
                     cgltf_accessor_read_float(accessor, j, weight, 4);
                     jointWeights.push_back(float4(weight));
                 }
-                mesh->JointWeightBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_JointWeightBuffer", jointWeights.data(), (uint32_t)sizeof(float4) * (uint32_t)accessor->count);
+                mesh->JointWeightBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_JointWeightBuffer", jointWeights.data(), sizeof(float4) * (uint32_t)accessor->count);
                 break;
             }
             default:

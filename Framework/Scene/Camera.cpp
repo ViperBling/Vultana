@@ -180,7 +180,7 @@ namespace Scene
         }
 
         ImGui::SliderFloat("Movement Speed", &mMoveSpeed, 1.0f, 200.0f, "%.0f");
-        ImGui::SliderFloat("Rotation Speed", &mRotateSpeed, 1.0f, 10.0f, "%.1f");
+        ImGui::SliderFloat("Rotation Speed", &mRotateSpeed, 0.1f, 10.0f, "%.1f");
         ImGui::SliderFloat("Movement Smoothness", &mMoveSmoothness, 0.01f, 1.0f, "%.2f");
         ImGui::SliderFloat("Rotation Smoothness", &mRotateSmoothness, 0.01f, 1.0f, "%.2f");
     }
@@ -195,12 +195,13 @@ namespace Scene
 
         ImGuiIO& io = ImGui::GetIO();
 
-        if (!io.WantCaptureKeyboard && !io.NavActive)
+        if (!io.WantCaptureKeyboard && !io.NavActive && !io.WantCaptureMouse)
         {
-            moveLeft = ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft);
-            moveRight = ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight);
-            moveForward = ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp);
-            moveBackward = ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown);
+            bool shouldMove = ImGui::IsMouseDragging(1);
+            moveLeft = (ImGui::IsKeyDown(ImGuiKey_A) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft);
+            moveRight = (ImGui::IsKeyDown(ImGuiKey_D) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight);
+            moveForward = (ImGui::IsKeyDown(ImGuiKey_W) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp);
+            moveBackward = (ImGui::IsKeyDown(ImGuiKey_S) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickDown);
         }
         if (!io.WantCaptureMouse)
         {
@@ -216,7 +217,7 @@ namespace Scene
                 moveForward |= io.MouseDelta.y > 0.0f;
                 moveBackward |= io.MouseDelta.y < 0.0f;
 
-                moveSpeed *= abs(io.MouseDelta.y) * 0.1f;
+                moveSpeed *= abs(io.MouseDelta.y);
             }
         }
 

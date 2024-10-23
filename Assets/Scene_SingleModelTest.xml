@@ -1,0 +1,6 @@
+<Scene>
+    <!-- <Model File = "Models/BusterDrone/busterDrone.gltf" Position = "0.0, 0.0, 0.0" Scale = "1, 1, 1" /> -->
+    <Model File = "Models/MechDrone/scene.gltf" Position = "0.0, 0.0, 0.0" Rotation = "0, 90, 0" Scale = "100, 100, 100" />
+    <Camera Position = "0, 0, -1" Rotation = "0, 0, 0" Fov = "60.0" ZNear = "0.01" ZFar = "1000.0"/>
+    <Light Type = "Directional" IsMainLight = "true" Rotation = "15.000, 0.000, 0.000" Intensity = "3.0"/>
+</Scene>
