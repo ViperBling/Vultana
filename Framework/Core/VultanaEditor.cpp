@@ -112,19 +112,22 @@ namespace Core
         ImVec4 focusedBG(1.0f, 0.6f, 0.2f, 0.5f);
         ImVec4 normalBG(0.0f, 0.0f, 0.0f, 0.0f);
 
-        if (ImGui::ImageButton("translate_button##editor", (ImTextureID)mpTranslateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Translate ? focusedBG : normalBG))
+        if (ImGui::ImageButton("translate_button##editor", (ImTextureID)mpTranslateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Translate ? focusedBG : normalBG) ||
+            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W), false))
         {
             mSelectEditMode = ESelectEditMode::Translate;
         }
 
         ImGui::SameLine(0.0f, 0.0f);
-        if (ImGui::ImageButton("rotate_button##editor", (ImTextureID)mpRotateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Rotate ? focusedBG : normalBG))
+        if (ImGui::ImageButton("rotate_button##editor", (ImTextureID)mpRotateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Rotate ? focusedBG : normalBG) ||
+            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_E), false))
         {
             mSelectEditMode = ESelectEditMode::Rotate;
         }
 
         ImGui::SameLine(0.0f, 0.0f);
-        if (ImGui::ImageButton("scale_button##editor", (ImTextureID)mpScaleIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Scale ? focusedBG : normalBG))
+        if (ImGui::ImageButton("scale_button##editor", (ImTextureID)mpScaleIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Scale ? focusedBG : normalBG) ||
+            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_R), false))
         {
             mSelectEditMode = ESelectEditMode::Scale;
         }

@@ -78,8 +78,8 @@ namespace Scene
         float mNear = 0.01f;
         float mFar = 1000.0f;
 
-        float mMoveSpeed = 5.0f;
-        float mRotateSpeed = 1.0f;
+        float mMoveSpeed = 100.0f;
+        float mRotateSpeed = 0.5f;
 
         float3 mPrevMoveVelocity = {};
         float2 mPrevRotateVelocity = {};

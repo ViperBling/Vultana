@@ -81,6 +81,7 @@ target_link_libraries(FrameworkLib PRIVATE
     ImFileDialog
     ImGui
     ImGuizmo
+    # imguizmo::imguizmo
     meshoptimizer::meshoptimizer
     OffsetAllocator
     RPMalloc

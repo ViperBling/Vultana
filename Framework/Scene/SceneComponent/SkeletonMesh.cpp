@@ -20,7 +20,7 @@ namespace Scene
             const FSkeletonMeshNode* node = mesh->GetNode(mJoints[i]);
             mJointMatrices[i] = mul(node->GlobalTransform, mInverseBindMatrices[i]);
         }
-        mJointMatricesAddress = mpRenderer->AllocateSceneConstantBuffer(mJointMatrices.data(), mJointMatrices.size() * sizeof(float4x4));
+        mJointMatricesAddress = mpRenderer->AllocateSceneConstantBuffer(mJointMatrices.data(), (uint32_t)mJointMatrices.size() * sizeof(float4x4));
     }
 
     FSkeletonMeshData::~FSkeletonMeshData()
