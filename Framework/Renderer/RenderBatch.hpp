@@ -147,11 +147,11 @@ namespace Renderer
             memcpy(Cb[slot].Data, data, size);
         }
 
-        void Dispatch(uint32_t x, uint32_t y, uint32_t z)
+        void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
         {
-            DispatchX = x;
-            DispatchY = y;
-            DispatchZ = z;
+            DispatchX = groupCountX;
+            DispatchY = groupCountY;
+            DispatchZ = groupCountZ;
         }
     
     private:

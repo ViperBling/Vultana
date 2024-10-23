@@ -571,7 +571,7 @@ namespace Assets
                 const cgltf_accessor* accessor = primitive->attributes[i].data;
 
                 std::vector<ushort4> jointIDs;
-                jointIDs.resize(accessor->count * 4);
+                jointIDs.reserve(accessor->count * 4);
 
                 for (cgltf_size j = 0; j < accessor->count; j++)
                 {
@@ -587,7 +587,7 @@ namespace Assets
                 const cgltf_accessor* accessor = primitive->attributes[i].data;
 
                 std::vector<float4> jointWeights;
-                jointWeights.resize(accessor->count);
+                jointWeights.reserve(accessor->count);
 
                 for (cgltf_size j = 0; j < accessor->count; j++)
                 {

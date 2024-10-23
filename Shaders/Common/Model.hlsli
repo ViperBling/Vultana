@@ -60,7 +60,7 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
     vsOut.PositionWS = positionWS.xyz;
     vsOut.TexCoord = vtx.TexCoord;
     vsOut.NormalWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Normal, 0.0f)).xyz);
-    vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInverseTranspose, vtx.Tangent).xyz);
+    vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Tangent.xyz, 0.0f)).xyz);
     vsOut.BiTangentWS = cross(vsOut.NormalWS, vsOut.TangentWS) * vtx.Tangent.w;
 
     return vsOut;
