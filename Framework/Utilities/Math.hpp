@@ -163,8 +163,8 @@ inline void Decompose(const float4x4& matrix, float3& translation, quaternion& r
     scale[1] = length(up);
     scale[2] = length(dir);
 
-    float3x3 rotation_mat = float3x3(right / scale[0], up / scale[1], dir / scale[2]);
-    rotation = rotation_quat(rotation_mat);
+    float3x3 rotationMat = float3x3(right / scale[0], up / scale[1], dir / scale[2]);
+    rotation = rotation_quat(rotationMat);
 }
 
 inline void Decompose(const float4x4& matrix, float3& translation, float3& rotation, float3& scale)

@@ -59,6 +59,9 @@ namespace Scene
         void OnWindowResize(void* wndHandle, uint32_t width, uint32_t height);
         void OnCameraSettingGUI();
 
+        void UpdateCameraPosition(float deltaTime);
+        void UpdateCameraRotation(float deltaTime);
+
     private:
         float3 mPosition = { 0.0f, 0.0f, 0.0f };
         float3 mRotation = { 0.0f, 0.0f, 0.0f };        // in degrees
@@ -76,7 +79,12 @@ namespace Scene
         float mFar = 1000.0f;
 
         float mMoveSpeed = 5.0f;
-        float mRotateSpeed = 0.3f;
+        float mRotateSpeed = 1.0f;
+
+        float3 mPrevMoveVelocity = {};
+        float2 mPrevRotateVelocity = {};
+        float mMoveSmoothness = 0.01f;
+        float mRotateSmoothness = 0.01f;
 
         bool mbFrustumLocked = false;
         float4 mFrustumPlanes[6];

@@ -58,20 +58,20 @@ namespace Scene
         mpMaterial->OnGUI();
     }
 
-    void StaticMesh::SetPosition(const float3 &position)
-    {
-        IVisibleObject::SetPosition(position);
-    }
+    // void StaticMesh::SetPosition(const float3 &position)
+    // {
+    //     IVisibleObject::SetPosition(position);
+    // }
 
-    void StaticMesh::SetRotation(const quaternion &rotation)
-    {
-        IVisibleObject::SetRotation(rotation);
-    }
+    // void StaticMesh::SetRotation(const quaternion &rotation)
+    // {
+    //     IVisibleObject::SetRotation(rotation);
+    // }
 
-    void StaticMesh::SetScale(const float3 &scale)
-    {
-        IVisibleObject::SetScale(scale);
-    }
+    // void StaticMesh::SetScale(const float3 &scale)
+    // {
+    //     IVisibleObject::SetScale(scale);
+    // }
 
     void StaticMesh::UpdateConstants()
     {

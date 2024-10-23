@@ -17,6 +17,7 @@ find_package(VulkanHeaders CONFIG)
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 find_path(LINALG_INCLUDE_DIRS "linalg.h")
 find_path(SIGSLOT_INCLUDE_DIRS "sigslot.h")
+find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 
 file(GLOB_RECURSE AssetManager_Head       ${SourcePath}/AssetManager/*.hpp)
 file(GLOB_RECURSE AssetManager_Src        ${SourcePath}/AssetManager/*.cpp)
@@ -63,7 +64,13 @@ add_library(FrameworkLib STATIC
 
 # add_dependencies(FrameworkLib CompileShaders)
 
-target_include_directories(FrameworkLib PUBLIC ${SourcePath} ${ExternalPath} ${TCB_SPAN_INCLUDE_DIRS} ${LINALG_INCLUDE_DIRS} ${SIGSLOT_INCLUDE_DIRS} ${SHADER_ROOT})
+target_include_directories(FrameworkLib PUBLIC 
+    ${SourcePath} ${ExternalPath} 
+    ${TCB_SPAN_INCLUDE_DIRS} 
+    ${LINALG_INCLUDE_DIRS} 
+    ${SIGSLOT_INCLUDE_DIRS} 
+    ${SHADER_ROOT}
+    ${SIMPLEINI_INCLUDE_DIRS})
 target_link_libraries(FrameworkLib PRIVATE
     # assimp::assimp
     # glfw

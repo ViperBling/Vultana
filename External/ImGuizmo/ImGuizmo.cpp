@@ -831,10 +831,10 @@ namespace IMGUIZMO_NAMESPACE
       const float zFar = gContext.mReversed ? 0.f : (1.f - FLT_EPSILON);
 
       rayOrigin.Transform(makeVect(mox, moy, zNear, 1.f), mViewProjInverse);
-      rayOrigin *= 1.f / rayOrigin.w;
+      rayOrigin *= 1.f / (rayOrigin.w + 0.0001f);
       vec_t rayEnd;
       rayEnd.Transform(makeVect(mox, moy, zFar, 1.f), mViewProjInverse);
-      rayEnd *= 1.f / rayEnd.w;
+      rayEnd *= 1.f / (rayEnd.w + 0.0001f);
       rayDir = Normalized(rayEnd - rayOrigin);
    }
 

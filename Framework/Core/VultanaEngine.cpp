@@ -10,8 +10,8 @@
 
 #define SOKOL_IMPL
 #include <sokol/sokol_time.h>
-
 #include <ImGui/imgui.h>
+#include <SimpleIni.h>
 
 namespace Core
 {
@@ -24,8 +24,8 @@ namespace Core
     void VultanaEngine::Init(void* windowHandle, uint32_t width, uint32_t height)
     {
         mWorkingPath = "../";
-        mAssetsPath = "../Assets/";
-        mShaderPath = "../Shaders/";
+        // mAssetsPath = "../Assets/";
+        // mShaderPath = "../Shaders/";
 
         auto console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
         auto logger = std::make_shared<spdlog::logger>("RealEngine", spdlog::sinks_init_list{ console_sink});
@@ -37,6 +37,16 @@ namespace Core
 
         mWndHandle = windowHandle;
 
+        std::string configFile = mWorkingPath + "Config/VultanaEngine.ini";
+        CSimpleIniA configIni;
+        if (configIni.LoadFile(configFile.c_str()) < 0)
+        {
+            VTNA_LOG_ERROR("Failed to load config file: {}", configFile);
+        }
+
+        mAssetsPath = configIni.GetValue("Vultana", "AssetsPath");
+        mShaderPath = configIni.GetValue("Vultana", "ShaderPath");
+
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
         mpRenderer = std::make_unique<Renderer::RendererBase>();
@@ -47,7 +57,7 @@ namespace Core
         }
 
         mpWorld = std::make_unique<Scene::World>();
-        mpWorld->LoadScene(mAssetsPath + "Scene_Sponza.xml");
+        mpWorld->LoadScene(mAssetsPath + configIni.GetValue("World", "SceneFile"));
 
         mpGUI = std::make_unique<GUI>();
         mpGUI->Init();
