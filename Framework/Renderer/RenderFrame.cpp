@@ -16,6 +16,43 @@ namespace Renderer
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
 
+        struct FTestComputePassData
+        {
+            RG::RGHandle outUAVRT;
+        };
+
+        auto testComputePass = mpRenderGraph->AddPass<FTestComputePassData>("TestComputePass", RG::RenderPassType::Compute,
+        [&](FTestComputePassData& data, RG::RGBuilder& builder)
+        {
+            RG::RGTexture::Desc desc;
+            desc.Width = mRenderWidth;
+            desc.Height = mRenderHeight;
+            desc.Format = RHI::ERHIFormat::RGBA8SRGB;
+            data.outUAVRT = builder.Create<RG::RGTexture>(desc, "TestComputePassRT");
+            
+            data.outUAVRT = builder.Write(data.outUAVRT);
+        },
+        [&](const FTestComputePassData& data, RHI::RHICommandList* pCmdList)
+        {
+            RHI::RHIComputePipelineStateDesc psoDesc;
+            psoDesc.CS = GetShader("TestCompute.hlsl", "CSMain", RHI::ERHIShaderType::CS);
+            RHI::RHIPipelineState* pso = GetPipelineState(psoDesc, "TestComputePSO");
+
+            pCmdList->SetPipelineState(pso);
+
+            RG::RGTexture* pTexture = mpRenderGraph->GetTexture(data.outUAVRT);
+            uint32_t cb[5] = { 
+                pTexture->GetUAV()->GetHeapIndex(),
+                mpGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex(),
+                mpGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex(),
+                mpGPUScene->GetInstanceDataAddress(),
+                mpGPUScene->GetSceneAnimationBufferSRV()->GetHeapIndex() };
+            pCmdList->SetComputeConstants(0, cb, sizeof(cb));
+
+            pCmdList->Dispatch(DivideRoudingUp(mRenderWidth, 8), DivideRoudingUp(mRenderHeight, 8), 1);
+        });
+
+        // outputColor = testComputePass->outUAVRT;
         outputColor = sceneColorRT;
         outputDepth = sceneDepthRT;
 

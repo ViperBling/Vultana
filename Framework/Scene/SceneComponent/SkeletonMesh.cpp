@@ -264,7 +264,7 @@ namespace Scene
             // , mesh->PrevAnimPositionBuffer.offset
         };
 
-        batch.Label = mName.c_str();
+        batch.Label = mesh->Name.c_str();
         batch.SetPipelineState(pPSO);
         batch.SetConstantBuffer(0, rootConstants, sizeof(rootConstants));
 
