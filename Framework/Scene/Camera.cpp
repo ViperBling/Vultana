@@ -210,7 +210,7 @@ namespace Scene
                 moveForward |= io.MouseWheel > 0.0f;
                 moveBackward |= io.MouseWheel < 0.0f;
 
-                moveSpeed *= abs(io.MouseWheel);
+                moveSpeed *= abs(io.MouseWheel) * mMoveSpeed;
             }
             if (ImGui::IsMouseDragging(1) && ImGui::IsKeyDown(ImGuiKey_LeftAlt))
             {
@@ -229,7 +229,7 @@ namespace Scene
 
         if (length(moveVelocity) > 0.0f)
         {
-            moveVelocity = normalize(moveVelocity) * moveSpeed;
+            moveVelocity = normalize(moveVelocity) * mMoveSpeed;
         }
 
         moveVelocity = lerp(mPrevMoveVelocity, moveVelocity, 1.0f - exp(-deltaTime * 10.0f / mMoveSmoothness));

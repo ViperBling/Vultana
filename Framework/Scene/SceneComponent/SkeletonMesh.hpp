@@ -51,7 +51,7 @@ namespace Scene
         OffsetAllocator::Allocation AnimNormalBuffer;
         OffsetAllocator::Allocation AnimTangentBuffer;
 
-        OffsetAllocator::Allocation PrevAnimPositionBuffer;
+        // OffsetAllocator::Allocation PrevAnimPositionBuffer;
 
         OffsetAllocator::Allocation IndexBuffer;
         RHI::ERHIFormat IndexBufferFormat;

@@ -41,7 +41,7 @@ namespace Scene
         pRenderer->FreeSceneAnimationBuffer(AnimPositionBuffer);
         pRenderer->FreeSceneAnimationBuffer(AnimNormalBuffer);
         pRenderer->FreeSceneAnimationBuffer(AnimTangentBuffer);
-        pRenderer->FreeSceneAnimationBuffer(PrevAnimPositionBuffer);
+        // pRenderer->FreeSceneAnimationBuffer(PrevAnimPositionBuffer);
     }
 
     SkeletonMesh::SkeletonMesh(const std::string &name)
@@ -97,7 +97,7 @@ namespace Scene
         {
             for (size_t j = 0; j < mNodes[i]->Meshes.size(); j++)
             {
-                auto mesh = mNodes[i]->Meshes[j].get();
+                const FSkeletonMeshData* mesh = mNodes[i]->Meshes[j].get();
                 Draw(mesh);
             }
         }
@@ -130,7 +130,7 @@ namespace Scene
         if (mesh->Material->IsVertexSkinned())
         {
             mesh->AnimPositionBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
-            mesh->PrevAnimPositionBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
+            // mesh->PrevAnimPositionBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
             if (mesh->StaticNormalBuffer.metadata != OffsetAllocator::Allocation::NO_SPACE)
             {
                 mesh->AnimNormalBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
@@ -164,7 +164,7 @@ namespace Scene
         for (size_t i = 0; i < node->Meshes.size(); i++)
         {
             auto mesh = node->Meshes[i].get();
-            std::swap(mesh->PrevAnimPositionBuffer, mesh->AnimPositionBuffer);
+            // std::swap(mesh->PrevAnimPositionBuffer, mesh->AnimPositionBuffer);
 
             mesh->Material->UpdateConstants();
 
@@ -259,7 +259,10 @@ namespace Scene
 
     void SkeletonMesh::Draw(Renderer::RenderBatch &batch, const FSkeletonMeshData *mesh, RHI::RHIPipelineState *pPSO)
     {
-        uint32_t rootConstants[2] = { mesh->InstanceIndex, mesh->PrevAnimPositionBuffer.offset };
+        uint32_t rootConstants[1] = {
+              mesh->InstanceIndex
+            // , mesh->PrevAnimPositionBuffer.offset
+        };
 
         batch.Label = mName.c_str();
         batch.SetPipelineState(pPSO);

@@ -10,8 +10,6 @@
 
 namespace Renderer
 {
-    using GraphicBatch = std::function<void(RHI::RHICommandList*, const Scene::Camera*)>;
-
     struct RenderBatch
     {
         RenderBatch(LinearAllocator& cbAllocator) : mCBAllocator(cbAllocator)
