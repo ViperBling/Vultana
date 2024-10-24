@@ -159,7 +159,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < data->nodes_count; i++)
             {
-                mesh->mNodes.emplace_back(LoadSkeletonMeshNode(data, &data->nodes[i]));
+                mesh->mNodes.emplace_back(LoadSkeletalMeshNode(data, &data->nodes[i]));
             }
             for (cgltf_size i = 0; i < data->scene->nodes_count; i++)
             {
@@ -505,7 +505,7 @@ namespace Assets
         return skeleton;
     }
 
-    Scene::FSkeletonMeshData *ModelLoader::LoadSkeletonMesh(const cgltf_primitive *primitive, const std::string &name)
+    Scene::FSkeletonMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const std::string &name)
     {
         auto mesh = new Scene::FSkeletonMeshData;
         mesh->Name = mFile + "_" + name;
@@ -606,7 +606,7 @@ namespace Assets
         return mesh;
     }
 
-    Scene::FSkeletonMeshNode *ModelLoader::LoadSkeletonMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
+    Scene::FSkeletonMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
     {
         auto node = new Scene::FSkeletonMeshNode;
         node->ID = GetNodeIndex(data, gltfNode);
@@ -644,7 +644,7 @@ namespace Assets
             {
                 std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
 
-                auto mesh = LoadSkeletonMesh(&gltfNode->mesh->primitives[i], name);
+                auto mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
                 mesh->NodeID = node->ID;
                 mesh->Material->mbSkeletalAnim = vertexSkinning;
                 mesh->Material->mbFrontFaceCCW = bFrontFaceCCW;
