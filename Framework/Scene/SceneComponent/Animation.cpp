@@ -28,7 +28,7 @@ namespace Scene
         std::pair<float, float4> upperFrame;
 
         bool found = false;
-        for (size_t frame = 0; frame <channel.KeyFrames.size() - 1; ++frame)
+        for (size_t frame = 0; frame < channel.KeyFrames.size() - 1; ++frame)
         {
             if (channel.KeyFrames[frame].first <= mCurrentAnimTime &&
                 channel.KeyFrames[frame + 1].first >= mCurrentAnimTime)
