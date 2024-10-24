@@ -507,7 +507,7 @@ namespace Assets
 
     Scene::FSkeletonMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const std::string &name)
     {
-        auto mesh = new Scene::FSkeletonMeshData;
+        Scene::FSkeletonMeshData* mesh = new Scene::FSkeletonMeshData;
         mesh->Name = mFile + "_" + name;
         mesh->Material.reset(LoadMaterial(primitive->material));
 
@@ -608,7 +608,7 @@ namespace Assets
 
     Scene::FSkeletonMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
     {
-        auto node = new Scene::FSkeletonMeshNode;
+        Scene::FSkeletonMeshNode* node = new Scene::FSkeletonMeshNode;
         node->ID = GetNodeIndex(data, gltfNode);
         node->Name = gltfNode->name ? gltfNode->name : fmt::format("Node_{}", node->ID).c_str();
         node->Parent = gltfNode->parent ? GetNodeIndex(data, gltfNode->parent) : -1;
@@ -644,7 +644,7 @@ namespace Assets
             {
                 std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
 
-                auto mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
+                Scene::FSkeletonMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
                 mesh->NodeID = node->ID;
                 mesh->Material->mbSkeletalAnim = vertexSkinning;
                 mesh->Material->mbFrontFaceCCW = bFrontFaceCCW;

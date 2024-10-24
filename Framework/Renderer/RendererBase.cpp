@@ -647,6 +647,7 @@ namespace Renderer
             uint32_t x = mMouseX;
             uint32_t y = mMouseY;
 
+            if (mpObjectIDBuffer == nullptr) return;
             uint8_t* data = (uint8_t*)mpObjectIDBuffer->GetCPUAddress();
             uint32_t dataOffset = mObjectIDRowPitch * y + x * sizeof(uint32_t);
             memcpy(&mMouseHitObjectID, data + dataOffset, sizeof(uint32_t));
