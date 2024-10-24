@@ -1,5 +1,5 @@
 #include "Animation.hpp"
-#include "SkeletonMesh.hpp"
+#include "SkeletalMesh.hpp"
 
 namespace Scene
 {
@@ -8,7 +8,7 @@ namespace Scene
         mName = name;
     }
 
-    void Animation::Update(SkeletonMesh *mesh, float deltaTime)
+    void Animation::Update(SkeletalMesh *mesh, float deltaTime)
     {
         mCurrentAnimTime += deltaTime;
         if (mCurrentAnimTime > mTimeDuration)
@@ -22,7 +22,7 @@ namespace Scene
         }
     }
 
-    void Animation::UpdateChannel(SkeletonMesh *mesh, const FAnimationChannel &channel)
+    void Animation::UpdateChannel(SkeletalMesh *mesh, const FAnimationChannel &channel)
     {
         std::pair<float, float4> lowerFrame;
         std::pair<float, float4> upperFrame;
@@ -51,7 +51,7 @@ namespace Scene
             interpolationValue = 0.0f;
         }
 
-        FSkeletonMeshNode* node = mesh->GetNode(channel.TargetNode);
+        FSkeletalMeshNode* node = mesh->GetNode(channel.TargetNode);
 
         switch (channel.Mode)
         {

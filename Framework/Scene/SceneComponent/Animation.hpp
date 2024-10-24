@@ -25,7 +25,7 @@ namespace Scene
         std::vector<std::pair<float, float4>> KeyFrames;
     };
 
-    class SkeletonMesh;
+    class SkeletalMesh;
 
     class Animation
     {
@@ -33,10 +33,10 @@ namespace Scene
 
     public:
         Animation(const std::string& name);
-        void Update(SkeletonMesh* mesh, float deltaTime);
+        void Update(SkeletalMesh* mesh, float deltaTime);
     
     private:
-        void UpdateChannel(SkeletonMesh* mesh, const FAnimationChannel& channel);
+        void UpdateChannel(SkeletalMesh* mesh, const FAnimationChannel& channel);
     
     private:
         std::string mName;

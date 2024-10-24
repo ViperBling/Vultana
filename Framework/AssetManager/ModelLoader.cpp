@@ -1,7 +1,7 @@
 #include "ModelLoader.hpp"
 #include "Scene/SceneComponent/Animation.hpp"
 #include "Scene/SceneComponent/StaticMesh.hpp"
-#include "Scene/SceneComponent/SkeletonMesh.hpp"
+#include "Scene/SceneComponent/SkeletalMesh.hpp"
 #include "MeshMaterial.hpp"
 #include "ResourceCache.hpp"
 #include "Core/VultanaEngine.hpp"
@@ -152,7 +152,7 @@ namespace Assets
 
         if (data->animations_count > 0)
         {
-            Scene::SkeletonMesh* mesh = new Scene::SkeletonMesh(mFile);
+            Scene::SkeletalMesh* mesh = new Scene::SkeletalMesh(mFile);
             mesh->mpRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
             mesh->mpAnimation.reset(LoadAnimation(data, &data->animations[0]));
             mesh->mpSkeleton.reset(LoadSkeleton(data, &data->skins[0]));
@@ -505,9 +505,9 @@ namespace Assets
         return skeleton;
     }
 
-    Scene::FSkeletonMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const std::string &name)
+    Scene::FSkeletalMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const std::string &name)
     {
-        Scene::FSkeletonMeshData* mesh = new Scene::FSkeletonMeshData;
+        Scene::FSkeletalMeshData* mesh = new Scene::FSkeletalMeshData;
         mesh->Name = mFile + "_" + name;
         mesh->Material.reset(LoadMaterial(primitive->material));
 
@@ -606,9 +606,9 @@ namespace Assets
         return mesh;
     }
 
-    Scene::FSkeletonMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
+    Scene::FSkeletalMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
     {
-        Scene::FSkeletonMeshNode* node = new Scene::FSkeletonMeshNode;
+        Scene::FSkeletalMeshNode* node = new Scene::FSkeletalMeshNode;
         node->ID = GetNodeIndex(data, gltfNode);
         node->Name = gltfNode->name ? gltfNode->name : fmt::format("Node_{}", node->ID).c_str();
         node->Parent = gltfNode->parent ? GetNodeIndex(data, gltfNode->parent) : -1;
@@ -644,7 +644,7 @@ namespace Assets
             {
                 std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
 
-                Scene::FSkeletonMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
+                Scene::FSkeletalMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
                 mesh->NodeID = node->ID;
                 mesh->Material->mbSkeletalAnim = vertexSkinning;
                 mesh->Material->mbFrontFaceCCW = bFrontFaceCCW;
