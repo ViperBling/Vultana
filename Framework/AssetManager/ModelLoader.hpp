@@ -30,8 +30,8 @@ namespace Scene
     class World;
     class StaticMesh;
     class Skeleton;
-    struct FSkeletonMeshNode;
-    struct FSkeletonMeshData;
+    struct FSkeletalMeshNode;
+    struct FSkeletalMeshData;
 }
 
 namespace Assets
@@ -53,8 +53,8 @@ namespace Assets
         
         Scene::Animation* LoadAnimation(const cgltf_data* data, const cgltf_animation* gltfAnimation);
         Scene::Skeleton* LoadSkeleton(const cgltf_data* data, const cgltf_skin* gltfSkin);
-        Scene::FSkeletonMeshData* LoadSkeletalMeshData(const cgltf_primitive* primitive, const std::string& name);
-        Scene::FSkeletonMeshNode* LoadSkeletalMeshNode(const cgltf_data* data, cgltf_node* gltfNode);
+        Scene::FSkeletalMeshData* LoadSkeletalMeshData(const cgltf_primitive* primitive, const std::string& name);
+        Scene::FSkeletalMeshNode* LoadSkeletalMeshNode(const cgltf_data* data, cgltf_node* gltfNode);
 
         MeshMaterial* LoadMaterial(const cgltf_material* gltfMaterial);
         RenderResources::Texture2D* LoadTexture(const cgltf_texture_view& textureView, bool srgb);

@@ -10,7 +10,7 @@ namespace Assets
 
 namespace Scene
 {
-    class SkeletonMesh;
+    class SkeletalMesh;
     class Animation;
 
     class Skeleton
@@ -19,7 +19,7 @@ namespace Scene
         
     public:
         Skeleton(const std::string& name);
-        void Update(const SkeletonMesh* mesh);
+        void Update(const SkeletalMesh* mesh);
         uint32_t GetJointMatricesAddress() const { return mJointMatricesAddress; }
 
     private:
@@ -32,7 +32,7 @@ namespace Scene
         uint32_t mJointMatricesAddress;
     };
 
-    struct FSkeletonMeshData
+    struct FSkeletalMeshData
     {
         std::string Name;
         uint32_t NodeID;
@@ -64,16 +64,16 @@ namespace Scene
         float3 Center;
         float Radius;
 
-        ~FSkeletonMeshData();
+        ~FSkeletalMeshData();
     };
 
-    struct FSkeletonMeshNode
+    struct FSkeletalMeshNode
     {
         std::string Name;
         uint32_t ID;
         uint32_t Parent;
         std::vector<uint32_t> Children;
-        std::vector<std::unique_ptr<FSkeletonMeshData>> Meshes;
+        std::vector<std::unique_ptr<FSkeletalMeshData>> Meshes;
 
         float3 Translation;
         quaternion Rotation;
@@ -82,12 +82,12 @@ namespace Scene
         float4x4 GlobalTransform;
     };
 
-    class SkeletonMesh : public IVisibleObject
+    class SkeletalMesh : public IVisibleObject
     {
         friend class Assets::ModelLoader;
 
     public:
-        SkeletonMesh(const std::string& name);
+        SkeletalMesh(const std::string& name);
 
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
@@ -95,17 +95,17 @@ namespace Scene
         virtual bool FrustumCull(const float4* planes, uint32_t planeCount) const override;
         virtual void OnGUI() override;
 
-        FSkeletonMeshNode* GetNode(uint32_t nodeID) const;
+        FSkeletalMeshNode* GetNode(uint32_t nodeID) const;
 
     private:
-        void Create(FSkeletonMeshData* mesh);
+        void Create(FSkeletalMeshData* mesh);
 
-        void UpdateNodeTransform(FSkeletonMeshNode* node);
-        void UpdateMeshConstants(FSkeletonMeshNode* node);
+        void UpdateNodeTransform(FSkeletalMeshNode* node);
+        void UpdateMeshConstants(FSkeletalMeshNode* node);
 
-        void Draw(const FSkeletonMeshData* mesh);
-        void UpdateVertexSkinning(Renderer::ComputeBatch& batch, const FSkeletonMeshData* mesh);
-        void Draw(Renderer::RenderBatch& batch, const FSkeletonMeshData* mesh, RHI::RHIPipelineState* pPSO);
+        void Draw(const FSkeletalMeshData* mesh);
+        void UpdateVertexSkinning(Renderer::ComputeBatch& batch, const FSkeletalMeshData* mesh);
+        void Draw(Renderer::RenderBatch& batch, const FSkeletalMeshData* mesh, RHI::RHIPipelineState* pPSO);
 
     private:
         Renderer::RendererBase* mpRenderer = nullptr;
@@ -116,7 +116,7 @@ namespace Scene
         std::unique_ptr<Skeleton> mpSkeleton;
         std::unique_ptr<Animation> mpAnimation;
 
-        std::vector<std::unique_ptr<FSkeletonMeshNode>> mNodes;
+        std::vector<std::unique_ptr<FSkeletalMeshNode>> mNodes;
         std::vector<uint32_t> mRootNodes;
 
         bool mbAnimated = false;

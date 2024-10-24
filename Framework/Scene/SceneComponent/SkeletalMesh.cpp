@@ -1,4 +1,4 @@
-#include "SkeletonMesh.hpp"
+#include "SkeletalMesh.hpp"
 #include "Animation.hpp"
 #include "AssetManager/MeshMaterial.hpp"
 #include "AssetManager/ResourceCache.hpp"
@@ -13,17 +13,17 @@ namespace Scene
         mpRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
     }
 
-    void Skeleton::Update(const SkeletonMesh *mesh)
+    void Skeleton::Update(const SkeletalMesh *mesh)
     {
         for (size_t i = 0; i < mJoints.size(); i++)
         {
-            const FSkeletonMeshNode* node = mesh->GetNode(mJoints[i]);
+            const FSkeletalMeshNode* node = mesh->GetNode(mJoints[i]);
             mJointMatrices[i] = mul(node->GlobalTransform, mInverseBindMatrices[i]);
         }
         mJointMatricesAddress = mpRenderer->AllocateSceneConstantBuffer(mJointMatrices.data(), (uint32_t)mJointMatrices.size() * sizeof(float4x4));
     }
 
-    FSkeletonMeshData::~FSkeletonMeshData()
+    FSkeletalMeshData::~FSkeletalMeshData()
     {
         Assets::ResourceCache* cache = Assets::ResourceCache::GetInstance();
 
@@ -44,13 +44,13 @@ namespace Scene
         // pRenderer->FreeSceneAnimationBuffer(PrevAnimPositionBuffer);
     }
 
-    SkeletonMesh::SkeletonMesh(const std::string &name)
+    SkeletalMesh::SkeletalMesh(const std::string &name)
     {
         // mpRenderer will create on load mesh.
         mName = name;
     }
 
-    bool SkeletonMesh::Create()
+    bool SkeletalMesh::Create()
     {
         for (size_t i = 0; i < mNodes.size(); i++)
         {
@@ -63,7 +63,7 @@ namespace Scene
         return true;
     }
 
-    void SkeletonMesh::Tick(float deltaTime)
+    void SkeletalMesh::Tick(float deltaTime)
     {
         float4x4 T = translation_matrix(mPosition);
         float4x4 R = rotation_matrix(mRotation);
@@ -91,41 +91,41 @@ namespace Scene
         }
     }
 
-    void SkeletonMesh::Render(Renderer::RendererBase *pRenderer)
+    void SkeletalMesh::Render(Renderer::RendererBase *pRenderer)
     {
         for (size_t i = 0; i < mNodes.size(); i++)
         {
             for (size_t j = 0; j < mNodes[i]->Meshes.size(); j++)
             {
-                const FSkeletonMeshData* mesh = mNodes[i]->Meshes[j].get();
+                const FSkeletalMeshData* mesh = mNodes[i]->Meshes[j].get();
                 Draw(mesh);
             }
         }
     }
 
-    bool SkeletonMesh::FrustumCull(const float4 *planes, uint32_t planeCount) const
+    bool SkeletalMesh::FrustumCull(const float4 *planes, uint32_t planeCount) const
     {
         // return ::FrustumCull(planes, planeCount, mPosition, mRadius);
         return false;
     }
 
-    void SkeletonMesh::OnGUI()
+    void SkeletalMesh::OnGUI()
     {
         IVisibleObject::OnGUI();
         
-        GUICommand("Inspector", "SkeletonMesh", [&]()
+        GUICommand("Inspector", "SkeletalMesh", [&]()
         {
             ImGui::Checkbox("Animated", &mbAnimated);
         });
     }
 
-    FSkeletonMeshNode *SkeletonMesh::GetNode(uint32_t nodeID) const
+    FSkeletalMeshNode *SkeletalMesh::GetNode(uint32_t nodeID) const
     {
         assert(nodeID < mNodes.size());
         return mNodes[nodeID].get();
     }
 
-    void SkeletonMesh::Create(FSkeletonMeshData *mesh)
+    void SkeletalMesh::Create(FSkeletalMeshData *mesh)
     {
         if (mesh->Material->IsVertexSkinned())
         {
@@ -142,7 +142,7 @@ namespace Scene
         }
     }
 
-    void SkeletonMesh::UpdateNodeTransform(FSkeletonMeshNode *node)
+    void SkeletalMesh::UpdateNodeTransform(FSkeletalMeshNode *node)
     {
         float4x4 T = translation_matrix(node->Translation);
         float4x4 R = rotation_matrix(node->Rotation);
@@ -159,7 +159,7 @@ namespace Scene
         }
     }
 
-    void SkeletonMesh::UpdateMeshConstants(FSkeletonMeshNode *node)
+    void SkeletalMesh::UpdateMeshConstants(FSkeletalMeshNode *node)
     {
         for (size_t i = 0; i < node->Meshes.size(); i++)
         {
@@ -210,7 +210,7 @@ namespace Scene
         }
     }
 
-    void SkeletonMesh::Draw(const FSkeletonMeshData *mesh)
+    void SkeletalMesh::Draw(const FSkeletalMeshData *mesh)
     {
         if (mesh->Material->IsVertexSkinned())
         {
@@ -233,7 +233,7 @@ namespace Scene
         }
     }
 
-    void SkeletonMesh::UpdateVertexSkinning(Renderer::ComputeBatch &batch, const FSkeletonMeshData *mesh)
+    void SkeletalMesh::UpdateVertexSkinning(Renderer::ComputeBatch &batch, const FSkeletalMeshData *mesh)
     {
         batch.Label = mName.c_str();
         batch.SetPipelineState(mesh->Material->GetVertexSkinningPSO());
@@ -257,7 +257,7 @@ namespace Scene
         batch.Dispatch((mesh->VertexCount + 63) / 64, 1, 1);
     }
 
-    void SkeletonMesh::Draw(Renderer::RenderBatch &batch, const FSkeletonMeshData *mesh, RHI::RHIPipelineState *pPSO)
+    void SkeletalMesh::Draw(Renderer::RenderBatch &batch, const FSkeletalMeshData *mesh, RHI::RHIPipelineState *pPSO)
     {
         uint32_t rootConstants[1] = {
               mesh->InstanceIndex
