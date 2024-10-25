@@ -1,5 +1,6 @@
 #include "Win32Window.hpp"
 #include "Core/VultanaEngine.hpp"
+#include "Utilities/String.hpp"
 
 #include <ImGui/imgui_impl_win32.h>
 
@@ -51,7 +52,7 @@ namespace Window
         wndClass.lpfnWndProc = WindowProc;
         wndClass.hInstance = mDesc.Instance;
         wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wndClass.lpszClassName = "VultanaEngine";
+        wndClass.lpszClassName = L"VultanaEngine";
         RegisterClassEx(&wndClass);
 
         RECT windowRect = { 0, 0, (LONG)mDesc.Size.x, (LONG)mDesc.Size.y };
@@ -59,7 +60,7 @@ namespace Window
 
         mHwnd = CreateWindow(
             wndClass.lpszClassName, 
-            mDesc.Title.c_str(), 
+            (LPCWSTR)mDesc.Title.c_str(),
             WS_OVERLAPPEDWINDOW, 
             mDesc.Position.x, mDesc.Position.y, 
             windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, 

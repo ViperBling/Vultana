@@ -93,7 +93,7 @@ namespace Renderer
 
     ShaderCompiler::ShaderCompiler(RendererBase *renderer) : mpRenderer(renderer)
     {
-        HMODULE dxcModule = LoadLibrary("dxcompiler.dll");
+        HMODULE dxcModule = LoadLibrary(L"dxcompiler.dll");
 
         if (dxcModule)
         {
