@@ -28,10 +28,11 @@ void CSMain(uint3 dispatchID : SV_DispatchThreadID)
     }
 
     uint16_t4 jointID = LoadSceneStaticBuffer<uint16_t4>(cJointIDBufferAddress, vertexID);
-    float4x4 jointMatrix0 = transpose(LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.x));
-    float4x4 jointMatrix1 = transpose(LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.y));
-    float4x4 jointMatrix2 = transpose(LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.z));
-    float4x4 jointMatrix3 = transpose(LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.w));
+    // No need to transpose
+    float4x4 jointMatrix0 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.x);
+    float4x4 jointMatrix1 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.y);
+    float4x4 jointMatrix2 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.z);
+    float4x4 jointMatrix3 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.w);
     float4 jointWeight = LoadSceneStaticBuffer<float4>(cJointWeightBufferAddress, vertexID);
 
     float3 position = LoadSceneStaticBuffer<float3>(cStaticPositionBufferAddress, vertexID);

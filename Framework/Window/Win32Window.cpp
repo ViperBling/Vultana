@@ -60,7 +60,7 @@ namespace Window
 
         mHwnd = CreateWindow(
             wndClass.lpszClassName, 
-            (LPCWSTR)mDesc.Title.c_str(),
+            L"VultanaEngine",
             WS_OVERLAPPEDWINDOW, 
             mDesc.Position.x, mDesc.Position.y, 
             windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, 
