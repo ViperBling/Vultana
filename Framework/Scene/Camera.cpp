@@ -46,7 +46,7 @@ namespace Scene
         mFov = yFov;
         mNear = zNear;
 
-        float h = 1.0 / std::tan(0.5f * DegreeToRadian(yFov));
+        float h = 1.0 / tan(0.5f * DegreeToRadian(yFov));
         float w = h / aspectRatio;
         mProjection = float4x4(0.0);
         mProjection[0][0] = w;

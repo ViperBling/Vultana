@@ -153,7 +153,7 @@ namespace Assets
         }
     }
 
-    bool TextureLoader::Load(const std::string &filename, bool srgb)
+    bool TextureLoader::Load(const eastl::string &filename, bool srgb)
     {
         std::ifstream is;
         is.open(filename.c_str(), std::ios::binary);
@@ -173,7 +173,7 @@ namespace Assets
         is.read(buffer, length);
         is.close();
 
-        if (filename.find(".dds") != std::string::npos)
+        if (filename.find(".dds") != eastl::string::npos)
         {
             return LoadDDS(srgb);
         }

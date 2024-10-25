@@ -22,22 +22,9 @@ namespace RG
         graph.RegisterNode(this);
     }
 
-    const char* DAGNode::GetGraphVizShape() const
+    eastl::string DAGNode::GraphVizify() const
     {
-        switch (mNodeType)
-        {
-        case FNodeType::Resource:
-            return "ellipse";
-        case FNodeType::Pass:
-            return "rectangle";
-        default:
-            return "ellipse";
-        }
-    }
-
-    std::string DAGNode::GraphVizify() const
-    {
-        std::string str;
+        eastl::string str;
         str.reserve(128);
 
         str.append("[label=\"");
@@ -89,7 +76,7 @@ namespace RG
         }
 
         // 遍历图中的节点，如果引用计数为0，入栈准备删除
-        std::vector<DAGNode*> nodesStack;
+        eastl::vector<DAGNode*> nodesStack;
         for (size_t i = 0; i < mNodes.size(); ++i)
         {
             if (mNodes[i]->GetRefCount() == 0)
@@ -103,7 +90,7 @@ namespace RG
             DAGNode* node = nodesStack.back();
             nodesStack.pop_back();
 
-            std::vector<DAGEdge*> incomingEdges;
+            eastl::vector<DAGEdge*> incomingEdges;
             GetIncomingEdges(node, incomingEdges);
 
             for (size_t i = 0; i < incomingEdges.size(); ++i)
@@ -122,7 +109,7 @@ namespace RG
         return !GetNode(edge->mFromNode)->IsCulled() && !GetNode(edge->mToNode)->IsCulled();
     }
 
-    void DirectedAcyclicGraph::GetIncomingEdges(const DAGNode *node, std::vector<DAGEdge *> &edges) const
+    void DirectedAcyclicGraph::GetIncomingEdges(const DAGNode *node, eastl::vector<DAGEdge *> &edges) const
     {
         edges.clear();
 
@@ -135,7 +122,7 @@ namespace RG
         }
     }
 
-    void DirectedAcyclicGraph::GetOutgoingEdges(const DAGNode *node, std::vector<DAGEdge *> &edges) const
+    void DirectedAcyclicGraph::GetOutgoingEdges(const DAGNode *node, eastl::vector<DAGEdge *> &edges) const
     {
         edges.clear();
 
@@ -148,7 +135,7 @@ namespace RG
         }
     }
 
-    std::string DirectedAcyclicGraph::ExportGraphViz()
+    eastl::string DirectedAcyclicGraph::ExportGraphViz()
     {
         std::stringstream ssOut;
 
@@ -159,7 +146,7 @@ namespace RG
         for (size_t i = 0; i < mNodes.size(); i++)
         {
             uint32_t id = mNodes[i]->GetID();
-            std::string s = mNodes[i]->GraphVizify();
+            eastl::string s = mNodes[i]->GraphVizify();
             ssOut << "  \"N" << id << "\" " << s.c_str() << "\n";
         }
         ssOut << "\n";
@@ -168,13 +155,13 @@ namespace RG
             DAGNode* node = mNodes[i];
             uint32_t id = node->GetID();
 
-            std::vector<DAGEdge*> edges;
+            eastl::vector<DAGEdge*> edges;
             GetOutgoingEdges(node, edges);
 
             auto first = edges.begin();
             auto pos = std::partition(first, edges.end(), [this](auto const& edge) { return IsEdgeValid(edge); });
             
-            std::string s = node->GetGraphVizEdgeColor();
+            eastl::string s = node->GetGraphVizEdgeColor();
 
             if (first != pos)
             {

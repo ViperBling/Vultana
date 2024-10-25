@@ -63,7 +63,7 @@ namespace RG
         }
     }
 
-    RHI::RHITexture *RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const std::string& name, RHI::ERHIAccessFlags& initialState)
+    RHI::RHITexture *RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState)
     {
         for (auto iter = mFreeOverlappingTextures.begin(); iter != mFreeOverlappingTextures.end(); ++iter)
         {
@@ -98,7 +98,7 @@ namespace RG
         }
     }
 
-    RHI::RHITexture *RenderGraphResourceAllocator::AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHITextureDesc &desc, const std::string &name, RHI::ERHIAccessFlags &initialState)
+    RHI::RHITexture *RenderGraphResourceAllocator::AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHITextureDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
     {
         LifeTimeRange lifeTime = {firstPass, lastPass};
         uint32_t textureSize = mpDevice->GetAllocationSize(desc);
@@ -146,7 +146,7 @@ namespace RG
         return AllocateTexture(firstPass, lastPass, lastState, desc, name, initialState);
     }
 
-    RHI::RHIBuffer *RenderGraphResourceAllocator::AllocateBuffer(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHIBufferDesc &desc, const std::string &name, RHI::ERHIAccessFlags &initialState)
+    RHI::RHIBuffer *RenderGraphResourceAllocator::AllocateBuffer(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHIBufferDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
     {
         LifeTimeRange lifeTime = {firstPass, lastPass};
         uint32_t bufferSize = desc.Size;
@@ -322,7 +322,7 @@ namespace RG
         RHI::RHIHeapDesc heapDesc;
         heapDesc.Size = RoundUpPow2(size, 64u * 1024);
 
-        std::string heapName = fmt::format("RG Heap {:.1} MB", heapDesc.Size / (1024.0f * 1024.0f)).c_str();
+        eastl::string heapName = fmt::format("RG Heap {:.1} MB", heapDesc.Size / (1024.0f * 1024.0f)).c_str();
 
         FHeap heap;
         heap.Heap = mpDevice->CreateHeap(heapDesc, heapName);

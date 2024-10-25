@@ -4,7 +4,7 @@
 
 namespace RenderResources
 {
-    StructuredBuffer::StructuredBuffer(const std::string &name)
+    StructuredBuffer::StructuredBuffer(const eastl::string &name)
     {
         mName = name;
     }

@@ -10,7 +10,7 @@ namespace RHI
     class RHIBufferVK : public RHIBuffer
     {
     public:
-        RHIBufferVK(RHIDeviceVK* device, const RHIBufferDesc& desc, const std::string& name);
+        RHIBufferVK(RHIDeviceVK* device, const RHIBufferDesc& desc, const eastl::string& name);
         ~RHIBufferVK();
 
         bool Create();

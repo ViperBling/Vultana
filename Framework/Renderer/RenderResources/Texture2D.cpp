@@ -4,7 +4,7 @@
 
 namespace RenderResources
 {
-    Texture2D::Texture2D(const std::string &name)
+    Texture2D::Texture2D(const eastl::string &name)
     {
         mName = name;
     }

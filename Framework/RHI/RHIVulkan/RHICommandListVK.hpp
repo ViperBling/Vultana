@@ -10,7 +10,7 @@ namespace RHI
     class RHICommandListVK : public RHICommandList
     {
     public:
-        RHICommandListVK(RHIDeviceVK* device, ERHICommandQueueType queueType, const std::string& name);
+        RHICommandListVK(RHIDeviceVK* device, ERHICommandQueueType queueType, const eastl::string& name);
         ~RHICommandListVK();
 
         bool Create();
@@ -28,7 +28,7 @@ namespace RHI
 
         virtual void BeginProfiling() override;
         virtual void EndProfiling() override;
-        virtual void BeginEvent(const std::string& eventName) override;
+        virtual void BeginEvent(const eastl::string& eventName) override;
         virtual void EndEvent() override;
 
         virtual void CopyBufferToTexture(RHIBuffer* srcBuffer, RHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
@@ -73,16 +73,16 @@ namespace RHI
         vk::CommandPool mCmdPool;
         vk::CommandBuffer mCmdBuffer;
 
-        std::vector<vk::CommandBuffer> mFreeCmdBuffers;
-        std::vector<vk::CommandBuffer> mPendingCmdBuffers;
+        eastl::vector<vk::CommandBuffer> mFreeCmdBuffers;
+        eastl::vector<vk::CommandBuffer> mPendingCmdBuffers;
 
-        std::vector<vk::MemoryBarrier2> mMemoryBarriers;
-        std::vector<vk::BufferMemoryBarrier2> mBufferMemoryBarriers;
-        std::vector<vk::ImageMemoryBarrier2> mImageMemoryBarriers;
+        eastl::vector<vk::MemoryBarrier2> mMemoryBarriers;
+        eastl::vector<vk::BufferMemoryBarrier2> mBufferMemoryBarriers;
+        eastl::vector<vk::ImageMemoryBarrier2> mImageMemoryBarriers;
 
-        std::vector<std::pair<RHIFence*, uint64_t>> mPendingWaits;
-        std::vector<std::pair<RHIFence*, uint64_t>> mPendingSignals;
-        std::vector<RHISwapchain*> mPendingSwapchain;
+        eastl::vector<eastl::pair<RHIFence*, uint64_t>> mPendingWaits;
+        eastl::vector<eastl::pair<RHIFence*, uint64_t>> mPendingSignals;
+        eastl::vector<RHISwapchain*> mPendingSwapchain;
 
         struct ConstantData
         {

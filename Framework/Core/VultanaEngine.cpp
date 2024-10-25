@@ -37,7 +37,7 @@ namespace Core
 
         mWndHandle = windowHandle;
 
-        std::string configFile = mWorkingPath + "Config/VultanaEngine.ini";
+        eastl::string configFile = mWorkingPath + "Config/VultanaEngine.ini";
         CSimpleIniA configIni;
         if (configIni.LoadFile(configFile.c_str()) < 0)
         {
@@ -49,20 +49,20 @@ namespace Core
 
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
-        mpRenderer = std::make_unique<Renderer::RendererBase>();
+        mpRenderer = eastl::make_unique<Renderer::RendererBase>();
         if (!mpRenderer->CreateDevice(renderBackend, mWndHandle, width, height))
         {
             VTNA_LOG_ERROR("Failed to create renderer device");
             exit(0);
         }
 
-        mpWorld = std::make_unique<Scene::World>();
+        mpWorld = eastl::make_unique<Scene::World>();
         mpWorld->LoadScene(mAssetsPath + configIni.GetValue("World", "SceneFile"));
 
-        mpGUI = std::make_unique<GUI>();
+        mpGUI = eastl::make_unique<GUI>();
         mpGUI->Init();
 
-        mpEditor = std::make_unique<VultanaEditor>();
+        mpEditor = eastl::make_unique<VultanaEditor>();
 
         stm_setup();
     }

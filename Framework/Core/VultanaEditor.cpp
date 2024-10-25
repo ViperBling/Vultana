@@ -21,7 +21,7 @@ namespace Core
             auto pTexture = pRenderer->CreateTexture2D(w, h, 1, fmt == 1 ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::BGRA8SRGB, 0, "ImFileDialogIcon");
             pRenderer->UploadTexture(pTexture->GetTexture(), data);
 
-            mFileDialogIcons.insert(std::make_pair(pTexture->GetSRV(), pTexture));
+            mFileDialogIcons.insert(eastl::make_pair(pTexture->GetSRV(), pTexture));
 
             return pTexture->GetSRV();
         };
@@ -30,7 +30,7 @@ namespace Core
             mPendingDeletions.push_back(static_cast<RHI::RHIDescriptor*>(tex));
         };
 
-        std::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
+        eastl::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         mpTranslateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/TranslateIcon.png", true));
         mpRotateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/RotateIcon.png", true));
@@ -75,7 +75,7 @@ namespace Core
         }
     }
 
-    void VultanaEditor::AddGUICommand(const std::string &window, const std::string &section, const std::function<void()> &command)
+    void VultanaEditor::AddGUICommand(const eastl::string &window, const eastl::string &section, const eastl::function<void()> &command)
     {
         mCommands[window].push_back({ section, command });
     }
@@ -183,7 +183,7 @@ namespace Core
         {
             if (ifd::FileDialog::Instance().HasResult())
             {
-                std::string res = ifd::FileDialog::Instance().GetResult().string();
+                eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
                 Core::VultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
             }
             ifd::FileDialog::Instance().Close();
@@ -275,11 +275,11 @@ namespace Core
         auto pEngine = Core::VultanaEngine::GetEngineInstance();
         auto pRenderer = pEngine->GetRenderer();
 
-        std::string file = pEngine->GetWorkingPath() + "Tools/GraphViz/RenderGraph.html";
-        std::string graph = pRenderer->GetRenderGraph()->Export();
+        eastl::string file = pEngine->GetWorkingPath() + "Tools/GraphViz/RenderGraph.html";
+        eastl::string graph = pRenderer->GetRenderGraph()->Export();
 
         std::ofstream stream;
-        stream.open(file);
+        stream.open(file.c_str());
         stream << R"(<!DOCTYPE html>
     <html>
       <head>
@@ -307,7 +307,7 @@ namespace Core
     
         stream.close();
 
-        std::string command = "start " + file;
+        eastl::string command = "start " + file;
         system(command.c_str());
     }
 
@@ -325,7 +325,7 @@ namespace Core
         mPendingDeletions.clear();
     }
 
-    void VultanaEditor::DrawWindow(const std::string &window, bool *pOpen)
+    void VultanaEditor::DrawWindow(const eastl::string &window, bool *pOpen)
     {
         ImGui::Begin(window.c_str(), pOpen);
 

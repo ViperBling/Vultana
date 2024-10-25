@@ -50,20 +50,20 @@ namespace Renderer
 
         RHI::RHIDevice* GetDevice() const { return mpDevice.get(); }
         RHI::RHISwapchain* GetSwapchain() const { return mpSwapchain.get(); }
-        RHI::RHIShader* GetShader(const std::string& file, const std::string& entryPoint, RHI::ERHIShaderType type, const std::vector<std::string>& defines = {}, RHI::ERHIShaderCompileFlags flags = 0);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const std::string& name);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
+        RHI::RHIShader* GetShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines = {}, RHI::ERHIShaderCompileFlags flags = 0);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const eastl::string& name);
         void ReloadShaders();
         RHI::RHIDescriptor* GetPointSampler() const { return mpPointRepeatSampler.get(); }
         RHI::RHIDescriptor* GetLinearSampler() const { return mpBilinearRepeatSampler.get(); }
         RG::RenderGraph* GetRenderGraph() const { return mpRenderGraph.get(); }
 
-        RenderResources::Texture2D* CreateTexture2D(const std::string& file, bool srgb);
-        RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string& name);
+        RenderResources::Texture2D* CreateTexture2D(const eastl::string& file, bool srgb);
+        RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string& name);
 
-        RenderResources::IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
-        RenderResources::StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
-        RenderResources::RawBuffer* CreateRawBuffer(const void* data, uint32_t size, const std::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+        RenderResources::IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
+        RenderResources::StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+        RenderResources::RawBuffer* CreateRawBuffer(const void* data, uint32_t size, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
 
         RHI::RHIBuffer* GetSceneStaticBuffer() const;
         OffsetAllocator::Allocation AllocateSceneStaticBuffer(const void* data, uint32_t size);
@@ -115,13 +115,13 @@ namespace Renderer
         void MouseHitTest();
 
     private:
-        std::unique_ptr<RHI::RHIDevice> mpDevice;
-        std::unique_ptr<RHI::RHISwapchain> mpSwapchain;
-        std::unique_ptr<class PipelineStateCache> mpPipelineStateCache;
-        std::unique_ptr<class ShaderCompiler> mpShaderCompiler;
-        std::unique_ptr<class ShaderCache> mpShaderCache;
-        std::unique_ptr<GPUScene> mpGPUScene;
-        std::unique_ptr<RG::RenderGraph> mpRenderGraph;
+        eastl::unique_ptr<RHI::RHIDevice> mpDevice;
+        eastl::unique_ptr<RHI::RHISwapchain> mpSwapchain;
+        eastl::unique_ptr<class PipelineStateCache> mpPipelineStateCache;
+        eastl::unique_ptr<class ShaderCompiler> mpShaderCompiler;
+        eastl::unique_ptr<class ShaderCache> mpShaderCache;
+        eastl::unique_ptr<GPUScene> mpGPUScene;
+        eastl::unique_ptr<RG::RenderGraph> mpRenderGraph;
 
         uint32_t mDisplayWidth;
         uint32_t mDisplayHeight;
@@ -130,21 +130,21 @@ namespace Renderer
         float mUpscaleRatio = 1.0f;
         float mMipBias = 0.0f;
 
-        std::unique_ptr<LinearAllocator> mCBAllocator;
+        eastl::unique_ptr<LinearAllocator> mCBAllocator;
 
         uint64_t mCurrentFrameFenceValue = 0;
         uint64_t mFrameFenceValue[RHI::RHI_MAX_INFLIGHT_FRAMES] = {};
-        std::unique_ptr<RHI::RHIFence> mpFrameFence;
-        std::unique_ptr<RHI::RHICommandList> mpCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RHI::RHIFence> mpFrameFence;
+        eastl::unique_ptr<RHI::RHICommandList> mpCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
         uint64_t mCurrentAsyncComputeFenceValue = 0;
-        std::unique_ptr<RHI::RHIFence> mpAsyncComputeFence;
-        std::unique_ptr<RHI::RHICommandList> mpAsyncComputeCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RHI::RHIFence> mpAsyncComputeFence;
+        eastl::unique_ptr<RHI::RHICommandList> mpAsyncComputeCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
         uint64_t mCurrentUploadFenceValue = 0;
-        std::unique_ptr<RHI::RHIFence> mpUploadFence;
-        std::unique_ptr<RHI::RHICommandList> mpUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
-        std::unique_ptr<StagingBufferAllocator> mpStagingBufferAllocators[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RHI::RHIFence> mpUploadFence;
+        eastl::unique_ptr<RHI::RHICommandList> mpUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<StagingBufferAllocator> mpStagingBufferAllocators[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
         struct TextureUpload
         {
@@ -154,7 +154,7 @@ namespace Renderer
             uint32_t Offset;
             StagingBuffer SBForUpload;
         };
-        std::vector<TextureUpload> mPendingTextureUpload;
+        eastl::vector<TextureUpload> mPendingTextureUpload;
 
         struct BufferUpload
         {
@@ -162,24 +162,24 @@ namespace Renderer
             uint32_t Offset;
             StagingBuffer SBForUpload;
         };
-        std::vector<BufferUpload> mPendingBufferUpload;
+        eastl::vector<BufferUpload> mPendingBufferUpload;
 
-        std::unique_ptr<RHI::RHIDescriptor> mpAniso2xSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpAniso4xSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpAniso8xSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpAniso16xSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpPointRepeatSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpPointClampSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpBilinearRepeatSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpBilinearClampSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpTrilinearRepeatSampler;
-        std::unique_ptr<RHI::RHIDescriptor> mpTrilinearClampSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpAniso2xSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpAniso4xSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpAniso8xSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpAniso16xSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpPointRepeatSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpPointClampSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpBilinearRepeatSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpBilinearClampSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpTrilinearRepeatSampler;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpTrilinearClampSampler;
 
         bool mbEnableObjectIDRendering = false;
         uint32_t mMouseX = 0;
         uint32_t mMouseY = 0;
         uint32_t mMouseHitObjectID = UINT32_MAX;
-        std::unique_ptr<RHI::RHIBuffer> mpObjectIDBuffer;
+        eastl::unique_ptr<RHI::RHIBuffer> mpObjectIDBuffer;
         uint32_t mObjectIDRowPitch = 0;
 
         RG::RGHandle mOutputColorHandle;
@@ -189,11 +189,11 @@ namespace Renderer
         // RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
-        std::unique_ptr<class ForwardBasePass> mpForwardBasePass;
+        eastl::unique_ptr<class ForwardBasePass> mpForwardBasePass;
 
-        std::vector<ComputeBatch> mAnimationBatches;
+        eastl::vector<ComputeBatch> mAnimationBatches;
 
-        std::vector<RenderBatch> mOutlinePassBatches;
-        std::vector<RenderBatch> mIDPassBatches;
+        eastl::vector<RenderBatch> mOutlinePassBatches;
+        eastl::vector<RenderBatch> mIDPassBatches;
     };
 }

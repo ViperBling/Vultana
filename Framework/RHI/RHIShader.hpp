@@ -12,7 +12,7 @@ namespace RHI
         const RHIShaderDesc& GetDesc() const { return mDesc; }
         uint64_t GetHash() const { return mHash; }
 
-        virtual bool Create(tcb::span<uint8_t> data) = 0;
+        virtual bool Create(eastl::span<uint8_t> data) = 0;
 
     protected:
         RHIShaderDesc mDesc {};

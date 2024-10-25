@@ -9,7 +9,7 @@ namespace Assets
         return &instance;
     }
 
-    RenderResources::Texture2D *ResourceCache::GetTexture2D(const std::string &file, bool srgb)
+    RenderResources::Texture2D *ResourceCache::GetTexture2D(const eastl::string &file, bool srgb)
     {
         auto iter = mCachedTexture2D.find(file);
         if (iter != mCachedTexture2D.end())
@@ -21,7 +21,7 @@ namespace Assets
         FResource texture;
         texture.RefCount = 1;
         texture.Data = pRenderer->CreateTexture2D(file, srgb);
-        mCachedTexture2D.insert(std::make_pair(file, texture));
+        mCachedTexture2D.insert(eastl::make_pair(file, texture));
 
         return (RenderResources::Texture2D*)texture.Data;
     }
@@ -48,7 +48,7 @@ namespace Assets
         assert(false);
     }
 
-    OffsetAllocator::Allocation ResourceCache::GetSceneBuffer(const std::string &name, const void *data, uint32_t size)
+    OffsetAllocator::Allocation ResourceCache::GetSceneBuffer(const eastl::string &name, const void *data, uint32_t size)
     {
         auto iter = mCachedSceneBuffer.find(name);
         if (iter != mCachedSceneBuffer.end())
@@ -61,7 +61,7 @@ namespace Assets
         FSceneBuffer buffer;
         buffer.RefCount = 1;
         buffer.Allocation = pRenderer->AllocateSceneStaticBuffer(data, size);
-        mCachedSceneBuffer.insert(std::make_pair(name, buffer));
+        mCachedSceneBuffer.insert(eastl::make_pair(name, buffer));
         return buffer.Allocation;
     }
 

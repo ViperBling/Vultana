@@ -49,7 +49,7 @@ namespace RHI
         uint32_t mDescriptorCount = 0;
 
         uint32_t mAllocatedCount = 0;
-        std::vector<uint32_t> mFreeDescriptors;
+        eastl::vector<uint32_t> mFreeDescriptors;
     };
 }
 

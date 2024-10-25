@@ -3,7 +3,7 @@
 
 namespace Scene
 {
-    Animation::Animation(const std::string &name)
+    Animation::Animation(const eastl::string &name)
     {
         mName = name;
     }
@@ -24,8 +24,8 @@ namespace Scene
 
     void Animation::UpdateChannel(SkeletalMesh *mesh, const FAnimationChannel &channel)
     {
-        std::pair<float, float4> lowerFrame;
-        std::pair<float, float4> upperFrame;
+        eastl::pair<float, float4> lowerFrame;
+        eastl::pair<float, float4> upperFrame;
 
         bool found = false;
         for (size_t frame = 0; frame < channel.KeyFrames.size() - 1; ++frame)

@@ -6,19 +6,18 @@
 
 namespace RG
 {
-    RenderGraphPassBase::RenderGraphPassBase(const std::string &name, RenderPassType type, DirectedAcyclicGraph &graph)
+    RenderGraphPassBase::RenderGraphPassBase(const eastl::string &name, RenderPassType type, DirectedAcyclicGraph &graph)
         : DAGNode(graph)
     {
         mName = name;
-        mNodeType = FNodeType::Pass;
         mType = type;
     }
 
     void RenderGraphPassBase::ResolveBarriers(const DirectedAcyclicGraph &graph)
     {
-        std::vector<DAGEdge*> edges;
-        std::vector<DAGEdge*> resIncoming;
-        std::vector<DAGEdge*> resOutgoing;
+        eastl::vector<DAGEdge*> edges;
+        eastl::vector<DAGEdge*> resIncoming;
+        eastl::vector<DAGEdge*> resOutgoing;
 
         graph.GetIncomingEdges(this, edges);
         for (size_t i = 0; i < edges.size(); i++)
@@ -118,9 +117,9 @@ namespace RG
     {
         if (mType == RenderPassType::AsyncCompute)
         {
-            std::vector<DAGEdge*> edges;
-            std::vector<DAGEdge*> resIncoming;
-            std::vector<DAGEdge*> resOutgoing;
+            eastl::vector<DAGEdge*> edges;
+            eastl::vector<DAGEdge*> resIncoming;
+            eastl::vector<DAGEdge*> resOutgoing;
 
             graph.GetIncomingEdges(this, edges);
             for (size_t i = 0; i < edges.size(); i++)
@@ -169,7 +168,7 @@ namespace RG
             {
                 if (!context.PreGraphicsQueuePasses.empty())
                 {
-                    DAGNodeID graphicsPassToWaitID = *std::max_element(context.PreGraphicsQueuePasses.begin(), context.PreGraphicsQueuePasses.end());
+                    DAGNodeID graphicsPassToWaitID = *eastl::max_element(context.PreGraphicsQueuePasses.begin(), context.PreGraphicsQueuePasses.end());
 
                     RenderGraphPassBase* graphicsPassToWait = static_cast<RenderGraphPassBase*>(graph.GetNode(graphicsPassToWaitID));
                     if (graphicsPassToWait->mSignalValue == -1)
@@ -189,7 +188,7 @@ namespace RG
 
                 if (!context.PostGraphicsQueuePasses.empty())
                 {
-                    DAGNodeID graphicsPassToSignalID = *std::min_element(context.PostGraphicsQueuePasses.begin(), context.PostGraphicsQueuePasses.end());
+                    DAGNodeID graphicsPassToSignalID = *eastl::min_element(context.PostGraphicsQueuePasses.begin(), context.PostGraphicsQueuePasses.end());
 
                     RenderGraphPassBase* computePass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses.back()));
                     if (computePass->mSignalValue == -1)

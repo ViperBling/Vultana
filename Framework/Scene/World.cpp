@@ -11,9 +11,9 @@
 
 #include <tinyxml2/tinyxml2.h>
 
-inline float3 strToFloat3(const std::string& str)
+inline float3 strToFloat3(const eastl::string& str)
 {
-    std::vector<float> v;
+    eastl::vector<float> v;
     v.reserve(3);
     StringUtils::StringToFloatArray(str, v);
     return float3(v[0], v[1], v[2]);
@@ -52,20 +52,20 @@ namespace Scene
         const tinyxml2::XMLAttribute* intensity = element->FindAttribute("Intensity");
         if (intensity)
         {
-            light->SetLightIntensity(std::stof(intensity->Value()));
+            light->SetLightIntensity(intensity->FloatValue());
         }
     }
 
     World::World()
     {
-        mpCamera = std::make_unique<Camera>();
+        mpCamera = eastl::make_unique<Camera>();
     }
 
     World::~World()
     {
     }
 
-    void World::LoadScene(const std::string &file)
+    void World::LoadScene(const eastl::string &file)
     {
         VTNA_LOG_INFO("Loading scene from file: {}", file);
 
@@ -89,13 +89,13 @@ namespace Scene
     {
         assert(object != nullptr);
         object->SetID(static_cast<uint32_t>(mObjects.size()));
-        mObjects.push_back(std::unique_ptr<IVisibleObject>(object));
+        mObjects.push_back(eastl::unique_ptr<IVisibleObject>(object));
     }
 
     void World::AddLight(ILight *light)
     {
         assert(light != nullptr);
-        mLights.push_back(std::unique_ptr<ILight>(light));
+        mLights.push_back(eastl::unique_ptr<ILight>(light));
     }
 
     void World::Tick(float deltaTime)

@@ -18,26 +18,26 @@ namespace Scene
         friend class Assets::ModelLoader;
         
     public:
-        Skeleton(const std::string& name);
+        Skeleton(const eastl::string& name);
         void Update(const SkeletalMesh* mesh);
         uint32_t GetJointMatricesAddress() const { return mJointMatricesAddress; }
 
     private:
         Renderer::RendererBase* mpRenderer = nullptr;
-        std::string mName;
-        std::vector<uint32_t> mJoints;
-        std::vector<float4x4> mInverseBindMatrices;
+        eastl::string mName;
+        eastl::vector<uint32_t> mJoints;
+        eastl::vector<float4x4> mInverseBindMatrices;
 
-        std::vector<float4x4> mJointMatrices;
+        eastl::vector<float4x4> mJointMatrices;
         uint32_t mJointMatricesAddress;
     };
 
     struct FSkeletalMeshData
     {
-        std::string Name;
+        eastl::string Name;
         uint32_t NodeID;
 
-        std::unique_ptr<Assets::MeshMaterial> Material;
+        eastl::unique_ptr<Assets::MeshMaterial> Material;
 
         OffsetAllocator::Allocation TexCoordBuffer;
         OffsetAllocator::Allocation JointIDBuffer;
@@ -69,11 +69,11 @@ namespace Scene
 
     struct FSkeletalMeshNode
     {
-        std::string Name;
+        eastl::string Name;
         uint32_t ID;
         uint32_t Parent;
-        std::vector<uint32_t> Children;
-        std::vector<std::unique_ptr<FSkeletalMeshData>> Meshes;
+        eastl::vector<uint32_t> Children;
+        eastl::vector<eastl::unique_ptr<FSkeletalMeshData>> Meshes;
 
         float3 Translation;
         quaternion Rotation;
@@ -87,7 +87,7 @@ namespace Scene
         friend class Assets::ModelLoader;
 
     public:
-        SkeletalMesh(const std::string& name);
+        SkeletalMesh(const eastl::string& name);
 
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
@@ -109,15 +109,15 @@ namespace Scene
 
     private:
         Renderer::RendererBase* mpRenderer = nullptr;
-        std::string mName;
+        eastl::string mName;
 
         float4x4 mMtxWorld;
 
-        std::unique_ptr<Skeleton> mpSkeleton;
-        std::unique_ptr<Animation> mpAnimation;
+        eastl::unique_ptr<Skeleton> mpSkeleton;
+        eastl::unique_ptr<Animation> mpAnimation;
 
-        std::vector<std::unique_ptr<FSkeletalMeshNode>> mNodes;
-        std::vector<uint32_t> mRootNodes;
+        eastl::vector<eastl::unique_ptr<FSkeletalMeshNode>> mNodes;
+        eastl::vector<uint32_t> mRootNodes;
 
         bool mbAnimated = false;
         float mRadius = 0.0f;

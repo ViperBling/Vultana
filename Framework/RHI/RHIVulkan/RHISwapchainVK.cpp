@@ -7,7 +7,7 @@
 
 namespace RHI
 {
-    RHISwapchainVK::RHISwapchainVK(RHIDeviceVK *device, const RHISwapchainDesc &desc, const std::string &name)
+    RHISwapchainVK::RHISwapchainVK(RHIDeviceVK *device, const RHISwapchainDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;
@@ -144,8 +144,8 @@ namespace RHI
         auto surfaceCaps = physcialDevice.getSurfaceCapabilitiesKHR(mSurface);
 
         // vk::Extent2D extent = vk::Extent2D(
-        //     std::clamp(mDesc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
-        //     std::clamp(mDesc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
+        //     eastl::clamp(mDesc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
+        //     eastl::clamp(mDesc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
         // );
         vk::Extent2D extent = vk::Extent2D(mDesc.Width, mDesc.Height);
 
@@ -206,7 +206,7 @@ namespace RHI
 
         for (uint32_t i = 0; i < images.size(); i++)
         {
-            std::string name = fmt::format("{} texture {}", mName, i);
+            eastl::string name = fmt::format("{} texture {}", mName, i).c_str();
 
             RHITextureVK* texture = new RHITextureVK((RHIDeviceVK*)mpDevice, desc, name);
             texture->Create(images[i]);

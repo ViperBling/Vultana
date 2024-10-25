@@ -7,7 +7,7 @@
 #include "Utilities/Math.hpp"
 #include "Utilities/LinearAllocator.hpp"
 
-#include <memory>
+#include <EASTL/unique_ptr.h>
 
 namespace Renderer
 {
@@ -25,9 +25,9 @@ namespace RG
         RenderGraph(Renderer::RendererBase* pRenderer);
 
         template<typename Data, typename Setup, typename Execute>
-        RenderGraphPass<Data>& AddPass(const std::string& name, RenderPassType type, const Setup& setup, const Execute& execute);
+        RenderGraphPass<Data>& AddPass(const eastl::string& name, RenderPassType type, const Setup& setup, const Execute& execute);
 
-        void BeginEvent(const std::string& name) { mEventNames.push_back(name); }
+        void BeginEvent(const eastl::string& name) { mEventNames.push_back(name); }
         void EndEvent();
 
         void Clear();
@@ -43,7 +43,7 @@ namespace RG
         RGBuffer* GetBuffer(const RGHandle& handle);
 
         const DirectedAcyclicGraph& GetDAG() const { return mGraph; }
-        std::string Export();
+        eastl::string Export();
     
     private:
         template<typename T, typename... ArgsT>
@@ -53,7 +53,7 @@ namespace RG
         T* AllocatePOD(ArgsT&&... args);
 
         template<typename Resource>
-        RGHandle Create(const typename Resource::Desc& desc, const std::string& name);
+        RGHandle Create(const typename Resource::Desc& desc, const eastl::string& name);
 
         RGHandle Read(RenderGraphPassBase* pass, const RGHandle& input, RHI::ERHIAccessFlags usage, uint32_t subresource);
         RGHandle Write(RenderGraphPassBase* pass, const RGHandle& input, RHI::ERHIAccessFlags usage, uint32_t subresource);
@@ -67,36 +67,36 @@ namespace RG
         RenderGraphResourceAllocator mResourceAllocator;
         DirectedAcyclicGraph mGraph;
 
-        std::vector<std::string> mEventNames;
+        eastl::vector<eastl::string> mEventNames;
 
-        std::unique_ptr<RHI::RHIFence> mpGraphicsQueueFence;
+        eastl::unique_ptr<RHI::RHIFence> mpGraphicsQueueFence;
         uint64_t mGraphicsQueueFenceValue = 0;
-        std::unique_ptr<RHI::RHIFence> mpComputeQueueFence;
+        eastl::unique_ptr<RHI::RHIFence> mpComputeQueueFence;
         uint64_t mComputeQueueFenceValue = 0;
 
-        std::vector<RenderGraphPassBase*> mPasses;
-        std::vector<RenderGraphResource*> mResources;
-        std::vector<RenderGraphResourceNode*> mResourceNodes;
+        eastl::vector<RenderGraphPassBase*> mPasses;
+        eastl::vector<RenderGraphResource*> mResources;
+        eastl::vector<RenderGraphResourceNode*> mResourceNodes;
 
         struct ObjFinalizer
         {
             void* Object;
             void(*Finalizer)(void*);
         };
-        std::vector<ObjFinalizer> mObjFinalizers;
+        eastl::vector<ObjFinalizer> mObjFinalizers;
 
         struct PresentTarget
         {
             RenderGraphResource* Resource;
             RHI::ERHIAccessFlags State;
         };
-        std::vector<PresentTarget> mOutputResources;
+        eastl::vector<PresentTarget> mOutputResources;
     };
 
     class RenderGraphEvent
     {
     public:
-        RenderGraphEvent(RenderGraph* pGraph, const std::string& name)
+        RenderGraphEvent(RenderGraph* pGraph, const eastl::string& name)
             : mpGraph(pGraph)
         {
             mpGraph->BeginEvent(name);

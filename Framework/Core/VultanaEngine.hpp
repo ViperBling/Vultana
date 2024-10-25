@@ -28,9 +28,9 @@ namespace Core
         void* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
 
-        const std::string& GetWorkingPath() const { return mWorkingPath; }
-        const std::string& GetAssetsPath() const { return mAssetsPath; }
-        const std::string& GetShaderPath() const { return mShaderPath; }
+        const eastl::string& GetWorkingPath() const { return mWorkingPath; }
+        const eastl::string& GetAssetsPath() const { return mAssetsPath; }
+        const eastl::string& GetShaderPath() const { return mShaderPath; }
 
     private:
         ~VultanaEngine();
@@ -39,19 +39,19 @@ namespace Core
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
 
     private:
-        std::unique_ptr<Scene::World> mpWorld;
-        std::unique_ptr<GUI> mpGUI;
-        std::unique_ptr<Renderer::RendererBase> mpRenderer;
-        std::unique_ptr<VultanaEditor> mpEditor;
+        eastl::unique_ptr<Scene::World> mpWorld;
+        eastl::unique_ptr<GUI> mpGUI;
+        eastl::unique_ptr<Renderer::RendererBase> mpRenderer;
+        eastl::unique_ptr<VultanaEditor> mpEditor;
 
         void* mWndHandle = nullptr;
 
         uint64_t mLastFrameTime = 0;
         float mFrameTime = 0.0f;
 
-        std::string mWorkingPath;
-        std::string mAssetsPath;
-        std::string mShaderPath;
+        eastl::string mWorkingPath;
+        eastl::string mAssetsPath;
+        eastl::string mShaderPath;
     };
 } // namespace Vultana
 

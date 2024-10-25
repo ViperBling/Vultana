@@ -8,7 +8,7 @@
 
 namespace RHI
 {
-    RHITextureVK::RHITextureVK(RHIDeviceVK *device, const RHITextureDesc &desc, const std::string &name)
+    RHITextureVK::RHITextureVK(RHIDeviceVK *device, const RHITextureDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;
@@ -124,7 +124,7 @@ namespace RHI
     uint32_t RHITextureVK::GetRowPitch(uint32_t mipLevel) const
     {
         uint32_t minWidth = GetFormatBlockWidth(mDesc.Format);
-        uint32_t width = std::max(minWidth, mDesc.Width >> mipLevel);
+        uint32_t width = eastl::max(minWidth, mDesc.Width >> mipLevel);
 
         return GetFormatRowPitch(mDesc.Format, width) * GetFormatBlockHeight(mDesc.Format);
     }

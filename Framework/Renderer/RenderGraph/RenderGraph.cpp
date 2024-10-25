@@ -58,7 +58,7 @@ namespace RG
             }
         }
 
-        std::vector<DAGEdge*> edges;
+        eastl::vector<DAGEdge*> edges;
         for (size_t i = 0; i < mResourceNodes.size(); i++)
         {
             RenderGraphResourceNode* node = mResourceNodes[i];
@@ -212,7 +212,7 @@ namespace RG
         return static_cast<RGBuffer*>(resource);
     }
 
-    std::string RenderGraph::Export()
+    eastl::string RenderGraph::Export()
     {
         return mGraph.ExportGraphViz();
     }

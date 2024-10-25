@@ -4,7 +4,7 @@
 
 namespace RHI
 {
-    RHIFenceVK::RHIFenceVK(RHIDeviceVK *device, const std::string &name)
+    RHIFenceVK::RHIFenceVK(RHIDeviceVK *device, const eastl::string &name)
     {
         mpDevice = device;
         mName = name;

@@ -40,7 +40,7 @@ namespace Core
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         auto pDevice = pRenderer->GetDevice();
 
-        std::string iniPath = Core::VultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
+        eastl::string iniPath = Core::VultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
         ImGui::LoadIniSettingsFromDisk(iniPath.c_str());
 
         float scaling = ImGui_ImplWin32_GetDpiScaleForHwnd(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
@@ -52,7 +52,7 @@ namespace Core
         ImFontConfig fontConfig;
         fontConfig.OversampleH = fontConfig.OversampleV = 3;
 
-        std::string fontFile = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + "Fonts/DroidSans.ttf";
+        eastl::string fontFile = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + "Fonts/DroidSans.ttf";
         io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 13.0f, &fontConfig);
 
         unsigned char* pixels;
@@ -170,8 +170,8 @@ namespace Core
                         continue;
                     }
                     pCmdList->SetScissorRect(
-                        std::max(clipMin.x, 0.0f),
-                        std::max(clipMin.y, 0.0f),
+                        eastl::max(clipMin.x, 0.0f),
+                        eastl::max(clipMin.y, 0.0f),
                         clamp((uint32_t)(clipMax.x - clipMin.x), 0u, viewportWidth),
                         clamp((uint32_t)(clipMax.y - clipMin.y), 0u, viewportHeight)
                     );

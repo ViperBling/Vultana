@@ -4,7 +4,7 @@
 
 namespace RHI
 {
-    RHIHeapVK::RHIHeapVK(RHIDeviceVK *device, const RHIHeapDesc &desc, const std::string &name)
+    RHIHeapVK::RHIHeapVK(RHIDeviceVK *device, const RHIHeapDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;

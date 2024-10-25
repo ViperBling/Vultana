@@ -6,7 +6,7 @@
 
 namespace RenderResources
 {
-    IndexBuffer::IndexBuffer(const std::string &name)
+    IndexBuffer::IndexBuffer(const eastl::string &name)
     {
         mName = name;
     }

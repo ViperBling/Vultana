@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
-#include <string>
+#include <EASTL/vector.h>
+#include <EASTL/string.h>
 
 namespace RG
 {
@@ -35,7 +35,6 @@ namespace RG
         virtual ~DAGNode() {}
 
         DAGNodeID GetID() const { return mID; }
-        const std::string& GetName() const { return mName; }
 
         void MakeTarget() { mRefCount = TARGET; }
 
@@ -43,20 +42,11 @@ namespace RG
         bool IsCulled() const { return mRefCount == 0; }
         uint32_t GetRefCount() const { return IsTarget() ? 1 : mRefCount; }
 
-        virtual std::string GetGraphVizName() const { return mName; }
+        virtual eastl::string GetGraphVizName() const { return "unknown"; }
         virtual const char* GetGraphVizColor() const { return !IsCulled() ? "Skyblue" : "Skyblue4"; }
         virtual const char* GetGraphVizEdgeColor() const { return "Darkolivegreen"; }
-        virtual const char* GetGraphVizShape() const;
-        std::string GraphVizify() const;
-
-    protected:
-        enum class FNodeType
-        {
-            Resource,
-            Pass,
-        };
-        std::string mName;
-        FNodeType mNodeType;
+        virtual const char* GetGraphVizShape() const { return "rectangle"; }
+        eastl::string GraphVizify() const;
 
     private:
         DAGNodeID mID;
@@ -79,13 +69,13 @@ namespace RG
         void Cull();
         bool IsEdgeValid(const DAGEdge* edge) const;
 
-        void GetIncomingEdges(const DAGNode* node, std::vector<DAGEdge*>& edges) const;
-        void GetOutgoingEdges(const DAGNode* node, std::vector<DAGEdge*>& edges) const;
+        void GetIncomingEdges(const DAGNode* node, eastl::vector<DAGEdge*>& edges) const;
+        void GetOutgoingEdges(const DAGNode* node, eastl::vector<DAGEdge*>& edges) const;
 
-        std::string ExportGraphViz();
+        eastl::string ExportGraphViz();
 
     private:
-        std::vector<DAGNode*> mNodes;
-        std::vector<DAGEdge*> mEdges;
+        eastl::vector<DAGNode*> mNodes;
+        eastl::vector<DAGEdge*> mEdges;
     };
 }

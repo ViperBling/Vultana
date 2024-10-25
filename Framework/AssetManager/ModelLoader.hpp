@@ -6,6 +6,8 @@
 
 #include "Utilities/Math.hpp"
 
+#include <EASTL/string.h>
+
 namespace tinyxml2
 {
     class XMLElement;
@@ -49,19 +51,19 @@ namespace Assets
 
     private:
         void LoadStaticMeshNode(const cgltf_data* data, cgltf_node* node, const float4x4& parentMtx);
-        Scene::StaticMesh* LoadStaticMesh(const cgltf_primitive* primitive, const std::string& name, bool bFrontFaceCCW);
+        Scene::StaticMesh* LoadStaticMesh(const cgltf_primitive* primitive, const eastl::string& name, bool bFrontFaceCCW);
         
         Scene::Animation* LoadAnimation(const cgltf_data* data, const cgltf_animation* gltfAnimation);
         Scene::Skeleton* LoadSkeleton(const cgltf_data* data, const cgltf_skin* gltfSkin);
         Scene::FSkeletalMeshNode* LoadSkeletalMeshNode(const cgltf_data* data, cgltf_node* gltfNode);
-        Scene::FSkeletalMeshData* LoadSkeletalMeshData(const cgltf_primitive* primitive, const std::string& name);
+        Scene::FSkeletalMeshData* LoadSkeletalMeshData(const cgltf_primitive* primitive, const eastl::string& name);
 
         MeshMaterial* LoadMaterial(const cgltf_material* gltfMaterial);
         RenderResources::Texture2D* LoadTexture(const cgltf_texture_view& textureView, bool srgb);
 
     private:
         Scene::World* mpWorld = nullptr;
-        std::string mFile;
+        eastl::string mFile;
 
         float3 mPosition = float3(0.0f);
         quaternion mRotation = quaternion(0.0f, 0.0f, 0.0f, 1.0f);

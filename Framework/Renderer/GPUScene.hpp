@@ -47,16 +47,16 @@ namespace Renderer
     private:
         RendererBase* mpRenderer = nullptr;
 
-        std::vector<FInstanceData> mInstanceData;
+        eastl::vector<FInstanceData> mInstanceData;
         uint32_t mInstanceDataAddress = 0;
 
-        std::unique_ptr<RenderResources::RawBuffer> mpSceneStaticBuffer;
-        std::unique_ptr<OffsetAllocator::Allocator> mpSceneStaticBufferAllocator;
+        eastl::unique_ptr<RenderResources::RawBuffer> mpSceneStaticBuffer;
+        eastl::unique_ptr<OffsetAllocator::Allocator> mpSceneStaticBufferAllocator;
 
-        std::unique_ptr<RenderResources::RawBuffer> mpSceneAnimationBuffer;
-        std::unique_ptr<OffsetAllocator::Allocator> mpSceneAnimationBufferAllocator;
+        eastl::unique_ptr<RenderResources::RawBuffer> mpSceneAnimationBuffer;
+        eastl::unique_ptr<OffsetAllocator::Allocator> mpSceneAnimationBufferAllocator;
 
-        std::unique_ptr<RenderResources::RawBuffer> mpSceneConstantBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::RawBuffer> mpSceneConstantBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
         uint32_t mConstantBufferOffset = 0;
     };
 }

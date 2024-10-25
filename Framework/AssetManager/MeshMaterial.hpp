@@ -42,10 +42,10 @@ namespace Assets
         bool IsVertexSkinned() const { return mbSkeletalAnim; }
 
     private:
-        void AddMaterialDefines(std::vector<std::string>& defines);
+        void AddMaterialDefines(eastl::vector<eastl::string>& defines);
 
     private:
-        std::string mName;
+        eastl::string mName;
         FModelMaterialConstants mMaterialCB = {};
 
         RHI::RHIPipelineState* mpPSO = nullptr;

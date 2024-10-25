@@ -2,7 +2,7 @@
 
 #include "Renderer/RendererBase.hpp"
 
-#include <unordered_map>
+#include <EASTL/hash_map.h>
 
 namespace Assets
 {
@@ -11,10 +11,10 @@ namespace Assets
     public:
         static ResourceCache* GetInstance();
 
-        RenderResources::Texture2D* GetTexture2D(const std::string& file, bool srgb = true);
+        RenderResources::Texture2D* GetTexture2D(const eastl::string& file, bool srgb = true);
         void ReleaseTexture2D(RenderResources::Texture2D* texture);
 
-        OffsetAllocator::Allocation GetSceneBuffer(const std::string& name, const void* data, uint32_t size);
+        OffsetAllocator::Allocation GetSceneBuffer(const eastl::string& name, const void* data, uint32_t size);
         void ReleaseSceneBuffer(OffsetAllocator::Allocation allocation);
 
     private:
@@ -28,7 +28,7 @@ namespace Assets
             OffsetAllocator::Allocation Allocation;
             uint32_t RefCount;
         };
-        std::unordered_map<std::string, FResource> mCachedTexture2D;
-        std::unordered_map<std::string, FSceneBuffer> mCachedSceneBuffer;
+        eastl::hash_map<eastl::string, FResource> mCachedTexture2D;
+        eastl::hash_map<eastl::string, FSceneBuffer> mCachedSceneBuffer;
     };
 }

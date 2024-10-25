@@ -7,7 +7,7 @@
 
 namespace RHI
 {
-    RHIBufferVK::RHIBufferVK(RHIDeviceVK *device, const RHIBufferDesc &desc, const std::string &name)
+    RHIBufferVK::RHIBufferVK(RHIDeviceVK *device, const RHIBufferDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;

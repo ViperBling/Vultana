@@ -59,6 +59,6 @@ namespace Renderer
         desc.MemoryType = RHI::ERHIMemoryType::CPUOnly;
 
         RHI::RHIBuffer* buffer = mpRenderer->GetDevice()->CreateBuffer(desc, "StagingBufferAllocator:mpBuffer");
-        mBuffers.push_back(std::unique_ptr<RHI::RHIBuffer>(buffer));
+        mBuffers.push_back(eastl::unique_ptr<RHI::RHIBuffer>(buffer));
     }
 }

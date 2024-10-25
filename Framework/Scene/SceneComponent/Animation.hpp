@@ -2,7 +2,8 @@
 
 #include "Utilities/Math.hpp"
 
-#include <string>
+#include <EASTL/string.h>
+#include <EASTL/vector.h>
 
 namespace Assets
 {
@@ -22,7 +23,7 @@ namespace Scene
     {
         uint32_t TargetNode;
         EAnimationChannelMode Mode;
-        std::vector<std::pair<float, float4>> KeyFrames;
+        eastl::vector<eastl::pair<float, float4>> KeyFrames;
     };
 
     class SkeletalMesh;
@@ -32,15 +33,15 @@ namespace Scene
         friend class Assets::ModelLoader;
 
     public:
-        Animation(const std::string& name);
+        Animation(const eastl::string& name);
         void Update(SkeletalMesh* mesh, float deltaTime);
     
     private:
         void UpdateChannel(SkeletalMesh* mesh, const FAnimationChannel& channel);
     
     private:
-        std::string mName;
-        std::vector<FAnimationChannel> mChannels;
+        eastl::string mName;
+        eastl::vector<FAnimationChannel> mChannels;
         float mTimeDuration = 0.0f;
         float mCurrentAnimTime = 0.0f;
     };

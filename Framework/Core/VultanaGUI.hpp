@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Renderer/RendererBase.hpp"
-#include <functional>
+
+#include <EASTL/hash_map.h>
+#include <EASTL/functional.h>
 
 namespace Core
 {
@@ -15,7 +17,7 @@ namespace Core
         void Tick();
         void Render(RHI::RHICommandList* pCmdList);
 
-        void AddCommand(const std::function<void()>& cmd) { mCommands.push_back(cmd); }
+        void AddCommand(const eastl::function<void()>& cmd) { mCommands.push_back(cmd); }
     
     private:
         void SetupRenderStates(RHI::RHICommandList* pCmdList, uint32_t frameIdx);
@@ -23,10 +25,10 @@ namespace Core
     private:
         RHI::RHIPipelineState* mpPSO;
 
-        std::unique_ptr<RenderResources::Texture2D> mpFontTexture;
-        std::unique_ptr<RenderResources::StructuredBuffer> mpVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
-        std::unique_ptr<RenderResources::IndexBuffer> mpIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::Texture2D> mpFontTexture;
+        eastl::unique_ptr<RenderResources::StructuredBuffer> mpVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::IndexBuffer> mpIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
-        std::vector<std::function<void()>> mCommands;
+        eastl::vector<eastl::function<void()>> mCommands;
     };
 }

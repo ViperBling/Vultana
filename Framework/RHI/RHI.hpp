@@ -28,7 +28,7 @@ namespace RHI
     class RenderEvent
     {
     public:
-        RenderEvent(RHICommandList* cmdList, const std::string& eventName) : mpCmdList(cmdList)
+        RenderEvent(RHICommandList* cmdList, const eastl::string& eventName) : mpCmdList(cmdList)
         {
             mpCmdList->BeginEvent(eventName);
         }

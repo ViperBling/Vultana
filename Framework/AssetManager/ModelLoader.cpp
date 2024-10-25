@@ -18,9 +18,9 @@
 
 #include <cassert>
 
-inline float3 strToFloat3(const std::string& str)
+inline float3 strToFloat3(const eastl::string& str)
 {
-    std::vector<float> v;
+    eastl::vector<float> v;
     v.reserve(3);
     StringUtils::StringToFloatArray(str, v);
     return float3(v[0], v[1], v[2]);
@@ -137,7 +137,7 @@ namespace Assets
 
     void ModelLoader::LoadGLTF(const char *gltfFile)
     {
-        std::string file = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : mFile);
+        eastl::string file = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : mFile);
 
         cgltf_options options = {};
         cgltf_data* data = nullptr;
@@ -205,7 +205,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
-                std::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->name ? node->name : "")).c_str();
+                eastl::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->name ? node->name : "")).c_str();
                 Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
                 mesh->mpMaterial->mbFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
@@ -247,7 +247,7 @@ namespace Assets
         return stream;
     }
 
-    Scene::StaticMesh *ModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const std::string &name, bool bFrontFaceCCW)
+    Scene::StaticMesh *ModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const eastl::string &name, bool bFrontFaceCCW)
     {
         Scene::StaticMesh* mesh = new Scene::StaticMesh(mFile + " " + name);
         mesh->mpMaterial.reset(LoadMaterial(primitive->material));
@@ -256,8 +256,8 @@ namespace Assets
         meshopt_Stream indices = LoadBufferStream(primitive->indices, false, indexCount);
 
         size_t vertexCount;
-        std::vector<meshopt_Stream> vertexStreams;
-        std::vector<cgltf_attribute_type> vertexTypes;
+        eastl::vector<meshopt_Stream> vertexStreams;
+        eastl::vector<cgltf_attribute_type> vertexTypes;
 
         for (cgltf_size i = 0; i < primitive->attributes_count; i++)
         {
@@ -296,10 +296,10 @@ namespace Assets
                 break;
             }
         }
-        std::vector<unsigned int> remap(indexCount);
+        eastl::vector<unsigned int> remap(indexCount);
 
         void* remappedIndices = VTNA_ALLOC(indices.stride * indexCount);
-        std::vector<void*> remappedVertices;
+        eastl::vector<void*> remappedVertices;
         size_t remappedVertexCount;
 
         switch (indices.stride)
@@ -449,13 +449,13 @@ namespace Assets
                 memcpy(&time, timeData + timeAccessor->stride * k, timeAccessor->stride);
                 memcpy(&value, valueData + valueAccessor->stride * k, valueAccessor->stride);
 
-                channel.KeyFrames.push_back(std::make_pair(time, value));
+                channel.KeyFrames.push_back(eastl::make_pair(time, value));
             }
             animation->mChannels.push_back(channel);
 
             assert(timeAccessor->has_min && timeAccessor->has_max);
             float duration = timeAccessor->max[0] - timeAccessor->min[0];
-            animation->mTimeDuration = std::max(animation->mTimeDuration, duration);
+            animation->mTimeDuration = eastl::max(animation->mTimeDuration, duration);
         }
         return animation;
     }
@@ -482,7 +482,7 @@ namespace Assets
 
         uint32_t size = (uint32_t) accessor->stride * (uint32_t) accessor->count;
 
-        std::vector<float4x4> inverseBindMatrices(accessor->count);
+        eastl::vector<float4x4> inverseBindMatrices(accessor->count);
         memcpy(inverseBindMatrices.data(), (char*)accessor->buffer_view->buffer->data + accessor->buffer_view->offset + accessor->offset, size);
 
         for (cgltf_size i = 0; i < accessor->count; i++)
@@ -540,7 +540,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < gltfNode->mesh->primitives_count; i++)
             {
-                std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
+                eastl::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
 
                 Scene::FSkeletalMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
                 mesh->NodeID = node->ID;
@@ -553,7 +553,7 @@ namespace Assets
         return node;
     }
 
-    Scene::FSkeletalMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const std::string &name)
+    Scene::FSkeletalMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const eastl::string &name)
     {
         Scene::FSkeletalMeshData* mesh = new Scene::FSkeletalMeshData;
         mesh->Name = mFile + "_" + name;
@@ -618,7 +618,7 @@ namespace Assets
             {
                 const cgltf_accessor* accessor = primitive->attributes[i].data;
 
-                std::vector<ushort4> jointIDs;
+                eastl::vector<ushort4> jointIDs;
                 jointIDs.reserve(accessor->count * 4);
 
                 for (cgltf_size j = 0; j < accessor->count; j++)
@@ -634,7 +634,7 @@ namespace Assets
             {
                 const cgltf_accessor* accessor = primitive->attributes[i].data;
 
-                std::vector<float4> jointWeights;
+                eastl::vector<float4> jointWeights;
                 jointWeights.reserve(accessor->count);
 
                 for (cgltf_size j = 0; j < accessor->count; j++)
@@ -725,7 +725,7 @@ namespace Assets
         if (textureView.texture == nullptr || textureView.texture->image->uri == nullptr) return nullptr;
 
         size_t lastSlash = mFile.find_last_of('/');
-        std::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + mFile.substr(0, lastSlash + 1);
+        eastl::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + mFile.substr(0, lastSlash + 1);
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         auto texture = ResourceCache::GetInstance()->GetTexture2D(texturePath + textureView.texture->image->uri, srgb);
         return texture;

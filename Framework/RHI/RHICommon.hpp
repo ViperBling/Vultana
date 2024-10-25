@@ -1,9 +1,8 @@
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <tcb/span.hpp>
+#include <EASTL/string.h>
+#include <EASTL/vector.h>
+#include <EASTL/span.h>
 
 namespace RHI
 {
@@ -425,9 +424,9 @@ namespace RHI
     struct RHIShaderDesc
     {
         ERHIShaderType Type;
-        std::string File;
-        std::string EntryPoint;
-        std::vector<std::string> Defines;
+        eastl::string File;
+        eastl::string EntryPoint;
+        eastl::vector<eastl::string> Defines;
         ERHIShaderCompileFlags CompileFlags = 0;
     };
 

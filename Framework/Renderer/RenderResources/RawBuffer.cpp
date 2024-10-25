@@ -4,7 +4,7 @@
 
 namespace RenderResources
 {
-    RawBuffer::RawBuffer(const std::string &name)
+    RawBuffer::RawBuffer(const eastl::string &name)
     {
         mName = name;
     }
