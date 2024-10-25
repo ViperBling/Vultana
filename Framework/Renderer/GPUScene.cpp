@@ -10,7 +10,7 @@ namespace Renderer
     {
         mpRenderer = pRenderer;
 
-        const uint32_t staticBufferSize = 1024 * 1024 * 448;
+        const uint32_t staticBufferSize = 1024 * 1024 * 512;
         mpSceneStaticBuffer.reset(pRenderer->CreateRawBuffer(nullptr, staticBufferSize, "GPUScene::StaticBuffer"));
         mpSceneStaticBufferAllocator = eastl::make_unique<OffsetAllocator::Allocator>(staticBufferSize);
 
