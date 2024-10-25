@@ -505,6 +505,54 @@ namespace Assets
         return skeleton;
     }
 
+    Scene::FSkeletalMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
+    {
+        Scene::FSkeletalMeshNode* node = new Scene::FSkeletalMeshNode;
+        node->ID = GetNodeIndex(data, gltfNode);
+        node->Name = gltfNode->name ? gltfNode->name : fmt::format("Node_{}", node->ID).c_str();
+        node->Parent = gltfNode->parent ? GetNodeIndex(data, gltfNode->parent) : -1;
+        for (cgltf_size i = 0; i < gltfNode->children_count; i++)
+        {
+            node->Children.push_back(GetNodeIndex(data, gltfNode->children[i]));
+        }
+
+        if (gltfNode->has_matrix)
+        {
+            float4x4 matrix = float4x4(gltfNode->matrix);
+            Decompose(matrix, node->Translation, node->Rotation, node->Scale);
+        }
+        else
+        {
+            node->Translation = float3(gltfNode->translation);
+            node->Rotation = float4(gltfNode->rotation);
+            node->Scale = float3(gltfNode->scale);
+        }
+
+        node->Translation.z *= -1;
+        node->Rotation.z *= -1;
+        node->Rotation.w *= -1;
+
+        if (gltfNode->mesh)
+        {
+            bool vertexSkinning = gltfNode->skin != nullptr;
+            uint32_t meshIndex = GetMeshIndex(data, gltfNode->mesh);
+            bool bFrontFaceCCW = IsFrontFaceCCW(gltfNode);
+
+            for (cgltf_size i = 0; i < gltfNode->mesh->primitives_count; i++)
+            {
+                std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
+
+                Scene::FSkeletalMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
+                mesh->NodeID = node->ID;
+                mesh->Material->mbSkeletalAnim = vertexSkinning;
+                mesh->Material->mbFrontFaceCCW = bFrontFaceCCW;
+
+                node->Meshes.emplace_back(mesh);
+            }
+        }
+        return node;
+    }
+
     Scene::FSkeletalMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const std::string &name)
     {
         Scene::FSkeletalMeshData* mesh = new Scene::FSkeletalMeshData;
@@ -600,59 +648,10 @@ namespace Assets
             }
             default:
                 break;
-            };
+            }
         }
         mesh->VertexCount = (uint32_t)vertexCount;
         return mesh;
-    }
-
-    Scene::FSkeletalMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
-    {
-        Scene::FSkeletalMeshNode* node = new Scene::FSkeletalMeshNode;
-        node->ID = GetNodeIndex(data, gltfNode);
-        node->Name = gltfNode->name ? gltfNode->name : fmt::format("Node_{}", node->ID).c_str();
-        node->Parent = gltfNode->parent ? GetNodeIndex(data, gltfNode->parent) : -1;
-
-        for (cgltf_size i = 0; i < gltfNode->children_count; i++)
-        {
-            node->Children.push_back(GetNodeIndex(data, gltfNode->children[i]));
-        }
-
-        if (gltfNode->has_matrix)
-        {
-            float4x4 matrix = float4x4(gltfNode->matrix);
-            Decompose(matrix, node->Translation, node->Rotation, node->Scale);
-        }
-        else
-        {
-            node->Translation = float3(gltfNode->translation);
-            node->Rotation = float4(gltfNode->rotation);
-            node->Scale = float3(gltfNode->scale);
-        }
-
-        node->Translation.z *= -1;
-        node->Rotation.z *= -1;
-        node->Rotation.w *= -1;
-
-        if (gltfNode->mesh)
-        {
-            bool vertexSkinning = gltfNode->skin != nullptr;
-            uint32_t meshIndex = GetMeshIndex(data, gltfNode->mesh);
-            bool bFrontFaceCCW = IsFrontFaceCCW(gltfNode);
-
-            for (cgltf_size i = 0; i < gltfNode->mesh->primitives_count; i++)
-            {
-                std::string name = fmt::format("Mesh_{}_{} : {}", meshIndex, i, (gltfNode->mesh->name ? gltfNode->mesh->name : "")).c_str();
-
-                Scene::FSkeletalMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
-                mesh->NodeID = node->ID;
-                mesh->Material->mbSkeletalAnim = vertexSkinning;
-                mesh->Material->mbFrontFaceCCW = bFrontFaceCCW;
-
-                node->Meshes.emplace_back(mesh);
-            }
-        }
-        return node;
     }
 
     inline FMaterialTextureInfo LoadTextureInfo(const RenderResources::Texture2D* texture, const cgltf_texture_view& textureView)
