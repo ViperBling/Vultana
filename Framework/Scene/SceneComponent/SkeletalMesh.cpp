@@ -235,7 +235,7 @@ namespace Scene
 
     void SkeletalMesh::UpdateVertexSkinning(Renderer::ComputeBatch &batch, const FSkeletalMeshData *mesh)
     {
-        batch.Label = mName.c_str();
+        batch.Label = mesh->Name.c_str();
         batch.SetPipelineState(mesh->Material->GetVertexSkinningPSO());
 
         uint32_t cb[10] = {
