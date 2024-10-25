@@ -6,6 +6,7 @@ set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 # find_package(assimp CONFIG REQUIRED)
 # find_package(glfw3 CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
+find_package(EASTL CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
 # find_package(imguizmo CONFIG REQUIRED)
@@ -76,6 +77,7 @@ target_link_libraries(FrameworkLib PRIVATE
     # glfw
     # glm::glm
     cityhash
+    EASTL
     Microsoft::DirectXShaderCompiler
     fmt::fmt-header-only
     ImFileDialog

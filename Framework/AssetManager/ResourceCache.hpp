@@ -18,17 +18,17 @@ namespace Assets
         void ReleaseSceneBuffer(OffsetAllocator::Allocation allocation);
 
     private:
-        struct Resource
+        struct FResource
         {
             void* Data;
             uint32_t RefCount;
         };
-        struct SceneBuffer
+        struct FSceneBuffer
         {
             OffsetAllocator::Allocation Allocation;
             uint32_t RefCount;
         };
-        std::unordered_map<std::string, Resource> mCachedTexture2D;
-        std::unordered_map<std::string, SceneBuffer> mCachedSceneBuffer;
+        std::unordered_map<std::string, FResource> mCachedTexture2D;
+        std::unordered_map<std::string, FSceneBuffer> mCachedSceneBuffer;
     };
 }

@@ -5,7 +5,6 @@ namespace Assets
 {
     ResourceCache *ResourceCache::GetInstance()
     {
-        
         static ResourceCache instance;
         return &instance;
     }
@@ -19,10 +18,10 @@ namespace Assets
             return (RenderResources::Texture2D*)iter->second.Data;
         }
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        Resource texture;
+        FResource texture;
         texture.RefCount = 1;
         texture.Data = pRenderer->CreateTexture2D(file, srgb);
-        mCachedTexture2D.insert({file, texture});
+        mCachedTexture2D.insert(std::make_pair(file, texture));
 
         return (RenderResources::Texture2D*)texture.Data;
     }
@@ -59,10 +58,10 @@ namespace Assets
         }
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
-        SceneBuffer buffer;
+        FSceneBuffer buffer;
         buffer.RefCount = 1;
         buffer.Allocation = pRenderer->AllocateSceneStaticBuffer(data, size);
-        mCachedSceneBuffer.insert({name, buffer});
+        mCachedSceneBuffer.insert(std::make_pair(name, buffer));
         return buffer.Allocation;
     }
 
@@ -81,7 +80,7 @@ namespace Assets
                 if (iter->second.RefCount == 0)
                 {
                     auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-                    pRenderer->FreeSceneStaticBuffer(iter->second.Allocation);
+                    pRenderer->FreeSceneStaticBuffer(allocation);
                     mCachedSceneBuffer.erase(iter);
                 }
                 return;
