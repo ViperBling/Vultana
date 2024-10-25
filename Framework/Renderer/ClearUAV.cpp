@@ -4,7 +4,7 @@
 
 namespace Renderer
 {
-    static inline std::string GetEntryPoint(RHI::ERHIUnorderedAccessViewType uavType)
+    static inline eastl::string GetEntryPoint(RHI::ERHIUnorderedAccessViewType uavType)
     {
         switch (uavType)
         {
@@ -24,7 +24,7 @@ namespace Renderer
         }
     }
 
-    static inline std::string GetTypeDefine(RHI::ERHIFormat format)
+    static inline eastl::string GetTypeDefine(RHI::ERHIFormat format)
     {
         switch (format)
         {
@@ -68,8 +68,8 @@ namespace Renderer
     template<typename T>
     static inline RHI::RHIShader* GetShader(const RHI::RHIUnorderedAccessViewDesc& uavDesc)
     {
-        std::string entryPoint = GetEntryPoint(uavDesc.Type);
-        std::vector<std::string> defines;
+        eastl::string entryPoint = GetEntryPoint(uavDesc.Type);
+        eastl::vector<eastl::string> defines;
 
         if (uavDesc.Type != RHI::ERHIUnorderedAccessViewType::RawBuffer)
         {
@@ -77,7 +77,7 @@ namespace Renderer
         }
         else
         {
-            defines.push_back(std::is_same<T, float>::value ? "UAV_TYPE_FLOAT4" : "UAV_TYPE_UINT4");
+            defines.push_back(eastl::is_same<T, float>::value ? "UAV_TYPE_FLOAT4" : "UAV_TYPE_UINT4");
         }
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         return pRenderer->GetShader("ClearUAV.hlsl", entryPoint, RHI::ERHIShaderType::CS, defines);

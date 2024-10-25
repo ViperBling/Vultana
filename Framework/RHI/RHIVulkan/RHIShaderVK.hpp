@@ -10,10 +10,10 @@ namespace RHI
     class RHIShaderVK : public RHIShader
     {
     public:
-        RHIShaderVK(RHIDeviceVK* device, const RHIShaderDesc& desc, const std::string& name);
+        RHIShaderVK(RHIDeviceVK* device, const RHIShaderDesc& desc, const eastl::string& name);
         ~RHIShaderVK();
 
-        virtual bool Create(tcb::span<uint8_t> data) override;
+        virtual bool Create(eastl::span<uint8_t> data) override;
         virtual void* GetNativeHandle() const override { return mShaderModule; }
 
     private:

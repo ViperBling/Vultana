@@ -4,7 +4,7 @@
 
 namespace RHI
 {
-    RHIShaderVK::RHIShaderVK(RHIDeviceVK *device, const RHIShaderDesc &desc, const std::string &name)
+    RHIShaderVK::RHIShaderVK(RHIDeviceVK *device, const RHIShaderDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;
@@ -16,7 +16,7 @@ namespace RHI
         ((RHIDeviceVK*)mpDevice)->Delete(mShaderModule);
     }
 
-    bool RHIShaderVK::Create(tcb::span<uint8_t> data)
+    bool RHIShaderVK::Create(eastl::span<uint8_t> data)
     {
         ((RHIDeviceVK*)mpDevice)->Delete(mShaderModule);
 

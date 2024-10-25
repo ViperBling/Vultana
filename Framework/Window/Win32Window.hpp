@@ -4,6 +4,7 @@
 
 #include <Windows.h>
 #include <iostream>
+#include <EASTL/string.h>
 
 namespace Window
 {
@@ -13,7 +14,7 @@ namespace Window
         float2 Size = { 1280.0f, 720.0f };
         HINSTANCE Instance = nullptr;
         int ShowCmd = SW_SHOW;
-        std::string Title = "VultanaEngine";
+        eastl::string Title = "VultanaEngine";
     };
 
     class Win32Window

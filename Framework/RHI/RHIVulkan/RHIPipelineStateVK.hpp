@@ -10,7 +10,7 @@ namespace RHI
     class RHIGraphicsPipelineStateVK : public RHIPipelineState
     {
     public:
-        RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const std::string &name);
+        RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name);
         ~RHIGraphicsPipelineStateVK();
 
         virtual void* GetNativeHandle() const override { return mPipeline; }
@@ -24,7 +24,7 @@ namespace RHI
     class RHIComputePipelineStateVK : public RHIPipelineState
     {
     public:
-        RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const std::string &name);
+        RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const eastl::string &name);
         ~RHIComputePipelineStateVK();
 
         virtual void* GetNativeHandle() const override { return mPipeline; }

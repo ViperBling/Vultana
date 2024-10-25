@@ -4,8 +4,8 @@
 
 #include "Utilities/Hash.hpp"
 
-#include <unordered_map>
-#include <memory>
+#include <EASTL/hash_map.h>
+#include <EASTL/unique_ptr.h>
 
 inline uint64_t HashCombine64(uint64_t hash0, uint64_t hash1)
 {
@@ -17,7 +17,7 @@ inline uint64_t HashCombine64(uint64_t hash0, uint64_t hash1)
     return b * kMul;
 }
 
-namespace std
+namespace eastl
 {
     template<>
     struct hash<RHI::RHIGraphicsPipelineStateDesc>
@@ -56,14 +56,14 @@ namespace Renderer
     public:
         PipelineStateCache(RendererBase* renderer);
 
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const std::string& name);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const std::string& name);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const eastl::string& name);
 
         void RecreatePSO(RHI::RHIShader* shader);
     
     private:
         RendererBase* mpRenderer = nullptr;
-        std::unordered_map<RHI::RHIGraphicsPipelineStateDesc, std::unique_ptr<RHI::RHIPipelineState>> mCachedGraphicsPSO;
-        std::unordered_map<RHI::RHIComputePipelineStateDesc, std::unique_ptr<RHI::RHIPipelineState>> mCachedComputePSO;
+        eastl::hash_map<RHI::RHIGraphicsPipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> mCachedGraphicsPSO;
+        eastl::hash_map<RHI::RHIComputePipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> mCachedComputePSO;
     };
 }

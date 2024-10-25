@@ -5,7 +5,7 @@
 
 namespace RHI
 {
-    RHIGraphicsPipelineStateVK::RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const std::string &name)
+    RHIGraphicsPipelineStateVK::RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;
@@ -91,7 +91,7 @@ namespace RHI
         return true;
     }
 
-    RHIComputePipelineStateVK::RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const std::string &name)
+    RHIComputePipelineStateVK::RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mDesc = desc;

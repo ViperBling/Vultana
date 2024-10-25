@@ -10,7 +10,7 @@ namespace Assets
         TextureLoader() = default;
         ~TextureLoader();
 
-        bool Load(const std::string& filename, bool srgb);
+        bool Load(const eastl::string& filename, bool srgb);
 
         uint32_t GetWidth() const { return mWidth; }
         uint32_t GetHeight() const { return mHeight; }
@@ -42,6 +42,6 @@ namespace Assets
         void* mpDecompressedData = nullptr;
         uint32_t mTextureSize = 0;
 
-        std::vector<uint8_t> mFileData;
+        eastl::vector<uint8_t> mFileData;
     };
 }

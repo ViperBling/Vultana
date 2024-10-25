@@ -1,5 +1,5 @@
 #pragma once
-#define NOMINMAX
+// #define NOMINMAX
 
 #include "RHI/RHICommon.hpp"
 

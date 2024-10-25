@@ -10,7 +10,7 @@ namespace RHI
     class RHITextureVK : public RHITexture
     {
     public:
-        RHITextureVK(RHIDeviceVK* device, const RHITextureDesc& desc, const std::string& name);
+        RHITextureVK(RHIDeviceVK* device, const RHITextureDesc& desc, const eastl::string& name);
         ~RHITextureVK();
 
         bool Create();
@@ -29,6 +29,6 @@ namespace RHI
         VmaAllocation mAllocation = VK_NULL_HANDLE;
         bool mbSwapchainImage = false;
 
-        std::vector<vk::ImageView> mRenderViews;
+        eastl::vector<vk::ImageView> mRenderViews;
     };
 }

@@ -30,7 +30,7 @@ namespace RHI
 
         virtual void BeginProfiling() = 0;
         virtual void EndProfiling() = 0;
-        virtual void BeginEvent(const std::string& eventName) = 0;
+        virtual void BeginEvent(const eastl::string& eventName) = 0;
         virtual void EndEvent() = 0;
 
         virtual void CopyBufferToTexture(RHIBuffer* srcBuffer, RHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) = 0;

@@ -9,17 +9,17 @@ namespace RG
         {
             mLastState = edge->GetUsage();
         }
-        mFirstPass = std::min(mFirstPass, pass->GetID());
-        mLastPass = std::max(mLastPass, pass->GetID());
+        mFirstPass = eastl::min(mFirstPass, pass->GetID());
+        mLastPass = eastl::max(mLastPass, pass->GetID());
 
         if (pass->GetType() == RenderPassType::AsyncCompute)
         {
-            mFirstPass = std::min(mFirstPass, pass->GetWaitGraphicsPass());
-            mLastPass = std::max(mLastPass, pass->GetSignalGraphicsPass());
+            mFirstPass = eastl::min(mFirstPass, pass->GetWaitGraphicsPass());
+            mLastPass = eastl::max(mLastPass, pass->GetSignalGraphicsPass());
         }
     }
 
-    RGTexture::RGTexture(RenderGraphResourceAllocator &allocator, const std::string &name, const Desc &desc)
+    RGTexture::RGTexture(RenderGraphResourceAllocator &allocator, const eastl::string &name, const Desc &desc)
         : RenderGraphResource(name)
         , mAllocator(allocator)
     {
@@ -127,7 +127,7 @@ namespace RG
         pCmdList->TextureBarrier(mpTexture, subresource, accessBefore, accessAfter);
     }
 
-    RGBuffer::RGBuffer(RenderGraphResourceAllocator &allocator, const std::string &name, const Desc &desc)
+    RGBuffer::RGBuffer(RenderGraphResourceAllocator &allocator, const eastl::string &name, const Desc &desc)
         : RenderGraphResource(name)
         , mAllocator(allocator)
     {

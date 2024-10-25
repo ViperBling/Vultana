@@ -10,7 +10,7 @@ namespace RHI
     class RHISwapchainVK : public RHISwapchain
     {
     public:
-        RHISwapchainVK(RHIDeviceVK* device, const RHISwapchainDesc& desc, const std::string& name);
+        RHISwapchainVK(RHIDeviceVK* device, const RHISwapchainDesc& desc, const eastl::string& name);
         ~RHISwapchainVK();
 
         bool Create();
@@ -39,10 +39,10 @@ namespace RHI
         bool mbEnableVSync = false;
 
         uint32_t mCurrentBackBuffer = 0;
-        std::vector<RHITexture*> mBackBuffers;
+        eastl::vector<RHITexture*> mBackBuffers;
 
         int32_t mFrameSemaphoreIndex = -1;
-        std::vector<vk::Semaphore> mAcquireSemaphores;
-        std::vector<vk::Semaphore> mPresentSemaphores;
+        eastl::vector<vk::Semaphore> mAcquireSemaphores;
+        eastl::vector<vk::Semaphore> mPresentSemaphores;
     };
 }

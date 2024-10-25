@@ -2,14 +2,14 @@
 
 #include "RHI/RHI.hpp"
 
-#include <memory>
+#include <EASTL/unique_ptr.h>
 
 namespace RenderResources
 {
     class RawBuffer
     {
     public:
-        RawBuffer(const std::string& name);
+        RawBuffer(const eastl::string& name);
 
         bool Create(uint32_t size, RHI::ERHIMemoryType memoryType, bool isUAV);
 
@@ -18,9 +18,9 @@ namespace RenderResources
         RHI::RHIDescriptor* GetUAV() const { return mpUAV.get(); }
     
     protected:
-        std::string mName;
-        std::unique_ptr<RHI::RHIBuffer> mpBuffer;
-        std::unique_ptr<RHI::RHIDescriptor> mpSRV;
-        std::unique_ptr<RHI::RHIDescriptor> mpUAV;
+        eastl::string mName;
+        eastl::unique_ptr<RHI::RHIBuffer> mpBuffer;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpSRV;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpUAV;
     };
 }

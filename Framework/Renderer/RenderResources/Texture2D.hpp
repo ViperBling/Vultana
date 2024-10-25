@@ -2,7 +2,7 @@
 
 #include "RHI/RHI.hpp"
 
-#include <memory>
+#include <EASTL/unique_ptr.h>
 
 namespace Renderer
 {
@@ -14,7 +14,7 @@ namespace RenderResources
     class Texture2D
     {
     public:
-        Texture2D(const std::string& name);
+        Texture2D(const eastl::string& name);
 
         bool Create(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags);
 
@@ -23,10 +23,10 @@ namespace RenderResources
         RHI::RHIDescriptor* GetUAV(uint32_t mip = 0) const;
     
     protected:
-        std::string mName;
+        eastl::string mName;
 
-        std::unique_ptr<RHI::RHITexture> mpTexture;
-        std::unique_ptr<RHI::RHIDescriptor> mpSRV;
-        std::vector<std::unique_ptr<RHI::RHIDescriptor>> mUAVs;
+        eastl::unique_ptr<RHI::RHITexture> mpTexture;
+        eastl::unique_ptr<RHI::RHIDescriptor> mpSRV;
+        eastl::vector<eastl::unique_ptr<RHI::RHIDescriptor>> mUAVs;
     };
 }

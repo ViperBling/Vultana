@@ -22,7 +22,7 @@ namespace Assets
         {
             Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
-            std::vector<std::string> defines;
+            eastl::vector<eastl::string> defines;
             AddMaterialDefines(defines);
             defines.push_back("UNIFORM_RESOURCE=1");
 
@@ -56,7 +56,7 @@ namespace Assets
         {
             auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
-            std::vector<std::string> defines;
+            eastl::vector<eastl::string> defines;
             defines.push_back("UNIFORM_RESOURCE=1");
 
             if (mpAlbedoTexture) defines.push_back("ALBEDO_TEXTURE=1");
@@ -85,7 +85,7 @@ namespace Assets
         {
             auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
-            std::vector<std::string> defines;
+            eastl::vector<eastl::string> defines;
             defines.push_back("UNIFORM_RESOURCE=1");
 
             if (mpAlbedoTexture) defines.push_back("ALBEDO_TEXTURE=1");
@@ -143,7 +143,7 @@ namespace Assets
     {
     }
 
-    void MeshMaterial::AddMaterialDefines(std::vector<std::string> &defines)
+    void MeshMaterial::AddMaterialDefines(eastl::vector<eastl::string> &defines)
     {
         switch (mShadingModel)
         {

@@ -7,7 +7,7 @@
 
 namespace RHI
 {
-    RHIShaderResourceViewVK::RHIShaderResourceViewVK(RHIDeviceVK *device, RHIResource *pResource, const RHIShaderResourceViewDesc &desc, const std::string &name)
+    RHIShaderResourceViewVK::RHIShaderResourceViewVK(RHIDeviceVK *device, RHIResource *pResource, const RHIShaderResourceViewDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mName = name;
@@ -153,7 +153,7 @@ namespace RHI
         return true;
     }
 
-    RHIUnorderedAccessViewVK::RHIUnorderedAccessViewVK(RHIDeviceVK *device, RHIResource *pResource, const RHIUnorderedAccessViewDesc &desc, const std::string &name)
+    RHIUnorderedAccessViewVK::RHIUnorderedAccessViewVK(RHIDeviceVK *device, RHIResource *pResource, const RHIUnorderedAccessViewDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mName = name;
@@ -291,7 +291,7 @@ namespace RHI
         return true;
     }
 
-    RHIConstantBufferViewVK::RHIConstantBufferViewVK(RHIDeviceVK *device, RHIBuffer *buffer, const RHIConstantBufferViewDesc &desc, const std::string &name)
+    RHIConstantBufferViewVK::RHIConstantBufferViewVK(RHIDeviceVK *device, RHIBuffer *buffer, const RHIConstantBufferViewDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mName = name;
@@ -327,7 +327,7 @@ namespace RHI
         return true;
     }
 
-    RHISamplerVK::RHISamplerVK(RHIDeviceVK *device, const RHISamplerDesc &desc, const std::string &name)
+    RHISamplerVK::RHISamplerVK(RHIDeviceVK *device, const RHISamplerDesc &desc, const eastl::string &name)
     {
         mpDevice = device;
         mName = name;

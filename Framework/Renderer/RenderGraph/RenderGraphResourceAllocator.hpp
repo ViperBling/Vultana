@@ -31,7 +31,7 @@ namespace RG
         struct FHeap
         {
             RHI::RHIHeap* Heap = nullptr;
-            std::vector<AliasedResource> Resources;
+            eastl::vector<AliasedResource> Resources;
 
             bool IsOverlapping(const LifeTimeRange& lifeTime) const
             {
@@ -72,11 +72,11 @@ namespace RG
 
         void Reset();
 
-        RHI::RHITexture* AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const std::string& name, RHI::ERHIAccessFlags& initialState);
+        RHI::RHITexture* AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState);
         void FreeNonOverlappingTexture(RHI::RHITexture* texture, RHI::ERHIAccessFlags state);
 
-        RHI::RHITexture* AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHITextureDesc& desc, const std::string& name, RHI::ERHIAccessFlags& initialState);
-        RHI::RHIBuffer* AllocateBuffer(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHIBufferDesc& desc, const std::string& name, RHI::ERHIAccessFlags& initialState);
+        RHI::RHITexture* AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHITextureDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState);
+        RHI::RHIBuffer* AllocateBuffer(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHIBufferDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState);
         void Free(RHI::RHIResource* resource, RHI::ERHIAccessFlags state, bool bIsSetState);
 
         RHI::RHIResource* GetAliasedPreviousResource(RHI::RHIResource* resource, uint32_t firstPass, RHI::ERHIAccessFlags& lastUsedState);
@@ -92,7 +92,7 @@ namespace RG
     private:
         RHI::RHIDevice* mpDevice = nullptr;
 
-        std::vector<FHeap> mAllocatedHeaps;
+        eastl::vector<FHeap> mAllocatedHeaps;
 
         struct NonOverlappingTexture
         {
@@ -100,9 +100,9 @@ namespace RG
             RHI::ERHIAccessFlags LastUsedState;
             uint64_t LastUsedFrame;
         };
-        std::vector<NonOverlappingTexture> mFreeOverlappingTextures;
+        eastl::vector<NonOverlappingTexture> mFreeOverlappingTextures;
 
-        std::vector<SRVDescriptor> mAllocatedSRVs;
-        std::vector<UAVDescriptor> mAllocatedUAVs;
+        eastl::vector<SRVDescriptor> mAllocatedSRVs;
+        eastl::vector<UAVDescriptor> mAllocatedUAVs;
     };
 } // namespace RG

@@ -7,7 +7,7 @@
 
 namespace Scene
 {
-    Skeleton::Skeleton(const std::string &name)
+    Skeleton::Skeleton(const eastl::string &name)
     {
         mName = name;
         mpRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
@@ -44,7 +44,7 @@ namespace Scene
         // pRenderer->FreeSceneAnimationBuffer(PrevAnimPositionBuffer);
     }
 
-    SkeletalMesh::SkeletalMesh(const std::string &name)
+    SkeletalMesh::SkeletalMesh(const eastl::string &name)
     {
         // mpRenderer will create on load mesh.
         mName = name;
@@ -164,7 +164,7 @@ namespace Scene
         for (size_t i = 0; i < node->Meshes.size(); i++)
         {
             auto mesh = node->Meshes[i].get();
-            // std::swap(mesh->PrevAnimPositionBuffer, mesh->AnimPositionBuffer);
+            // eastl::swap(mesh->PrevAnimPositionBuffer, mesh->AnimPositionBuffer);
 
             mesh->Material->UpdateConstants();
 

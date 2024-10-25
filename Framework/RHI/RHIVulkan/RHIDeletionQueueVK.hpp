@@ -1,7 +1,8 @@
 #pragma once
 
 #include "RHICommonVK.hpp"
-#include <queue>
+
+#include <EASTL/queue.h>
 
 namespace RHI
 {
@@ -24,19 +25,19 @@ namespace RHI
     private:
         RHIDeviceVK* mDevice = nullptr;
 
-        std::queue<std::pair<vk::Image, uint64_t>>          mImageQueue;
-        std::queue<std::pair<vk::ImageView, uint64_t>>      mImageViewQueue;
-        std::queue<std::pair<vk::Buffer, uint64_t>>         mBufferQueue;
-        std::queue<std::pair<VmaAllocation, uint64_t>>      mAllocationQueue;
-        std::queue<std::pair<vk::Sampler, uint64_t>>        mSamplerQueue;
-        std::queue<std::pair<vk::Pipeline, uint64_t>>       mPipelineQueue;
-        std::queue<std::pair<vk::ShaderModule, uint64_t>>   mShaderQueue;
-        std::queue<std::pair<vk::Semaphore, uint64_t>>      mSemaphoreQueue;
-        std::queue<std::pair<vk::SwapchainKHR, uint64_t>>   mSwapchainQueue;
-        std::queue<std::pair<vk::SurfaceKHR, uint64_t>>     mSurfaceQueue;
-        std::queue<std::pair<vk::CommandPool, uint64_t>>    mCommandPoolQueue;
+        eastl::queue<eastl::pair<vk::Image, uint64_t>>          mImageQueue;
+        eastl::queue<eastl::pair<vk::ImageView, uint64_t>>      mImageViewQueue;
+        eastl::queue<eastl::pair<vk::Buffer, uint64_t>>         mBufferQueue;
+        eastl::queue<eastl::pair<VmaAllocation, uint64_t>>      mAllocationQueue;
+        eastl::queue<eastl::pair<vk::Sampler, uint64_t>>        mSamplerQueue;
+        eastl::queue<eastl::pair<vk::Pipeline, uint64_t>>       mPipelineQueue;
+        eastl::queue<eastl::pair<vk::ShaderModule, uint64_t>>   mShaderQueue;
+        eastl::queue<eastl::pair<vk::Semaphore, uint64_t>>      mSemaphoreQueue;
+        eastl::queue<eastl::pair<vk::SwapchainKHR, uint64_t>>   mSwapchainQueue;
+        eastl::queue<eastl::pair<vk::SurfaceKHR, uint64_t>>     mSurfaceQueue;
+        eastl::queue<eastl::pair<vk::CommandPool, uint64_t>>    mCommandPoolQueue;
 
-        std::queue<std::pair<uint32_t, uint64_t>>           mResourceDescriptorQueue;
-        std::queue<std::pair<uint32_t, uint64_t>>           mSamplerDescriptorQueue;
+        eastl::queue<eastl::pair<uint32_t, uint64_t>>           mResourceDescriptorQueue;
+        eastl::queue<eastl::pair<uint32_t, uint64_t>>           mSamplerDescriptorQueue;
     };
 }

@@ -2,7 +2,7 @@
 
 #include "RHI/RHI.hpp"
 
-#include <memory>
+#include <EASTL/unique_ptr.h>
 
 namespace Renderer
 {
@@ -28,7 +28,7 @@ namespace Renderer
 
     private:
         RendererBase* mpRenderer = nullptr;
-        std::vector<std::unique_ptr<RHI::RHIBuffer>> mBuffers;
+        eastl::vector<eastl::unique_ptr<RHI::RHIBuffer>> mBuffers;
         uint32_t mCurrentBuffer = 0;
         uint32_t mAllocatedSize = 0;
         uint64_t mLastAllocatedFrame = 0;

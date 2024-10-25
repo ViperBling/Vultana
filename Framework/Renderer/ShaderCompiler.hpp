@@ -19,13 +19,13 @@ namespace Renderer
         ~ShaderCompiler();
 
         bool Compile(
-            const std::string& source, 
-            const std::string& file, 
-            const std::string& entryPoint, 
+            const eastl::string& source, 
+            const eastl::string& file, 
+            const eastl::string& entryPoint, 
             RHI::ERHIShaderType type, 
-            const std::vector<std::string>& defines, 
+            const eastl::vector<eastl::string>& defines, 
             RHI::ERHIShaderCompileFlags flags, 
-            std::vector<uint8_t>& output);
+            eastl::vector<uint8_t>& output);
 
     private:
         RendererBase* mpRenderer = nullptr;

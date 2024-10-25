@@ -10,7 +10,7 @@ namespace RHI
     class RHIHeapVK : public RHIHeap
     {
     public:
-        RHIHeapVK(RHIDeviceVK* device, const RHIHeapDesc& desc, const std::string& name);
+        RHIHeapVK(RHIDeviceVK* device, const RHIHeapDesc& desc, const eastl::string& name);
         ~RHIHeapVK();
 
         bool Create();

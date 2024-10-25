@@ -10,7 +10,7 @@ namespace RHI
     class RHIFenceVK : public RHIFence
     {
     public:
-        RHIFenceVK(RHIDeviceVK* device, const std::string& name);
+        RHIFenceVK(RHIDeviceVK* device, const eastl::string& name);
         ~RHIFenceVK();
 
         bool Create();

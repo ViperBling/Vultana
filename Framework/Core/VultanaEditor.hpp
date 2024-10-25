@@ -2,8 +2,8 @@
 
 #include "Renderer/RendererBase.hpp"
 
-#include <unordered_map>
-#include <functional>
+#include <EASTL/hash_map.h>
+#include <EASTL/functional.h>
 
 namespace Core
 {
@@ -14,7 +14,7 @@ namespace Core
         ~VultanaEditor();
 
         void Tick();
-        void AddGUICommand(const std::string& window, const std::string& section, const std::function<void()>& command);
+        void AddGUICommand(const eastl::string& window, const eastl::string& section, const eastl::function<void()>& command);
     
     private:
         void BuildDockLayout();
@@ -26,7 +26,7 @@ namespace Core
         void ShowRenderGraph();
         void FlushPendingTextureDeletions();
 
-        void DrawWindow(const std::string& window, bool* pOpen);
+        void DrawWindow(const eastl::string& window, bool* pOpen);
 
     private:
         bool mbShowImGuiDemo = false;
@@ -40,14 +40,14 @@ namespace Core
 
         struct Command
         {
-            std::string Section;
-            std::function<void()> Function;
+            eastl::string Section;
+            eastl::function<void()> Function;
         };
-        using WindowCmd = std::vector<Command>;
-        std::unordered_map<std::string, WindowCmd> mCommands;
+        using WindowCmd = eastl::vector<Command>;
+        eastl::hash_map<eastl::string, WindowCmd> mCommands;
 
-        std::unordered_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> mFileDialogIcons;
-        std::vector<RHI::RHIDescriptor*> mPendingDeletions;
+        eastl::hash_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> mFileDialogIcons;
+        eastl::vector<RHI::RHIDescriptor*> mPendingDeletions;
 
         enum class ESelectEditMode
         {
@@ -56,8 +56,8 @@ namespace Core
             Scale,
         };
         ESelectEditMode mSelectEditMode = ESelectEditMode::Translate;
-        std::unique_ptr<RenderResources::Texture2D> mpTranslateIcon;
-        std::unique_ptr<RenderResources::Texture2D> mpRotateIcon;
-        std::unique_ptr<RenderResources::Texture2D> mpScaleIcon;
+        eastl::unique_ptr<RenderResources::Texture2D> mpTranslateIcon;
+        eastl::unique_ptr<RenderResources::Texture2D> mpRotateIcon;
+        eastl::unique_ptr<RenderResources::Texture2D> mpScaleIcon;
     };
 }

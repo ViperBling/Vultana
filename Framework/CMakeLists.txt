@@ -49,22 +49,6 @@ add_library(FrameworkLib STATIC
     ${Utilities_Head}    ${Utilities_Src}
 )
 
-# file(GLOB_RECURSE ShaderSrc ${AssetsPath}/Shaders/GLSL/*.vert ${AssetsPath}/Shaders/GLSL/*.frag ${AssetsPath}/Shaders/GLSL/*.comp)
-
-# add_custom_target(CompileShaders
-#     COMMAND ${CMAKE_COMMAND} -E make_directory ${BinaryPath}/Assets/Shaders/Generated)
-
-# foreach(Shader ${ShaderSrc})
-#     get_filename_component(ShaderName ${Shader} NAME)
-#     set(SPIRV_OUTPUT ${BinaryPath}/Assets/Shaders/Generated/${ShaderName}.spv)
-#     add_custom_command(TARGET FrameworkLib PRE_BUILD
-#         COMMAND glslangValidator -V ${Shader} -o ${SPIRV_OUTPUT} -t
-#         # COMMENT "Compiling ${ShaderName}"
-#         )
-# endforeach()
-
-# add_dependencies(FrameworkLib CompileShaders)
-
 target_include_directories(FrameworkLib PUBLIC 
     ${SourcePath} ${ExternalPath} 
     ${TCB_SPAN_INCLUDE_DIRS} 
@@ -72,6 +56,14 @@ target_include_directories(FrameworkLib PUBLIC
     ${SIGSLOT_INCLUDE_DIRS} 
     ${SHADER_ROOT}
     ${SIMPLEINI_INCLUDE_DIRS})
+
+target_compile_definitions(FrameworkLib PUBLIC
+    EASTL_EASTDC_VSNPRINTF=0
+    EASTL_USER_DEFINED_ALLOCATOR=1
+    _CRT_SECURE_NO_WARNINGS
+    NOMINMAX
+)
+
 target_link_libraries(FrameworkLib PRIVATE
     # assimp::assimp
     # glfw

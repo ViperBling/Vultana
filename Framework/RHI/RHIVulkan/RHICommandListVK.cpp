@@ -14,7 +14,7 @@
 
 namespace RHI
 {
-    RHICommandListVK::RHICommandListVK(RHIDeviceVK *device, ERHICommandQueueType queueType, const std::string &name)
+    RHICommandListVK::RHICommandListVK(RHIDeviceVK *device, ERHICommandQueueType queueType, const eastl::string &name)
     {
         mpDevice = device;
         mCmdQueueType = queueType;
@@ -134,11 +134,11 @@ namespace RHI
     {
         ((RHIDeviceVK*)mpDevice)->FlushLayoutTransition(mCmdQueueType);
 
-        std::vector<vk::Semaphore> waitSemaphores;
-        std::vector<vk::Semaphore> signalSemaphores;
-        std::vector<uint64_t> waitValues;
-        std::vector<uint64_t> signalValues;
-        std::vector<vk::PipelineStageFlags> waitStages;
+        eastl::vector<vk::Semaphore> waitSemaphores;
+        eastl::vector<vk::Semaphore> signalSemaphores;
+        eastl::vector<uint64_t> waitValues;
+        eastl::vector<uint64_t> signalValues;
+        eastl::vector<vk::PipelineStageFlags> waitStages;
 
         for (size_t i = 0; i < mPendingWaits.size(); i++)
         {
@@ -214,7 +214,7 @@ namespace RHI
     {
     }
 
-    void RHICommandListVK::BeginEvent(const std::string &eventName)
+    void RHICommandListVK::BeginEvent(const eastl::string &eventName)
     {
         vk::DebugUtilsLabelEXT label {};
         label.pLabelName = eventName.c_str();
@@ -241,9 +241,9 @@ namespace RHI
         copy2.imageSubresource.mipLevel = mipLevel;
         copy2.imageSubresource.baseArrayLayer = arraySlice;
         copy2.imageSubresource.layerCount = 1;
-        copy2.imageExtent.width = std::max(desc.Width >> mipLevel, 1u);
-        copy2.imageExtent.height = std::max(desc.Height >> mipLevel, 1u);
-        copy2.imageExtent.depth = std::max(desc.Depth >> mipLevel, 1u);
+        copy2.imageExtent.width = eastl::max(desc.Width >> mipLevel, 1u);
+        copy2.imageExtent.height = eastl::max(desc.Height >> mipLevel, 1u);
+        copy2.imageExtent.depth = eastl::max(desc.Depth >> mipLevel, 1u);
 
         vk::CopyBufferToImageInfo2 copyInfo {};
         copyInfo.srcBuffer = (VkBuffer)srcBuffer->GetNativeHandle();
@@ -267,9 +267,9 @@ namespace RHI
         copy2.imageSubresource.mipLevel = mipLevel;
         copy2.imageSubresource.baseArrayLayer = arraySlice;
         copy2.imageSubresource.layerCount = 1;
-        copy2.imageExtent.width = std::max(desc.Width >> mipLevel, 1u);
-        copy2.imageExtent.height = std::max(desc.Height >> mipLevel, 1u);
-        copy2.imageExtent.depth = std::max(desc.Depth >> mipLevel, 1u);
+        copy2.imageExtent.width = eastl::max(desc.Width >> mipLevel, 1u);
+        copy2.imageExtent.height = eastl::max(desc.Height >> mipLevel, 1u);
+        copy2.imageExtent.depth = eastl::max(desc.Depth >> mipLevel, 1u);
 
         vk::CopyImageToBufferInfo2 copyInfo {};
         copyInfo.srcImage = (VkImage)srcTexture->GetNativeHandle();
@@ -312,9 +312,9 @@ namespace RHI
         copy2.dstSubresource.mipLevel = dstMipLevel;
         copy2.dstSubresource.baseArrayLayer = dstArraySlice;
         copy2.dstSubresource.layerCount = 1;
-        copy2.extent.width = std::max(src->GetDesc().Width >> srcMipLevel, 1u);
-        copy2.extent.height = std::max(src->GetDesc().Height >> srcMipLevel, 1u);
-        copy2.extent.depth = std::max(src->GetDesc().Depth >> srcMipLevel, 1u);
+        copy2.extent.width = eastl::max(src->GetDesc().Width >> srcMipLevel, 1u);
+        copy2.extent.height = eastl::max(src->GetDesc().Height >> srcMipLevel, 1u);
+        copy2.extent.depth = eastl::max(src->GetDesc().Depth >> srcMipLevel, 1u);
 
         vk::CopyImageInfo2 copyInfo2 {};
         copyInfo2.setSrcImage((VkImage)src->GetNativeHandle());

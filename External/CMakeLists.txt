@@ -19,6 +19,7 @@ target_sources(OffsetAllocator PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/OffsetAllocator/OffsetAllocator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/OffsetAllocator/OffsetAllocator.cpp)
 target_include_directories(OffsetAllocator PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/OffsetAllocator)
+set_target_properties(OffsetAllocator PROPERTIES FOLDER External CXX_STANDARD 20)
 
 file (GLOB_RECURSE RPMalloc_Head ${CMAKE_CURRENT_SOURCE_DIR}/rpmalloc/*.h)
 file (GLOB_RECURSE RPMalloc_Src ${CMAKE_CURRENT_SOURCE_DIR}/rpmalloc/*.c)

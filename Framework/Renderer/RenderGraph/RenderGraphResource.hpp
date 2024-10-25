@@ -12,7 +12,7 @@ namespace RG
     class RenderGraphResource
     {
     public:
-        RenderGraphResource(const std::string& name)
+        RenderGraphResource(const eastl::string& name)
             : mName(name)
         {}
         virtual ~RenderGraphResource() {}
@@ -22,7 +22,7 @@ namespace RG
         virtual RHI::RHIResource* GetResource() = 0;
         virtual RHI::ERHIAccessFlags GetInitialState() = 0;
 
-        const std::string& GetName() const { return mName; }
+        const eastl::string& GetName() const { return mName; }
         DAGNodeID GetFirstPassID() const { return mFirstPass; }
         DAGNodeID GetLastPassID() const { return mLastPass; }
 
@@ -40,7 +40,7 @@ namespace RG
         virtual void Barrier(RHI::RHICommandList* pCmdList, uint32_t subresource, RHI::ERHIAccessFlags accessBefore, RHI::ERHIAccessFlags accessAfter) = 0;
     
     protected:
-        std::string mName;
+        eastl::string mName;
 
         DAGNodeID mFirstPass = UINT32_MAX;
         DAGNodeID mLastPass = 0;
@@ -55,7 +55,7 @@ namespace RG
     public:
         using Desc = RHI::RHITextureDesc;
 
-        RGTexture(RenderGraphResourceAllocator& allocator, const std::string& name, const Desc& desc);
+        RGTexture(RenderGraphResourceAllocator& allocator, const eastl::string& name, const Desc& desc);
         RGTexture(RenderGraphResourceAllocator& allocator, RHI::RHITexture* texture, RHI::ERHIAccessFlags state);
         ~RGTexture();
 
@@ -83,7 +83,7 @@ namespace RG
     public:
         using Desc = RHI::RHIBufferDesc;
 
-        RGBuffer(RenderGraphResourceAllocator& allocator, const std::string& name, const Desc& desc);
+        RGBuffer(RenderGraphResourceAllocator& allocator, const eastl::string& name, const Desc& desc);
         RGBuffer(RenderGraphResourceAllocator& allocator, RHI::RHIBuffer* buffer, RHI::ERHIAccessFlags state);
         ~RGBuffer();
 

@@ -6,10 +6,9 @@
 
 #include "Utilities/Hash.hpp"
 
-#include <queue>
-#include <unordered_map>
+#include <EASTL/hash_map.h>
 
-namespace std
+namespace eastl
 {
     template<>
     struct hash<RHI::RHITextureDesc>
@@ -34,24 +33,24 @@ namespace RHI
         virtual void EndFrame() override;
         virtual void* GetNativeHandle() const override { return mDevice; }
 
-        virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const std::string& name) override;
-        virtual RHICommandList* CreateCommandList(ERHICommandQueueType queueType, const std::string& name) override;
-        virtual RHIFence* CreateFence(const std::string& name) override;
-        virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const std::string& name) override;
-        virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const std::string& name) override;
-        virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const std::string& name) override;
-        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, tcb::span<uint8_t> data, const std::string& name) override;
-        virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const std::string& name) override;
-        virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const std::string& name) override;
-        virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const std::string& name) override;
-        virtual RHIDescriptor* CreateUnorderedAccessView(RHIResource* resource, const RHIUnorderedAccessViewDesc& desc, const std::string& name) override;
-        virtual RHIDescriptor* CreateConstantBufferView(RHIBuffer* resource, const RHIConstantBufferViewDesc& desc, const std::string& name) override;
-        virtual RHIDescriptor* CreateSampler(const RHISamplerDesc& desc, const std::string& name) override;
+        virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const eastl::string& name) override;
+        virtual RHICommandList* CreateCommandList(ERHICommandQueueType queueType, const eastl::string& name) override;
+        virtual RHIFence* CreateFence(const eastl::string& name) override;
+        virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const eastl::string& name) override;
+        virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const eastl::string& name) override;
+        virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const eastl::string& name) override;
+        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, eastl::span<uint8_t> data, const eastl::string& name) override;
+        virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const eastl::string& name) override;
+        virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const eastl::string& name) override;
+        virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const eastl::string& name) override;
+        virtual RHIDescriptor* CreateUnorderedAccessView(RHIResource* resource, const RHIUnorderedAccessViewDesc& desc, const eastl::string& name) override;
+        virtual RHIDescriptor* CreateConstantBufferView(RHIBuffer* resource, const RHIConstantBufferViewDesc& desc, const eastl::string& name) override;
+        virtual RHIDescriptor* CreateSampler(const RHISamplerDesc& desc, const eastl::string& name) override;
 
         virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) override;
         virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) override;
 
-        virtual bool DumpMemoryStats(const std::string& file) override;
+        virtual bool DumpMemoryStats(const eastl::string& file) override;
 
         vk::Instance GetInstance() const { return mInstance; }
         vk::DispatchLoaderDynamic GetDynamicLoader() const { return mDynamicLoader; }
@@ -118,10 +117,10 @@ namespace RHI
         class RHIDescriptorAllocatorVK* mResourceDesAllocator = nullptr;
         class RHIDescriptorAllocatorVK* mSamplerDesAllocator = nullptr;
 
-        std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingGraphicsTransitions;
-        std::vector<std::pair<RHITexture*, ERHIAccessFlags>> mPendingCopyTransitions;
+        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> mPendingGraphicsTransitions;
+        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> mPendingCopyTransitions;
 
-        std::unordered_map<RHITextureDesc, uint32_t> mTextureSizeMap;
+        eastl::hash_map<RHITextureDesc, uint32_t> mTextureSizeMap;
     };
 
     template<typename T>

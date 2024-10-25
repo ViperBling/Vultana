@@ -27,9 +27,9 @@ namespace RG
 
     struct RenderGraphAsyncResolveContext
     {
-        std::vector<DAGNodeID> ComputeQueuePasses;
-        std::vector<DAGNodeID> PreGraphicsQueuePasses;
-        std::vector<DAGNodeID> PostGraphicsQueuePasses;
+        eastl::vector<DAGNodeID> ComputeQueuePasses;
+        eastl::vector<DAGNodeID> PreGraphicsQueuePasses;
+        eastl::vector<DAGNodeID> PostGraphicsQueuePasses;
         uint64_t ComputeFence = 0;
         uint64_t GraphicsFence = 0;
     };
@@ -52,18 +52,21 @@ namespace RG
     class RenderGraphPassBase : public DAGNode
     {
     public:
-        RenderGraphPassBase(const std::string& name, RenderPassType type, DirectedAcyclicGraph& graph);
+        RenderGraphPassBase(const eastl::string& name, RenderPassType type, DirectedAcyclicGraph& graph);
         
         void ResolveBarriers(const DirectedAcyclicGraph& graph);
         void ResolveAsyncComputeBarrier(const DirectedAcyclicGraph& graph, RenderGraphAsyncResolveContext& context);
         void Execute(const RenderGraph& graph, RenderGraphPassExecuteContext& context);
 
-        void BeginEvent(const std::string& name) { mEventNames.push_back(name); }
+        void BeginEvent(const eastl::string& name) { mEventNames.push_back(name); }
         void EndEvent() { mEndEventNum++; }
 
         RenderPassType GetType() const { return mType; }
         DAGNodeID GetWaitGraphicsPass() const { return mWaitGraphicsPass; }
         DAGNodeID GetSignalGraphicsPass() const { return mSignalGraphicsPass; }
+
+        virtual eastl::string GetGraphVizName() const override { return mName; }
+        virtual const char* GetGraphVizColor() const override { return !IsCulled() ? "darkgoldenrod1" : "darkgoldenrod4"; }
 
     private:
         void Begin(const RenderGraph& graph, RHI::RHICommandList* pCmdList);
@@ -73,10 +76,11 @@ namespace RG
 
         virtual void ExecuteImpl(RHI::RHICommandList* pCmdList) = 0;
     
-    private:
+    protected:
+        eastl::string mName;
         RenderPassType mType;
 
-        std::vector<std::string> mEventNames;
+        eastl::vector<eastl::string> mEventNames;
         uint32_t mEndEventNum = 0;
 
         struct ResourceBarrier
@@ -86,7 +90,7 @@ namespace RG
             RHI::ERHIAccessFlags OldState;
             RHI::ERHIAccessFlags NewState;
         };
-        std::vector<ResourceBarrier> mResourceBarriers;
+        eastl::vector<ResourceBarrier> mResourceBarriers;
 
         struct AliasDiscardBarrier
         {
@@ -94,7 +98,7 @@ namespace RG
             RHI::ERHIAccessFlags AccessBefore;
             RHI::ERHIAccessFlags AccessAfter;
         };
-        std::vector<AliasDiscardBarrier> mAliasDiscardBarriers;
+        eastl::vector<AliasDiscardBarrier> mAliasDiscardBarriers;
 
         RGEdgeColorAttachment* mpColorRT[RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT] = {};
         RGEdgeDepthAttachment* mpDepthRT = nullptr;
@@ -110,7 +114,7 @@ namespace RG
     class RenderGraphPass : public RenderGraphPassBase
     {
     public:
-        RenderGraphPass(const std::string& name, RenderPassType type, DirectedAcyclicGraph& graph, const std::function<void(const T&, RHI::RHICommandList*)>& execute)
+        RenderGraphPass(const eastl::string& name, RenderPassType type, DirectedAcyclicGraph& graph, const eastl::function<void(const T&, RHI::RHICommandList*)>& execute)
             : RenderGraphPassBase(name, type, graph)
         {
             mExecute = execute;
@@ -127,6 +131,6 @@ namespace RG
     
     protected:
         T mParameters;
-        std::function<void(const T&, RHI::RHICommandList*)> mExecute;
+        eastl::function<void(const T&, RHI::RHICommandList*)> mExecute;
     };
 }

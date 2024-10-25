@@ -24,7 +24,7 @@ namespace RG
         void SkipCulling() { mpPass->MakeTarget(); }
 
         template<typename Resource>
-        RGHandle Create(const typename Resource::Desc& desc, const std::string& name)
+        RGHandle Create(const typename Resource::Desc& desc, const eastl::string& name)
         {
             return mpGraph->Create<Resource>(desc, name);
         }

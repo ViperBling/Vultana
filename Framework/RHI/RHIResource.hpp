@@ -16,10 +16,10 @@ namespace RHI
         virtual bool IsBuffer() const { return false; }
 
         RHIDevice* GetDevice() const { return mpDevice; }
-        const std::string& GetName() const { return mName; }
+        const eastl::string& GetName() const { return mName; }
 
     protected:
         RHIDevice* mpDevice = nullptr;
-        std::string mName;
+        eastl::string mName;
     };
 }

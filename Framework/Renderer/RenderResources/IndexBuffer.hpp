@@ -2,7 +2,7 @@
 
 #include "RHI/RHI.hpp"
 
-#include <memory>
+#include <EASTL/unique_ptr.h>
 
 namespace Renderer
 {
@@ -14,7 +14,7 @@ namespace RenderResources
     class IndexBuffer
     {
     public:
-        IndexBuffer(const std::string& name);
+        IndexBuffer(const eastl::string& name);
 
         bool Create(uint32_t stride, uint32_t indexCount, RHI::ERHIMemoryType memoryType);
 
@@ -23,9 +23,9 @@ namespace RenderResources
         RHI::ERHIFormat GetFormat() const { return mpBuffer->GetDesc().Format; }
     
     protected:
-        std::string mName;
+        eastl::string mName;
 
-        std::unique_ptr<RHI::RHIBuffer> mpBuffer;
+        eastl::unique_ptr<RHI::RHIBuffer> mpBuffer;
         uint32_t mIndexCount = 0;
     };
 }

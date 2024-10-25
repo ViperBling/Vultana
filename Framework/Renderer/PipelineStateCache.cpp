@@ -31,7 +31,7 @@ namespace Renderer
         mpRenderer = renderer;
     }
 
-    RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const std::string &name)
+    RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         auto iter = mCachedGraphicsPSO.find(desc);
         if (iter != mCachedGraphicsPSO.end())
@@ -42,12 +42,12 @@ namespace Renderer
         RHI::RHIPipelineState* pPSO = mpRenderer->GetDevice()->CreateGraphicsPipelineState(desc, name);
         if (pPSO != nullptr)
         {
-            mCachedGraphicsPSO.insert(std::make_pair(desc, std::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            mCachedGraphicsPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
         }
         return pPSO;
     }
 
-    RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const std::string &name)
+    RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         auto iter = mCachedComputePSO.find(desc);
         if (iter != mCachedComputePSO.end())
@@ -58,7 +58,7 @@ namespace Renderer
         RHI::RHIPipelineState* pPSO = mpRenderer->GetDevice()->CreateComputePipelineState(desc, name);
         if (pPSO)
         {
-            mCachedComputePSO.insert(std::make_pair(desc, std::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            mCachedComputePSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
         }
 
         return pPSO;

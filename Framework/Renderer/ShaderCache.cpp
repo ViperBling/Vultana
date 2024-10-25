@@ -35,7 +35,7 @@ namespace RHI
 
 namespace Renderer
 {
-    static inline std::string LoadFile(const std::string& path)
+    static inline eastl::string LoadFile(const eastl::string& path)
     {
         std::ifstream is;
         is.open(path.c_str(), std::ios::binary);
@@ -48,7 +48,7 @@ namespace Renderer
         uint32_t length = (uint32_t)is.tellg();
         is.seekg(0, std::ios::beg);
 
-        std::string content;
+        eastl::string content;
         content.resize(length);
 
         is.read((char*)content.data(), length);
@@ -62,10 +62,10 @@ namespace Renderer
         mpRenderer = renderer;
     }
 
-    RHI::RHIShader *ShaderCache::GetShader(const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    RHI::RHIShader *ShaderCache::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
-        std::string filePath = Core::VultanaEngine::GetEngineInstance()->GetShaderPath() + file;
-        std::string absolutePath = std::filesystem::absolute(filePath.c_str()).string().c_str();
+        eastl::string filePath = Core::VultanaEngine::GetEngineInstance()->GetShaderPath() + file;
+        eastl::string absolutePath = std::filesystem::absolute(filePath.c_str()).string().c_str();
 
         RHI::RHIShaderDesc desc;
         desc.Type = type;
@@ -83,12 +83,12 @@ namespace Renderer
         RHI::RHIShader* shader = CreateShader(absolutePath, entryPoint, type, defines, flags);
         if (shader != nullptr)
         {
-            mCachedShaders.insert(std::make_pair(desc, std::unique_ptr<RHI::RHIShader>(shader)));
+            mCachedShaders.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIShader>(shader)));
         }
         return shader;
     }
 
-    std::string ShaderCache::GetCachedFileContent(const std::string &file)
+    eastl::string ShaderCache::GetCachedFileContent(const eastl::string &file)
     {
         auto iter = mCachedFile.find(file);
         if (iter != mCachedFile.end())
@@ -96,8 +96,8 @@ namespace Renderer
             return iter->second;
         }
 
-        std::string source = LoadFile(file);
-        mCachedFile.insert(std::make_pair(file, source));
+        eastl::string source = LoadFile(file);
+        mCachedFile.insert(eastl::make_pair(file, source));
 
         return source;
     }
@@ -106,16 +106,16 @@ namespace Renderer
     {
         for (auto iter = mCachedFile.begin(); iter != mCachedFile.end(); iter++)
         {
-            const std::string& path = iter->first;
-            const std::string& source = iter->second;
+            const eastl::string& path = iter->first;
+            const eastl::string& source = iter->second;
 
-            std::string newSource = LoadFile(path);
+            eastl::string newSource = LoadFile(path);
 
             if (source != newSource)
             {
                 mCachedFile[path] = newSource;
 
-                std::vector<RHI::RHIShader*> changedShaders = GetShaderList(path);
+                eastl::vector<RHI::RHIShader*> changedShaders = GetShaderList(path);
                 for (size_t i = 0; i < changedShaders.size(); i++)
                 {
                     RecompileShader(changedShaders[i]);
@@ -124,11 +124,11 @@ namespace Renderer
         }
     }
 
-    RHI::RHIShader *ShaderCache::CreateShader(const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    RHI::RHIShader *ShaderCache::CreateShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
-        std::string source = GetCachedFileContent(file);
+        eastl::string source = GetCachedFileContent(file);
 
-        std::vector<uint8_t> shaderBlob;
+        eastl::vector<uint8_t> shaderBlob;
         if (!mpRenderer->GetShaderCompiler()->Compile(source, file, entryPoint, type, defines, flags, shaderBlob))
         {
             return nullptr;
@@ -139,7 +139,7 @@ namespace Renderer
         desc.EntryPoint = entryPoint;
         desc.Defines = defines;
 
-        std::string name = file + " : " + entryPoint;
+        eastl::string name = file + " : " + entryPoint;
         RHI::RHIShader* shader = mpRenderer->GetDevice()->CreateShader(desc, shaderBlob, name);
         return shader;
     }
@@ -149,9 +149,9 @@ namespace Renderer
         const RHI::RHIShaderDesc& desc = shader->GetDesc();
         VTNA_LOG_INFO("Recompiling shader: {}", desc.File);
 
-        std::string source = GetCachedFileContent(desc.File);
+        eastl::string source = GetCachedFileContent(desc.File);
 
-        std::vector<uint8_t> shaderBlob;
+        eastl::vector<uint8_t> shaderBlob;
         if (!mpRenderer->GetShaderCompiler()->Compile(source, desc.File, desc.EntryPoint, desc.Type, desc.Defines, desc.CompileFlags, shaderBlob))
         {
             return;
@@ -163,9 +163,9 @@ namespace Renderer
         psoCache->RecreatePSO(shader);
     }
 
-    std::vector<RHI::RHIShader *> ShaderCache::GetShaderList(const std::string &file)
+    eastl::vector<RHI::RHIShader *> ShaderCache::GetShaderList(const eastl::string &file)
     {
-        std::vector<RHI::RHIShader*> shaders;
+        eastl::vector<RHI::RHIShader*> shaders;
 
         for (auto iter = mCachedShaders.begin(); iter != mCachedShaders.end(); iter++)
         {
@@ -177,7 +177,7 @@ namespace Renderer
         return shaders;
     }
 
-    bool ShaderCache::IsFileIncluded(const RHI::RHIShader *shader, const std::string &file)
+    bool ShaderCache::IsFileIncluded(const RHI::RHIShader *shader, const eastl::string &file)
     {
         const RHI::RHIShaderDesc& desc = shader->GetDesc();
         if (desc.File == file)
@@ -185,22 +185,22 @@ namespace Renderer
             return true;
         }
 
-        std::string extension = std::filesystem::path(file.c_str()).extension().string().c_str();
+        eastl::string extension = std::filesystem::path(file.c_str()).extension().string().c_str();
         bool isHeader = extension == ".h" || extension == ".hlsli";
 
         if (isHeader)
         {
-            std::string source = GetCachedFileContent(desc.File);
+            std::string source = GetCachedFileContent(desc.File).c_str();
             std::regex r("#include\\s*\"\\s*\\S+.\\S+\\s*\"");
 
             std::smatch result;
             while (std::regex_search(source, result, r))
             {
-                std::string include = result[0].str();
+                eastl::string include = result[0].str().c_str();
 
                 size_t first = include.find_first_of('\"');
                 size_t last = include.find_last_of('\"');
-                std::string header = include.substr(first + 1, last - first - 1);
+                eastl::string header = include.substr(first + 1, last - first - 1);
 
                 std::filesystem::path path(desc.File.c_str());
                 std::filesystem::path headerPath = path.parent_path() / header.c_str();

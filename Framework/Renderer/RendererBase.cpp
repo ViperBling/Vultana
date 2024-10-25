@@ -19,10 +19,10 @@ namespace Renderer
 {
     RendererBase::RendererBase()
     {
-        mpShaderCache = std::make_unique<ShaderCache>(this);
-        mpShaderCompiler = std::make_unique<ShaderCompiler>(this);
-        mpPipelineStateCache = std::make_unique<PipelineStateCache>(this);
-        mCBAllocator = std::make_unique<LinearAllocator>(1024 * 1024 * 8);
+        mpShaderCache = eastl::make_unique<ShaderCache>(this);
+        mpShaderCompiler = eastl::make_unique<ShaderCompiler>(this);
+        mpPipelineStateCache = eastl::make_unique<PipelineStateCache>(this);
+        mCBAllocator = eastl::make_unique<LinearAllocator>(1024 * 1024 * 8);
         
         Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&RendererBase::OnWindowResize, this);
     }
@@ -64,30 +64,30 @@ namespace Renderer
         mpFrameFence.reset(mpDevice->CreateFence("RendererBase::FrameFence"));
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
-            std::string name = fmt::format("RendererBase::CommonCmdList{}", i).c_str();
+            eastl::string name = fmt::format("RendererBase::CommonCmdList{}", i).c_str();
             mpCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Graphics, name));
         }
 
         mpAsyncComputeFence.reset(mpDevice->CreateFence("RendererBase::AsyncComputeFence"));
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
-            std::string name = fmt::format("RendererBase::AsyncComputeCmdList{}", i).c_str();
+            eastl::string name = fmt::format("RendererBase::AsyncComputeCmdList{}", i).c_str();
             mpAsyncComputeCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Compute, name));
         }
 
         mpUploadFence.reset(mpDevice->CreateFence("RendererBase::UploadFence"));
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
-            std::string name = fmt::format("RendererBase::UploadCmdList{}", i).c_str();
+            eastl::string name = fmt::format("RendererBase::UploadCmdList{}", i).c_str();
             mpUploadCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Copy, name));
-            mpStagingBufferAllocators[i] = std::make_unique<StagingBufferAllocator>(this);
+            mpStagingBufferAllocators[i] = eastl::make_unique<StagingBufferAllocator>(this);
         }
 
         CreateCommonResources();
 
-        mpRenderGraph = std::make_unique<RG::RenderGraph>(this);
-        mpGPUScene = std::make_unique<GPUScene>(this);
-        mpForwardBasePass = std::make_unique<ForwardBasePass>(this);
+        mpRenderGraph = eastl::make_unique<RG::RenderGraph>(this);
+        mpGPUScene = eastl::make_unique<GPUScene>(this);
+        mpForwardBasePass = eastl::make_unique<ForwardBasePass>(this);
         
         return true;
     }
@@ -114,17 +114,17 @@ namespace Renderer
         }
     }
 
-    RHI::RHIShader *RendererBase::GetShader(const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    RHI::RHIShader *RendererBase::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
         return mpShaderCache->GetShader(file, entryPoint, type, defines, flags);
     }
 
-    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const std::string &name)
+    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         return mpPipelineStateCache->GetPipelineState(desc, name);
     }
 
-    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const std::string &name)
+    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         return mpPipelineStateCache->GetPipelineState(desc, name);
     }
@@ -134,7 +134,7 @@ namespace Renderer
         mpShaderCache->ReloadShaders();
     }
 
-    RenderResources::Texture2D *RendererBase::CreateTexture2D(const std::string &file, bool srgb)
+    RenderResources::Texture2D *RendererBase::CreateTexture2D(const eastl::string &file, bool srgb)
     {
         Assets::TextureLoader loader;
         if (!loader.Load(file, srgb))
@@ -149,7 +149,7 @@ namespace Renderer
         return texture;
     }
 
-    RenderResources::Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const std::string &name)
+    RenderResources::Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string &name)
     {
         RenderResources::Texture2D* texture = new RenderResources::Texture2D(name);
         if (!texture->Create(width, height, levels, format, flags))
@@ -160,9 +160,9 @@ namespace Renderer
         return texture;
     }
 
-    RenderResources::IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const std::string &name, RHI::ERHIMemoryType memoryType)
+    RenderResources::IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const eastl::string &name, RHI::ERHIMemoryType memoryType)
     {
-        std::vector<uint16_t> u16IndexBuffer;
+        eastl::vector<uint16_t> u16IndexBuffer;
         if (stride == 1)
         {
             u16IndexBuffer.resize(indexCount);
@@ -188,7 +188,7 @@ namespace Renderer
         return idBuffer;
     }
 
-    RenderResources::StructuredBuffer *RendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const std::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    RenderResources::StructuredBuffer *RendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const eastl::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
         RenderResources::StructuredBuffer* pBuffer = new RenderResources::StructuredBuffer(name);
         if (!pBuffer->Create(stride, elementCount, memoryType, isUAV))
@@ -203,7 +203,7 @@ namespace Renderer
         return pBuffer;
     }
 
-    RenderResources::RawBuffer *RendererBase::CreateRawBuffer(const void *data, uint32_t size, const std::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    RenderResources::RawBuffer *RendererBase::CreateRawBuffer(const void *data, uint32_t size, const eastl::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
         auto buffer = new RenderResources::RawBuffer(name);
         if (!buffer->Create(size, memoryType, isUAV))

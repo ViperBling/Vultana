@@ -4,6 +4,7 @@
 
 #include "Core/VultanaEngine.hpp"
 #include "Utilities/Log.hpp"
+#include "Utilities/String.hpp"
 
 #include <filesystem>
 #include <atlbase.h>
@@ -21,8 +22,8 @@ namespace Renderer
 
         HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override
         {
-            std::string absPath = std::filesystem::absolute(pFilename).string();
-            std::string source = mpShaderCache->GetCachedFileContent(absPath);
+            eastl::string absPath = std::filesystem::absolute(pFilename).string().c_str();
+            eastl::string source = mpShaderCache->GetCachedFileContent(absPath);
 
             *ppIncludeSource = nullptr;
             return mpDxcUtils->CreateBlob(source.data(), (UINT32)source.size(), CP_UTF8, reinterpret_cast<IDxcBlobEncoding**>(ppIncludeSource));
@@ -122,24 +123,24 @@ namespace Renderer
         }
     }
 
-    bool ShaderCompiler::Compile(const std::string &source, const std::string &file, const std::string &entryPoint, RHI::ERHIShaderType type, const std::vector<std::string> &defines, RHI::ERHIShaderCompileFlags flags, std::vector<uint8_t> &output)
+    bool ShaderCompiler::Compile(const eastl::string &source, const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags, eastl::vector<uint8_t> &output)
     {
         DxcBuffer sourceBuffer;
         sourceBuffer.Ptr = source.data();
         sourceBuffer.Size = source.length();
         sourceBuffer.Encoding = DXC_CP_ACP;
 
-        std::wstring wFile = std::wstring(file.begin(), file.end());
-        std::wstring wEntryPoint = std::wstring(entryPoint.begin(), entryPoint.end());
-        std::wstring wProfile = GetShaderProfile(type);
+        eastl::wstring wFile = StringUtils::StringToWString(file);
+        eastl::wstring wEntryPoint = StringUtils::StringToWString(entryPoint);
+        eastl::wstring wProfile = GetShaderProfile(type);
 
-        std::vector<std::wstring> wstrDefines;
+        eastl::vector<eastl::wstring> wstrDefines;
         for (size_t i = 0; i < defines.size(); i++)
         {
-            wstrDefines.push_back(std::wstring(defines[i].begin(), defines[i].end()));
+            wstrDefines.push_back(StringUtils::StringToWString(defines[i]));
         }
 
-        std::vector<LPCWSTR> arguments;
+        eastl::vector<LPCWSTR> arguments;
         arguments.push_back(wFile.c_str());
         arguments.push_back(L"-E");     arguments.push_back(wEntryPoint.c_str());
         arguments.push_back(L"-T");     arguments.push_back(wProfile.c_str());

@@ -11,7 +11,7 @@ namespace RHI
     class RHIShaderResourceViewVK : public RHIDescriptor
     {
     public:
-        RHIShaderResourceViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIShaderResourceViewDesc& desc, const std::string& name);
+        RHIShaderResourceViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIShaderResourceViewDesc& desc, const eastl::string& name);
         ~RHIShaderResourceViewVK();
 
         bool Create();
@@ -30,7 +30,7 @@ namespace RHI
     class RHIUnorderedAccessViewVK : public RHIDescriptor
     {
     public:
-        RHIUnorderedAccessViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIUnorderedAccessViewDesc& desc, const std::string& name);
+        RHIUnorderedAccessViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIUnorderedAccessViewDesc& desc, const eastl::string& name);
         ~RHIUnorderedAccessViewVK();
 
         bool Create();
@@ -49,7 +49,7 @@ namespace RHI
     class RHIConstantBufferViewVK : public RHIDescriptor
     {
     public:
-        RHIConstantBufferViewVK(RHIDeviceVK* device, RHIBuffer* buffer, const RHIConstantBufferViewDesc& desc, const std::string& name);
+        RHIConstantBufferViewVK(RHIDeviceVK* device, RHIBuffer* buffer, const RHIConstantBufferViewDesc& desc, const eastl::string& name);
         ~RHIConstantBufferViewVK();
 
         bool Create();
@@ -67,7 +67,7 @@ namespace RHI
     class RHISamplerVK : public RHIDescriptor
     {
     public:
-        RHISamplerVK(RHIDeviceVK* device, const RHISamplerDesc& desc, const std::string& name);
+        RHISamplerVK(RHIDeviceVK* device, const RHISamplerDesc& desc, const eastl::string& name);
         ~RHISamplerVK();
 
         bool Create();

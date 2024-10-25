@@ -19,7 +19,7 @@ namespace Scene
     {
         friend class Assets::ModelLoader;
     public:
-        StaticMesh(const std::string& name);
+        StaticMesh(const eastl::string& name);
         ~StaticMesh();
 
         virtual bool Create() override;
@@ -39,8 +39,8 @@ namespace Scene
     
     private:
         Renderer::RendererBase* mpRenderer = nullptr;
-        std::string mName;
-        std::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
+        eastl::string mName;
+        eastl::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
 
         OffsetAllocator::Allocation mIndexBuffer;
         OffsetAllocator::Allocation mPositionBuffer;

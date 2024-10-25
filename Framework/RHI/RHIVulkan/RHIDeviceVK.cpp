@@ -15,8 +15,6 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
-#include <map>
-
 namespace RHI
 {
     static VKAPI_ATTR VkBool32 VKAPI_CALL ValidationLayerCallback(
@@ -79,12 +77,12 @@ namespace RHI
         mPhysicalDevice.getProperties2(&props2);
 
         size_t resourceDescSize = mDescBufferProps.sampledImageDescriptorSize;
-        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.storageImageDescriptorSize);
-        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustUniformTexelBufferDescriptorSize);
-        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustStorageTexelBufferDescriptorSize);
-        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustUniformBufferDescriptorSize);
-        resourceDescSize = std::max(resourceDescSize, mDescBufferProps.robustStorageBufferDescriptorSize);
-        // resourceDescSize = std::max(resourceDescSize, mDescBufferProps.accelerationStructureDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.storageImageDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustUniformTexelBufferDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustStorageTexelBufferDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustUniformBufferDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustStorageBufferDescriptorSize);
+        // resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.accelerationStructureDescriptorSize);
 
         size_t samplerDescSize = mDescBufferProps.samplerDescriptorSize;
 
@@ -111,7 +109,7 @@ namespace RHI
         vmaSetCurrentFrameIndex(mAllocator, (uint32_t)mFrameID);
     }
 
-    RHISwapchain *RHIDeviceVK::CreateSwapchain(const RHISwapchainDesc &desc, const std::string &name)
+    RHISwapchain *RHIDeviceVK::CreateSwapchain(const RHISwapchainDesc &desc, const eastl::string &name)
     {
         RHISwapchainVK *swapchain = new RHISwapchainVK(this, desc, name);
         if (!swapchain->Create())
@@ -122,7 +120,7 @@ namespace RHI
         return swapchain;
     }
 
-    RHICommandList *RHIDeviceVK::CreateCommandList(ERHICommandQueueType queueType, const std::string &name)
+    RHICommandList *RHIDeviceVK::CreateCommandList(ERHICommandQueueType queueType, const eastl::string &name)
     {
         RHICommandListVK* cmdList = new RHICommandListVK(this, queueType, name);
         if (!cmdList->Create())
@@ -133,7 +131,7 @@ namespace RHI
         return cmdList;
     }
 
-    RHIFence *RHIDeviceVK::CreateFence(const std::string &name)
+    RHIFence *RHIDeviceVK::CreateFence(const eastl::string &name)
     {
         RHIFenceVK* fence = new RHIFenceVK(this, name);
         if (!fence->Create())
@@ -144,7 +142,7 @@ namespace RHI
         return fence;
     }
 
-    RHIHeap *RHIDeviceVK::CreateHeap(const RHIHeapDesc &desc, const std::string &name)
+    RHIHeap *RHIDeviceVK::CreateHeap(const RHIHeapDesc &desc, const eastl::string &name)
     {
         RHIHeapVK* heap = new RHIHeapVK(this, desc, name);
         if (!heap->Create())
@@ -155,7 +153,7 @@ namespace RHI
         return heap;
     }
 
-    RHIBuffer *RHIDeviceVK::CreateBuffer(const RHIBufferDesc &desc, const std::string &name)
+    RHIBuffer *RHIDeviceVK::CreateBuffer(const RHIBufferDesc &desc, const eastl::string &name)
     {
         RHIBufferVK* buffer = new RHIBufferVK(this, desc, name);
         if (!buffer->Create())
@@ -166,7 +164,7 @@ namespace RHI
         return buffer;
     }
 
-    RHITexture *RHIDeviceVK::CreateTexture(const RHITextureDesc &desc, const std::string &name)
+    RHITexture *RHIDeviceVK::CreateTexture(const RHITextureDesc &desc, const eastl::string &name)
     {
         RHITextureVK* texture = new RHITextureVK(this, desc, name);
         if (!texture->Create())
@@ -177,7 +175,7 @@ namespace RHI
         return texture;
     }
 
-    RHIShader *RHIDeviceVK::CreateShader(const RHIShaderDesc &desc, tcb::span<uint8_t> data, const std::string &name)
+    RHIShader *RHIDeviceVK::CreateShader(const RHIShaderDesc &desc, eastl::span<uint8_t> data, const eastl::string &name)
     {
         RHIShaderVK* shader = new RHIShaderVK(this, desc, name);
         if (!shader->Create(data))
@@ -188,7 +186,7 @@ namespace RHI
         return shader;
     }
 
-    RHIPipelineState *RHIDeviceVK::CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc &desc, const std::string &name)
+    RHIPipelineState *RHIDeviceVK::CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         RHIGraphicsPipelineStateVK* pipeline = new RHIGraphicsPipelineStateVK(this, desc, name);
         if (!pipeline->Create())
@@ -199,7 +197,7 @@ namespace RHI
         return pipeline;
     }
 
-    RHIPipelineState *RHIDeviceVK::CreateComputePipelineState(const RHIComputePipelineStateDesc &desc, const std::string &name)
+    RHIPipelineState *RHIDeviceVK::CreateComputePipelineState(const RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         RHIComputePipelineStateVK* pipeline = new RHIComputePipelineStateVK(this, desc, name);
         if (!pipeline->Create())
@@ -210,7 +208,7 @@ namespace RHI
         return pipeline;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateShaderResourceView(RHIResource *resource, const RHIShaderResourceViewDesc &desc, const std::string &name)
+    RHIDescriptor *RHIDeviceVK::CreateShaderResourceView(RHIResource *resource, const RHIShaderResourceViewDesc &desc, const eastl::string &name)
     {
         RHIShaderResourceViewVK* srv = new RHIShaderResourceViewVK(this, resource, desc, name);
         if (!srv->Create())
@@ -221,7 +219,7 @@ namespace RHI
         return srv;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateUnorderedAccessView(RHIResource *resource, const RHIUnorderedAccessViewDesc &desc, const std::string &name)
+    RHIDescriptor *RHIDeviceVK::CreateUnorderedAccessView(RHIResource *resource, const RHIUnorderedAccessViewDesc &desc, const eastl::string &name)
     {
         RHIUnorderedAccessViewVK* uav = new RHIUnorderedAccessViewVK(this, resource, desc, name);
         if (!uav->Create())
@@ -232,7 +230,7 @@ namespace RHI
         return uav;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateConstantBufferView(RHIBuffer *resource, const RHIConstantBufferViewDesc &desc, const std::string &name)
+    RHIDescriptor *RHIDeviceVK::CreateConstantBufferView(RHIBuffer *resource, const RHIConstantBufferViewDesc &desc, const eastl::string &name)
     {
         RHIConstantBufferViewVK* cbv = new RHIConstantBufferViewVK(this, resource, desc, name);
         if (!cbv->Create())
@@ -243,7 +241,7 @@ namespace RHI
         return cbv;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateSampler(const RHISamplerDesc &desc, const std::string &name)
+    RHIDescriptor *RHIDeviceVK::CreateSampler(const RHISamplerDesc &desc, const eastl::string &name)
     {
         RHISamplerVK* sampler = new RHISamplerVK(this, desc, name);
         if (!sampler->Create())
@@ -284,7 +282,7 @@ namespace RHI
         return (uint32_t)requires2.memoryRequirements.size;
     }
 
-    bool RHIDeviceVK::DumpMemoryStats(const std::string &file)
+    bool RHIDeviceVK::DumpMemoryStats(const eastl::string &file)
     {
         return false;
     }
@@ -388,8 +386,8 @@ namespace RHI
 
     void RHIDeviceVK::CancelDefaultLayoutTransition(RHITexture *texture)
     {
-        auto iter = std::find_if(mPendingGraphicsTransitions.begin(), mPendingGraphicsTransitions.end(),
-        [texture](const std::pair<RHITexture*, ERHIAccessFlags>& transition)
+        auto iter = eastl::find_if(mPendingGraphicsTransitions.begin(), mPendingGraphicsTransitions.end(),
+        [texture](const eastl::pair<RHITexture*, ERHIAccessFlags>& transition)
         {
             return transition.first == texture;
         });
@@ -398,8 +396,8 @@ namespace RHI
             mPendingGraphicsTransitions.erase(iter);
         }
 
-        iter = std::find_if(mPendingCopyTransitions.begin(), mPendingCopyTransitions.end(),
-        [texture](const std::pair<RHITexture*, ERHIAccessFlags>& transition)
+        iter = eastl::find_if(mPendingCopyTransitions.begin(), mPendingCopyTransitions.end(),
+        [texture](const eastl::pair<RHITexture*, ERHIAccessFlags>& transition)
         {
             return transition.first == texture;
         });
@@ -467,14 +465,14 @@ namespace RHI
         //     VTNA_LOG_DEBUG("  {}", (char*)supportExtens[i].extensionName);
         // }
 
-        std::vector<const char*> requiredLayers = 
+        eastl::vector<const char*> requiredLayers = 
         {
             #if defined(_DEBUG) || defined(DEBUG)
             "VK_LAYER_KHRONOS_validation",
             #endif
         };
 
-        std::vector<const char*> requiredExtensions = 
+        eastl::vector<const char*> requiredExtensions = 
         {
             "VK_KHR_surface",
             "VK_KHR_win32_surface",
@@ -518,7 +516,7 @@ namespace RHI
         //     VTNA_LOG_DEBUG("  {}", (char*)physicalDeviceExtenProps[i].extensionName);
         // }
 
-        std::vector<const char*> requiredExtensions =
+        eastl::vector<const char*> requiredExtensions =
         {
             "VK_KHR_swapchain",
             "VK_KHR_swapchain_mutable_format",
@@ -635,7 +633,7 @@ namespace RHI
 
     void RHIDeviceVK::CreatePipelineLayout()
     {
-        std::vector<vk::DescriptorType> mutableDescTypes =
+        eastl::vector<vk::DescriptorType> mutableDescTypes =
         {
             vk::DescriptorType::eSampledImage,
             vk::DescriptorType::eStorageImage,

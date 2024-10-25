@@ -32,12 +32,29 @@ namespace RG
         {
             mpResource = resource;
             mVersion = version;
-            mName = resource->GetName();
-            mNodeType = FNodeType::Resource;
         }
     
         RenderGraphResource* GetResource() const { return mpResource; }
         uint32_t GetVersion() const { return mVersion; }
+
+        virtual eastl::string GetGraphVizName() const override 
+        {
+            eastl::string str = mpResource->GetName();
+            str.append("\nversion:");
+            str.append(eastl::to_string(mVersion));
+            if (mVersion > 0)
+            {
+                eastl::vector<DAGEdge*> incomingEdges;
+                mGraph.GetIncomingEdges(this, incomingEdges);
+                assert(incomingEdges.size() == 1);
+                uint32_t subresource = ((RenderGraphEdge*)incomingEdges[0])->GetSubresource();
+                str.append("\nsubresource:");
+                str.append(eastl::to_string(subresource));
+            }
+            return str;
+        }
+        virtual const char* GetGraphVizColor() const override { return !IsCulled() ? "lightskyblue1" : "lightskyblue4"; }
+        virtual const char* GetGraphVizShape() const override { return "ellipse"; }
     
     private:
         RenderGraphResource* mpResource = nullptr;
@@ -103,7 +120,7 @@ namespace RG
     }
 
     template <typename Data, typename Setup, typename Execution>
-    inline RenderGraphPass<Data> &RenderGraph::AddPass(const std::string &name, RenderPassType type, const Setup &setup, const Execution &execution)
+    inline RenderGraphPass<Data> &RenderGraph::AddPass(const eastl::string &name, RenderPassType type, const Setup &setup, const Execution &execution)
     {
         auto pass = Allocate<RenderGraphPass<Data>>(name, type, mGraph, execution);
         for (size_t i = 0; i < mEventNames.size(); i++)
@@ -142,7 +159,7 @@ namespace RG
     }
 
     template <typename Resource>
-    inline RGHandle RenderGraph::Create(const typename Resource::Desc &desc, const std::string &name)
+    inline RGHandle RenderGraph::Create(const typename Resource::Desc &desc, const eastl::string &name)
     {
         auto resource = Allocate<Resource>(mResourceAllocator, name, desc);
         auto node = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, 0);

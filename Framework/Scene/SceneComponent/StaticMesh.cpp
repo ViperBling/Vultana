@@ -6,7 +6,7 @@
 
 namespace Scene
 {
-    StaticMesh::StaticMesh(const std::string &name)
+    StaticMesh::StaticMesh(const eastl::string &name)
     {
         mName = name;
     }
@@ -89,7 +89,7 @@ namespace Scene
         mInstanceData.bVertexAnimation = false;
         mInstanceData.MaterialDataAddress = mpRenderer->AllocateSceneConstantBuffer((void*)mpMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
         mInstanceData.ObjectID = mID;
-        mInstanceData.Scale = std::max(std::max(abs(mScale.x), abs(mScale.y)), abs(mScale.z));
+        mInstanceData.Scale = eastl::max(eastl::max(abs(mScale.x), abs(mScale.y)), abs(mScale.z));
 
         float4x4 T = translation_matrix(mPosition);
         float4x4 R = rotation_matrix(mRotation);

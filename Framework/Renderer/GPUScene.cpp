@@ -12,11 +12,11 @@ namespace Renderer
 
         const uint32_t staticBufferSize = 1024 * 1024 * 448;
         mpSceneStaticBuffer.reset(pRenderer->CreateRawBuffer(nullptr, staticBufferSize, "GPUScene::StaticBuffer"));
-        mpSceneStaticBufferAllocator = std::make_unique<OffsetAllocator::Allocator>(staticBufferSize);
+        mpSceneStaticBufferAllocator = eastl::make_unique<OffsetAllocator::Allocator>(staticBufferSize);
 
         const uint32_t animationBufferSize = 1024 * 1024 * 32;
         mpSceneAnimationBuffer.reset(pRenderer->CreateRawBuffer(nullptr, animationBufferSize, "GPUScene::AnimationBuffer", RHI::ERHIMemoryType::GPUOnly, true));
-        mpSceneAnimationBufferAllocator = std::make_unique<OffsetAllocator::Allocator>(animationBufferSize);
+        mpSceneAnimationBufferAllocator = eastl::make_unique<OffsetAllocator::Allocator>(animationBufferSize);
 
         for (int i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
