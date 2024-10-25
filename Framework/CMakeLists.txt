@@ -57,6 +57,16 @@ target_include_directories(FrameworkLib PUBLIC
     ${SHADER_ROOT}
     ${SIMPLEINI_INCLUDE_DIRS})
 
+if(MSVC)
+    add_definitions(/MP)
+    add_definitions(-DUNICODE)
+    add_definitions(-D_UNICODE)
+    add_definitions(-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+else()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wno-deprecated-builtins -Wno-nullability-completeness")
+endif()
+
 target_compile_definitions(FrameworkLib PUBLIC
     EASTL_EASTDC_VSNPRINTF=0
     EASTL_USER_DEFINED_ALLOCATOR=1
