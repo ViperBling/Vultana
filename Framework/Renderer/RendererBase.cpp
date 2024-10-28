@@ -392,6 +392,7 @@ namespace Renderer
             // slot 0 only for instance data, must less than 8 * sizeof(uint32_t) = 32 bytes
             pCmdList->SetGraphicsConstants(2, &sceneConstants, sizeof(FSceneConstants));
         }
+        pCmdList->SetComputeConstants(2, &sceneConstants, sizeof(FSceneConstants));
     }
 
     RenderBatch &RendererBase::AddBasePassBatch()
