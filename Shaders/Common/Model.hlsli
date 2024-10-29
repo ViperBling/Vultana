@@ -90,10 +90,10 @@ Texture2D GetMaterialTexture2D(uint heapIndex)
 
 SamplerState GetMaterialSampler()
 {
-    return SamplerDescriptorHeap[SceneCB.Aniso8xSampler];
+    return SamplerDescriptorHeap[SceneCB.Aniso16xSampler];
 }
 
-float4 SampleMaterialTexture(FMaterialTextureInfo textureInfo, float2 texCoord, float mipLOD)
+float4 SampleMaterialTexture(FMaterialTextureInfo textureInfo, float2 texCoord, float mipLOD = 0)
 {
     Texture2D texture = GetMaterialTexture2D(textureInfo.Index);
     SamplerState anisoSampler = GetMaterialSampler();
