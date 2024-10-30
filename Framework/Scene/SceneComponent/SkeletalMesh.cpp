@@ -70,7 +70,11 @@ namespace Scene
         float4x4 S = scaling_matrix(mScale);
         mMtxWorld = mul(T, mul(R, S));
 
-        if (mbAnimated)
+        if (mbResetAnim)
+        {
+            mpAnimation->ResetAnimation();
+        }
+        if (mbAnimated || (mbResetAnim && !mbAnimated))
         {
             mpAnimation->Update(this, deltaTime);
         }
@@ -115,7 +119,8 @@ namespace Scene
         
         GUICommand("Inspector", "SkeletalMesh", [&]()
         {
-            ImGui::Checkbox("Animated", &mbAnimated);
+            ImGui::Checkbox("Play Animation", &mbAnimated);
+            mbResetAnim = ImGui::Button("Reset Animation");
         });
     }
 

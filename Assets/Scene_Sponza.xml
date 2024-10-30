@@ -1,6 +1,7 @@
 <Scene>
     <Model File = "Models/Sponza/glTF/Sponza.gltf" Position = "0.0, 0.0, 0.0" Scale = "1, 1, 1" />
-    <Model File = "Models/BusterDrone/busterDrone.gltf" Position = "0.0, 100.0, 100.0" Rotation = "0, 90, 0" Scale = "100, 100, 100" />
+    <!-- <Model File = "Models/CornellBox/CornellBox.gltf" Position = "0.0, 6.0, 100.0" Rotation = "0, 90, 0" Scale = "100, 100, 100" /> -->
+    <!-- <Model File = "Models/BusterDrone/busterDrone.gltf" Position = "0.0, 100.0, 100.0" Rotation = "0, 90, 0" Scale = "100, 100, 100" /> -->
     <Model File = "Models/MechDrone/scene.gltf" Position = "0.0, 0.0, -100.0" Rotation = "0, -90, 0" Scale = "300, 300, 300" />
     <Camera Position = "-100, 10, 0" Rotation = "0, 0, 0" Fov = "60.0" ZNear = "0.01" ZFar = "1000.0"/>
     <Light Type = "Directional" IsMainLight = "true" Rotation = "15.000, 0.000, 0.000" Intensity = "3.0"/>

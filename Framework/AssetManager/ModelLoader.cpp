@@ -205,7 +205,7 @@ namespace Assets
 
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
-                eastl::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->name ? node->name : "")).c_str();
+                eastl::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->mesh->name ? node->mesh->name : "")).c_str();
                 Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
                 mesh->mpMaterial->mbFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
@@ -271,8 +271,10 @@ namespace Assets
                     min.z = -min.z;
                     float3 max = float3(primitive->attributes[i].data->max);
                     max.z = -max.z;
+
                     float3 center = (min + max) * 0.5f;
                     float radius = length(max - min) * 0.5f;
+
                     mesh->mCenter = center;
                     mesh->mRadius = radius;
                 }
@@ -321,18 +323,18 @@ namespace Assets
             break;
         }
 
-        void* posVertices = nullptr;
-        size_t posStride = 0;
+        // void* posVertices = nullptr;
+        // size_t posStride = 0;
         for (size_t i = 0; i < vertexStreams.size(); i++)
         {
             void* vertices = VTNA_ALLOC(vertexStreams[i].stride * remappedVertexCount);
             meshopt_remapVertexBuffer(vertices, vertexStreams[i].data, vertexCount, vertexStreams[i].stride, &remap[0]);
             remappedVertices.push_back(vertices);
-            if (vertexTypes[i] == cgltf_attribute_type_position)
-            {
-                posVertices = vertices;
-                posStride = vertexStreams[i].stride;
-            }
+            // if (vertexTypes[i] == cgltf_attribute_type_position)
+            // {
+            //     posVertices = vertices;
+            //     posStride = vertexStreams[i].stride;
+            // }
         }
 
         size_t maxVertices = 64;
