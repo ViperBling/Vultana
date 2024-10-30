@@ -120,6 +120,7 @@ namespace Scene
         eastl::vector<uint32_t> mRootNodes;
 
         bool mbAnimated = false;
+        bool mbResetAnim = false;
         float mRadius = 0.0f;
         float mBoundScaleFactor = 3.0f;
     };
