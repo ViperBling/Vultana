@@ -27,5 +27,6 @@ float4 PSMain(FVertexOutput psIn) : SV_Target
     float ao = 1.0f;
 #endif
 
-    return float4(albedo.rgb, 1.0f);
+    float3 finalColor = albedo.rgb;
+    return float4(finalColor, 1.0f);
 }
