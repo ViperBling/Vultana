@@ -87,9 +87,7 @@ namespace Assets
 
             eastl::vector<eastl::string> defines;
             defines.push_back("UNIFORM_RESOURCE=1");
-
-            if (mpAlbedoTexture) defines.push_back("ALBEDO_TEXTURE=1");
-            if (mpDiffuseTexture) defines.push_back("DIFFUSE_TEXTURE=1");
+            
             if (mbAlphaTest) defines.push_back("ALPHA_TEST=1");
 
             RHI::RHIGraphicsPipelineStateDesc psoDesc {};

@@ -214,6 +214,9 @@ namespace Core
 
         float3 position = pSelectedObject->GetPosition();
         float3 rotation = RotationAngles(pSelectedObject->GetRotation());
+
+        // VTNA_LOG_DEBUG("Rotation Before: {0}, {1}, {2}", rotation.x, rotation.y, rotation.z);
+
         float3 scale = pSelectedObject->GetScale();
 
         float4x4 mtxWorld;
@@ -244,6 +247,9 @@ namespace Core
         ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
 
         ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
+
+        // VTNA_LOG_DEBUG("Rotation After: {0}, {1}, {2}", rotation.x, rotation.y, rotation.z);
+
         pSelectedObject->SetPosition(position);
         pSelectedObject->SetRotation(RotationQuat(rotation));
         pSelectedObject->SetScale(scale);

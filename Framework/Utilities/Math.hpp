@@ -86,6 +86,12 @@ inline quaternion RotationQuat(const float3& euler_angles) //pitch-yaw-roll orde
     q.y = c.x * s.y * c.z + s.x * c.y * s.z;
     q.z = c.x * c.y * s.z - s.x * s.y * c.z;
 
+    // quaternion q;
+    // q.w = c.y * c.z * c.x + s.y * s.z * s.x; // w component
+    // q.x = s.y * c.z * c.x - c.y * s.z * s.x; // x component
+    // q.y = c.y * s.z * c.x + s.y * c.z * s.x; // y component
+    // q.z = c.y * c.z * s.x - s.y * s.z * c.x; // z component
+
     return q;
 }
 
