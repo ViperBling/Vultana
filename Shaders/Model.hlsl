@@ -14,11 +14,11 @@ float4 PSMain(FVertexOutput psIn) : SV_Target
     AlphaTest(cInstanceIndex, psIn.TexCoord);
 
 #if ALBEDO_TEXTURE
-    float4 albedo = SampleMaterialTexture(material.AlbedoTexture, psIn.TexCoord, 0);
+    float4 mainTexVal = SampleMaterialTexture(material.AlbedoTexture, psIn.TexCoord, 0);
 #elif DIFFUSE_TEXTURE
-    float4 albedo = SampleMaterialTexture(material.DiffuseTexture, psIn.TexCoord, 0);
+    float4 mainTexVal = SampleMaterialTexture(material.DiffuseTexture, psIn.TexCoord, 0);
 #else
-    float4 albedo = 0.0f;
+    float4 mainTexVal = 1.0f;
 #endif
 
 #if AO_TEXTURE
@@ -27,6 +27,8 @@ float4 PSMain(FVertexOutput psIn) : SV_Target
     float ao = 1.0f;
 #endif
 
-    float3 finalColor = albedo.rgb;
+    float3 albedo = material.Albedo;
+
+    float3 finalColor = mainTexVal * albedo;
     return float4(finalColor, 1.0f);
 }
