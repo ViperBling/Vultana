@@ -7,9 +7,9 @@ set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 # find_package(glfw3 CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
+find_package(enkiTS CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
-# find_package(imguizmo CONFIG REQUIRED)
 find_package(meshoptimizer CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
@@ -80,12 +80,12 @@ target_link_libraries(FrameworkLib PRIVATE
     # glm::glm
     cityhash
     EASTL
+    enkiTS::enkiTS
     Microsoft::DirectXShaderCompiler
     fmt::fmt-header-only
     ImFileDialog
     ImGui
     ImGuizmo
-    # imguizmo::imguizmo
     meshoptimizer::meshoptimizer
     OffsetAllocator
     RPMalloc

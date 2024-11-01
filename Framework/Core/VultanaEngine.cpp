@@ -2,6 +2,7 @@
 #include "VultanaGUI.hpp"
 #include "VultanaEditor.hpp"
 #include "Utilities/Log.hpp"
+#include "Utilities/String.hpp"
 
 #include <rpmalloc/rpmalloc.h>
 #include <spdlog/sinks/msvc_sink.h>
@@ -12,6 +13,7 @@
 #include <sokol/sokol_time.h>
 #include <ImGui/imgui.h>
 #include <SimpleIni.h>
+#include <enkiTS/TaskScheduler.h>
 
 namespace Core
 {
@@ -34,6 +36,30 @@ namespace Core
         spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e [%l] [thread %t] %v");
         spdlog::set_level(spdlog::level::trace);
         spdlog::flush_every(std::chrono::milliseconds(10));
+
+        enki::TaskSchedulerConfig tsConfig;
+        tsConfig.profilerCallbacks.threadStart = [](uint32_t i)
+        {
+            rpmalloc_thread_initialize();
+
+            eastl::string threadName = fmt::format("WorkerThread {}", i).c_str();
+            // Only in Windows
+            SetThreadDescription(GetCurrentThread(), StringUtils::StringToWString(threadName).c_str());
+        };
+        tsConfig.profilerCallbacks.threadStop = [](uint32_t i)
+        {
+            rpmalloc_thread_finalize(1);
+        };
+        tsConfig.customAllocator.alloc = [](size_t align, size_t size, void* userData, const char* file, int line)
+        {
+            return VTNA_ALLOC(size, align);
+        };
+        tsConfig.customAllocator.free = [](void* ptr, size_t size, void* userData, const char* file, int line)
+        {
+            VTNA_FREE(ptr);
+        };
+        mpTaskScheduler.reset(new enki::TaskScheduler());
+        mpTaskScheduler->Initialize(tsConfig);
 
         mWndHandle = windowHandle;
 
@@ -69,9 +95,14 @@ namespace Core
 
     void VultanaEngine::Shutdown()
     {
+        mpTaskScheduler->WaitforAll();
+
         mpWorld.reset();
-        mpGUI.reset();
         mpEditor.reset();
+        mpGUI.reset();
+        
+        mpTaskScheduler.reset();
+
         mpRenderer.reset();
 
         spdlog::shutdown();
@@ -96,8 +127,6 @@ namespace Core
             mpWorld->Tick(mFrameTime);
             mpRenderer->RenderFrame();
         }
-
-        
     }
     
     VultanaEngine::~VultanaEngine()

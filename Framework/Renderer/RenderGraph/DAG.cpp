@@ -91,6 +91,7 @@ namespace RG
             nodesStack.pop_back();
 
             eastl::vector<DAGEdge*> incomingEdges;
+            // 获取当前node的所有入边
             GetIncomingEdges(node, incomingEdges);
 
             for (size_t i = 0; i < incomingEdges.size(); ++i)

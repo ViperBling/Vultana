@@ -58,6 +58,11 @@ namespace Scene
         mpMaterial->OnGUI();
     }
 
+    bool StaticMesh::FrustumCull(const float4 *plane, uint32_t planeCount) const
+    {
+        return ::FrustumCull(plane, planeCount, mInstanceData.Center, mInstanceData.Radius);
+    }
+
     // void StaticMesh::SetPosition(const float3 &position)
     // {
     //     IVisibleObject::SetPosition(position);
