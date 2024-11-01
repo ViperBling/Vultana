@@ -1,13 +1,14 @@
 #include "World.hpp"
-#include "SceneComponent/DirectionalLight.hpp"
+#include "SceneComponent/Lights/DirectionalLight.hpp"
 #include "Renderer/RendererBase.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "AssetManager/ModelLoader.hpp"
 #include "Utilities/Math.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
+#include "Utilities/ParallelFor.hpp"
 
-#include <atomic>
+#include <EASTL/atomic.h>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -112,11 +113,26 @@ namespace Scene
             (*iter)->Tick(deltaTime);
         }
 
+        #pragma region : Frustum Culling
+        eastl::vector<IVisibleObject*> visibleObjects(mObjects.size());
+        eastl::atomic<uint32_t> visibleCount = 0;
+        
+        Utilities::ParallelFor((uint32_t)mObjects.size(), [&](uint32_t i)
+        {
+            if (mObjects[i]->FrustumCull(mpCamera->GetFrustumPlanes(), 6))
+            {
+                uint32_t idx = visibleCount.fetch_add(1);
+                visibleObjects[idx] = mObjects[i].get();
+            }
+        });
+        visibleObjects.resize(visibleCount);
+
         Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
+        for (auto iter = visibleObjects.begin(); iter != visibleObjects.end(); ++iter)
         {
             (*iter)->Render(pRender);
         }
+        #pragma endregion : Frustum Culling
     }
 
     IVisibleObject *World::GetVisibleObject(uint32_t index) const

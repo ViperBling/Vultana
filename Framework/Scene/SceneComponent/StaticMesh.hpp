@@ -30,6 +30,7 @@ namespace Scene
         // virtual void SetPosition(const float3& position) override;
         // virtual void SetRotation(const quaternion& rotation) override;
         // virtual void SetScale(const float3& scale) override;
+        bool FrustumCull(const float4* plane, uint32_t planeCount) const override;
 
         Assets::MeshMaterial* GetMaterial() const { return mpMaterial.get(); }
 

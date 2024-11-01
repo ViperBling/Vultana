@@ -198,6 +198,9 @@ namespace Scene
         if (!io.WantCaptureKeyboard && !io.NavActive && !io.WantCaptureMouse)
         {
             bool shouldMove = ImGui::IsMouseDragging(1);
+            const float speedUp = (ImGui::IsKeyDown(ImGuiKey_LeftShift) && shouldMove) ? 2.0f : 1.0f;
+            moveSpeed *= speedUp;
+
             moveLeft = (ImGui::IsKeyDown(ImGuiKey_A) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft);
             moveRight = (ImGui::IsKeyDown(ImGuiKey_D) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickRight);
             moveForward = (ImGui::IsKeyDown(ImGuiKey_W) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickUp);

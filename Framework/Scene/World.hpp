@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SceneComponent/Light.hpp"
+#include "SceneComponent/Lights/Light.hpp"
 #include "SceneComponent/StaticMesh.hpp"
 #include "Camera.hpp"
 

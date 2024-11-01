@@ -109,8 +109,7 @@ namespace Scene
 
     bool SkeletalMesh::FrustumCull(const float4 *planes, uint32_t planeCount) const
     {
-        // return ::FrustumCull(planes, planeCount, mPosition, mRadius);
-        return false;
+        return ::FrustumCull(planes, planeCount, mPosition, mRadius);
     }
 
     void SkeletalMesh::OnGUI()

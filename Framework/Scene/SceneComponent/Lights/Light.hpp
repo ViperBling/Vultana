@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IVisibleObject.hpp"
+#include "Scene/SceneComponent/IVisibleObject.hpp"
 
 namespace Scene
 {

@@ -6,6 +6,11 @@
 #include <sigslot/signal.hpp>
 #include <iostream>
 
+namespace enki 
+{ 
+    class TaskScheduler; 
+}
+
 namespace Core
 {
     class GUI;
@@ -24,6 +29,7 @@ namespace Core
         GUI* GetGUI() const { return mpGUI.get(); }
         Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
         VultanaEditor* GetEditor() const { return mpEditor.get(); }
+        enki::TaskScheduler* GetTaskScheduler() const { return mpTaskScheduler.get(); }
 
         void* GetWindowHandle() const { return mWndHandle; }
         float GetDeltaTime() const { return mFrameTime; }
@@ -43,6 +49,8 @@ namespace Core
         eastl::unique_ptr<GUI> mpGUI;
         eastl::unique_ptr<Renderer::RendererBase> mpRenderer;
         eastl::unique_ptr<VultanaEditor> mpEditor;
+
+        eastl::unique_ptr<class enki::TaskScheduler> mpTaskScheduler;
 
         void* mWndHandle = nullptr;
 
