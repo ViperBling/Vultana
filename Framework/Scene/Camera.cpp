@@ -198,7 +198,9 @@ namespace Scene
         if (!io.WantCaptureKeyboard && !io.NavActive && !io.WantCaptureMouse)
         {
             bool shouldMove = ImGui::IsMouseDragging(1);
-            const float speedUp = (ImGui::IsKeyDown(ImGuiKey_LeftShift) && shouldMove) ? 2.0f : 1.0f;
+            bool shouldSpeedUp = shouldMove && ImGui::IsKeyDown(ImGuiKey_LeftShift) && 
+                (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_D));
+            const float speedUp = shouldSpeedUp ? 2.0f : 1.0f;
             moveSpeed *= speedUp;
 
             moveLeft = (ImGui::IsKeyDown(ImGuiKey_A) && shouldMove) || ImGui::IsKeyDown(ImGuiKey_GamepadLStickLeft);
@@ -232,7 +234,7 @@ namespace Scene
 
         if (length(moveVelocity) > 0.0f)
         {
-            moveVelocity = normalize(moveVelocity) * mMoveSpeed;
+            moveVelocity = normalize(moveVelocity) * moveSpeed;
         }
 
         moveVelocity = lerp(mPrevMoveVelocity, moveVelocity, 1.0f - exp(-deltaTime * 10.0f / mMoveSmoothness));
