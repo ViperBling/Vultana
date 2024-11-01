@@ -29,6 +29,6 @@ float4 PSMain(FVertexOutput psIn) : SV_Target
 
     float3 albedo = material.Albedo;
 
-    float3 finalColor = mainTexVal * albedo;
+    float3 finalColor = mainTexVal.rgb * albedo;
     return float4(finalColor, 1.0f);
 }
