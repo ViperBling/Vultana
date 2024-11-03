@@ -22,11 +22,11 @@ FVSOutput VSMain(uint vertexID : SV_VertexID)
     FVSOutput vsOut = (FVSOutput)0;
     vsOut.PositionCS = mul(GetCameraConstants().MtxViewProjection, positionWS);
     
-    float3 clipNormal = mul(GetCameraConstants().MtxViewProjection, float4(normalWS, 0.0f)).xyz;
+    float3 clipNormal = mul(GetCameraConstants().MtxViewProjection, float4(normalWS, 0.0f)).xyz * vsOut.PositionCS.w;
 
-    const float width = 4.0;
+    const float width = 500;
 
-    vsOut.PositionCS.xy += normalize(clipNormal.xy) * vsOut.PositionCS.w * width * SceneCB.RenderSizeInv;
+    vsOut.PositionCS.xy += normalize(clipNormal.xy) * width * SceneCB.RenderSizeInv * clamp(vsOut.PositionCS.w, 0.0, 1.0);
 
 #if ALPHA_TEST
     vsOut.TexCoord = vtx.TexCoord;
