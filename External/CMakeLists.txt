@@ -36,10 +36,19 @@ target_include_directories(ImFileDialog PUBLIC
 )
 target_link_libraries(ImFileDialog PUBLIC ImGui)
 
-file (GLOB_RECURSE ImGUIZmo_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.h)
-file (GLOB_RECURSE ImGUIZmo_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.cpp)
+file (GLOB_RECURSE ImGuiZmo_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.h)
+file (GLOB_RECURSE ImGuiZmo_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.cpp)
 add_library(ImGuizmo STATIC)
-target_sources(ImGuizmo PRIVATE ${ImGUIZmo_Head} ${ImGUIZmo_Src})
+target_sources(ImGuizmo PRIVATE ${ImGuiZmo_Head} ${ImGuiZmo_Src})
 target_include_directories(ImGuizmo PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImGui)
+
+file (GLOB_RECURSE ImGuiNodeEditor_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor/*.h)
+file (GLOB_RECURSE ImGuiNodeEditor_Inl ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor/*.inl)
+file (GLOB_RECURSE ImGuiNodeEditor_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor/*.cpp)
+add_library(ImGuiNodeEditor STATIC)
+target_sources(ImGuiNodeEditor PRIVATE ${ImGuiNodeEditor_Head} ${ImGuiNodeEditor_Inl} ${ImGuiNodeEditor_Src})
+target_include_directories(ImGuiNodeEditor PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor 
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGui)
