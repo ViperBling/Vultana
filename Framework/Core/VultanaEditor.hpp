@@ -35,6 +35,7 @@ namespace Core
         bool mbShowInspector = false;
         bool mbShowSettings = false;
         bool mbShowRenderer = false;
+        bool mbShowWorldOutliner = false;
 
         unsigned int mDockSpace = 0;
 

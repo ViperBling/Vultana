@@ -40,7 +40,6 @@ namespace Scene
     
     private:
         Renderer::RendererBase* mpRenderer = nullptr;
-        eastl::string mName;
         eastl::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
 
         OffsetAllocator::Allocation mIndexBuffer;

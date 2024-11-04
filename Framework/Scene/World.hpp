@@ -24,6 +24,8 @@ namespace Scene
         void AddObject(IVisibleObject* object);
         void AddLight(ILight* light);
 
+        void OnGUI();
+
         void Tick(float deltaTime);
 
         IVisibleObject* GetVisibleObject(uint32_t index) const;

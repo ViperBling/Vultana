@@ -7,6 +7,7 @@
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
 #include "Utilities/ParallelFor.hpp"
+#include "Utilities/GUIUtil.hpp"
 
 #include <EASTL/atomic.h>
 
@@ -97,6 +98,18 @@ namespace Scene
     {
         assert(light != nullptr);
         mLights.push_back(eastl::unique_ptr<ILight>(light));
+    }
+
+    void World::OnGUI()
+    {
+        // GUICommand("WorldOutliner", "World", [&]()
+        // {
+            ImGui::Text("World Outliner");
+            for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
+            {
+                ImGui::Text((*iter)->GetName().c_str());
+            }
+        // });
     }
 
     void World::Tick(float deltaTime)
