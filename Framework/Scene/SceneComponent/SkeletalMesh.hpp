@@ -109,7 +109,6 @@ namespace Scene
 
     private:
         Renderer::RendererBase* mpRenderer = nullptr;
-        eastl::string mName;
 
         float4x4 mMtxWorld;
 

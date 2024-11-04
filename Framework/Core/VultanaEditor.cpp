@@ -73,6 +73,13 @@ namespace Core
             // pRenderer->OnG
             ImGui::End();
         }
+        if (mbShowWorldOutliner)
+        {
+            ImGui::Begin("WorldOutliner", &mbShowWorldOutliner);
+            auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
+            pWorld->OnGUI();
+            ImGui::End();
+        }
     }
 
     void VultanaEditor::AddGUICommand(const eastl::string &window, const eastl::string &section, const eastl::function<void()> &command)
@@ -95,7 +102,8 @@ namespace Core
         {
             ImGuiID left, right;
             ImGui::DockBuilderSplitNode(mDockSpace, ImGuiDir_Right, 0.2, &right, &left);
-            ImGui::DockBuilderDockWindow("Renderer", right);
+            ImGui::DockBuilderDockWindow("Renderer", left);
+            ImGui::DockBuilderDockWindow("WorldOutliner", right);
             ImGui::DockBuilderFinish(mDockSpace);
         }
     }
@@ -172,6 +180,7 @@ namespace Core
                 ImGui::MenuItem("Inspector", "", &mbShowInspector);
                 ImGui::MenuItem("Settings", "", &mbShowSettings);
                 ImGui::MenuItem("Renderer", "", &mbShowRenderer);
+                ImGui::MenuItem("WorldOutliner", "", &mbShowWorldOutliner);
                 mbResetLayout = ImGui::MenuItem("Reset Layout");
 
                 ImGui::EndMenu();   // End Window Menu
@@ -215,8 +224,6 @@ namespace Core
         float3 position = pSelectedObject->GetPosition();
         float3 rotation = RotationAngles(pSelectedObject->GetRotation());
 
-        // VTNA_LOG_DEBUG("Rotation Before: {0}, {1}, {2}", rotation.x, rotation.y, rotation.z);
-
         float3 scale = pSelectedObject->GetScale();
 
         float4x4 mtxWorld;
@@ -247,8 +254,6 @@ namespace Core
         ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
 
         ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
-
-        // VTNA_LOG_DEBUG("Rotation After: {0}, {1}, {2}", rotation.x, rotation.y, rotation.z);
 
         pSelectedObject->SetPosition(position);
         pSelectedObject->SetRotation(RotationQuat(rotation));

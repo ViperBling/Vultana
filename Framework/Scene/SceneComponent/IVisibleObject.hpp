@@ -27,10 +27,15 @@ namespace Scene
         virtual float3 GetScale() const { return mScale; }
         virtual void SetScale(const float3& scale) { mScale = scale; }
 
+        virtual const eastl::string& GetName() const { return mName; }
+        virtual void SetName(const eastl::string& name) { mName = name; }
+
         void SetID(uint32_t id) { mID = id; }
 
     protected:
         uint32_t mID = 0;
+        eastl::string mName;
+
         float3 mPosition = float3(0.0f);
         quaternion mRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
         float3 mScale = float3(1.0f);
