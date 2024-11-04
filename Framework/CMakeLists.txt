@@ -85,6 +85,7 @@ target_link_libraries(FrameworkLib PRIVATE
     fmt::fmt-header-only
     ImFileDialog
     ImGui
+    ImGuiNodeEditor
     ImGuizmo
     meshoptimizer::meshoptimizer
     OffsetAllocator
