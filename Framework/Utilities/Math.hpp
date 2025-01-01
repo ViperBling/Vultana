@@ -123,6 +123,20 @@ inline float3 RotationAngles(const quaternion& q)
     return float3(RotationPitch(q), RotationYaw(q), RotationRoll(q));
 }
 
+inline float NormalizeAngle(float degree)
+{
+    degree = fmod(degree, 360.0f);
+    if (degree < 0.0f)
+    {
+        degree += 360.0f;
+    }
+    if (degree > 180.0f)
+    {
+        degree -= 360.0f;
+    }
+    return degree;
+}
+
 inline quaternion RotationSlerp(const quaternion& a, quaternion b, float interpolationValue)
 {
     float dotProduct = dot(a, b);
