@@ -263,8 +263,8 @@ namespace Scene
         rotateVelocity = lerp(mPrevRotateVelocity, rotateVelocity, 1.0f - exp(-deltaTime * 10.0f / mRotateSmoothness));
         mPrevRotateVelocity = rotateVelocity;
 
-        mRotation.x += rotateVelocity.x * deltaTime * 100.0f;
-        mRotation.y += rotateVelocity.y * deltaTime * 100.0f;
+        mRotation.x = NormalizeAngle(mRotation.x + rotateVelocity.x * deltaTime * 100.0f);
+        mRotation.y = NormalizeAngle(mRotation.y + rotateVelocity.y * deltaTime * 100.0f);
         mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
 
         mbMoved |= length(rotateVelocity * deltaTime) > 0.0001f;
