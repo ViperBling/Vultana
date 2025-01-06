@@ -89,6 +89,7 @@ namespace RHI
             uint32_t cb0[RHI_MAX_ROOT_CONSTANTS] = {};
             vk::DescriptorAddressInfoEXT cbv1 = {};
             vk::DescriptorAddressInfoEXT cbv2 = {};
+            bool dirty = false;                     // 标志位，避免ConstantsBuffer的重复绑定
         };
 
         ConstantData mGraphicsConstants;

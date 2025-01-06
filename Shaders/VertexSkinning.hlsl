@@ -33,6 +33,12 @@ void CSMain(uint3 dispatchID : SV_DispatchThreadID)
     float4x4 jointMatrix1 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.y);
     float4x4 jointMatrix2 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.z);
     float4x4 jointMatrix3 = LoadSceneConstantBuffer<float4x4>(cJointMatrixBufferAddress + sizeof(float4x4) * jointID.w);
+#if !RHI_BACKEND_VULKAN
+    jointMatrix0 = transpose(jointMatrix0);
+    jointMatrix1 = transpose(jointMatrix1);
+    jointMatrix2 = transpose(jointMatrix2);
+    jointMatrix3 = transpose(jointMatrix3);
+#endif
     float4 jointWeight = LoadSceneStaticBuffer<float4>(cJointWeightBufferAddress, vertexID);
 
     float3 position = LoadSceneStaticBuffer<float3>(cStaticPositionBufferAddress, vertexID);

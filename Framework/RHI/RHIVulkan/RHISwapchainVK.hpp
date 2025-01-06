@@ -37,6 +37,7 @@ namespace RHI
         vk::SurfaceKHR mSurface;
 
         bool mbEnableVSync = false;
+        bool mbMailboxSupported = false;
 
         uint32_t mCurrentBackBuffer = 0;
         eastl::vector<RHITexture*> mBackBuffers;

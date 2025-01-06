@@ -203,6 +203,16 @@ namespace RHI
             descBufferBI[2].setUsage(vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
 
             mCmdBuffer.bindDescriptorBuffersEXT(3, descBufferBI, dynamicLoader);
+
+            uint32_t bufferIndices[] = { 1, 2 };
+            vk::DeviceSize offsets[] = { 0, 0 };
+
+            mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 1, 2, bufferIndices, offsets, dynamicLoader);
+
+            if (mCmdQueueType == ERHICommandQueueType::Graphics)
+            {
+                mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 1, 2, bufferIndices, offsets, dynamicLoader);
+            }
         }
     }
 
@@ -581,6 +591,7 @@ namespace RHI
                 mGraphicsConstants.cbv2.range = dataSize;
             }
         }
+        mGraphicsConstants.dirty = true;
     }
 
     void RHICommandListVK::SetComputeConstants(uint32_t slot, const void *data, size_t dataSize)
@@ -605,6 +616,7 @@ namespace RHI
                 mComputeConstants.cbv2.range = dataSize;
             }
         }
+        mComputeConstants.dirty = true;
     }
 
     void RHICommandListVK::Draw(uint32_t vertexCount, uint32_t instanceCount)
@@ -655,23 +667,31 @@ namespace RHI
 
     void RHICommandListVK::UpdateGraphicsDescriptorBuffer()
     {
+        if (!mGraphicsConstants.dirty) return;
+
         auto device = (RHIDeviceVK*)mpDevice;
         auto dynamicLoader = device->GetDynamicLoader();
         vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(mGraphicsConstants.cb0, mGraphicsConstants.cbv1, mGraphicsConstants.cbv2);
 
-        uint32_t bufferIndices[] = {0, 1, 2};
-        vk::DeviceSize offsets[] = { cbvDescOffset, 0, 0 };
-        mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 0, 3, bufferIndices, offsets, dynamicLoader);
+        uint32_t bufferIndices[] = { 0 };
+        vk::DeviceSize offsets[] = { cbvDescOffset };
+        mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 0, 1, bufferIndices, offsets, dynamicLoader);
+
+        mGraphicsConstants.dirty = false;
     }
 
     void RHICommandListVK::UpdateComputeDescriptorBuffer()
     {
+        if (!mGraphicsConstants.dirty) return;
+
         auto device = (RHIDeviceVK*)mpDevice;
         auto dynamicLoader = device->GetDynamicLoader();
         vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(mComputeConstants.cb0, mComputeConstants.cbv1, mComputeConstants.cbv2);
 
-        uint32_t bufferIndices[] = {0, 1, 2};
-        vk::DeviceSize offsets[] = { cbvDescOffset, 0, 0 };
-        mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 0, 3, bufferIndices, offsets, dynamicLoader);
+        uint32_t bufferIndices[] = { 0 };
+        vk::DeviceSize offsets[] = { cbvDescOffset };
+        mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 0, 1, bufferIndices, offsets, dynamicLoader);
+
+        mComputeConstants.dirty = false;
     }
 }
