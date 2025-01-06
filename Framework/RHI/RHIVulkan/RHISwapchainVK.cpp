@@ -112,7 +112,11 @@ namespace RHI
 
     void RHISwapchainVK::SetVSyncEnabled(bool enabled)
     {
-        // TODO: Implement
+        if (mbEnableVSync != enabled)
+        {
+            mbEnableVSync = enabled;
+            RecreateSwapchain();
+        }
     }
 
     bool RHISwapchainVK::CreateSurface()
@@ -120,6 +124,7 @@ namespace RHI
         vk::Instance instance = ((RHIDeviceVK*)mpDevice)->GetInstance();
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
         vk::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        vk::PhysicalDevice physcialDevice = ((RHIDeviceVK*)mpDevice)->GetPhysicalDevice();
         
         vk::Win32SurfaceCreateInfoKHR surfaceCI {};
         surfaceCI.hinstance = GetModuleHandle(nullptr);
@@ -129,6 +134,9 @@ namespace RHI
         mSurface = instance.createWin32SurfaceKHR(surfaceCI, nullptr);
 
         SetDebugName(device, vk::ObjectType::eSurfaceKHR, (uint64_t)(VkSurfaceKHR)mSurface, mName.c_str(), dynamicLoader);
+
+        auto presentMode = physcialDevice.getSurfacePresentModesKHR(mSurface);
+        mbMailboxSupported = eastl::find(presentMode.begin(), presentMode.end(), vk::PresentModeKHR::eMailbox) != presentMode.end();
 
         return true;
     }
@@ -167,7 +175,7 @@ namespace RHI
         swapchainCI.setImageSharingMode(vk::SharingMode::eExclusive);
         swapchainCI.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity);
         swapchainCI.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
-        swapchainCI.setPresentMode(vk::PresentModeKHR::eMailbox);      // TODO
+        swapchainCI.setPresentMode(mbEnableVSync ? vk::PresentModeKHR::eFifo : (mbMailboxSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate));
         swapchainCI.setClipped(true);
         swapchainCI.setOldSwapchain(oldSwapchain);
 
