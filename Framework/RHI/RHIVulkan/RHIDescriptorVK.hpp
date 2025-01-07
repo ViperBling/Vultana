@@ -15,6 +15,7 @@ namespace RHI
         ~RHIShaderResourceViewVK();
 
         bool Create();
+        vk::ImageView GetImageView() const { return mImageView; }
 
         const RHIShaderResourceViewDesc& GetDesc() const { return mDesc; }
         virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }

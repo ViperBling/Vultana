@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Scene/World.hpp"
+#include "Core/VultanaEditor.hpp"
 #include "Renderer/RendererBase.hpp"
 
 #include <sigslot/signal.hpp>
@@ -13,7 +14,6 @@ namespace enki
 
 namespace Core
 {
-    class GUI;
     class VultanaEditor;
     
     class VultanaEngine
@@ -26,7 +26,6 @@ namespace Core
         void Tick();
 
         Scene::World* GetWorld() const { return mpWorld.get(); }
-        GUI* GetGUI() const { return mpGUI.get(); }
         Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
         VultanaEditor* GetEditor() const { return mpEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return mpTaskScheduler.get(); }
@@ -46,7 +45,6 @@ namespace Core
 
     private:
         eastl::unique_ptr<Scene::World> mpWorld;
-        eastl::unique_ptr<GUI> mpGUI;
         eastl::unique_ptr<Renderer::RendererBase> mpRenderer;
         eastl::unique_ptr<VultanaEditor> mpEditor;
 

@@ -339,14 +339,24 @@ namespace RHI
 
     void RHICommandListVK::ClearUAV(RHIResource *resource, RHIDescriptor *uav, const float *clearValue)
     {
+        ConstantData constantData = mComputeConstants;
+
         const RHI::RHIUnorderedAccessViewDesc& uavDesc = static_cast<RHI::RHIUnorderedAccessViewVK*>(uav)->GetDesc();
         Renderer::ClearUAV(this, resource, uav, uavDesc, clearValue);
+
+        mComputeConstants = constantData;
+        mComputeConstants.dirty = true;
     }
 
     void RHICommandListVK::ClearUAV(RHIResource *resource, RHIDescriptor *uav, const uint32_t *clearValue)
     {
+        ConstantData constantData = mComputeConstants;
+
         const RHI::RHIUnorderedAccessViewDesc& uavDesc = static_cast<RHI::RHIUnorderedAccessViewVK*>(uav)->GetDesc();
         Renderer::ClearUAV(this, resource, uav, uavDesc, clearValue);
+
+        mComputeConstants = constantData;
+        mComputeConstants.dirty = true;
     }
 
     void RHICommandListVK::WriteBuffer(RHIBuffer *buffer, uint32_t offset, uint32_t data)

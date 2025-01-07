@@ -1,5 +1,4 @@
 #include "VultanaEngine.hpp"
-#include "VultanaGUI.hpp"
 #include "VultanaEditor.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
@@ -85,10 +84,7 @@ namespace Core
         mpWorld = eastl::make_unique<Scene::World>();
         mpWorld->LoadScene(mAssetsPath + configIni.GetValue("World", "SceneFile"));
 
-        mpGUI = eastl::make_unique<GUI>();
-        mpGUI->Init();
-
-        mpEditor = eastl::make_unique<VultanaEditor>();
+        mpEditor = eastl::make_unique<VultanaEditor>(mpRenderer.get());
 
         stm_setup();
     }
@@ -99,7 +95,6 @@ namespace Core
 
         mpWorld.reset();
         mpEditor.reset();
-        mpGUI.reset();
         
         mpTaskScheduler.reset();
 
@@ -112,7 +107,7 @@ namespace Core
     {
         mFrameTime = (float)stm_sec(stm_laptime(&mLastFrameTime));
 
-        mpGUI->Tick();
+        mpEditor->NewFrame();
 
         ImGuiIO& io = ImGui::GetIO();
         bool isMinimized = io.DisplaySize.x <= 0.0f || io.DisplaySize.y <= 0.0f;

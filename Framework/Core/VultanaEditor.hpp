@@ -10,10 +10,13 @@ namespace Core
     class VultanaEditor
     {
     public:
-        VultanaEditor();
+        VultanaEditor(Renderer::RendererBase* pRenderer);
         ~VultanaEditor();
 
+        void NewFrame();
         void Tick();
+        void Render(RHI::RHICommandList* pCmdList);
+
         void AddGUICommand(const eastl::string& window, const eastl::string& section, const eastl::function<void()>& command);
     
     private:
@@ -29,9 +32,13 @@ namespace Core
         void DrawWindow(const eastl::string& window, bool* pOpen);
 
     private:
+        Renderer::RendererBase* mpRenderer = nullptr;
+        eastl::unique_ptr<class ImGuiImplement> mpGUI;
+
         bool mbShowImGuiDemo = false;
         bool mbResetLayout = false;
-
+        bool mbVSync = false;
+        
         bool mbShowInspector = false;
         bool mbShowSettings = false;
         bool mbShowRenderer = false;
