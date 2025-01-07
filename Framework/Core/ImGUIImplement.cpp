@@ -1,4 +1,4 @@
-#include "VultanaGUI.hpp"
+#include "ImGuiImplement.hpp"
 
 #include "VultanaEngine.hpp"
 
@@ -8,7 +8,7 @@
 
 namespace Core
 {
-    GUI::GUI()
+    ImGuiImplement::ImGuiImplement(Renderer::RendererBase* pRenderer) : mpRenderer(pRenderer)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -28,17 +28,16 @@ namespace Core
         ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
     }
 
-    GUI::~GUI()
+    ImGuiImplement::~ImGuiImplement()
     {
         ImGui_ImplWin32_Shutdown();
 
         ImGui::DestroyContext();
     }
 
-    bool GUI::Init()
+    bool ImGuiImplement::Init()
     {
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto pDevice = pRenderer->GetDevice();
+        auto pDevice = mpRenderer->GetDevice();
 
         eastl::string iniPath = Core::VultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
         ImGui::LoadIniSettingsFromDisk(iniPath.c_str());
@@ -59,29 +58,29 @@ namespace Core
         int width, height;
         io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-        mpFontTexture.reset(pRenderer->CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8UNORM, 0, "GUI::FontTexture"));
-        pRenderer->UploadTexture(mpFontTexture->GetTexture(), pixels);
+        mpFontTexture.reset(mpRenderer->CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8UNORM, 0, "GUI::FontTexture"));
+        mpRenderer->UploadTexture(mpFontTexture->GetTexture(), pixels);
 
         io.Fonts->TexID = (ImTextureID)mpFontTexture->GetSRV();
 
         RHI::RHIGraphicsPipelineStateDesc psoDesc;
-        psoDesc.VS = pRenderer->GetShader("ImGui.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        psoDesc.PS = pRenderer->GetShader("ImGui.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        psoDesc.VS = mpRenderer->GetShader("ImGui.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        psoDesc.PS = mpRenderer->GetShader("ImGui.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthWrite = false;
         psoDesc.BlendState[0].bBlendEnable = true;
         psoDesc.BlendState[0].ColorSrc = RHI::ERHIBlendFactor::SrcAlpha;
         psoDesc.BlendState[0].ColorDst = RHI::ERHIBlendFactor::InvSrcAlpha;
         psoDesc.BlendState[0].AlphaSrc = RHI::ERHIBlendFactor::One;
         psoDesc.BlendState[0].AlphaDst = RHI::ERHIBlendFactor::InvSrcAlpha;
-        psoDesc.RTFormats[0] = pRenderer->GetSwapchain()->GetDesc()->ColorFormat;
+        psoDesc.RTFormats[0] = mpRenderer->GetSwapchain()->GetDesc()->ColorFormat;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
-        mpPSO = pRenderer->GetPipelineState(psoDesc, "ImGuiPSO");
+        mpPSO = mpRenderer->GetPipelineState(psoDesc, "ImGuiPSO");
 
         return true;
     }
 
-    void GUI::Tick()
+    void ImGuiImplement::NewFrame()
     {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -92,19 +91,13 @@ namespace Core
         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
     }
 
-    void GUI::Render(RHI::RHICommandList *pCmdList)
+    void ImGuiImplement::Render(RHI::RHICommandList *pCmdList)
     {
-        GPU_EVENT_DEBUG(pCmdList, "GUI::Render");
-        for (size_t i = 0; i < mCommands.size(); i++)
-        {
-            mCommands[i]();
-        }
-        mCommands.clear();
-
+        GPU_EVENT_DEBUG(pCmdList, "ImGUI::Render");
+        
         ImGui::Render();
 
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto pDevice = pRenderer->GetDevice();
+        auto pDevice = mpRenderer->GetDevice();
         ImDrawData* drawData = ImGui::GetDrawData();
 
         if (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f)
@@ -112,15 +105,15 @@ namespace Core
             return;
         }
 
-        uint32_t frameIndex = pRenderer->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        uint32_t frameIndex = pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
 
         if (mpVertexBuffer[frameIndex] == nullptr || mpVertexBuffer[frameIndex]->GetBuffer()->GetDesc().Size < drawData->TotalVtxCount * sizeof(ImDrawVert))
         {
-            mpVertexBuffer[frameIndex].reset(pRenderer->CreateStructuredBuffer(nullptr, sizeof(ImDrawVert), drawData->TotalVtxCount + 5000, "GUI::VertexBuffer", RHI::ERHIMemoryType::CPUToGPU));
+            mpVertexBuffer[frameIndex].reset(mpRenderer->CreateStructuredBuffer(nullptr, sizeof(ImDrawVert), drawData->TotalVtxCount + 5000, "GUI::VertexBuffer", RHI::ERHIMemoryType::CPUToGPU));
         }
         if (mpIndexBuffer[frameIndex] == nullptr || mpIndexBuffer[frameIndex]->GetIndexCount() < (uint32_t)drawData->TotalIdxCount)
         {
-            mpIndexBuffer[frameIndex].reset(pRenderer->CreateIndexBuffer(nullptr, sizeof(ImDrawIdx), drawData->TotalIdxCount + 10000, "GUI::IndexBuffer",  RHI::ERHIMemoryType::CPUToGPU));
+            mpIndexBuffer[frameIndex].reset(mpRenderer->CreateIndexBuffer(nullptr, sizeof(ImDrawIdx), drawData->TotalIdxCount + 10000, "GUI::IndexBuffer",  RHI::ERHIMemoryType::CPUToGPU));
         }
 
         ImDrawVert* vtxDst = (ImDrawVert*)mpVertexBuffer[frameIndex]->GetBuffer()->GetCPUAddress();
@@ -181,7 +174,7 @@ namespace Core
                         mpVertexBuffer[frameIndex]->GetSRV()->GetHeapIndex(),
                         pCmd->VtxOffset + globalVtxOffset,
                         ((RHI::RHIDescriptor*)pCmd->TextureId)->GetHeapIndex(),
-                        pRenderer->GetLinearSampler()->GetHeapIndex()
+                        mpRenderer->GetLinearSampler()->GetHeapIndex()
                     };
                     pCmdList->SetGraphicsConstants(0, resourceIds, sizeof(resourceIds));
                     pCmdList->DrawIndexed(pCmd->ElemCount, 1, pCmd->IdxOffset + globalIdxOffset);
@@ -192,7 +185,7 @@ namespace Core
         }
     }
 
-    void GUI::SetupRenderStates(RHI::RHICommandList *pCmdList, uint32_t frameIdx)
+    void ImGuiImplement::SetupRenderStates(RHI::RHICommandList *pCmdList, uint32_t frameIdx)
     {
         ImDrawData* drawData = ImGui::GetDrawData();
 

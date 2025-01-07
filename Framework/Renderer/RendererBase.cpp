@@ -5,7 +5,7 @@
 #include "ShaderCache.hpp"
 #include "RHI/RHI.hpp"
 #include "Core/VultanaEngine.hpp"
-#include "Core/VultanaGUI.hpp"
+#include "Core/ImGUIImplement.hpp"
 #include "Utilities/Log.hpp"
 #include "Window/GLFWindow.hpp"
 #include "AssetManager/TextureLoader.hpp"
@@ -632,7 +632,12 @@ namespace Renderer
             pCmdList->SetPipelineState(mpCopyColorPSO);
             pCmdList->Draw(3);
 
-            Core::VultanaEngine::GetEngineInstance()->GetGUI()->Render(pCmdList);
+            for (size_t i = 0; i < mGUIBatches.size(); i++)
+            {
+                DrawBatch(pCmdList, mGUIBatches[i]);
+            }
+
+            Core::VultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
 
             pCmdList->EndRenderPass();
         }

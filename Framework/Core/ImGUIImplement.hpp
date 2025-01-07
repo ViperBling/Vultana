@@ -7,28 +7,25 @@
 
 namespace Core
 {
-    class GUI
+    class ImGuiImplement
     {
     public:
-        GUI();
-        ~GUI();
+        ImGuiImplement(Renderer::RendererBase* pRenderer);
+        ~ImGuiImplement();
 
         bool Init();
-        void Tick();
+        void NewFrame();
         void Render(RHI::RHICommandList* pCmdList);
-
-        void AddCommand(const eastl::function<void()>& cmd) { mCommands.push_back(cmd); }
     
     private:
         void SetupRenderStates(RHI::RHICommandList* pCmdList, uint32_t frameIdx);
     
     private:
+        Renderer::RendererBase* mpRenderer = nullptr;
         RHI::RHIPipelineState* mpPSO;
 
         eastl::unique_ptr<RenderResources::Texture2D> mpFontTexture;
         eastl::unique_ptr<RenderResources::StructuredBuffer> mpVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
         eastl::unique_ptr<RenderResources::IndexBuffer> mpIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
-
-        eastl::vector<eastl::function<void()>> mCommands;
     };
 }

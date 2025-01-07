@@ -87,6 +87,7 @@ namespace Renderer
         ComputeBatch& AddAnimationBatch() { return mAnimationBatches.emplace_back(*mCBAllocator); }
         RenderBatch& AddOutlinePassBatch() { return mOutlinePassBatches.emplace_back(*mCBAllocator); }
         RenderBatch& AddObjectIDPassBatch() { return mIDPassBatches.emplace_back(*mCBAllocator); }
+        RenderBatch& AddGUIBatch() { return mGUIBatches.emplace_back(*mCBAllocator); }
 
         void RequestMouseHitTest(uint32_t x, uint32_t y);
         bool IsEnableMouseHitTest() const { return mbEnableObjectIDRendering; }
@@ -195,5 +196,6 @@ namespace Renderer
 
         eastl::vector<RenderBatch> mOutlinePassBatches;
         eastl::vector<RenderBatch> mIDPassBatches;
+        eastl::vector<RenderBatch> mGUIBatches;
     };
 }

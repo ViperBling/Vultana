@@ -1,6 +1,6 @@
 #include "VultanaEditor.hpp"
 #include "Core/VultanaEngine.hpp"
-#include "Core/VultanaGUI.hpp"
+#include "Core/ImGUIImplement.hpp"
 #include "Renderer/RendererBase.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
@@ -13,11 +13,13 @@
 
 namespace Core
 {
-    VultanaEditor::VultanaEditor()
+    VultanaEditor::VultanaEditor(Renderer::RendererBase* pRenderer) : mpRenderer(pRenderer)
     {
-        ifd::FileDialog::Instance().CreateTexture = [this](uint8_t* data, int w, int h, char fmt) -> void*
+        mpGUI = eastl::make_unique<ImGuiImplement>(pRenderer);
+        mpGUI->Init();
+
+        ifd::FileDialog::Instance().CreateTexture = [this, pRenderer](uint8_t* data, int w, int h, char fmt) -> void*
         {
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
             auto pTexture = pRenderer->CreateTexture2D(w, h, 1, fmt == 1 ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::BGRA8SRGB, 0, "ImFileDialogIcon");
             pRenderer->UploadTexture(pTexture->GetTexture(), data);
 
@@ -31,7 +33,6 @@ namespace Core
         };
 
         eastl::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         mpTranslateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/TranslateIcon.png", true));
         mpRotateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/RotateIcon.png", true));
         mpScaleIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/ScaleIcon.png", true));
@@ -46,18 +47,20 @@ namespace Core
         }
     }
 
+    void VultanaEditor::NewFrame()
+    {
+        mpGUI->NewFrame();
+    }
+
     void VultanaEditor::Tick()
     {
         FlushPendingTextureDeletions();
-        mCommands.clear();
 
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantCaptureMouse && io.MouseClicked[0])
         {
             ImVec2 mousePos = io.MouseClickedPos[0];
-
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-            pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
+            mpRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
         }
 
         BuildDockLayout();
@@ -69,8 +72,7 @@ namespace Core
         if (mbShowRenderer)
         {
             ImGui::Begin("Renderer", &mbShowRenderer);
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-            // pRenderer->OnG
+            // mpRenderer->OnGUI();
             ImGui::End();
         }
         if (mbShowWorldOutliner)
@@ -80,6 +82,20 @@ namespace Core
             pWorld->OnGUI();
             ImGui::End();
         }
+    }
+
+    void VultanaEditor::Render(RHI::RHICommandList *pCmdList)
+    {
+        if (mbShowInspector)
+        {
+            DrawWindow("Inspector", &mbShowInspector);
+        }
+        if (mbShowSettings)
+        {
+            DrawWindow("Settings", &mbShowSettings);
+        }
+        mpGUI->Render(pCmdList);
+        mCommands.clear();
     }
 
     void VultanaEditor::AddGUICommand(const eastl::string &window, const eastl::string &section, const eastl::function<void()> &command)
@@ -146,8 +162,6 @@ namespace Core
 
     void VultanaEditor::DrawMenu()
     {
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
@@ -160,9 +174,14 @@ namespace Core
             }
             if (ImGui::BeginMenu("Debug"))
             {
+                if (ImGui::MenuItem("VSync", "", &mbVSync))
+                {
+                    mpRenderer->GetSwapchain()->SetVSyncEnabled(mbVSync);
+                }
+
                 if (ImGui::MenuItem("Reload Shaders"))
                 {
-                    pRenderer->ReloadShaders();
+                    mpRenderer->ReloadShaders();
                 }
 
                 ImGui::EndMenu();   // End Debug Menu
@@ -202,23 +221,13 @@ namespace Core
         {
             ImGui::ShowDemoWindow(&mbShowImGuiDemo);
         }
-
-        if (mbShowInspector)
-        {
-            Core::VultanaEngine::GetEngineInstance()->GetGUI()->AddCommand([&]() { DrawWindow("Inspector", &mbShowInspector); });
-        }
-        if (mbShowSettings)
-        {
-            Core::VultanaEngine::GetEngineInstance()->GetGUI()->AddCommand([&]() { DrawWindow("Settings", &mbShowSettings); });
-        }
     }
 
     void VultanaEditor::DrawGizmo()
     {
         auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
 
-        auto pSelectedObject = pWorld->GetVisibleObject(pRenderer->GetMouseHitObjectID());
+        auto pSelectedObject = pWorld->GetVisibleObject(mpRenderer->GetMouseHitObjectID());
         if (pSelectedObject == nullptr) return;
 
         float3 position = pSelectedObject->GetPosition();
@@ -284,10 +293,9 @@ namespace Core
     void VultanaEditor::ShowRenderGraph()
     {
         auto pEngine = Core::VultanaEngine::GetEngineInstance();
-        auto pRenderer = pEngine->GetRenderer();
 
         eastl::string file = pEngine->GetWorkingPath() + "Tools/GraphViz/RenderGraph.html";
-        eastl::string graph = pRenderer->GetRenderGraph()->Export();
+        eastl::string graph = mpRenderer->GetRenderGraph()->Export();
 
         std::ofstream stream;
         stream.open(file.c_str());
