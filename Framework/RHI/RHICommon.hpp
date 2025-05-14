@@ -580,7 +580,7 @@ namespace RHI
 
     struct RHIMeshShadingPipelineStateDesc
     {
-        RHISHader* AS = nullptr;
+        RHIShader* AS = nullptr;
         RHIShader* MS = nullptr;
         RHIShader* PS = nullptr;
         RHIRasterizerState RasterizerState;
