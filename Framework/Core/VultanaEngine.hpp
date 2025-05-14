@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Scene/World.hpp"
-#include "Core/VultanaEditor.hpp"
+#include "Editor/VultanaEditor.hpp"
 #include "Renderer/RendererBase.hpp"
 
 #include <sigslot/signal.hpp>
@@ -12,10 +12,13 @@ namespace enki
     class TaskScheduler; 
 }
 
-namespace Core
+namespace Editor
 {
     class VultanaEditor;
-    
+}
+
+namespace Core
+{
     class VultanaEngine
     {
     public:
@@ -27,7 +30,7 @@ namespace Core
 
         Scene::World* GetWorld() const { return mpWorld.get(); }
         Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
-        VultanaEditor* GetEditor() const { return mpEditor.get(); }
+        Editor::VultanaEditor* GetEditor() const { return mpEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return mpTaskScheduler.get(); }
 
         void* GetWindowHandle() const { return mWndHandle; }
@@ -46,7 +49,7 @@ namespace Core
     private:
         eastl::unique_ptr<Scene::World> mpWorld;
         eastl::unique_ptr<Renderer::RendererBase> mpRenderer;
-        eastl::unique_ptr<VultanaEditor> mpEditor;
+        eastl::unique_ptr<Editor::VultanaEditor> mpEditor;
 
         eastl::unique_ptr<class enki::TaskScheduler> mpTaskScheduler;
 

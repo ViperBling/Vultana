@@ -5,7 +5,7 @@
 #include <EASTL/hash_map.h>
 #include <EASTL/functional.h>
 
-namespace Core
+namespace Editor
 {
     class ImGuiImplement
     {

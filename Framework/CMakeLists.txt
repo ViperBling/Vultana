@@ -26,6 +26,8 @@ file(GLOB_RECURSE Common_Head             ${SourcePath}/Common/*.hpp)
 file(GLOB_RECURSE Common_Src              ${SourcePath}/Common/*.cpp)
 file(GLOB_RECURSE Core_Head               ${SourcePath}/Core/*.hpp)
 file(GLOB_RECURSE Core_Src                ${SourcePath}/Core/*.cpp)
+file(GLOB_RECURSE Editor_Head             ${SourcePath}/Editor/*.hpp)
+file(GLOB_RECURSE Editor_Src              ${SourcePath}/Editor/*.cpp)
 file(GLOB_RECURSE Renderer_Head           ${SourcePath}/Renderer/*.hpp)
 file(GLOB_RECURSE Renderer_Src            ${SourcePath}/Renderer/*.cpp)
 file(GLOB_RECURSE Renderer_Inline         ${SourcePath}/Renderer/*.inl)
@@ -42,6 +44,7 @@ add_library(FrameworkLib STATIC
     ${AssetManager_Head} ${AssetManager_Src}
     ${Common_Head}       ${Common_Src}
     ${Core_Head}         ${Core_Src}
+    ${Editor_Head}       ${Editor_Src}
     ${Renderer_Head}     ${Renderer_Src}      ${Renderer_Inline}
     ${RHI_Head}          ${RHI_Src}
     ${Scene_Head}        ${Scene_Src}

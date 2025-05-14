@@ -578,6 +578,18 @@ namespace RHI
         ERHIPrimitiveType PrimitiveType = ERHIPrimitiveType::TriangleList;
     };
 
+    struct RHIMeshShadingPipelineStateDesc
+    {
+        RHISHader* AS = nullptr;
+        RHIShader* MS = nullptr;
+        RHIShader* PS = nullptr;
+        RHIRasterizerState RasterizerState;
+        RHIDepthStencilState DepthStencilState;
+        RHIBlendState BlendState[RHI_MAX_COLOR_ATTACHMENT_COUNT];
+        ERHIFormat RTFormats[RHI_MAX_COLOR_ATTACHMENT_COUNT] = { ERHIFormat::Unknown };
+        ERHIFormat DepthStencilFormat = ERHIFormat::Unknown;
+    };
+
     struct RHIComputePipelineStateDesc
     {
         RHIShader* CS = nullptr;
