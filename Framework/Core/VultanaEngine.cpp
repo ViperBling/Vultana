@@ -1,5 +1,5 @@
 #include "VultanaEngine.hpp"
-#include "VultanaEditor.hpp"
+#include "Editor/VultanaEditor.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
 
@@ -84,7 +84,7 @@ namespace Core
         mpWorld = eastl::make_unique<Scene::World>();
         mpWorld->LoadScene(mAssetsPath + configIni.GetValue("World", "SceneFile"));
 
-        mpEditor = eastl::make_unique<VultanaEditor>(mpRenderer.get());
+        mpEditor = eastl::make_unique<Editor::VultanaEditor>(mpRenderer.get());
 
         stm_setup();
     }

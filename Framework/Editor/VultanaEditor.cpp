@@ -1,6 +1,6 @@
 #include "VultanaEditor.hpp"
 #include "Core/VultanaEngine.hpp"
-#include "Core/ImGUIImplement.hpp"
+#include "Editor/ImGUIImplement.hpp"
 #include "Renderer/RendererBase.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
@@ -11,7 +11,7 @@
 #include <imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
 
-namespace Core
+namespace Editor
 {
     VultanaEditor::VultanaEditor(Renderer::RendererBase* pRenderer) : mpRenderer(pRenderer)
     {

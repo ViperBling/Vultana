@@ -1,12 +1,12 @@
 #include "ImGuiImplement.hpp"
 
-#include "VultanaEngine.hpp"
+#include "Core/VultanaEngine.hpp"
 
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_impl_win32.h>
 #include <ImGuizmo/ImGuizmo.h>
 
-namespace Core
+namespace Editor
 {
     ImGuiImplement::ImGuiImplement(Renderer::RendererBase* pRenderer) : mpRenderer(pRenderer)
     {
