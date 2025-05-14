@@ -34,6 +34,8 @@ namespace RHI
 
     RHIDeviceVK::~RHIDeviceVK()
     {
+        mDevice.waitIdle();
+        
         for (size_t i = 0; i < RHI_MAX_INFLIGHT_FRAMES; i++)
         {
             delete mTransitionCopyCmdList[i];
