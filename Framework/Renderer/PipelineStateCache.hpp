@@ -37,6 +37,24 @@ namespace eastl
     };
 
     template<>
+    struct hash<RHI::RHIMeshShadingPipelineStateDesc>
+    {
+        size_t operator()(const RHI::RHIMeshShadingPipelineStateDesc& desc) const
+        {
+            uint64_t asHash = desc.AS ? desc.AS->GetHash() : 0;
+            uint64_t msHash = desc.MS->GetHash();
+            uint64_t psHash = desc.PS ? desc.PS->GetHash() : 0;
+
+            const size_t stateOffset = offsetof(RHI::RHIMeshShadingPipelineStateDesc, RasterizerState);
+            uint64_t stateHash = CityHash64(reinterpret_cast<const char*>(&desc) + stateOffset, sizeof(RHI::RHIMeshShadingPipelineStateDesc) - stateOffset);
+            uint64_t hash = HashCombine64(HashCombine64(HashCombine64(asHash, msHash), psHash), stateHash);
+
+            static_assert(sizeof(size_t) == sizeof(uint64_t), "Only supports 64-bit platforms");
+            return hash;
+        }
+    };
+
+    template<>
     struct hash<RHI::RHIComputePipelineStateDesc>
     {
         size_t operator()(const RHI::RHIComputePipelineStateDesc& desc) const
@@ -57,6 +75,7 @@ namespace Renderer
         PipelineStateCache(RendererBase* renderer);
 
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name);
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const eastl::string& name);
 
         void RecreatePSO(RHI::RHIShader* shader);
@@ -64,6 +83,7 @@ namespace Renderer
     private:
         RendererBase* mpRenderer = nullptr;
         eastl::hash_map<RHI::RHIGraphicsPipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> mCachedGraphicsPSO;
+        eastl::hash_map<RHI::RHIMeshShadingPipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> mCachedMeshletPSO;
         eastl::hash_map<RHI::RHIComputePipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> mCachedComputePSO;
     };
 }

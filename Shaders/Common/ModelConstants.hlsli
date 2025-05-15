@@ -30,7 +30,7 @@ struct FModelMaterialConstants
     uint bDoubleSided;
 
     uint ShadingModel;
-    uint3 Padding;
+    uint3 _Padding00;
 };
 
 #ifndef __cplusplus

@@ -1,5 +1,13 @@
 #pragma once
 
+struct FCullingData
+{
+    float3 ViewPosition;
+    float  _Padding00;
+
+    float4 FrustumPlanes[6];
+};
+
 struct FCameraConstants
 {
     float3 CameraPosition;
@@ -11,6 +19,8 @@ struct FCameraConstants
     float4x4 MtxProjectionInverse;
     float4x4 MtxViewProjection;
     float4x4 MtxViewProjectionInverse;
+
+    FCullingData CullingData;
 };
 
 struct FSceneConstants

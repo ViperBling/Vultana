@@ -199,6 +199,17 @@ namespace RHI
         return pipeline;
     }
 
+    RHIPipelineState *RHIDeviceVK::CreateMeshShadingPipelineState(const RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
+    {
+        RHIMeshShadingPipelineStateVK* pipeline = new RHIMeshShadingPipelineStateVK(this, desc, name);
+        if (!pipeline->Create())
+        {
+            delete pipeline;
+            return nullptr;
+        }
+        return pipeline;
+    }
+
     RHIPipelineState *RHIDeviceVK::CreateComputePipelineState(const RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         RHIComputePipelineStateVK* pipeline = new RHIComputePipelineStateVK(this, desc, name);
@@ -536,7 +547,7 @@ namespace RHI
             "VK_KHR_bind_memory2",
             "VK_KHR_timeline_semaphore",
             "VK_KHR_dedicated_allocation",
-            // "VK_EXT_mesh_shader",
+            "VK_EXT_mesh_shader",
             "VK_EXT_descriptor_indexing",
             "VK_EXT_mutable_descriptor_type",
             "VK_EXT_descriptor_buffer",
@@ -583,8 +594,13 @@ namespace RHI
         vk13Features.setSubgroupSizeControl(VK_TRUE);
         vk13Features.setShaderDemoteToHelperInvocation(VK_TRUE);
 
+        vk::PhysicalDeviceMeshShaderFeaturesEXT meshShader {};
+        meshShader.setPNext(&vk13Features);
+        meshShader.setTaskShader(VK_TRUE);
+        meshShader.setMeshShader(VK_TRUE);
+
         vk::PhysicalDeviceMutableDescriptorTypeFeaturesEXT mutableDesc {};
-        mutableDesc.setPNext(&vk13Features);
+        mutableDesc.setPNext(&meshShader);
         mutableDesc.setMutableDescriptorType(VK_TRUE);
 
         vk::PhysicalDeviceDescriptorBufferFeaturesEXT descBuffer {};

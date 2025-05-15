@@ -42,12 +42,17 @@ namespace Scene
         Renderer::RendererBase* mpRenderer = nullptr;
         eastl::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
 
-        OffsetAllocator::Allocation mIndexBuffer;
         OffsetAllocator::Allocation mPositionBuffer;
         OffsetAllocator::Allocation mTexCoordBuffer;
         OffsetAllocator::Allocation mNormalBuffer;
         OffsetAllocator::Allocation mTangentBuffer;
 
+        OffsetAllocator::Allocation mMeshletBuffer;
+        OffsetAllocator::Allocation mMeshletIndicesBuffer;
+        OffsetAllocator::Allocation mMeshletVertexBuffer;
+        uint32_t mMeshletCount = 0;
+
+        OffsetAllocator::Allocation mIndexBuffer;
         RHI::ERHIFormat mIndexBufferFormat;
         uint32_t mIndexCount = 0;
         uint32_t mVertexCount = 0;

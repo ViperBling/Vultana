@@ -323,23 +323,103 @@ namespace Assets
             break;
         }
 
-        // void* posVertices = nullptr;
-        // size_t posStride = 0;
+        void* posVertices = nullptr;
+        size_t posStride = 0;
         for (size_t i = 0; i < vertexStreams.size(); i++)
         {
             void* vertices = VTNA_ALLOC(vertexStreams[i].stride * remappedVertexCount);
             meshopt_remapVertexBuffer(vertices, vertexStreams[i].data, vertexCount, vertexStreams[i].stride, &remap[0]);
             remappedVertices.push_back(vertices);
-            // if (vertexTypes[i] == cgltf_attribute_type_position)
-            // {
-            //     posVertices = vertices;
-            //     posStride = vertexStreams[i].stride;
-            // }
+
+            if (vertexTypes[i] == cgltf_attribute_type_position)
+            {
+                posVertices = vertices;
+                posStride = vertexStreams[i].stride;
+            }
         }
 
         size_t maxVertices = 64;
         size_t maxTriangles = 124;
-        // const float coneWeight = 0.5f;
+        const float coneWeight = 0.5f;
+        size_t maxMeshlets = meshopt_buildMeshletsBound(indexCount, maxVertices, maxTriangles);
+
+        eastl::vector<meshopt_Meshlet> meshlets(maxMeshlets);
+        eastl::vector<unsigned int> meshletVertices(maxMeshlets * maxVertices);
+        eastl::vector<unsigned char> meshletTriangles(maxMeshlets * maxTriangles * 3);
+
+        size_t meshletCount;
+        switch (indices.stride)
+        {
+        case 4:
+            meshletCount = meshopt_buildMeshlets(meshlets.data(), meshletVertices.data(), meshletTriangles.data(), (const unsigned int*)remappedIndices, indexCount, (const float*)posVertices, remappedVertexCount, posStride, maxVertices, maxTriangles, coneWeight);
+            break;
+        case 2:
+            meshletCount = meshopt_buildMeshlets(meshlets.data(), meshletVertices.data(), meshletTriangles.data(), (const unsigned short*)remappedIndices, indexCount, (const float*)posVertices, remappedVertexCount, posStride, maxVertices, maxTriangles, coneWeight);
+            break;
+        case 1:
+            meshletCount = meshopt_buildMeshlets(meshlets.data(), meshletVertices.data(), meshletTriangles.data(), (const unsigned char*)remappedIndices, indexCount, (const float*)posVertices, remappedVertexCount, posStride, maxVertices, maxTriangles, coneWeight);
+            break;
+        default:
+            assert(false);
+            break;
+        }
+
+        const meshopt_Meshlet& lastMeshlet = meshlets[meshletCount - 1];
+        meshletVertices.resize(lastMeshlet.vertex_offset + lastMeshlet.vertex_count);
+        meshletTriangles.resize(lastMeshlet.triangle_offset + ((lastMeshlet.triangle_count * 3 + 3) & ~3));
+        meshlets.resize(meshletCount);
+
+        eastl::vector<unsigned short> meshletTriangles16;
+        meshletTriangles16.reserve(meshletTriangles.size());
+        for (size_t i = 0; i < meshletTriangles.size(); i++)
+        {
+            meshletTriangles16.push_back(meshletTriangles[i]);
+        }
+
+        struct MeshletBound
+        {
+            float3 Center;
+            float Radius;
+
+            union
+            {
+                struct 
+                {
+                    int8_t AxisX;
+                    int8_t AxisY;
+                    int8_t AxisZ;
+                    int8_t Cutoff;
+                };
+                uint32_t Cone;
+            };
+
+            uint VertexCount;
+            uint TriangleCount;
+
+            uint vertexOffset;
+            uint triangleOffset;
+        };
+        eastl::vector<MeshletBound> meshletBounds(meshletCount);
+
+        for (size_t i = 0; i < meshletCount; i++)
+        {
+            const meshopt_Meshlet& meshlet = meshlets[i];
+            meshopt_Bounds meshoptBounds = meshopt_computeMeshletBounds(&meshletVertices[meshlet.vertex_offset], &meshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, (const float*)posVertices, remappedVertexCount, posStride);
+
+            MeshletBound bound;
+            bound.Center = float3(meshoptBounds.center);
+            bound.Radius = meshoptBounds.radius;    
+            bound.AxisX = meshoptBounds.cone_axis_s8[0];
+            bound.AxisY = meshoptBounds.cone_axis_s8[1];
+            bound.AxisZ = meshoptBounds.cone_axis_s8[2];
+            bound.Cutoff = meshoptBounds.cone_cutoff_s8;
+            bound.VertexCount = meshlet.vertex_count;
+            bound.TriangleCount = meshlet.triangle_count;
+            bound.vertexOffset = meshlet.vertex_offset;
+            bound.triangleOffset = meshlet.triangle_offset;
+
+            meshletBounds[i] = bound;
+        }
 
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         auto resourceCache = ResourceCache::GetInstance();
@@ -383,6 +463,11 @@ namespace Assets
                 break;
             }
         }
+
+        mesh->mMeshletCount = (uint32_t)meshletCount;
+        mesh->mMeshletBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(MeshletBound) * (uint32_t)meshletBounds.size());
+        mesh->mMeshletIndicesBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_MeshletIndicesBuffer", meshletTriangles16.data(), sizeof(unsigned short) * (uint32_t)meshletTriangles16.size());
+        mesh->mMeshletVertexBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_MeshletVertexBuffer", meshletVertices.data(), sizeof(unsigned int) * (uint32_t)meshletVertices.size());
 
         mesh->Create();
 

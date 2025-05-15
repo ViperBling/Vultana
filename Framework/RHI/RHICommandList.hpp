@@ -65,6 +65,12 @@ namespace RHI
         virtual void DrawIndirect(RHIBuffer* buffer, uint32_t offset) = 0;
         virtual void DrawIndexedIndirect(RHIBuffer* buffer, uint32_t offset) = 0;
         virtual void DispatchIndirect(RHIBuffer* buffer, uint32_t offset) = 0;
+        virtual void DispatchMeshIndirect(RHIBuffer* buffer, uint32_t offset) = 0;
+
+        virtual void MultiDrawIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) = 0;
+        virtual void MultiDrawIndexedIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) = 0;
+        virtual void MultiDispatchIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) = 0;
+        virtual void MultiDispatchMeshIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) = 0;
 
     protected:
         ERHICommandQueueType mCmdQueueType;
