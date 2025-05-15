@@ -63,6 +63,12 @@ namespace RHI
         virtual void DrawIndirect(RHIBuffer* buffer, uint32_t offset) override;
         virtual void DrawIndexedIndirect(RHIBuffer* buffer, uint32_t offset) override;
         virtual void DispatchIndirect(RHIBuffer* buffer, uint32_t offset) override;
+        virtual void DispatchMeshIndirect(RHIBuffer* buffer, uint32_t offset) override;
+
+        virtual void MultiDrawIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDrawIndexedIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDispatchIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDispatchMeshIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
 
     private:
         void UpdateGraphicsDescriptorBuffer();
@@ -72,6 +78,7 @@ namespace RHI
         vk::Queue mQueue;
         vk::CommandPool mCmdPool;
         vk::CommandBuffer mCmdBuffer;
+        vk::DispatchLoaderDynamic mDynamicLoader;
 
         eastl::vector<vk::CommandBuffer> mFreeCmdBuffers;
         eastl::vector<vk::CommandBuffer> mPendingCmdBuffers;

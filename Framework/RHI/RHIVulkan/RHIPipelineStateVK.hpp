@@ -21,6 +21,20 @@ namespace RHI
         vk::Pipeline mPipeline = VK_NULL_HANDLE;
     };
 
+    class RHIMeshShadingPipelineStateVK : public RHIPipelineState
+    {
+    public:
+        RHIMeshShadingPipelineStateVK(RHIDeviceVK *device, const RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name);
+        ~RHIMeshShadingPipelineStateVK();
+
+        virtual void* GetNativeHandle() const override { return mPipeline; }
+        virtual bool Create() override;
+
+    private:
+        RHIMeshShadingPipelineStateDesc mDesc;
+        vk::Pipeline mPipeline = VK_NULL_HANDLE;
+    };
+
     class RHIComputePipelineStateVK : public RHIPipelineState
     {
     public:

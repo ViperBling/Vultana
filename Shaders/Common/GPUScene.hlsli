@@ -7,7 +7,12 @@ struct FInstanceData
     uint IndexBufferAddress;
     uint IndexStride;
     uint TriangleCount;
-    uint Padding00;
+    uint _Padding00;
+
+    uint MeshletCount;
+    uint MeshletBufferAddress;
+    uint MeshletVertexBufferAddress;
+    uint MeshletIndexBufferAddress;
 
     uint PositionBufferAddress;
     uint TexCoordBufferAddress;

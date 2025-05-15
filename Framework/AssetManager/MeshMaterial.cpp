@@ -106,6 +106,37 @@ namespace Assets
         return mpOutlinePSO;
     }
 
+    RHI::RHIPipelineState *MeshMaterial::GetMeshletPSO()
+    {
+        if (mpMeshletPSO == nullptr)
+        {
+            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+
+            eastl::vector<eastl::string> defines;
+            AddMaterialDefines(defines);
+
+            RHI::RHIMeshShadingPipelineStateDesc psoDesc {};
+            psoDesc.AS = pRenderer->GetShader("MeshletCulling.hlsl", "ASMain", RHI::ERHIShaderType::AS, defines);
+            psoDesc.MS = pRenderer->GetShader("ModelMeshlet.hlsl", "MSMain", RHI::ERHIShaderType::MS, defines);
+            psoDesc.PS = pRenderer->GetShader("Model.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
+            psoDesc.RasterizerState.CullMode = mbDoubleSided ? RHI::ERHICullMode::None : RHI::ERHICullMode::Back;
+            psoDesc.RasterizerState.bFrontCCW = mbFrontFaceCCW;
+            psoDesc.DepthStencilState.bDepthTest = true;
+            psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
+            // For now, we only implement forward rendering, so we only need one RT format
+            psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA8SRGB;          // Diffuse RT
+            // psoDesc.RTFormats[1] = RHI::ERHIFormat::RGBA8SRGB;          // Specular RT
+            // psoDesc.RTFormats[2] = RHI::ERHIFormat::RGBA8UNORM;         // Normal RT
+            // psoDesc.RTFormats[3] = RHI::ERHIFormat::R11G11B10F;         // Emissive RT
+            // psoDesc.RTFormats[4] = RHI::ERHIFormat::RGBA32F;            // CustomDataRT
+            psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
+
+            mpMeshletPSO = pRenderer->GetPipelineState(psoDesc, mName + "_ModelMeshletPSO");
+        }
+        return mpMeshletPSO;
+        // return nullptr;
+    }
+
     RHI::RHIPipelineState *MeshMaterial::GetVertexSkinningPSO()
     {
         if (mpVertexSkinningPSO == nullptr)

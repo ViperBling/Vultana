@@ -29,6 +29,8 @@ namespace Assets
         RHI::RHIPipelineState* GetIDPSO();
         RHI::RHIPipelineState* GetOutlinePSO();
 
+        RHI::RHIPipelineState* GetMeshletPSO();
+
         RHI::RHIPipelineState* GetVertexSkinningPSO();
 
         void UpdateConstants();
@@ -51,6 +53,8 @@ namespace Assets
         RHI::RHIPipelineState* mpPSO = nullptr;
         RHI::RHIPipelineState* mpIDPSO = nullptr;
         RHI::RHIPipelineState* mpOutlinePSO = nullptr;
+
+        RHI::RHIPipelineState* mpMeshletPSO = nullptr;
 
         RHI::RHIPipelineState* mpVertexSkinningPSO = nullptr;
 

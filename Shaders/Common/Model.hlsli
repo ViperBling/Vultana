@@ -24,6 +24,9 @@ struct FVertexOutput
     float3 TangentWS : TANGENT;
     float3 BiTangentWS : BITANGENT;
     float3 PositionWS : WORLD_POSITION;
+
+    // nointerpolation uint MeshletIndex : COLOR0;
+    // nointerpolation uint InstanceIndex : COLOR1;
 };
 
 FVertexAttributes GetVertexAttributes(uint instanceID, uint vertexID)

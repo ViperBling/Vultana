@@ -52,6 +52,7 @@ namespace Renderer
         RHI::RHISwapchain* GetSwapchain() const { return mpSwapchain.get(); }
         RHI::RHIShader* GetShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines = {}, RHI::ERHIShaderCompileFlags flags = 0);
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
+        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name);
         RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const eastl::string& name);
         void ReloadShaders();
         RHI::RHIDescriptor* GetPointSampler() const { return mpPointRepeatSampler.get(); }

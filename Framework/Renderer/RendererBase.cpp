@@ -124,6 +124,11 @@ namespace Renderer
         return mpPipelineStateCache->GetPipelineState(desc, name);
     }
 
+    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
+    {
+        return mpPipelineStateCache->GetPipelineState(desc, name);
+    }
+
     RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         return mpPipelineStateCache->GetPipelineState(desc, name);

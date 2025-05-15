@@ -18,6 +18,11 @@ namespace Scene
         resourceCache->ReleaseSceneBuffer(mTexCoordBuffer);
         resourceCache->ReleaseSceneBuffer(mNormalBuffer);
         resourceCache->ReleaseSceneBuffer(mTangentBuffer);
+
+        resourceCache->ReleaseSceneBuffer(mMeshletBuffer);
+        resourceCache->ReleaseSceneBuffer(mMeshletVertexBuffer);
+        resourceCache->ReleaseSceneBuffer(mMeshletIndicesBuffer);
+
         resourceCache->ReleaseSceneBuffer(mIndexBuffer);
     }
 
@@ -85,6 +90,11 @@ namespace Scene
         mInstanceData.IndexBufferAddress = mIndexBuffer.offset;
         mInstanceData.IndexStride = mIndexBufferFormat == RHI::ERHIFormat::R16UI ? 2 : 4;
         mInstanceData.TriangleCount = mIndexCount / 3;
+
+        mInstanceData.MeshletCount = mMeshletCount;
+        mInstanceData.MeshletBufferAddress = mMeshletBuffer.offset;
+        mInstanceData.MeshletVertexBufferAddress = mMeshletVertexBuffer.offset;
+        mInstanceData.MeshletIndexBufferAddress = mMeshletIndicesBuffer.offset;
 
         mInstanceData.PositionBufferAddress = mPositionBuffer.offset;
         mInstanceData.TexCoordBufferAddress = mTexCoordBuffer.offset;
