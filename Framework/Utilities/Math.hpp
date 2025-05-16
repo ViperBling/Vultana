@@ -240,6 +240,11 @@ inline bool IsPow2(uint32_t x)
     return (x & (x - 1)) == 0;
 }
 
+inline uint32_t RoundUp(uint32_t a, uint32_t b)
+{
+    return (a / b + 1) * b;
+}
+
 inline uint32_t RoundUpPow2(uint32_t a, uint32_t b)
 {
     assert(IsPow2(b));
