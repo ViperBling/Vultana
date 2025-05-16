@@ -44,6 +44,7 @@ namespace Renderer
         };
         float3 Center;
         float Radius = 0.0f;
+        uint32_t MeshletCount = 0;
         uint32_t InstanceIndex = 0;
         uint32_t VertexCount = 0;
 
@@ -81,6 +82,13 @@ namespace Renderer
             VertexCount = count;
         }
 
+        void DispatchMesh(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+        {
+            DispatchX = groupCountX;
+            DispatchY = groupCountY;
+            DispatchZ = groupCountZ;
+        }
+
     private:
         LinearAllocator& mCBAllocator;
     };
@@ -97,6 +105,11 @@ namespace Renderer
             {
                 pCmdList->SetGraphicsConstants(i, batch.Cb[i].Data, batch.Cb[i].DataSize);
             }
+        }
+
+        if (batch.PSO->GetType() == RHI::ERHIPipelineType::MeshShading)
+        {
+            pCmdList->DispatchMesh(batch.DispatchX, batch.DispatchY, batch.DispatchZ);
         }
         if (batch.IndexBuffer != nullptr)
         {
