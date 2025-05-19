@@ -1,7 +1,7 @@
 #include "HiZBuffer.hpp"
 #include "Renderer/RendererBase.hpp"
 
-namespace RenderPasses
+namespace Renderer
 {
     HiZBuffer::HiZBuffer(Renderer::RendererBase *pRenderer) : mpRenderer(pRenderer)
     {

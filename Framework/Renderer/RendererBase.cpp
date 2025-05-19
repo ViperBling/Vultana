@@ -10,6 +10,7 @@
 #include "Window/GLFWindow.hpp"
 #include "AssetManager/TextureLoader.hpp"
 #include "ForwardPath/ForwardBasePass.hpp"
+#include "RenderModules/GPUDrivenDebugLine.hpp"
 
 #include <optional>
 #include <algorithm>
@@ -88,6 +89,7 @@ namespace Renderer
         mpRenderGraph = eastl::make_unique<RG::RenderGraph>(this);
         mpGPUScene = eastl::make_unique<GPUScene>(this);
         mpForwardBasePass = eastl::make_unique<ForwardBasePass>(this);
+        mpGPUDrivenDebugLine = eastl::make_unique<GPUDrivenDebugLine>(this);
         
         return true;
     }
