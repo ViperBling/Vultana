@@ -193,6 +193,8 @@ namespace Renderer
 
         eastl::unique_ptr<class ForwardBasePass> mpForwardBasePass;
 
+        eastl::unique_ptr<class GPUDrivenDebugLine> mpGPUDrivenDebugLine;
+
         eastl::vector<ComputeBatch> mAnimationBatches;
 
         eastl::vector<RenderBatch> mOutlinePassBatches;

@@ -5,11 +5,6 @@
 
 namespace Renderer
 {
-    class RendererBase;
-}
-
-namespace RenderPasses
-{
     class HiZBuffer
     {
     public:
