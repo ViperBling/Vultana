@@ -44,6 +44,10 @@ struct FSceneConstants
     uint2 DisplaySize;
     float2 DisplaySizeInv;
 
+    uint DebugLineDrawCommandUAV;
+    uint DebugLineVertexBufferUAV;
+    uint2 _Padding00;
+
     uint PointRepeatSampler;
     uint PointClampSampler;
     uint BilinearRepeatSampler;

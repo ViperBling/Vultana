@@ -11,6 +11,7 @@
 #include "AssetManager/TextureLoader.hpp"
 #include "ForwardPath/ForwardBasePass.hpp"
 #include "RenderModules/GPUDrivenDebugLine.hpp"
+#include "Common/GlobalConstants.hlsli"
 
 #include <optional>
 #include <algorithm>
@@ -380,6 +381,9 @@ namespace Renderer
         sceneConstants.DisplaySize = uint2(mDisplayWidth, mDisplayHeight);
         sceneConstants.DisplaySizeInv = float2(1.0f / mDisplayWidth, 1.0f / mDisplayHeight);
 
+        sceneConstants.DebugLineDrawCommandUAV = mpGPUDrivenDebugLine->GetDrawArgsBufferUAV()->GetHeapIndex();
+        sceneConstants.DebugLineVertexBufferUAV = mpGPUDrivenDebugLine->GetVertexBufferUAV()->GetHeapIndex();
+
         sceneConstants.PointRepeatSampler = mpPointRepeatSampler->GetHeapIndex();
         sceneConstants.PointClampSampler = mpPointClampSampler->GetHeapIndex();
         sceneConstants.BilinearRepeatSampler = mpBilinearRepeatSampler->GetHeapIndex();
@@ -558,6 +562,8 @@ namespace Renderer
 
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", mpDevice->GetFrameID()).c_str());
 
+        mpGPUDrivenDebugLine->Clear(pCmdList);
+
         SetupGlobalConstants(pCmdList);
         FlushComputePass(pCmdList);
 
@@ -618,6 +624,8 @@ namespace Renderer
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
 
+            mpGPUDrivenDebugLine->PrepareForDraw(pCmdList);
+
             RHI::RHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
@@ -644,6 +652,7 @@ namespace Renderer
                 DrawBatch(pCmdList, mGUIBatches[i]);
             }
 
+            mpGPUDrivenDebugLine->Draw(pCmdList);
             Core::VultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
 
             pCmdList->EndRenderPass();

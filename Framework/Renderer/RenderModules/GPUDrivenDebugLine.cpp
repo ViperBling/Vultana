@@ -12,7 +12,6 @@ namespace Renderer
         RHI::RHIGraphicsPipelineStateDesc psoDesc {};
         psoDesc.VS = pRenderer->GetShader("GPUDrivenDebugLine.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         psoDesc.PS = pRenderer->GetShader("GPUDrivenDebugLine.hlsl", "PSMain", RHI::ERHIShaderType::PS);
-
         psoDesc.DepthStencilState.bDepthTest = true;
         psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Greater;
         psoDesc.DepthStencilState.bDepthWrite = false;
