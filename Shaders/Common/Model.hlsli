@@ -2,6 +2,7 @@
 
 #include "ModelConstants.hlsli"
 #include "GPUScene.hlsli"
+#include "Debug.hlsli"
 
 FModelMaterialConstants GetMaterialConstants(uint instanceID)
 {
@@ -65,6 +66,8 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
     vsOut.NormalWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Normal, 0.0f)).xyz);
     vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Tangent.xyz, 0.0f)).xyz);
     vsOut.BiTangentWS = cross(vsOut.NormalWS, vsOut.TangentWS) * vtx.Tangent.w;
+
+
 
     return vsOut;
 }
