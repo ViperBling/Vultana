@@ -8,6 +8,8 @@ namespace Renderer
     {
         mpRenderGraph->Clear();
 
+        // ImportPrevFrameTextures();
+
         mpForwardBasePass->Render(mpRenderGraph.get());
 
         RG::RGHandle sceneColorRT = mpForwardBasePass->GetBasePassColorRT();
@@ -15,6 +17,7 @@ namespace Renderer
 
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
+        // CopyHistoryPass(sceneDepthRT, /* sceneColorRT, */ sceneColorRT);
 
         outputColor = sceneColorRT;
         outputDepth = sceneDepthRT;
@@ -110,5 +113,108 @@ namespace Renderer
 
         color = outlinePass->OutSceneColorRT;
         depth = outlinePass->OutSceneDepthRT;
+    }
+
+    void RendererBase::CopyHistoryPass(RG::RGHandle sceneDepth, /* RG::RGHandle sceneNormal, */ RG::RGHandle sceneColor)
+    {
+        struct FCopyDepthPassData
+        {
+            RG::RGHandle SrcSceneDepthTexture;
+            RG::RGHandle DstSceneDepthTexture;
+        };
+
+        mpRenderGraph->AddPass<FCopyDepthPassData>("Copy History Pass", RG::RenderPassType::Compute,
+        [&](FCopyDepthPassData& data, RG::RGBuilder& builder)
+        {
+            data.SrcSceneDepthTexture = builder.Read(sceneDepth);
+            data.DstSceneDepthTexture = builder.Write(m_PrevSceneDepthHandle);
+        },
+        [&](const FCopyDepthPassData& data, RHI::RHICommandList* pCmdList)
+        {
+            RG::RGTexture* srcSceneDepthTexture = mpRenderGraph->GetTexture(data.SrcSceneDepthTexture);
+
+            uint32_t cb[2] = { srcSceneDepthTexture->GetSRV()->GetHeapIndex(), srcSceneDepthTexture->GetUAV()->GetHeapIndex() };
+
+            pCmdList->SetPipelineState(mpCopyDepthPSO);
+            pCmdList->SetComputeConstants(0, cb, sizeof(cb));
+            pCmdList->Dispatch(DivideRoudingUp(mRenderWidth, 8), DivideRoudingUp(mRenderHeight, 8), 1);
+        });
+
+        struct FCopyPassData
+        {
+            // RG::RGHandle SrcSceneNormalTexture;
+            // RG::RGHandle DstSceneNormalTexture;
+
+            RG::RGHandle SrcSceneColorTexture;
+            RG::RGHandle DstSceneColorTexture;
+        };
+
+        mpRenderGraph->AddPass<FCopyPassData>("Copy History Textures Pass", RG::RenderPassType::Copy,
+        [&](FCopyPassData& data, RG::RGBuilder& builder)
+        {
+            // data.SrcSceneNormalTexture = builder.Read(sceneNormal);
+            // data.DstSceneNormalTexture = builder.Write(m_PrevNormalHandle);
+
+            data.SrcSceneColorTexture = builder.Read(sceneColor);
+            data.DstSceneColorTexture = builder.Write(m_PrevSceneColorHandle);
+
+            builder.SkipCulling();
+        },
+        [&](const FCopyPassData& data, RHI::RHICommandList* pCmdList)
+        {
+            // RG::RGTexture* srcSceneNormalTexture = mpRenderGraph->GetTexture(data.SrcSceneNormalTexture);
+            RG::RGTexture* srcSceneColorTexture = mpRenderGraph->GetTexture(data.SrcSceneColorTexture);
+
+            // pCmdList->CopyTexture(mpPrevNormalTexture->GetTexture(), srcSceneNormalTexture->GetTexture(), 0, 0,  0, 0);
+            pCmdList->CopyTexture(mpPrevSceneColorTexture->GetTexture(), srcSceneColorTexture->GetTexture(), 0, 0, 0, 0);
+        });
+    }
+
+    void RendererBase::ImportPrevFrameTextures()
+    {
+        if (mpPrevSceneDepthTexture == nullptr || mpPrevSceneDepthTexture->GetTexture()->GetDesc().Width != mRenderWidth || mpPrevSceneDepthTexture->GetTexture()->GetDesc().Height != mRenderHeight)
+        {
+            mpPrevSceneDepthTexture.reset(CreateTexture2D(mRenderWidth, mRenderHeight, 1, RHI::ERHIFormat::R32F, RHI::RHITextureUsageUnorderedAccess, "PrevSceneDepthTexture"));
+            // mpPrevNormalTexture.reset(CreateTexture2D(mRenderWidth, mRenderHeight, 1, RHI::ERHIFormat::RGBA8UNORM, RHI::RHITextureUsageUnorderedAccess, "PrevSceneNormalTexture"));
+            mpPrevSceneColorTexture.reset(CreateTexture2D(mRenderWidth, mRenderHeight, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageUnorderedAccess, "PrevSceneColorTexture"));
+
+            mbHistoryValid = false;
+        }
+        else
+        {
+            mbHistoryValid = true;
+        }
+
+        m_PrevSceneDepthHandle = mpRenderGraph->Import(mpPrevSceneDepthTexture->GetTexture(), RHI::RHIAccessComputeUAV);
+        // m_PrevNormalHandle = mpRenderGraph->Import(mpPrevNormalTexture->GetTexture(), mbHistoryValid ? RHI::RHIAccessCopyDst : RHI::RHIAccessComputeUAV);
+        m_PrevSceneColorHandle = mpRenderGraph->Import(mpPrevSceneColorTexture->GetTexture(), mbHistoryValid ? RHI::RHIAccessCopyDst : RHI::RHIAccessComputeUAV);
+
+        if (!mbHistoryValid)
+        {
+            struct FClearHistoryPassData
+            {
+                RG::RGHandle LinearSceneDepth;
+                // RG::RGHandle SceneNormal;
+                RG::RGHandle SceneColor;
+            };
+
+            auto clearHistoryPass = mpRenderGraph->AddPass<FClearHistoryPassData>("Clear History Pass", RG::RenderPassType::Compute,
+            [&](FClearHistoryPassData& data, RG::RGBuilder& builder)
+            {
+                data.LinearSceneDepth = builder.Write(m_PrevSceneDepthHandle);
+                // data.SceneNormal = builder.Write(m_PrevNormalHandle);
+                data.SceneColor = builder.Write(m_PrevSceneColorHandle);
+            },
+            [=](const FClearHistoryPassData& data, RHI::RHICommandList* pCmdList)
+            {
+                float clearValue[4] = { 0 };
+                pCmdList->ClearUAV(mpPrevSceneDepthTexture->GetTexture(), mpPrevSceneDepthTexture->GetUAV(), clearValue);
+                // pCmdList->ClearUAV(mpPrevNormalTexture->GetTexture(), mpPrevNormalTexture->GetUAV(), clearValue);
+                pCmdList->ClearUAV(mpPrevSceneColorTexture->GetTexture(), mpPrevSceneColorTexture->GetUAV(), clearValue);
+            });
+            m_PrevSceneDepthHandle = clearHistoryPass->LinearSceneDepth;
+            // m_PrevNormalHandle = clearHistoryPass->SceneNormal;
+            m_PrevSceneColorHandle = clearHistoryPass->SceneColor;
+        }
     }
 }

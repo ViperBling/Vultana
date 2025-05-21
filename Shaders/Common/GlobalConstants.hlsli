@@ -44,6 +44,16 @@ struct FSceneConstants
     uint2 DisplaySize;
     float2 DisplaySizeInv;
 
+    uint HZBWidth;
+    uint HZBHeight;
+    uint CullingHZB1stPhaseSRV;
+    uint CullingHZB2ndPhaseSRV;
+
+    uint PrevSceneColorSRV;
+    uint PrevSceneDepthSRV;
+    uint PrevNormalSRV;
+    uint SceneHZBSRV;
+
     uint DebugLineDrawCommandUAV;
     uint DebugLineVertexBufferUAV;
     uint2 _Padding00;
