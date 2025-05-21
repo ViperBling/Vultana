@@ -13,11 +13,11 @@ struct FVSOutput
 
 FVSOutput VSMain(uint vertexID : SV_VertexID)
 {
-    StructuredBuffer<FLineVertex> vertexBuffer = ResourceDescriptorHeap[cDebugLineVertexBufferSRV];
+    StructuredBuffer<GPUDebug::FLineVertex> vertexBuffer = ResourceDescriptorHeap[cDebugLineVertexBufferSRV];
     
     FVSOutput vsOut;
     vsOut.PositionCS = mul(GetCameraConstants().MtxViewProjection, float4(vertexBuffer[vertexID].Position, 1.0f));
-    vsOut.VtxColor = 1.0f;
+    vsOut.VtxColor = UnpackRGBA8Unorm(vertexBuffer[vertexID].Color);
 
     return vsOut;
 }

@@ -67,7 +67,11 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
     vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Tangent.xyz, 0.0f)).xyz);
     vsOut.BiTangentWS = cross(vsOut.NormalWS, vsOut.TangentWS) * vtx.Tangent.w;
 
-
+    // GPUDebug::DrawLine(vsOut.PositionWS.xyz, vsOut.PositionWS.xyz + vsOut.NormalWS * 1.0f, float3(0.0f, 0.0f, 1.0f));
+    // if (vertexID == 0)
+    // {
+    //     GPUDebug::DrawSphere(instanceData.Center, instanceData.Radius, float3(1.0f, 0.0f, 0.0f));
+    // }
 
     return vsOut;
 }
