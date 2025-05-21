@@ -28,7 +28,21 @@ namespace Renderer
 
     void HiZBuffer::GenerateCullingHZB1stPhase(RG::RenderGraph *rg)
     {
-        // RENDER_GRAPH_EVENT(rg, "HiZBuffer::GenerateCullingHZB1stPhase");
+        RENDER_GRAPH_EVENT(rg, "HiZBuffer::GenerateCullingHZB1stPhase");
+
+        CalcHZBSize();
+
+        struct FDepthReprojectionData
+        {
+            RG::RGHandle PrevDepth;
+            RG::RGHandle ReprojectedDepth;
+        };
+
+        // auto reprojectionPass = rg->AddPass<FDepthReprojectionData>("Depth Reprojection", RG::RenderPassType::Compute,
+        // [&](FDepthReprojectionData& data, RG::RGBuilder& builder)
+        // {
+        //     // data.PrevDepth = builder.Read(mpRenderer->GetPre)
+        // });
     }
 
     void HiZBuffer::GenerateCullingHZB2ndPhase(RG::RenderGraph *rg, RG::RGHandle depthRT)

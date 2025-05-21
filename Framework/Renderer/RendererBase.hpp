@@ -5,6 +5,7 @@
 #include "RenderResources/RawBuffer.hpp"
 #include "RenderResources/StructuredBuffer.hpp"
 #include "RenderResources/Texture2D.hpp"
+#include "RenderResources/TypedBuffer.hpp"
 #include "GPUScene.hpp"
 #include "RenderBatch.hpp"
 #include "StagingBufferAllocator.hpp"
@@ -107,8 +108,10 @@ namespace Renderer
 
         void ObjectIDPass(RG::RGHandle& depth);
         void OutlinePass(RG::RGHandle& color, RG::RGHandle& depth);
+        void CopyHistoryPass(RG::RGHandle sceneDepth, /* RG::RGHandle sceneNormal, */ RG::RGHandle sceneColor);
 
         void FlushComputePass(RHI::RHICommandList* pCmdList);
+        void ImportPrevFrameTextures();
         virtual void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
     
     private:
@@ -177,6 +180,16 @@ namespace Renderer
         eastl::unique_ptr<RHI::RHIDescriptor> mpTrilinearRepeatSampler;
         eastl::unique_ptr<RHI::RHIDescriptor> mpTrilinearClampSampler;
 
+        eastl::unique_ptr<RenderResources::Texture2D> mpPrevSceneDepthTexture;
+        // eastl::unique_ptr<RenderResources::Texture2D> mpPrevNormalTexture;
+        eastl::unique_ptr<RenderResources::Texture2D> mpPrevSceneColorTexture;
+        RG::RGHandle m_PrevSceneDepthHandle;
+        RG::RGHandle m_PrevNormalHandle;
+        RG::RGHandle m_PrevSceneColorHandle;
+        bool mbHistoryValid = false;
+
+        eastl::unique_ptr<RenderResources::TypedBuffer> mpSPDCounterBuffer;
+
         bool mbEnableObjectIDRendering = false;
         uint32_t mMouseX = 0;
         uint32_t mMouseY = 0;
@@ -188,7 +201,7 @@ namespace Renderer
         RG::RGHandle mOutputDepthHandle;
         
         RHI::RHIPipelineState* mpCopyColorPSO = nullptr;
-        // RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
+        RHI::RHIPipelineState* mpCopyDepthPSO = nullptr;
         RHI::RHIPipelineState* mpCopyColorDepthPSO = nullptr;
 
         eastl::unique_ptr<class ForwardBasePass> mpForwardBasePass;

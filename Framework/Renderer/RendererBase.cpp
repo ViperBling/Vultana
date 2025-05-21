@@ -381,6 +381,9 @@ namespace Renderer
         sceneConstants.DisplaySize = uint2(mDisplayWidth, mDisplayHeight);
         sceneConstants.DisplaySizeInv = float2(1.0f / mDisplayWidth, 1.0f / mDisplayHeight);
 
+        // sceneConstants.PrevSceneDepthSRV = mpPrevSceneDepthTexture->GetSRV()->GetHeapIndex();
+        // sceneConstants.PrevSceneColorSRV = mpPrevSceneColorTexture->GetSRV()->GetHeapIndex();
+
         sceneConstants.DebugLineDrawCommandUAV = mpGPUDrivenDebugLine->GetDrawArgsBufferUAV()->GetHeapIndex();
         sceneConstants.DebugLineVertexBufferUAV = mpGPUDrivenDebugLine->GetVertexBufferUAV()->GetHeapIndex();
 
@@ -472,11 +475,15 @@ namespace Renderer
         copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
         mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
 
-        // copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH = 1"});
-        // copyPSODesc.DepthStencilState.bDepthWrite = true;
-        // copyPSODesc.DepthStencilState.bDepthTest = true;
-        // copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
-        // mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyColorDepthPSO");
+        copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH = 1"});
+        copyPSODesc.DepthStencilState.bDepthWrite = true;
+        copyPSODesc.DepthStencilState.bDepthTest = true;
+        copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
+        mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyColorDepthPSO");
+
+        RHI::RHIComputePipelineStateDesc computePSODesc;
+        computePSODesc.CS = GetShader("Copy.hlsl", "CopyDepthCS", RHI::ERHIShaderType::CS);
+        mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthPSO");
     }
 
     void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
