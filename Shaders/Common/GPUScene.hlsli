@@ -27,6 +27,11 @@ struct FInstanceData
     float3 Center;
     float Radius;
 
+    // uint bShowBoundingSphere;
+    // uint bShowTangent;
+    // uint bShowBitTangent;
+    // uint bShowNormal;
+
     float4x4 MtxWorld;
     float4x4 MtxWorldInverseTranspose;
 };
