@@ -8,7 +8,7 @@ namespace Renderer
     {
         mpRenderGraph->Clear();
 
-        // ImportPrevFrameTextures();
+        ImportPrevFrameTextures();
 
         mpForwardBasePass->Render(mpRenderGraph.get());
 
@@ -17,13 +17,13 @@ namespace Renderer
 
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
-        // CopyHistoryPass(sceneDepthRT, /* sceneColorRT, */ sceneColorRT);
+        CopyHistoryPass(sceneDepthRT, /* sceneColorRT, */ sceneColorRT);
 
         outputColor = sceneColorRT;
         outputDepth = sceneDepthRT;
 
         mpRenderGraph->Present(outputColor, RHI::RHIAccessPixelShaderSRV);
-        mpRenderGraph->Present(outputDepth, RHI::RHIAccessDSVReadOnly);
+        mpRenderGraph->Present(outputDepth, RHI::RHIAccessDSV);
 
         mpRenderGraph->Compile();
     }
@@ -165,8 +165,8 @@ namespace Renderer
             // RG::RGTexture* srcSceneNormalTexture = mpRenderGraph->GetTexture(data.SrcSceneNormalTexture);
             RG::RGTexture* srcSceneColorTexture = mpRenderGraph->GetTexture(data.SrcSceneColorTexture);
 
-            // pCmdList->CopyTexture(mpPrevNormalTexture->GetTexture(), srcSceneNormalTexture->GetTexture(), 0, 0,  0, 0);
-            pCmdList->CopyTexture(mpPrevSceneColorTexture->GetTexture(), srcSceneColorTexture->GetTexture(), 0, 0, 0, 0);
+            // pCmdList->CopyTexture(srcSceneNormalTexture->GetTexture(), mpPrevNormalTexture->GetTexture(), 0, 0,  0, 0);
+            pCmdList->CopyTexture(srcSceneColorTexture->GetTexture(), mpPrevSceneColorTexture->GetTexture(), 0, 0, 0, 0);
         });
     }
 

@@ -23,7 +23,7 @@ cbuffer CB : register(b0)
     uint cDepthTexture;
     uint cPointSampler;
     uint padding0;
-    uint padding1;
+    // uint padding1;
 };
 
 float4 PSMain(FVSOutput psIn

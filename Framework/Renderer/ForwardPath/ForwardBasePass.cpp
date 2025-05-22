@@ -1,5 +1,6 @@
 #include "ForwardBasePass.hpp"
 #include "Renderer/RendererBase.hpp"
+#include "DeferredBasePass.hpp"
 
 namespace Renderer
 {
@@ -27,12 +28,12 @@ namespace Renderer
             RG::RGTexture::Desc desc;
             desc.Width = mpRenderer->GetRenderWidth();
             desc.Height = mpRenderer->GetRenderHeight();
-            desc.Format = RHI::ERHIFormat::RGBA8SRGB;
+            desc.Format = RHI::ERHIFormat::RGBA8SRGB;           // Temporary format only, suitable format is RGBA8SRGB
 
-            data.OutColorRT = builder.Create<RG::RGTexture>(desc, "BasePassColorRT");
+            data.OutColorRT = builder.Create<RG::RGTexture>(desc, "BasePassSceneColorRT");
 
             desc.Format = RHI::ERHIFormat::D32F;
-            data.OutDepthRT = builder.Create<RG::RGTexture>(desc, "BasePassDepthRT");
+            data.OutDepthRT = builder.Create<RG::RGTexture>(desc, "BasePassSceneDepthRT");
         
             data.OutColorRT = builder.WriteColor(0, data.OutColorRT, 0, RHI::ERHIRenderPassLoadOp::Clear, float4(0.0f, 0.0f, 0.0f, 0.0f));
             data.OutDepthRT = builder.WriteDepth(data.OutDepthRT, 0, RHI::ERHIRenderPassLoadOp::Clear, RHI::ERHIRenderPassLoadOp::Clear);
