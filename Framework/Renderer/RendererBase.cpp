@@ -381,8 +381,8 @@ namespace Renderer
         sceneConstants.DisplaySize = uint2(mDisplayWidth, mDisplayHeight);
         sceneConstants.DisplaySizeInv = float2(1.0f / mDisplayWidth, 1.0f / mDisplayHeight);
 
-        // sceneConstants.PrevSceneDepthSRV = mpPrevSceneDepthTexture->GetSRV()->GetHeapIndex();
-        // sceneConstants.PrevSceneColorSRV = mpPrevSceneColorTexture->GetSRV()->GetHeapIndex();
+        sceneConstants.PrevSceneDepthSRV = mpPrevSceneDepthTexture->GetSRV()->GetHeapIndex();
+        sceneConstants.PrevSceneColorSRV = mpPrevSceneColorTexture->GetSRV()->GetHeapIndex();
 
         sceneConstants.DebugLineDrawCommandUAV = mpGPUDrivenDebugLine->GetDrawArgsBufferUAV()->GetHeapIndex();
         sceneConstants.DebugLineVertexBufferUAV = mpGPUDrivenDebugLine->GetVertexBufferUAV()->GetHeapIndex();
