@@ -1,6 +1,6 @@
 #include "ForwardBasePass.hpp"
 #include "Renderer/RendererBase.hpp"
-#include "DeferredBasePass.hpp"
+// #include "DeferredBasePass.hpp"
 
 namespace Renderer
 {

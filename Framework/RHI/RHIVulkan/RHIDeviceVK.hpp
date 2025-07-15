@@ -54,7 +54,7 @@ namespace RHI
         virtual bool DumpMemoryStats(const eastl::string& file) override;
 
         vk::Instance GetInstance() const { return mInstance; }
-        vk::DispatchLoaderDynamic GetDynamicLoader() const { return mDynamicLoader; }
+        vk::detail::DispatchLoaderDynamic GetDynamicLoader() const { return mDynamicLoader; }
         vk::PhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
         vk::Device GetDevice() const { return mDevice; }
         VmaAllocator GetVmaAllocator() const { return mAllocator; }
@@ -95,7 +95,7 @@ namespace RHI
     private:
         vk::Instance mInstance = VK_NULL_HANDLE;
         vk::DebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;
-        vk::DispatchLoaderDynamic mDynamicLoader = {};
+        vk::detail::DispatchLoaderDynamic mDynamicLoader = {};
         vk::PhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
         vk::Device mDevice = VK_NULL_HANDLE;
         VmaAllocator mAllocator = VK_NULL_HANDLE;

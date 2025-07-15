@@ -14,7 +14,7 @@
 namespace RHI
 {
     template<typename T>
-    inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name, vk::DispatchLoaderDynamic& dynamicLoader)
+    inline void SetDebugName(vk::Device device, vk::ObjectType objectType, T object, const char* name, vk::detail::DispatchLoaderDynamic& dynamicLoader)
     {
         vk::DebugUtilsObjectNameInfoEXT nameInfo;
         nameInfo.objectType = objectType;

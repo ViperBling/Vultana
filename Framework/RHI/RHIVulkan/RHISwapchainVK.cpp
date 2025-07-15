@@ -123,7 +123,7 @@ namespace RHI
     {
         vk::Instance instance = ((RHIDeviceVK*)mpDevice)->GetInstance();
         vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        vk::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        vk::detail::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
         vk::PhysicalDevice physcialDevice = ((RHIDeviceVK*)mpDevice)->GetPhysicalDevice();
         
         vk::Win32SurfaceCreateInfoKHR surfaceCI {};

@@ -78,7 +78,7 @@ namespace RHI
         vk::Queue mQueue;
         vk::CommandPool mCmdPool;
         vk::CommandBuffer mCmdBuffer;
-        vk::DispatchLoaderDynamic mDynamicLoader;
+        vk::detail::DispatchLoaderDynamic mDynamicLoader;
 
         eastl::vector<vk::CommandBuffer> mFreeCmdBuffers;
         eastl::vector<vk::CommandBuffer> mPendingCmdBuffers;
