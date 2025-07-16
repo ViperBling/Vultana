@@ -6,7 +6,7 @@ namespace RenderResources
 {
     RawBuffer::RawBuffer(const eastl::string &name)
     {
-        mName = name;
+        m_Name = name;
     }
 
     bool RawBuffer::Create(uint32_t size, RHI::ERHIMemoryType memoryType, bool isUAV)
@@ -27,8 +27,8 @@ namespace RenderResources
         {
             desc.Usage |= RHI::RHIBufferUsageUnorderedAccess;
         }
-        mpBuffer.reset(pDevice->CreateBuffer(desc, mName + "_RawBuffer"));
-        if (mpBuffer == nullptr)
+        m_pBuffer.reset(pDevice->CreateBuffer(desc, m_Name + "_RawBuffer"));
+        if (m_pBuffer == nullptr)
         {
             return false;
         }
@@ -37,8 +37,8 @@ namespace RenderResources
         srvDesc.Type = RHI::ERHIShaderResourceViewType::RawBuffer;
         srvDesc.Buffer.Offset = 0;
         srvDesc.Buffer.Size = size;
-        mpSRV.reset(pDevice->CreateShaderResourceView(mpBuffer.get(), srvDesc, mName + "_SRV"));
-        if (mpSRV == nullptr)
+        m_pSRV.reset(pDevice->CreateShaderResourceView(m_pBuffer.get(), srvDesc, m_Name + "_SRV"));
+        if (m_pSRV == nullptr)
         {
             return false;
         }
@@ -49,8 +49,8 @@ namespace RenderResources
             uavDesc.Type = RHI::ERHIUnorderedAccessViewType::RawBuffer;
             uavDesc.Buffer.Offset = 0;
             uavDesc.Buffer.Size = size;
-            mpUAV.reset(pDevice->CreateUnorderedAccessView(mpBuffer.get(), uavDesc, mName + "_UAV"));
-            if (mpUAV == nullptr)
+            m_pUAV.reset(pDevice->CreateUnorderedAccessView(m_pBuffer.get(), uavDesc, m_Name + "_UAV"));
+            if (m_pUAV == nullptr)
             {
                 return false;
             }

@@ -35,7 +35,7 @@ namespace Window
         GLFWindow& operator=(GLFWindow&& other) noexcept;
         ~GLFWindow();
 
-        GLFWwindow* GetNativeHandle() const { return this->mHwnd; }
+        GLFWwindow* GetNativeHandle() const { return this->m_Hwnd; }
         HWND GetWin32WindowHandle();
         std::vector<const char*> GetRequiredExtensions() const;
 
@@ -51,8 +51,8 @@ namespace Window
 
         float2 GetCursorPosition() const;
         void SetCursorPosition(float2 position);
-        float2 GetLastCursorPosition() const { return mLastCursorPosition; }
-        void SetLastCursorPosition(float2 position) { mLastCursorPosition = position; }
+        float2 GetLastCursorPosition() const { return m_LastCursorPosition; }
+        void SetLastCursorPosition(float2 position) { m_LastCursorPosition = position; }
         float2 GetCursorDelta();
 
         Utility::CursorMode GetCursorMode() const;
@@ -76,12 +76,12 @@ namespace Window
         vk::Result CreateVulkanSurface(vk::Instance instance, vk::SurfaceKHR& surface);
 
     private:
-        GLFWwindow* mHwnd = nullptr;
-        std::vector<std::function<void(GLFWindow&, uint32_t width, uint32_t height)>> mOnResizeCallbacks;
-        std::function<void(GLFWindow&, Utility::KeyCode, bool)> mOnKeyChanged;
-        std::function<void(GLFWindow&, Utility::MouseButton, bool)> mOnMouseChanged;
+        GLFWwindow* m_Hwnd = nullptr;
+        std::vector<std::function<void(GLFWindow&, uint32_t width, uint32_t height)>> m_OnResizeCallbacks;
+        std::function<void(GLFWindow&, Utility::KeyCode, bool)> m_OnKeyChanged;
+        std::function<void(GLFWindow&, Utility::MouseButton, bool)> m_OnMouseChanged;
 
-        float2 mLastCursorPosition = { 0.0f, 0.0f };
+        float2 m_LastCursorPosition = { 0.0f, 0.0f };
     };
 
     // const vk::SurfaceKHR&  CreateVulkanSurface(GLFWwindow *window, vk::Instance instance);

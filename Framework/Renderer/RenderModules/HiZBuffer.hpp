@@ -18,9 +18,9 @@ namespace Renderer
         RG::RGHandle GetCullingHZBMip2ndPhase(uint32_t mip) const;
         RG::RGHandle GetSceneHZBMip(uint32_t mip) const;
 
-        uint32_t GetHZBMipCount() const { return mHZBMipCount; }
-        uint32_t GetHZBWidth() const { return mHZBSize.x; }
-        uint32_t GetHZBHeight() const { return mHZBSize.y; }
+        uint32_t GetHZBMipCount() const { return m_HZBMipCount; }
+        uint32_t GetHZBWidth() const { return m_HZBSize.x; }
+        uint32_t GetHZBHeight() const { return m_HZBSize.y; }
 
     private:
         void CalcHZBSize();
@@ -31,22 +31,22 @@ namespace Renderer
         void InitHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* inputDepthSRV, RG::RGTexture* hzbMip0UAV, bool minMax = false);
 
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
+        Renderer::RendererBase* m_pRenderer = nullptr;
 
-        RHI::RHIPipelineState* mpDepthReprojectionPSO = nullptr;
-        RHI::RHIPipelineState* mpDepthDilationPSO = nullptr;
-        RHI::RHIPipelineState* mpDepthMipFilterPSO = nullptr;
-        RHI::RHIPipelineState* mpInitHZBPSO = nullptr;
+        RHI::RHIPipelineState* m_pDepthReprojectionPSO = nullptr;
+        RHI::RHIPipelineState* m_pDepthDilationPSO = nullptr;
+        RHI::RHIPipelineState* m_pDepthMipFilterPSO = nullptr;
+        RHI::RHIPipelineState* m_pInitHZBPSO = nullptr;
 
-        RHI::RHIPipelineState* mpInitSceneHZBPSO = nullptr;
-        RHI::RHIPipelineState* mpDepthMipFilterMinMaxPSO = nullptr;
+        RHI::RHIPipelineState* m_pInitSceneHZBPSO = nullptr;
+        RHI::RHIPipelineState* m_pDepthMipFilterMinMaxPSO = nullptr;
 
-        uint32_t mHZBMipCount = 0;
-        uint2 mHZBSize;
+        uint32_t m_HZBMipCount = 0;
+        uint2 m_HZBSize;
 
         static const uint32_t MAX_HZB_MIP_COUNT = 13;
-        RG::RGHandle mCullingHZBMips1stPhase[MAX_HZB_MIP_COUNT] = {};
-        RG::RGHandle mCullingHZBMips2ndPhase[MAX_HZB_MIP_COUNT] = {};
-        RG::RGHandle mSceneHZBMips[MAX_HZB_MIP_COUNT] = {};
+        RG::RGHandle m_CullingHZBMips1stPhase[MAX_HZB_MIP_COUNT] = {};
+        RG::RGHandle m_CullingHZBMips2ndPhase[MAX_HZB_MIP_COUNT] = {};
+        RG::RGHandle m_SceneHZBMips[MAX_HZB_MIP_COUNT] = {};
     };
 }

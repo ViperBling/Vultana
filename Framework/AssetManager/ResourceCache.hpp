@@ -28,7 +28,7 @@ namespace Assets
             OffsetAllocator::Allocation Allocation;
             uint32_t RefCount;
         };
-        eastl::hash_map<eastl::string, FResource> mCachedTexture2D;
-        eastl::hash_map<eastl::string, FSceneBuffer> mCachedSceneBuffer;
+        eastl::hash_map<eastl::string, FResource> m_CachedTexture2D;
+        eastl::hash_map<eastl::string, FSceneBuffer> m_CachedSceneBuffer;
     };
 }

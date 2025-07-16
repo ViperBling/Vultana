@@ -5,48 +5,48 @@ namespace RG
 {
     void RenderGraphResource::Resolve(RenderGraphEdge *edge, RenderGraphPassBase *pass)
     {
-        if (pass->GetID() >= mLastPass)
+        if (pass->GetID() >= m_LastPass)
         {
-            mLastState = edge->GetUsage();
+            m_LastState = edge->GetUsage();
         }
-        mFirstPass = eastl::min(mFirstPass, pass->GetID());
-        mLastPass = eastl::max(mLastPass, pass->GetID());
+        m_FirstPass = eastl::min(m_FirstPass, pass->GetID());
+        m_LastPass = eastl::max(m_LastPass, pass->GetID());
 
         if (pass->GetType() == RenderPassType::AsyncCompute)
         {
-            mFirstPass = eastl::min(mFirstPass, pass->GetWaitGraphicsPass());
-            mLastPass = eastl::max(mLastPass, pass->GetSignalGraphicsPass());
+            m_FirstPass = eastl::min(m_FirstPass, pass->GetWaitGraphicsPass());
+            m_LastPass = eastl::max(m_LastPass, pass->GetSignalGraphicsPass());
         }
     }
 
     RGTexture::RGTexture(RenderGraphResourceAllocator &allocator, const eastl::string &name, const Desc &desc)
         : RenderGraphResource(name)
-        , mAllocator(allocator)
+        , m_Allocator(allocator)
     {
-        mDesc = desc;
+        m_Desc = desc;
     }
 
     RGTexture::RGTexture(RenderGraphResourceAllocator &allocator, RHI::RHITexture *texture, RHI::ERHIAccessFlags state)
         : RenderGraphResource(texture->GetName())
-        , mAllocator(allocator)
+        , m_Allocator(allocator)
     {
-        mDesc = texture->GetDesc();
-        mpTexture = texture;
-        mInitialState = state;
-        mbImported = true;
+        m_Desc = texture->GetDesc();
+        m_pTexture = texture;
+        m_InitialState = state;
+        m_bImported = true;
     }
 
     RGTexture::~RGTexture()
     {
-        if (!mbImported)
+        if (!m_bImported)
         {
-            if (mbExported)
+            if (m_bExported)
             {
-                mAllocator.FreeNonOverlappingTexture(mpTexture, mLastState);
+                m_Allocator.FreeNonOverlappingTexture(m_pTexture, m_LastState);
             }
             else
             {
-                mAllocator.Free(mpTexture, mLastState, mbExported);
+                m_Allocator.Free(m_pTexture, m_LastState, m_bExported);
             }
         }
     }
@@ -56,9 +56,9 @@ namespace RG
         assert(!IsImported());
 
         RHI::RHIShaderResourceViewDesc desc;
-        desc.Format = mpTexture->GetDesc().Format;
+        desc.Format = m_pTexture->GetDesc().Format;
 
-        return mAllocator.GetDescriptor(mpTexture, desc);
+        return m_Allocator.GetDescriptor(m_pTexture, desc);
     }
 
     RHI::RHIDescriptor *RGTexture::GetUAV()
@@ -66,9 +66,9 @@ namespace RG
         assert(!IsImported());
 
         RHI::RHIUnorderedAccessViewDesc desc;
-        desc.Format = mpTexture->GetDesc().Format;
+        desc.Format = m_pTexture->GetDesc().Format;
 
-        return mAllocator.GetDescriptor(mpTexture, desc);
+        return m_Allocator.GetDescriptor(m_pTexture, desc);
     }
 
     RHI::RHIDescriptor *RGTexture::GetUAV(uint32_t mipLevel, uint32_t slice)
@@ -76,11 +76,11 @@ namespace RG
         assert(!IsImported());
 
         RHI::RHIUnorderedAccessViewDesc desc;
-        desc.Format = mpTexture->GetDesc().Format;
+        desc.Format = m_pTexture->GetDesc().Format;
         desc.Texture.MipSlice = mipLevel;
         desc.Texture.ArraySlice = slice;
 
-        return mAllocator.GetDescriptor(mpTexture, desc);
+        return m_Allocator.GetDescriptor(m_pTexture, desc);
     }
 
     void RGTexture::Resolve(RenderGraphEdge *edge, RenderGraphPassBase *pass)
@@ -90,65 +90,65 @@ namespace RG
         RHI::ERHIAccessFlags usage = edge->GetUsage();
         if (usage & RHI::RHIAccessRTV)
         {
-            mDesc.Usage |= RHI::RHITextureUsageRenderTarget;
+            m_Desc.Usage |= RHI::RHITextureUsageRenderTarget;
         }
         if (usage & RHI::RHIAccessMaskUAV)
         {
-            mDesc.Usage |= RHI::RHITextureUsageUnorderedAccess;
+            m_Desc.Usage |= RHI::RHITextureUsageUnorderedAccess;
         }
         if (usage & (RHI::RHIAccessDSV | RHI::RHIAccessDSVReadOnly))
         {
-            mDesc.Usage |= RHI::RHITextureUsageDepthStencil;
+            m_Desc.Usage |= RHI::RHITextureUsageDepthStencil;
         }
     }
 
     void RGTexture::Realize()
     {
-        if (!mbImported)
+        if (!m_bImported)
         {
-            if (mbExported)
+            if (m_bExported)
             {
-                mpTexture = mAllocator.AllocateNonOverlappingTexture(mDesc, mName, mInitialState);
+                m_pTexture = m_Allocator.AllocateNonOverlappingTexture(m_Desc, m_Name, m_InitialState);
             }
             else
             {
-                mpTexture = mAllocator.AllocateTexture(mFirstPass, mLastPass, mLastState, mDesc, mName, mInitialState);
+                m_pTexture = m_Allocator.AllocateTexture(m_FirstPass, m_LastPass, m_LastState, m_Desc, m_Name, m_InitialState);
             }
         }
     }
 
     RHI::RHIResource *RGTexture::GetAliasedPrevResource(RHI::ERHIAccessFlags &lastUsedState)
     {
-        return mAllocator.GetAliasedPreviousResource(mpTexture, mFirstPass, lastUsedState);
+        return m_Allocator.GetAliasedPreviousResource(m_pTexture, m_FirstPass, lastUsedState);
     }
 
     void RGTexture::Barrier(RHI::RHICommandList *pCmdList, uint32_t subresource, RHI::ERHIAccessFlags accessBefore, RHI::ERHIAccessFlags accessAfter)
     {
-        pCmdList->TextureBarrier(mpTexture, subresource, accessBefore, accessAfter);
+        pCmdList->TextureBarrier(m_pTexture, subresource, accessBefore, accessAfter);
     }
 
     RGBuffer::RGBuffer(RenderGraphResourceAllocator &allocator, const eastl::string &name, const Desc &desc)
         : RenderGraphResource(name)
-        , mAllocator(allocator)
+        , m_Allocator(allocator)
     {
-        mDesc = desc;
+        m_Desc = desc;
     }
 
     RGBuffer::RGBuffer(RenderGraphResourceAllocator &allocator, RHI::RHIBuffer *buffer, RHI::ERHIAccessFlags state)
         : RenderGraphResource(buffer->GetName())
-        , mAllocator(allocator)
+        , m_Allocator(allocator)
     {
-        mDesc = buffer->GetDesc();
-        mpBuffer = buffer;
-        mInitialState = state;
-        mbImported = true;
+        m_Desc = buffer->GetDesc();
+        m_pBuffer = buffer;
+        m_InitialState = state;
+        m_bImported = true;
     }
 
     RGBuffer::~RGBuffer()
     {
-        if (!mbImported)
+        if (!m_bImported)
         {
-            mAllocator.Free(mpBuffer, mLastState, mbExported);
+            m_Allocator.Free(m_pBuffer, m_LastState, m_bExported);
         }
     }
 
@@ -156,7 +156,7 @@ namespace RG
     {
         assert(!IsImported());
 
-        const RHI::RHIBufferDesc& bufferDesc = mpBuffer->GetDesc();
+        const RHI::RHIBufferDesc& bufferDesc = m_pBuffer->GetDesc();
         RHI::RHIShaderResourceViewDesc srvDesc;
         srvDesc.Format = bufferDesc.Format;
 
@@ -175,14 +175,14 @@ namespace RG
         srvDesc.Buffer.Offset = 0;
         srvDesc.Buffer.Size = bufferDesc.Size;
 
-        return mAllocator.GetDescriptor(mpBuffer, srvDesc);
+        return m_Allocator.GetDescriptor(m_pBuffer, srvDesc);
     }
 
     RHI::RHIDescriptor *RGBuffer::GetUAV()
     {
         assert(!IsImported());
 
-        const RHI::RHIBufferDesc& bufferDesc = mpBuffer->GetDesc();
+        const RHI::RHIBufferDesc& bufferDesc = m_pBuffer->GetDesc();
         assert(bufferDesc.Usage & RHI::RHIBufferUsageUnorderedAccess);
 
         RHI::RHIUnorderedAccessViewDesc uavDesc;
@@ -203,7 +203,7 @@ namespace RG
         uavDesc.Buffer.Offset = 0;
         uavDesc.Buffer.Size = bufferDesc.Size;
 
-        return mAllocator.GetDescriptor(mpBuffer, uavDesc);
+        return m_Allocator.GetDescriptor(m_pBuffer, uavDesc);
     }
 
     void RGBuffer::Resolve(RenderGraphEdge *edge, RenderGraphPassBase *pass)
@@ -212,25 +212,25 @@ namespace RG
 
         if (edge->GetUsage() & RHI::RHIAccessMaskUAV)
         {
-            mDesc.Usage |= RHI::RHIBufferUsageUnorderedAccess;
+            m_Desc.Usage |= RHI::RHIBufferUsageUnorderedAccess;
         }
     }
 
     void RGBuffer::Realize()
     {
-        if (!mbImported)
+        if (!m_bImported)
         {
-            mpBuffer = mAllocator.AllocateBuffer(mFirstPass, mLastPass, mLastState, mDesc, mName, mInitialState);
+            m_pBuffer = m_Allocator.AllocateBuffer(m_FirstPass, m_LastPass, m_LastState, m_Desc, m_Name, m_InitialState);
         }
     }
 
     RHI::RHIResource *RGBuffer::GetAliasedPrevResource(RHI::ERHIAccessFlags &lastUsedState)
     {
-        return mAllocator.GetAliasedPreviousResource(mpBuffer, mFirstPass, lastUsedState);
+        return m_Allocator.GetAliasedPreviousResource(m_pBuffer, m_FirstPass, lastUsedState);
     }
 
     void RGBuffer::Barrier(RHI::RHICommandList *pCmdList, uint32_t subresource, RHI::ERHIAccessFlags accessBefore, RHI::ERHIAccessFlags accessAfter)
     {
-        pCmdList->BufferBarrier(mpBuffer, accessBefore, accessAfter);
+        pCmdList->BufferBarrier(m_pBuffer, accessBefore, accessAfter);
     }
 }

@@ -17,7 +17,7 @@ namespace RHI
     public:
         virtual ~RHICommandList() = default;
 
-        ERHICommandQueueType GetQueueType() const { return mCmdQueueType; }
+        ERHICommandQueueType GetQueueType() const { return m_CmdQueueType; }
 
         virtual void ResetAllocator() = 0;
         virtual void Begin() = 0;
@@ -73,6 +73,6 @@ namespace RHI
         virtual void MultiDispatchMeshIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) = 0;
 
     protected:
-        ERHICommandQueueType mCmdQueueType;
+        ERHICommandQueueType m_CmdQueueType;
     };
 }

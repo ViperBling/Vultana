@@ -27,10 +27,10 @@ namespace Renderer
         void CreateNewBuffer();
 
     private:
-        RendererBase* mpRenderer = nullptr;
-        eastl::vector<eastl::unique_ptr<RHI::RHIBuffer>> mBuffers;
-        uint32_t mCurrentBuffer = 0;
-        uint32_t mAllocatedSize = 0;
-        uint64_t mLastAllocatedFrame = 0;
+        RendererBase* m_pRenderer = nullptr;
+        eastl::vector<eastl::unique_ptr<RHI::RHIBuffer>> m_Buffers;
+        uint32_t m_CurrentBuffer = 0;
+        uint32_t m_AllocatedSize = 0;
+        uint64_t m_LastAllocatedFrame = 0;
     };
 }

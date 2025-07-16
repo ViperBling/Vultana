@@ -9,7 +9,7 @@ namespace RHI
     public:
         virtual ~RHITexture() = default;
 
-        const RHITextureDesc& GetDesc() const { return mDesc; }
+        const RHITextureDesc& GetDesc() const { return m_Desc; }
 
         virtual bool IsTexture() const override { return true; }
         virtual uint32_t GetRequiredStagingBufferSize() const = 0;
@@ -18,6 +18,6 @@ namespace RHI
         virtual void* GetSharedHandle() const = 0;
 
     protected:
-        RHITextureDesc mDesc {};
+        RHITextureDesc m_Desc {};
     };
 }

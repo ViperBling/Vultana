@@ -9,8 +9,8 @@ namespace RG
     RenderGraphPassBase::RenderGraphPassBase(const eastl::string &name, RenderPassType type, DirectedAcyclicGraph &graph)
         : DAGNode(graph)
     {
-        mName = name;
-        mType = type;
+        m_Name = name;
+        m_Type = type;
     }
 
     void RenderGraphPassBase::ResolveBarriers(const DirectedAcyclicGraph &graph)
@@ -71,7 +71,7 @@ namespace RG
                 RHI::RHIResource* aliasedRes = resource->GetAliasedPrevResource(aliasState);
                 if (aliasedRes)
                 {
-                    mAliasDiscardBarriers.push_back({ aliasedRes, aliasState, newState | RHI::RHIAccessDiscard });
+                    m_AliasDiscardBarriers.push_back({ aliasedRes, aliasState, newState | RHI::RHIAccessDiscard });
                     isAliased = true;
                 }
             }
@@ -87,7 +87,7 @@ namespace RG
                 {
                     barrier.OldState |= aliasState | RHI::RHIAccessDiscard;
                 }
-                mResourceBarriers.push_back(barrier);
+                m_ResourceBarriers.push_back(barrier);
             }
         }
 
@@ -103,19 +103,19 @@ namespace RG
             {
                 assert(dynamic_cast<RGEdgeColorAttachment*>(edge) != nullptr);
                 RGEdgeColorAttachment* colorRT = static_cast<RGEdgeColorAttachment*>(edge);
-                mpColorRT[colorRT->GetColorIndex()] = colorRT;
+                m_pColorRT[colorRT->GetColorIndex()] = colorRT;
             }
             else if (newState == RHI::RHIAccessDSV || newState == RHI::RHIAccessDSVReadOnly)
             {
                 assert(dynamic_cast<RGEdgeDepthAttachment*>(edge) != nullptr);
-                mpDepthRT = static_cast<RGEdgeDepthAttachment*>(edge);
+                m_pDepthRT = static_cast<RGEdgeDepthAttachment*>(edge);
             }
         }
     }
 
     void RenderGraphPassBase::ResolveAsyncComputeBarrier(const DirectedAcyclicGraph &graph, RenderGraphAsyncResolveContext &context)
     {
-        if (mType == RenderPassType::AsyncCompute)
+        if (m_Type == RenderPassType::AsyncCompute)
         {
             eastl::vector<DAGEdge*> edges;
             eastl::vector<DAGEdge*> resIncoming;
@@ -171,18 +171,18 @@ namespace RG
                     DAGNodeID graphicsPassToWaitID = *eastl::max_element(context.PreGraphicsQueuePasses.begin(), context.PreGraphicsQueuePasses.end());
 
                     RenderGraphPassBase* graphicsPassToWait = static_cast<RenderGraphPassBase*>(graph.GetNode(graphicsPassToWaitID));
-                    if (graphicsPassToWait->mSignalValue == -1)
+                    if (graphicsPassToWait->m_SignalValue == -1)
                     {
-                        graphicsPassToWait->mSignalValue = ++context.GraphicsFence;
+                        graphicsPassToWait->m_SignalValue = ++context.GraphicsFence;
                     }
 
                     RenderGraphPassBase* computePass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[0]));
-                    computePass->mWaitValue = graphicsPassToWait->mSignalValue;
+                    computePass->m_WaitValue = graphicsPassToWait->m_SignalValue;
 
                     for (size_t i = 0; i < context.ComputeQueuePasses.size(); i++)
                     {
                         RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[i]));
-                        pass->mWaitGraphicsPass = graphicsPassToWaitID;
+                        pass->m_WaitGraphicsPass = graphicsPassToWaitID;
                     }
                 }
 
@@ -191,18 +191,18 @@ namespace RG
                     DAGNodeID graphicsPassToSignalID = *eastl::min_element(context.PostGraphicsQueuePasses.begin(), context.PostGraphicsQueuePasses.end());
 
                     RenderGraphPassBase* computePass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses.back()));
-                    if (computePass->mSignalValue == -1)
+                    if (computePass->m_SignalValue == -1)
                     {
-                        computePass->mSignalValue = ++context.ComputeFence;
+                        computePass->m_SignalValue = ++context.ComputeFence;
                     }
 
                     RenderGraphPassBase* graphicsPassToSignal = static_cast<RenderGraphPassBase*>(graph.GetNode(graphicsPassToSignalID));
-                    graphicsPassToSignal->mWaitValue = computePass->mSignalValue;
+                    graphicsPassToSignal->m_WaitValue = computePass->m_SignalValue;
 
                     for (size_t i = 0; i < context.ComputeQueuePasses.size(); i++)
                     {
                         RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[i]));
-                        pass->mSignalGraphicsPass = graphicsPassToSignalID;
+                        pass->m_SignalGraphicsPass = graphicsPassToSignalID;
                     }
                 }
 
@@ -215,9 +215,9 @@ namespace RG
 
     void RenderGraphPassBase::Execute(const RenderGraph &graph, RenderGraphPassExecuteContext &context)
     {
-        RHI::RHICommandList* pCmdList = mType == RenderPassType::AsyncCompute ? context.ComputeCmdList : context.GraphicsCmdList;
+        RHI::RHICommandList* pCmdList = m_Type == RenderPassType::AsyncCompute ? context.ComputeCmdList : context.GraphicsCmdList;
 
-        if (mWaitValue != -1)
+        if (m_WaitValue != -1)
         {
             pCmdList->End();
             pCmdList->Submit();
@@ -225,48 +225,48 @@ namespace RG
             pCmdList->Begin();
             context.pRenderer->SetupGlobalConstants(pCmdList);
 
-            if (mType == RenderPassType::AsyncCompute)
+            if (m_Type == RenderPassType::AsyncCompute)
             {
-                pCmdList->Wait(context.GraphicsFence, context.InitialGraphicsFenceValue + mWaitValue);
+                pCmdList->Wait(context.GraphicsFence, context.InitialGraphicsFenceValue + m_WaitValue);
             }
             else
             {
-                pCmdList->Wait(context.ComputeFence, context.InitialComputeFenceValue + mWaitValue);
+                pCmdList->Wait(context.ComputeFence, context.InitialComputeFenceValue + m_WaitValue);
             }
         }
 
-        for (size_t i = 0; i < mEventNames.size(); i++)
+        for (size_t i = 0; i < m_EventNames.size(); i++)
         {
-            context.GraphicsCmdList->BeginEvent(mEventNames[i]);
+            context.GraphicsCmdList->BeginEvent(m_EventNames[i]);
             // TODO : Profiler
         }
         if (!IsCulled())
         {
-            GPU_EVENT_DEBUG(pCmdList, mName);
+            GPU_EVENT_DEBUG(pCmdList, m_Name);
 
             Begin(graph, pCmdList);
             ExecuteImpl(pCmdList);
             End(pCmdList);
         }
 
-        for (uint32_t i = 0; i < mEndEventNum; i++)
+        for (uint32_t i = 0; i < m_EndEventNum; i++)
         {
             context.GraphicsCmdList->EndEvent();
             // TODO : Profiler
         }
 
-        if (mSignalValue != -1)
+        if (m_SignalValue != -1)
         {
             pCmdList->End();
-            if (mType == RenderPassType::AsyncCompute)
+            if (m_Type == RenderPassType::AsyncCompute)
             {
-                pCmdList->Signal(context.ComputeFence, context.InitialComputeFenceValue + mSignalValue);
-                context.LastSignalComputeFenceValue = context.InitialComputeFenceValue + mSignalValue;
+                pCmdList->Signal(context.ComputeFence, context.InitialComputeFenceValue + m_SignalValue);
+                context.LastSignalComputeFenceValue = context.InitialComputeFenceValue + m_SignalValue;
             }
             else
             {
-                pCmdList->Signal(context.GraphicsFence, context.InitialGraphicsFenceValue + mSignalValue);
-                context.LastSignalGraphicsFenceValue = context.InitialGraphicsFenceValue + mSignalValue;
+                pCmdList->Signal(context.GraphicsFence, context.InitialGraphicsFenceValue + m_SignalValue);
+                context.LastSignalGraphicsFenceValue = context.InitialGraphicsFenceValue + m_SignalValue;
             }
             pCmdList->Submit();
 
@@ -277,9 +277,9 @@ namespace RG
 
     void RenderGraphPassBase::Begin(const RenderGraph &graph, RHI::RHICommandList *pCmdList)
     {
-        for (size_t i = 0; i < mAliasDiscardBarriers.size(); i++)
+        for (size_t i = 0; i < m_AliasDiscardBarriers.size(); i++)
         {
-            const AliasDiscardBarrier& barrier = mAliasDiscardBarriers[i];
+            const AliasDiscardBarrier& barrier = m_AliasDiscardBarriers[i];
 
             if (barrier.Resource->IsTexture())
             {
@@ -291,9 +291,9 @@ namespace RG
             }
         }
 
-        for (size_t i = 0; i < mResourceBarriers.size(); i++)
+        for (size_t i = 0; i < m_ResourceBarriers.size(); i++)
         {
-            const ResourceBarrier& barrier = mResourceBarriers[i];
+            const ResourceBarrier& barrier = m_ResourceBarriers[i];
             barrier.Resource->Barrier(pCmdList, barrier.Subresource, barrier.OldState, barrier.NewState);
         }
 
@@ -303,41 +303,41 @@ namespace RG
 
             for (int i = 0; i < RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
             {
-                if (mpColorRT[i] != nullptr)
+                if (m_pColorRT[i] != nullptr)
                 {
-                    RenderGraphResourceNode* node = static_cast<RenderGraphResourceNode*>(graph.GetDAG().GetNode(mpColorRT[i]->GetToNode()));
+                    RenderGraphResourceNode* node = static_cast<RenderGraphResourceNode*>(graph.GetDAG().GetNode(m_pColorRT[i]->GetToNode()));
                     RHI::RHITexture* texture = static_cast<RGTexture*>(node->GetResource())->GetTexture();
 
                     uint32_t mip, slice;
-                    RHI::DecomposeSubresource(texture->GetDesc(), mpColorRT[i]->GetSubresource(), mip, slice);
+                    RHI::DecomposeSubresource(texture->GetDesc(), m_pColorRT[i]->GetSubresource(), mip, slice);
 
                     rpDesc.Color[i].Texture = texture;
                     rpDesc.Color[i].MipSlice = mip;
                     rpDesc.Color[i].ArraySlice = slice;
-                    rpDesc.Color[i].LoadOp = mpColorRT[i]->GetLoadOp();
+                    rpDesc.Color[i].LoadOp = m_pColorRT[i]->GetLoadOp();
                     rpDesc.Color[i].StoreOp = node->IsCulled() ? RHI::ERHIRenderPassStoreOp::DontCare : RHI::ERHIRenderPassStoreOp::Store;
-                    memcpy(rpDesc.Color[i].ClearColor, mpColorRT[i]->GetClearColor(), sizeof(float) * 4);
+                    memcpy(rpDesc.Color[i].ClearColor, m_pColorRT[i]->GetClearColor(), sizeof(float) * 4);
                 }
             }
 
-            if (mpDepthRT != nullptr)
+            if (m_pDepthRT != nullptr)
             {
-                RenderGraphResourceNode* node = static_cast<RenderGraphResourceNode*>(graph.GetDAG().GetNode(mpDepthRT->GetToNode()));
+                RenderGraphResourceNode* node = static_cast<RenderGraphResourceNode*>(graph.GetDAG().GetNode(m_pDepthRT->GetToNode()));
                 RHI::RHITexture* texture = static_cast<RGTexture*>(node->GetResource())->GetTexture();
 
                 uint32_t mip, slice;
-                RHI::DecomposeSubresource(texture->GetDesc(), mpDepthRT->GetSubresource(), mip, slice);
+                RHI::DecomposeSubresource(texture->GetDesc(), m_pDepthRT->GetSubresource(), mip, slice);
 
                 rpDesc.Depth.Texture = static_cast<RGTexture*>(node->GetResource())->GetTexture();
-                rpDesc.Depth.DepthLoadOp = mpDepthRT->GetDepthLoadOp();
-                rpDesc.Depth.StencilLoadOp = mpDepthRT->GetStencilLoadOp();
+                rpDesc.Depth.DepthLoadOp = m_pDepthRT->GetDepthLoadOp();
+                rpDesc.Depth.StencilLoadOp = m_pDepthRT->GetStencilLoadOp();
                 rpDesc.Depth.DepthStoreOp = node->IsCulled() ? RHI::ERHIRenderPassStoreOp::DontCare : RHI::ERHIRenderPassStoreOp::Store;
                 rpDesc.Depth.StencilStoreOp = node->IsCulled() ? RHI::ERHIRenderPassStoreOp::DontCare : RHI::ERHIRenderPassStoreOp::Store;
-                rpDesc.Depth.ClearDepth = mpDepthRT->GetClearDepth();
-                rpDesc.Depth.ClearStencil = mpDepthRT->GetClearStencil();
+                rpDesc.Depth.ClearDepth = m_pDepthRT->GetClearDepth();
+                rpDesc.Depth.ClearStencil = m_pDepthRT->GetClearStencil();
                 rpDesc.Depth.MipSlice = mip;
                 rpDesc.Depth.ArraySlice = slice;
-                rpDesc.Depth.bReadOnly = mpDepthRT->IsReadOnly();
+                rpDesc.Depth.bReadOnly = m_pDepthRT->IsReadOnly();
             }
             pCmdList->BeginRenderPass(rpDesc);
         }
@@ -355,11 +355,11 @@ namespace RG
     {
         for (int i = 0; i < RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
         {
-            if (mpColorRT[i] != nullptr)
+            if (m_pColorRT[i] != nullptr)
             {
                 return true;
             }
         }
-        return mpDepthRT != nullptr;
+        return m_pDepthRT != nullptr;
     }
 }

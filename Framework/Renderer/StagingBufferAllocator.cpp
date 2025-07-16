@@ -7,47 +7,47 @@ namespace Renderer
 {
     StagingBufferAllocator::StagingBufferAllocator(RendererBase *renderer)
     {
-        mpRenderer = renderer;
+        m_pRenderer = renderer;
     }
 
     StagingBuffer StagingBufferAllocator::Allocate(uint32_t size)
     {
         assert(size <= RHI::RHI_MAX_BUFFER_SIZE);
 
-        if (mBuffers.empty())
+        if (m_Buffers.empty())
         {
             CreateNewBuffer();
         }
 
-        if (mAllocatedSize + size > RHI::RHI_MAX_BUFFER_SIZE)
+        if (m_AllocatedSize + size > RHI::RHI_MAX_BUFFER_SIZE)
         {
             CreateNewBuffer();
-            mCurrentBuffer++;
-            mAllocatedSize = 0;
+            m_CurrentBuffer++;
+            m_AllocatedSize = 0;
         }
 
         StagingBuffer buffer;
-        buffer.Buffer = mBuffers[mCurrentBuffer].get();
+        buffer.Buffer = m_Buffers[m_CurrentBuffer].get();
         buffer.Size = size;
-        buffer.Offset = mAllocatedSize;
+        buffer.Offset = m_AllocatedSize;
 
-        mAllocatedSize += RoundUpPow2(size, 512);
-        mLastAllocatedFrame = mpRenderer->GetFrameID();
+        m_AllocatedSize += RoundUpPow2(size, 512);
+        m_LastAllocatedFrame = m_pRenderer->GetFrameID();
 
         return buffer;
     }
 
     void StagingBufferAllocator::Reset()
     {
-        mCurrentBuffer = 0;
-        mAllocatedSize = 0;
+        m_CurrentBuffer = 0;
+        m_AllocatedSize = 0;
 
-        if (!mBuffers.empty())
+        if (!m_Buffers.empty())
         {
             // 超时销毁
-            if (mpRenderer->GetFrameID() - mLastAllocatedFrame > 100)
+            if (m_pRenderer->GetFrameID() - m_LastAllocatedFrame > 100)
             {
-                mBuffers.clear();
+                m_Buffers.clear();
             }
         }
     }
@@ -58,7 +58,7 @@ namespace Renderer
         desc.Size = RHI::RHI_MAX_BUFFER_SIZE;
         desc.MemoryType = RHI::ERHIMemoryType::CPUOnly;
 
-        RHI::RHIBuffer* buffer = mpRenderer->GetDevice()->CreateBuffer(desc, "StagingBufferAllocator:mpBuffer");
-        mBuffers.push_back(eastl::unique_ptr<RHI::RHIBuffer>(buffer));
+        RHI::RHIBuffer* buffer = m_pRenderer->GetDevice()->CreateBuffer(desc, "StagingBufferAllocator:m_pBuffer");
+        m_Buffers.push_back(eastl::unique_ptr<RHI::RHIBuffer>(buffer));
     }
 }

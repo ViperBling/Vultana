@@ -13,12 +13,12 @@ namespace RHI
         RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name);
         ~RHIGraphicsPipelineStateVK();
 
-        virtual void* GetNativeHandle() const override { return mPipeline; }
+        virtual void* GetNativeHandle() const override { return m_Pipeline; }
         virtual bool Create() override;
 
     private:
-        RHIGraphicsPipelineStateDesc mDesc;
-        vk::Pipeline mPipeline = VK_NULL_HANDLE;
+        RHIGraphicsPipelineStateDesc m_Desc;
+        vk::Pipeline m_Pipeline = VK_NULL_HANDLE;
     };
 
     class RHIMeshShadingPipelineStateVK : public RHIPipelineState
@@ -27,12 +27,12 @@ namespace RHI
         RHIMeshShadingPipelineStateVK(RHIDeviceVK *device, const RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name);
         ~RHIMeshShadingPipelineStateVK();
 
-        virtual void* GetNativeHandle() const override { return mPipeline; }
+        virtual void* GetNativeHandle() const override { return m_Pipeline; }
         virtual bool Create() override;
 
     private:
-        RHIMeshShadingPipelineStateDesc mDesc;
-        vk::Pipeline mPipeline = VK_NULL_HANDLE;
+        RHIMeshShadingPipelineStateDesc m_Desc;
+        vk::Pipeline m_Pipeline = VK_NULL_HANDLE;
     };
 
     class RHIComputePipelineStateVK : public RHIPipelineState
@@ -41,11 +41,11 @@ namespace RHI
         RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const eastl::string &name);
         ~RHIComputePipelineStateVK();
 
-        virtual void* GetNativeHandle() const override { return mPipeline; }
+        virtual void* GetNativeHandle() const override { return m_Pipeline; }
         virtual bool Create() override;
 
     private:
-        RHIComputePipelineStateDesc mDesc;
-        vk::Pipeline mPipeline = VK_NULL_HANDLE;
+        RHIComputePipelineStateDesc m_Desc;
+        vk::Pipeline m_Pipeline = VK_NULL_HANDLE;
     };
 }

@@ -29,32 +29,32 @@ namespace RHI
 
     RHIDeviceVK::RHIDeviceVK(const RHIDeviceDesc &desc)
     {
-        mDesc = desc;
+        m_Desc = desc;
     }
 
     RHIDeviceVK::~RHIDeviceVK()
     {
-        mDevice.waitIdle();
+        m_Device.waitIdle();
         
         for (size_t i = 0; i < RHI_MAX_INFLIGHT_FRAMES; i++)
         {
-            delete mTransitionCopyCmdList[i];
-            delete mTransitionGraphicsCmdList[i];
-            delete mConstantBufferAllocators[i];
+            delete m_TransitionCopyCmdList[i];
+            delete m_TransitionGraphicsCmdList[i];
+            delete m_ConstantBufferAllocators[i];
         }
-        delete mDeferredDeletionQueue;
+        delete m_DeferredDeletionQueue;
 
-        delete mResourceDesAllocator;
-        delete mSamplerDesAllocator;
+        delete m_ResourceDesAllocator;
+        delete m_SamplerDesAllocator;
 
-        vmaDestroyAllocator(mAllocator);
-        mDevice.destroyDescriptorSetLayout(mDescSetLayout[0]);
-        mDevice.destroyDescriptorSetLayout(mDescSetLayout[1]);
-        mDevice.destroyDescriptorSetLayout(mDescSetLayout[2]);
-        mDevice.destroyPipelineLayout(mPipelineLayout);
-        mDevice.destroy();
-        mInstance.destroyDebugUtilsMessengerEXT(mDebugMessenger, nullptr, mDynamicLoader);
-        mInstance.destroy();
+        vmaDestroyAllocator(m_Allocator);
+        m_Device.destroyDescriptorSetLayout(m_DescSetLayout[0]);
+        m_Device.destroyDescriptorSetLayout(m_DescSetLayout[1]);
+        m_Device.destroyDescriptorSetLayout(m_DescSetLayout[2]);
+        m_Device.destroyPipelineLayout(m_PipelineLayout);
+        m_Device.destroy();
+        m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_DynamicLoader);
+        m_Instance.destroy();
     }
 
     bool RHIDeviceVK::Initialize()
@@ -64,51 +64,51 @@ namespace RHI
         CreateVmaAllocator();
         CreatePipelineLayout();
 
-        mDeferredDeletionQueue = new RHIDeletionQueueVK(this);
+        m_DeferredDeletionQueue = new RHIDeletionQueueVK(this);
 
         for (size_t i = 0; i < RHI_MAX_INFLIGHT_FRAMES; i++)
         {
-            mTransitionCopyCmdList[i] = CreateCommandList(ERHICommandQueueType::Copy, "Transition CmdList(Copy)");
-            mTransitionGraphicsCmdList[i] = CreateCommandList(ERHICommandQueueType::Graphics, "Transition CmdList(Graphics)");
+            m_TransitionCopyCmdList[i] = CreateCommandList(ERHICommandQueueType::Copy, "Transition CmdList(Copy)");
+            m_TransitionGraphicsCmdList[i] = CreateCommandList(ERHICommandQueueType::Graphics, "Transition CmdList(Graphics)");
 
-            mConstantBufferAllocators[i] = new RHIConstantBufferAllocatorVK(this, 8 * 1024 * 1024);
+            m_ConstantBufferAllocators[i] = new RHIConstantBufferAllocatorVK(this, 8 * 1024 * 1024);
         }
 
         vk::PhysicalDeviceProperties2 props2 {};
-        props2.pNext = &mDescBufferProps;
-        mPhysicalDevice.getProperties2(&props2);
+        props2.pNext = &m_DescBufferProps;
+        m_PhysicalDevice.getProperties2(&props2);
 
-        size_t resourceDescSize = mDescBufferProps.sampledImageDescriptorSize;
-        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.storageImageDescriptorSize);
-        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustUniformTexelBufferDescriptorSize);
-        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustStorageTexelBufferDescriptorSize);
-        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustUniformBufferDescriptorSize);
-        resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.robustStorageBufferDescriptorSize);
-        // resourceDescSize = eastl::max(resourceDescSize, mDescBufferProps.accelerationStructureDescriptorSize);
+        size_t resourceDescSize = m_DescBufferProps.sampledImageDescriptorSize;
+        resourceDescSize = eastl::max(resourceDescSize, m_DescBufferProps.storageImageDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, m_DescBufferProps.robustUniformTexelBufferDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, m_DescBufferProps.robustStorageTexelBufferDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, m_DescBufferProps.robustUniformBufferDescriptorSize);
+        resourceDescSize = eastl::max(resourceDescSize, m_DescBufferProps.robustStorageBufferDescriptorSize);
+        // resourceDescSize = eastl::max(resourceDescSize, m_DescBufferProps.accelerationStructureDescriptorSize);
 
-        size_t samplerDescSize = mDescBufferProps.samplerDescriptorSize;
+        size_t samplerDescSize = m_DescBufferProps.samplerDescriptorSize;
 
-        mResourceDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)resourceDescSize, RHI_MAX_RESOURCE_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
-        mSamplerDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)samplerDescSize, RHI_MAX_SAMPLER_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
+        m_ResourceDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)resourceDescSize, RHI_MAX_RESOURCE_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
+        m_SamplerDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)samplerDescSize, RHI_MAX_SAMPLER_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
 
         return true;
     }
 
     void RHIDeviceVK::BeginFrame()
     {
-        mDeferredDeletionQueue->Flush();
+        m_DeferredDeletionQueue->Flush();
 
-        uint32_t index = mFrameID % RHI_MAX_INFLIGHT_FRAMES;
-        mTransitionCopyCmdList[index]->ResetAllocator();
-        mTransitionGraphicsCmdList[index]->ResetAllocator();
-        mConstantBufferAllocators[index]->Reset();
+        uint32_t index = m_FrameID % RHI_MAX_INFLIGHT_FRAMES;
+        m_TransitionCopyCmdList[index]->ResetAllocator();
+        m_TransitionGraphicsCmdList[index]->ResetAllocator();
+        m_ConstantBufferAllocators[index]->Reset();
     }
 
     void RHIDeviceVK::EndFrame()
     {
-        ++mFrameID;
+        ++m_FrameID;
 
-        vmaSetCurrentFrameIndex(mAllocator, (uint32_t)mFrameID);
+        vmaSetCurrentFrameIndex(m_Allocator, (uint32_t)m_FrameID);
     }
 
     RHISwapchain *RHIDeviceVK::CreateSwapchain(const RHISwapchainDesc &desc, const eastl::string &name)
@@ -272,15 +272,15 @@ namespace RHI
 
     uint32_t RHIDeviceVK::GetAllocationSize(const RHITextureDesc &desc)
     {
-        auto iter = mTextureSizeMap.find(desc);
-        if (iter != mTextureSizeMap.end())
+        auto iter = m_TextureSizeMap.find(desc);
+        if (iter != m_TextureSizeMap.end())
         {
             return iter->second;
         }
 
         vk::ImageCreateInfo imageCI = ToVulkanImageCreateInfo(desc);
         vk::Image image;
-        image = mDevice.createImage(imageCI);
+        image = m_Device.createImage(imageCI);
         if (!image)
         {
             return 0;
@@ -288,10 +288,10 @@ namespace RHI
 
         vk::ImageMemoryRequirementsInfo2 memReqInfo2 {};
         memReqInfo2.setImage(image);
-        vk::MemoryRequirements2 requires2 = mDevice.getImageMemoryRequirements2(memReqInfo2);
-        mDevice.destroyImage(image);
+        vk::MemoryRequirements2 requires2 = m_Device.getImageMemoryRequirements2(memReqInfo2);
+        m_Device.destroyImage(image);
 
-        mTextureSizeMap.emplace(desc, (uint32_t)requires2.memoryRequirements.size);
+        m_TextureSizeMap.emplace(desc, (uint32_t)requires2.memoryRequirements.size);
         return (uint32_t)requires2.memoryRequirements.size;
     }
 
@@ -302,25 +302,25 @@ namespace RHI
 
     RHIConstantBufferAllocatorVK *RHIDeviceVK::GetConstantBufferAllocator() const
     {
-        uint32_t index = mFrameID % RHI_MAX_INFLIGHT_FRAMES;
-        return mConstantBufferAllocators[index];
+        uint32_t index = m_FrameID % RHI_MAX_INFLIGHT_FRAMES;
+        return m_ConstantBufferAllocators[index];
     }
 
     uint32_t RHIDeviceVK::AllocateResourceDescriptor(void **desc)
     {
-        return mResourceDesAllocator->Allocate(desc);
+        return m_ResourceDesAllocator->Allocate(desc);
     }
 
     uint32_t RHIDeviceVK::AllocateSamplerDescriptor(void **desc)
     {
-        return mSamplerDesAllocator->Allocate(desc);
+        return m_SamplerDesAllocator->Allocate(desc);
     }
 
     void RHIDeviceVK::FreeResourceDescriptor(uint32_t index)
     {
         if (index != RHI_INVALID_RESOURCE)
         {
-            mDeferredDeletionQueue->FreeResourceDescriptor(index, mFrameID);
+            m_DeferredDeletionQueue->FreeResourceDescriptor(index, m_FrameID);
         }
     }
 
@@ -328,7 +328,7 @@ namespace RHI
     {
         if (index != RHI_INVALID_RESOURCE)
         {
-            mDeferredDeletionQueue->FreeSamplerDescriptor(index, mFrameID);
+            m_DeferredDeletionQueue->FreeSamplerDescriptor(index, m_FrameID);
         }
     }
 
@@ -345,7 +345,7 @@ namespace RHI
 
     vk::DeviceSize RHIDeviceVK::AllocateConstantBufferDescriptor(const uint32_t *cbv0, const vk::DescriptorAddressInfoEXT &cbv1, const vk::DescriptorAddressInfoEXT &cbv2)
     {
-        size_t descBufferSize = sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + mDescBufferProps.robustUniformBufferDescriptorSize * 2;
+        size_t descBufferSize = sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + m_DescBufferProps.robustUniformBufferDescriptorSize * 2;
         void* cpuAddress = nullptr;
         vk::DeviceAddress gpuAddress = 0;
         GetConstantBufferAllocator()->Allocate((uint32_t)descBufferSize, &cpuAddress, &gpuAddress);
@@ -358,13 +358,13 @@ namespace RHI
         if (cbv1.address != 0)
         {
             descGI.data.pUniformBuffer = &cbv1;
-            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS, mDynamicLoader);
+            m_Device.getDescriptorEXT(descGI, m_DescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS, m_DynamicLoader);
         }
 
         if (cbv2.address != 0)
         {
             descGI.data.pUniformBuffer = &cbv2;
-            mDevice.getDescriptorEXT(descGI, mDescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + mDescBufferProps.robustUniformBufferDescriptorSize, mDynamicLoader);
+            m_Device.getDescriptorEXT(descGI, m_DescBufferProps.robustUniformBufferDescriptorSize, (char*)cpuAddress + sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + m_DescBufferProps.robustUniformBufferDescriptorSize, m_DynamicLoader);
         }
 
         vk::DeviceSize descBufferOffset = gpuAddress - GetConstantBufferAllocator()->GetGPUAddress();
@@ -377,87 +377,87 @@ namespace RHI
 
         if (((RHITextureVK*)texture)->IsSwapchainTexture())
         {
-            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessPresent);
+            m_PendingGraphicsTransitions.emplace_back(texture, RHIAccessPresent);
         }
         else if (desc.Usage & RHITextureUsageRenderTarget)
         {
-            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessRTV);
+            m_PendingGraphicsTransitions.emplace_back(texture, RHIAccessRTV);
         }
         else if (desc.Usage & RHITextureUsageDepthStencil)
         {
-            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessDSV);
+            m_PendingGraphicsTransitions.emplace_back(texture, RHIAccessDSV);
         }
         else if (desc.Usage & RHITextureUsageUnorderedAccess)
         {
-            mPendingGraphicsTransitions.emplace_back(texture, RHIAccessMaskUAV);
+            m_PendingGraphicsTransitions.emplace_back(texture, RHIAccessMaskUAV);
         }
         else
         {
-            mPendingCopyTransitions.emplace_back(texture, RHIAccessCopyDst);
+            m_PendingCopyTransitions.emplace_back(texture, RHIAccessCopyDst);
         }
     }
 
     void RHIDeviceVK::CancelDefaultLayoutTransition(RHITexture *texture)
     {
-        auto iter = eastl::find_if(mPendingGraphicsTransitions.begin(), mPendingGraphicsTransitions.end(),
+        auto iter = eastl::find_if(m_PendingGraphicsTransitions.begin(), m_PendingGraphicsTransitions.end(),
         [texture](const eastl::pair<RHITexture*, ERHIAccessFlags>& transition)
         {
             return transition.first == texture;
         });
-        if (iter != mPendingGraphicsTransitions.end())
+        if (iter != m_PendingGraphicsTransitions.end())
         {
-            mPendingGraphicsTransitions.erase(iter);
+            m_PendingGraphicsTransitions.erase(iter);
         }
 
-        iter = eastl::find_if(mPendingCopyTransitions.begin(), mPendingCopyTransitions.end(),
+        iter = eastl::find_if(m_PendingCopyTransitions.begin(), m_PendingCopyTransitions.end(),
         [texture](const eastl::pair<RHITexture*, ERHIAccessFlags>& transition)
         {
             return transition.first == texture;
         });
-        if (iter != mPendingCopyTransitions.end())
+        if (iter != m_PendingCopyTransitions.end())
         {
-            mPendingCopyTransitions.erase(iter);
+            m_PendingCopyTransitions.erase(iter);
         }
     }
 
     void RHIDeviceVK::FlushLayoutTransition(ERHICommandQueueType queueType)
     {
-        uint32_t index = mFrameID % RHI_MAX_INFLIGHT_FRAMES;
+        uint32_t index = m_FrameID % RHI_MAX_INFLIGHT_FRAMES;
 
         if (queueType == ERHICommandQueueType::Graphics)
         {
-            if (!mPendingGraphicsTransitions.empty() || !mPendingCopyTransitions.empty())
+            if (!m_PendingGraphicsTransitions.empty() || !m_PendingCopyTransitions.empty())
             {
-                mTransitionGraphicsCmdList[index]->Begin();
-                for (size_t i = 0; i < mPendingGraphicsTransitions.size(); i++)
+                m_TransitionGraphicsCmdList[index]->Begin();
+                for (size_t i = 0; i < m_PendingGraphicsTransitions.size(); i++)
                 {
-                    mTransitionGraphicsCmdList[index]->TextureBarrier(mPendingGraphicsTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, mPendingGraphicsTransitions[i].second);
+                    m_TransitionGraphicsCmdList[index]->TextureBarrier(m_PendingGraphicsTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, m_PendingGraphicsTransitions[i].second);
                 }
-                mPendingGraphicsTransitions.clear();
+                m_PendingGraphicsTransitions.clear();
 
-                for (size_t i = 0; i < mPendingCopyTransitions.size(); i++)
+                for (size_t i = 0; i < m_PendingCopyTransitions.size(); i++)
                 {
-                    mTransitionGraphicsCmdList[index]->TextureBarrier(mPendingCopyTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, mPendingCopyTransitions[i].second);
+                    m_TransitionGraphicsCmdList[index]->TextureBarrier(m_PendingCopyTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, m_PendingCopyTransitions[i].second);
                 }
-                mPendingCopyTransitions.clear();
+                m_PendingCopyTransitions.clear();
 
-                mTransitionGraphicsCmdList[index]->End();
-                mTransitionGraphicsCmdList[index]->Submit();
+                m_TransitionGraphicsCmdList[index]->End();
+                m_TransitionGraphicsCmdList[index]->Submit();
             }
         }
         if (queueType == ERHICommandQueueType::Copy)
         {
-            if (!mPendingCopyTransitions.empty())
+            if (!m_PendingCopyTransitions.empty())
             {
-                mTransitionCopyCmdList[index]->Begin();
-                for (size_t i = 0; i < mPendingCopyTransitions.size(); i++)
+                m_TransitionCopyCmdList[index]->Begin();
+                for (size_t i = 0; i < m_PendingCopyTransitions.size(); i++)
                 {
-                    mTransitionCopyCmdList[index]->TextureBarrier(mPendingCopyTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, mPendingCopyTransitions[i].second);
+                    m_TransitionCopyCmdList[index]->TextureBarrier(m_PendingCopyTransitions[i].first, RHI_ALL_SUB_RESOURCE, RHIAccessDiscard, m_PendingCopyTransitions[i].second);
                 }
-                mPendingCopyTransitions.clear();
+                m_PendingCopyTransitions.clear();
 
-                mTransitionCopyCmdList[index]->End();
-                mTransitionCopyCmdList[index]->Submit();
+                m_TransitionCopyCmdList[index]->End();
+                m_TransitionCopyCmdList[index]->Submit();
             }
         }
     }
@@ -501,27 +501,27 @@ namespace RHI
         instanceCI.setPEnabledLayerNames(requiredLayers);
         instanceCI.setPEnabledExtensionNames(requiredExtensions);
 
-        mInstance = vk::createInstance(instanceCI);
+        m_Instance = vk::createInstance(instanceCI);
     }
 
     void RHIDeviceVK::CreateDevice()
     {
-        auto physicalDevices = mInstance.enumeratePhysicalDevices();
+        auto physicalDevices = m_Instance.enumeratePhysicalDevices();
         for (const auto & pd : physicalDevices)
         {
             auto properties = pd.getProperties();
             if (properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
             {
-                mPhysicalDevice = pd;
+                m_PhysicalDevice = pd;
                 break;
             }
         }
-        auto properties = mPhysicalDevice.getProperties();
+        auto properties = m_PhysicalDevice.getProperties();
 
         VTNA_LOG_INFO("GPU : {}", (char*)properties.deviceName);
         VTNA_LOG_INFO("API Version : {}.{}.{}", VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion), VK_VERSION_PATCH(properties.apiVersion));
 
-        auto physicalDeviceExtenProps = mPhysicalDevice.enumerateDeviceExtensionProperties();
+        auto physicalDeviceExtenProps = m_PhysicalDevice.enumerateDeviceExtensionProperties();
 
         // VTNA_LOG_DEBUG("Available device extensions:");
         // for (uint32_t i = 0; i < physicalDeviceExtenProps.size(); i++)
@@ -558,13 +558,13 @@ namespace RHI
         FindQueueFamilyIndex();
 
         vk::DeviceQueueCreateInfo queueCI[3] {};
-        queueCI[0].setQueueFamilyIndex(mCopyQueueIndex);
+        queueCI[0].setQueueFamilyIndex(m_CopyQueueIndex);
         queueCI[0].setQueueCount(1);
         queueCI[0].setQueuePriorities(queuePriorities);
-        queueCI[1].setQueueFamilyIndex(mGraphicsQueueIndex);
+        queueCI[1].setQueueFamilyIndex(m_GraphicsQueueIndex);
         queueCI[1].setQueueCount(1);
         queueCI[1].setQueuePriorities(queuePriorities);
-        queueCI[2].setQueueFamilyIndex(mComputeQueueIndex);
+        queueCI[2].setQueueFamilyIndex(m_ComputeQueueIndex);
         queueCI[2].setQueueCount(1);
         queueCI[2].setQueuePriorities(queuePriorities);
 
@@ -608,7 +608,7 @@ namespace RHI
         descBuffer.setDescriptorBuffer(VK_TRUE);
 
         vk::PhysicalDeviceFeatures features {};
-        features = mPhysicalDevice.getFeatures();
+        features = m_PhysicalDevice.getFeatures();
 
         vk::DeviceCreateInfo deviceCI {};
         deviceCI.setPNext(&descBuffer);
@@ -616,37 +616,37 @@ namespace RHI
         deviceCI.setPEnabledFeatures(&features);
         deviceCI.setPEnabledExtensionNames(requiredExtensions);
 
-        mDevice = mPhysicalDevice.createDevice(deviceCI);
+        m_Device = m_PhysicalDevice.createDevice(deviceCI);
         
-        mDynamicLoader.init(mInstance, mDevice);
+        m_DynamicLoader.init(m_Instance, m_Device);
 
         vk::DebugUtilsMessengerCreateInfoEXT debugCI {};
         debugCI.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
         debugCI.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
         debugCI.setPfnUserCallback(ValidationLayerCallback);
-        mDebugMessenger = mInstance.createDebugUtilsMessengerEXT(debugCI, nullptr, mDynamicLoader);
+        m_DebugMessenger = m_Instance.createDebugUtilsMessengerEXT(debugCI, nullptr, m_DynamicLoader);
 
-        mCopyQueue = mDevice.getQueue(mCopyQueueIndex, 0);
-        mGraphicsQueue = mDevice.getQueue(mGraphicsQueueIndex, 0);
-        mComputeQueue = mDevice.getQueue(mComputeQueueIndex, 0);
+        m_CopyQueue = m_Device.getQueue(m_CopyQueueIndex, 0);
+        m_GraphicsQueue = m_Device.getQueue(m_GraphicsQueueIndex, 0);
+        m_ComputeQueue = m_Device.getQueue(m_ComputeQueueIndex, 0);
     }
 
     vk::Result RHIDeviceVK::CreateVmaAllocator()
     {
         VmaVulkanFunctions functions = {};
-        functions.vkGetInstanceProcAddr = mDynamicLoader.vkGetInstanceProcAddr;
-        functions.vkGetDeviceProcAddr = mDynamicLoader.vkGetDeviceProcAddr;
+        functions.vkGetInstanceProcAddr = m_DynamicLoader.vkGetInstanceProcAddr;
+        functions.vkGetDeviceProcAddr = m_DynamicLoader.vkGetDeviceProcAddr;
         
         VmaAllocatorCreateInfo allocatorCI {};
         allocatorCI.flags = VMA_ALLOCATOR_CREATE_KHR_BIND_MEMORY2_BIT | VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-        allocatorCI.physicalDevice = mPhysicalDevice;
-        allocatorCI.device = mDevice;
-        allocatorCI.instance = mInstance;
+        allocatorCI.physicalDevice = m_PhysicalDevice;
+        allocatorCI.device = m_Device;
+        allocatorCI.instance = m_Instance;
         allocatorCI.vulkanApiVersion = VK_API_VERSION_1_3;
         allocatorCI.preferredLargeHeapBlockSize = 0;
         allocatorCI.pVulkanFunctions = &functions;
 
-        return (vk::Result)vmaCreateAllocator(&allocatorCI, &mAllocator);
+        return (vk::Result)vmaCreateAllocator(&allocatorCI, &m_Allocator);
     }
 
     void RHIDeviceVK::CreatePipelineLayout()
@@ -711,52 +711,52 @@ namespace RHI
         descSetLayoutCI2.bindingCount = 1;
         descSetLayoutCI2.pBindings = &samplerDescHeap;
 
-        mDescSetLayout[0] = mDevice.createDescriptorSetLayout(descSetLayoutCI0);
-        mDescSetLayout[1] = mDevice.createDescriptorSetLayout(descSetLayoutCI1);
-        mDescSetLayout[2] = mDevice.createDescriptorSetLayout(descSetLayoutCI2);
+        m_DescSetLayout[0] = m_Device.createDescriptorSetLayout(descSetLayoutCI0);
+        m_DescSetLayout[1] = m_Device.createDescriptorSetLayout(descSetLayoutCI1);
+        m_DescSetLayout[2] = m_Device.createDescriptorSetLayout(descSetLayoutCI2);
 
         vk::PipelineLayoutCreateInfo pipelineLayoutCI {};
-        pipelineLayoutCI.setSetLayouts(mDescSetLayout);
+        pipelineLayoutCI.setSetLayouts(m_DescSetLayout);
 
-        mPipelineLayout = mDevice.createPipelineLayout(pipelineLayoutCI);
+        m_PipelineLayout = m_Device.createPipelineLayout(pipelineLayoutCI);
     }
 
     void RHIDeviceVK::FindQueueFamilyIndex()
     {
-        auto queueFamilyProps = mPhysicalDevice.getQueueFamilyProperties();
+        auto queueFamilyProps = m_PhysicalDevice.getQueueFamilyProperties();
 
         for (uint32_t i = 0; i < queueFamilyProps.size(); i++)
         {
-            if (mGraphicsQueueIndex == uint32_t(-1))
+            if (m_GraphicsQueueIndex == uint32_t(-1))
             {
                 if (queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eGraphics)
                 {
-                    mGraphicsQueueIndex = i;
+                    m_GraphicsQueueIndex = i;
                     continue;
                 }
             }
-            if (mCopyQueueIndex == uint32_t(-1))
+            if (m_CopyQueueIndex == uint32_t(-1))
             {
                 if (queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eTransfer &&
                     !(queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eGraphics) &&
                     !(queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eCompute))
                 {
-                    mCopyQueueIndex = i;
+                    m_CopyQueueIndex = i;
                     continue;
                 }
             }
-            if (mComputeQueueIndex == uint32_t(-1))
+            if (m_ComputeQueueIndex == uint32_t(-1))
             {
                 if (queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eCompute &&
                     !(queueFamilyProps[i].queueFlags & vk::QueueFlagBits::eGraphics))
                 {
-                    mComputeQueueIndex = i;
+                    m_ComputeQueueIndex = i;
                     continue;
                 }
             }
         }
-        assert(mGraphicsQueueIndex != uint32_t(-1));
-        assert(mCopyQueueIndex != uint32_t(-1));
-        assert(mComputeQueueIndex != uint32_t(-1));
+        assert(m_GraphicsQueueIndex != uint32_t(-1));
+        assert(m_CopyQueueIndex != uint32_t(-1));
+        assert(m_ComputeQueueIndex != uint32_t(-1));
     }
 }

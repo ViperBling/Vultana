@@ -2,16 +2,16 @@
 
 namespace Utility
 {
-    std::filesystem::path FilePaths::mWorkingDir = std::filesystem::path();
-    std::filesystem::path FilePaths::mCurrentProjectFile = std::filesystem::path();
+    std::filesystem::path FilePaths::m_WorkingDir = std::filesystem::path();
+    std::filesystem::path FilePaths::m_CurrentProjectFile = std::filesystem::path();
 
     std::filesystem::path FilePaths::WorkingDir()
     {
-        if (mWorkingDir.empty())
+        if (m_WorkingDir.empty())
         {
-            mWorkingDir = std::filesystem::current_path();
+            m_WorkingDir = std::filesystem::current_path();
         }
-        return mWorkingDir;
+        return m_WorkingDir;
     }
 
     std::filesystem::path FilePaths::EngineRoot()
@@ -46,12 +46,12 @@ namespace Utility
 
     std::filesystem::path FilePaths::ProjectFile()
     {
-        return mCurrentProjectFile;
+        return m_CurrentProjectFile;
     }
 
     std::filesystem::path FilePaths::ProjectRoot()
     {
-        return mCurrentProjectFile.parent_path();
+        return m_CurrentProjectFile.parent_path();
     }
 
     std::filesystem::path FilePaths::ProjectAssetPath()

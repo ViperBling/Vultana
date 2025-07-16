@@ -8,7 +8,7 @@
 
 namespace Editor
 {
-    ImGuiImplement::ImGuiImplement(Renderer::RendererBase* pRenderer) : mpRenderer(pRenderer)
+    ImGuiImplement::ImGuiImplement(Renderer::RendererBase* pRenderer) : m_pRenderer(pRenderer)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -37,7 +37,7 @@ namespace Editor
 
     bool ImGuiImplement::Init()
     {
-        auto pDevice = mpRenderer->GetDevice();
+        auto pDevice = m_pRenderer->GetDevice();
 
         eastl::string iniPath = Core::VultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
         ImGui::LoadIniSettingsFromDisk(iniPath.c_str());
@@ -58,24 +58,24 @@ namespace Editor
         int width, height;
         io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-        mpFontTexture.reset(mpRenderer->CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8UNORM, 0, "GUI::FontTexture"));
-        mpRenderer->UploadTexture(mpFontTexture->GetTexture(), pixels);
+        m_pFontTexture.reset(m_pRenderer->CreateTexture2D(width, height, 1, RHI::ERHIFormat::RGBA8UNORM, 0, "GUI::FontTexture"));
+        m_pRenderer->UploadTexture(m_pFontTexture->GetTexture(), pixels);
 
-        io.Fonts->TexID = (ImTextureID)mpFontTexture->GetSRV();
+        io.Fonts->TexID = (ImTextureID)m_pFontTexture->GetSRV();
 
         RHI::RHIGraphicsPipelineStateDesc psoDesc;
-        psoDesc.VS = mpRenderer->GetShader("ImGui.hlsl", "VSMain", RHI::ERHIShaderType::VS);
-        psoDesc.PS = mpRenderer->GetShader("ImGui.hlsl", "PSMain", RHI::ERHIShaderType::PS);
+        psoDesc.VS = m_pRenderer->GetShader("ImGui.hlsl", "VSMain", RHI::ERHIShaderType::VS);
+        psoDesc.PS = m_pRenderer->GetShader("ImGui.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthWrite = false;
         psoDesc.BlendState[0].bBlendEnable = true;
         psoDesc.BlendState[0].ColorSrc = RHI::ERHIBlendFactor::SrcAlpha;
         psoDesc.BlendState[0].ColorDst = RHI::ERHIBlendFactor::InvSrcAlpha;
         psoDesc.BlendState[0].AlphaSrc = RHI::ERHIBlendFactor::One;
         psoDesc.BlendState[0].AlphaDst = RHI::ERHIBlendFactor::InvSrcAlpha;
-        psoDesc.RTFormats[0] = mpRenderer->GetSwapchain()->GetDesc()->ColorFormat;
+        psoDesc.RTFormats[0] = m_pRenderer->GetSwapchain()->GetDesc()->ColorFormat;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
 
-        mpPSO = mpRenderer->GetPipelineState(psoDesc, "ImGuiPSO");
+        m_pPSO = m_pRenderer->GetPipelineState(psoDesc, "ImGuiPSO");
 
         return true;
     }
@@ -97,7 +97,7 @@ namespace Editor
         
         ImGui::Render();
 
-        auto pDevice = mpRenderer->GetDevice();
+        auto pDevice = m_pRenderer->GetDevice();
         ImDrawData* drawData = ImGui::GetDrawData();
 
         if (drawData->DisplaySize.x <= 0.0f || drawData->DisplaySize.y <= 0.0f)
@@ -107,17 +107,17 @@ namespace Editor
 
         uint32_t frameIndex = pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
 
-        if (mpVertexBuffer[frameIndex] == nullptr || mpVertexBuffer[frameIndex]->GetBuffer()->GetDesc().Size < drawData->TotalVtxCount * sizeof(ImDrawVert))
+        if (m_pVertexBuffer[frameIndex] == nullptr || m_pVertexBuffer[frameIndex]->GetBuffer()->GetDesc().Size < drawData->TotalVtxCount * sizeof(ImDrawVert))
         {
-            mpVertexBuffer[frameIndex].reset(mpRenderer->CreateStructuredBuffer(nullptr, sizeof(ImDrawVert), drawData->TotalVtxCount + 5000, "GUI::VertexBuffer", RHI::ERHIMemoryType::CPUToGPU));
+            m_pVertexBuffer[frameIndex].reset(m_pRenderer->CreateStructuredBuffer(nullptr, sizeof(ImDrawVert), drawData->TotalVtxCount + 5000, "GUI::VertexBuffer", RHI::ERHIMemoryType::CPUToGPU));
         }
-        if (mpIndexBuffer[frameIndex] == nullptr || mpIndexBuffer[frameIndex]->GetIndexCount() < (uint32_t)drawData->TotalIdxCount)
+        if (m_pIndexBuffer[frameIndex] == nullptr || m_pIndexBuffer[frameIndex]->GetIndexCount() < (uint32_t)drawData->TotalIdxCount)
         {
-            mpIndexBuffer[frameIndex].reset(mpRenderer->CreateIndexBuffer(nullptr, sizeof(ImDrawIdx), drawData->TotalIdxCount + 10000, "GUI::IndexBuffer",  RHI::ERHIMemoryType::CPUToGPU));
+            m_pIndexBuffer[frameIndex].reset(m_pRenderer->CreateIndexBuffer(nullptr, sizeof(ImDrawIdx), drawData->TotalIdxCount + 10000, "GUI::IndexBuffer",  RHI::ERHIMemoryType::CPUToGPU));
         }
 
-        ImDrawVert* vtxDst = (ImDrawVert*)mpVertexBuffer[frameIndex]->GetBuffer()->GetCPUAddress();
-        ImDrawIdx* idxDst = (ImDrawIdx*)mpIndexBuffer[frameIndex]->GetBuffer()->GetCPUAddress();
+        ImDrawVert* vtxDst = (ImDrawVert*)m_pVertexBuffer[frameIndex]->GetBuffer()->GetCPUAddress();
+        ImDrawIdx* idxDst = (ImDrawIdx*)m_pIndexBuffer[frameIndex]->GetBuffer()->GetCPUAddress();
 
         for (int n = 0; n < drawData->CmdListsCount; n++)
         {
@@ -171,10 +171,10 @@ namespace Editor
 
                     uint32_t resourceIds[4] = 
                     {
-                        mpVertexBuffer[frameIndex]->GetSRV()->GetHeapIndex(),
+                        m_pVertexBuffer[frameIndex]->GetSRV()->GetHeapIndex(),
                         pCmd->VtxOffset + globalVtxOffset,
                         ((RHI::RHIDescriptor*)pCmd->TextureId)->GetHeapIndex(),
-                        mpRenderer->GetLinearSampler()->GetHeapIndex()
+                        m_pRenderer->GetLinearSampler()->GetHeapIndex()
                     };
                     pCmdList->SetGraphicsConstants(0, resourceIds, sizeof(resourceIds));
                     pCmdList->DrawIndexed(pCmd->ElemCount, 1, pCmd->IdxOffset + globalIdxOffset);
@@ -192,8 +192,8 @@ namespace Editor
         pCmdList->SetViewport(0, 0, 
             (uint32_t)(drawData->DisplaySize.x * drawData->FramebufferScale.x),
             (uint32_t)(drawData->DisplaySize.y * drawData->FramebufferScale.y));
-        pCmdList->SetPipelineState(mpPSO);
-        pCmdList->SetIndexBuffer(mpIndexBuffer[frameIdx]->GetBuffer(), 0, mpIndexBuffer[frameIdx]->GetFormat());
+        pCmdList->SetPipelineState(m_pPSO);
+        pCmdList->SetIndexBuffer(m_pIndexBuffer[frameIdx]->GetBuffer(), 0, m_pIndexBuffer[frameIdx]->GetFormat());
 
         float L = drawData->DisplayPos.x;
         float R = drawData->DisplayPos.x + drawData->DisplaySize.x;

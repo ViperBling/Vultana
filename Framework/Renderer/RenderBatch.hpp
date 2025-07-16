@@ -12,7 +12,7 @@ namespace Renderer
 {
     struct RenderBatch
     {
-        RenderBatch(LinearAllocator& cbAllocator) : mCBAllocator(cbAllocator)
+        RenderBatch(LinearAllocator& cbAllocator) : m_CBAllocator(cbAllocator)
         {
             IndexBuffer = nullptr;
         }
@@ -58,7 +58,7 @@ namespace Renderer
             assert(slot < MAX_RENDER_BATCH_CB_COUNT);
             if (Cb[slot].Data == nullptr || Cb[slot].DataSize < size)
             {
-                Cb[slot].Data = mCBAllocator.Allocate((uint32_t)size);
+                Cb[slot].Data = m_CBAllocator.Allocate((uint32_t)size);
             }
             
             Cb[slot].DataSize = (uint32_t)size;
@@ -90,7 +90,7 @@ namespace Renderer
         }
 
     private:
-        LinearAllocator& mCBAllocator;
+        LinearAllocator& m_CBAllocator;
     };
 
     inline void DrawBatch(RHI::RHICommandList* pCmdList, const RenderBatch& batch)
@@ -124,7 +124,7 @@ namespace Renderer
 
     struct ComputeBatch
     {
-        ComputeBatch(LinearAllocator& cbAllocator) : mCBAllocator(cbAllocator)
+        ComputeBatch(LinearAllocator& cbAllocator) : m_CBAllocator(cbAllocator)
         {
         }
 
@@ -151,7 +151,7 @@ namespace Renderer
             assert(slot < MAX_RENDER_BATCH_CB_COUNT);
             if (Cb[slot].Data == nullptr || Cb[slot].DataSize < size)
             {
-                Cb[slot].Data = mCBAllocator.Allocate((uint32_t)size);
+                Cb[slot].Data = m_CBAllocator.Allocate((uint32_t)size);
             }
 
             Cb[slot].DataSize = (uint32_t)size;
@@ -166,7 +166,7 @@ namespace Renderer
         }
     
     private:
-        LinearAllocator& mCBAllocator;
+        LinearAllocator& m_CBAllocator;
     };
 
     inline void DispatchComputeBatch(RHI::RHICommandList* pCmdList, const ComputeBatch& batch)

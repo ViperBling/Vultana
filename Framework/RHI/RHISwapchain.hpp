@@ -16,9 +16,9 @@ namespace RHI
         virtual bool Resize(uint32_t width, uint32_t height) = 0;
         virtual void SetVSyncEnabled(bool enabled) = 0;
 
-        const RHISwapchainDesc* GetDesc() const { return &mDesc; }
+        const RHISwapchainDesc* GetDesc() const { return &m_Desc; }
 
     protected:
-        RHISwapchainDesc mDesc {};
+        RHISwapchainDesc m_Desc {};
     };
 }

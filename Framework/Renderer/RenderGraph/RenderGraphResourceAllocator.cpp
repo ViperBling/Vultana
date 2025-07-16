@@ -8,12 +8,12 @@ namespace RG
 {
     RenderGraphResourceAllocator::RenderGraphResourceAllocator(RHI::RHIDevice *device)
     {
-        mpDevice = device;
+        m_pDevice = device;
     }
     
     RenderGraphResourceAllocator::~RenderGraphResourceAllocator()
     {
-        for (auto iter = mAllocatedHeaps.begin(); iter != mAllocatedHeaps.end(); ++iter)
+        for (auto iter = m_AllocatedHeaps.begin(); iter != m_AllocatedHeaps.end(); ++iter)
         {
             const FHeap& heap = *iter;
             for (size_t i = 0; i < heap.Resources.size(); i++)
@@ -24,7 +24,7 @@ namespace RG
             delete heap.Heap;
         }
 
-        for (auto iter = mFreeOverlappingTextures.begin(); iter != mFreeOverlappingTextures.end(); ++iter)
+        for (auto iter = m_FreeOverlappingTextures.begin(); iter != m_FreeOverlappingTextures.end(); ++iter)
         {
             DeleteDescriptor(iter->Texture);
             delete iter->Texture;
@@ -33,28 +33,28 @@ namespace RG
     
     void RenderGraphResourceAllocator::Reset()
     {
-        for (auto iter = mAllocatedHeaps.begin(); iter != mAllocatedHeaps.end();)
+        for (auto iter = m_AllocatedHeaps.begin(); iter != m_AllocatedHeaps.end();)
         {
             FHeap& heap = *iter;
             CheckHeapUsage(heap);
             if (heap.Resources.empty())
             {
                 delete heap.Heap;
-                iter = mAllocatedHeaps.erase(iter);
+                iter = m_AllocatedHeaps.erase(iter);
             }
             else
             {
                 ++iter;
             }
         }
-        uint64_t currentFrame = mpDevice->GetFrameID();
-        for (auto iter = mFreeOverlappingTextures.begin(); iter != mFreeOverlappingTextures.end();)
+        uint64_t currentFrame = m_pDevice->GetFrameID();
+        for (auto iter = m_FreeOverlappingTextures.begin(); iter != m_FreeOverlappingTextures.end();)
         {
             if (currentFrame - iter->LastUsedFrame > 30)
             {
                 DeleteDescriptor(iter->Texture);
                 delete iter->Texture;
-                iter = mFreeOverlappingTextures.erase(iter);
+                iter = m_FreeOverlappingTextures.erase(iter);
             }
             else
             {
@@ -65,13 +65,13 @@ namespace RG
 
     RHI::RHITexture *RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState)
     {
-        for (auto iter = mFreeOverlappingTextures.begin(); iter != mFreeOverlappingTextures.end(); ++iter)
+        for (auto iter = m_FreeOverlappingTextures.begin(); iter != m_FreeOverlappingTextures.end(); ++iter)
         {
             RHI::RHITexture* texture = iter->Texture;
             if (texture->GetDesc() == desc)
             {
                 initialState = iter->LastUsedState;
-                mFreeOverlappingTextures.erase(iter);
+                m_FreeOverlappingTextures.erase(iter);
                 return texture;
             }
         }
@@ -87,24 +87,24 @@ namespace RG
         {
             initialState = RHI::RHIAccessMaskUAV;
         }
-        return mpDevice->CreateTexture(desc, "RGTexture_" + name);
+        return m_pDevice->CreateTexture(desc, "RGTexture_" + name);
     }
 
     void RenderGraphResourceAllocator::FreeNonOverlappingTexture(RHI::RHITexture *texture, RHI::ERHIAccessFlags state)
     {
         if (texture != nullptr)
         {
-            mFreeOverlappingTextures.push_back({texture, state, mpDevice->GetFrameID()});
+            m_FreeOverlappingTextures.push_back({texture, state, m_pDevice->GetFrameID()});
         }
     }
 
     RHI::RHITexture *RenderGraphResourceAllocator::AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHITextureDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
     {
         LifeTimeRange lifeTime = {firstPass, lastPass};
-        uint32_t textureSize = mpDevice->GetAllocationSize(desc);
-        for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
+        uint32_t textureSize = m_pDevice->GetAllocationSize(desc);
+        for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
         {
-            FHeap& heap = mAllocatedHeaps[i];
+            FHeap& heap = m_AllocatedHeaps[i];
             if (heap.Heap->GetDesc().Size < textureSize || heap.IsOverlapping(lifeTime)) continue;
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
@@ -122,7 +122,7 @@ namespace RG
             newDesc.Heap = heap.Heap;
 
             AliasedResource aliasedTexture;
-            aliasedTexture.Resource = mpDevice->CreateTexture(newDesc, "RGTexture_" + name);
+            aliasedTexture.Resource = m_pDevice->CreateTexture(newDesc, "RGTexture_" + name);
             aliasedTexture.LifeTime = lifeTime;
             aliasedTexture.LastUsedState = lastState;
             heap.Resources.push_back(aliasedTexture);
@@ -151,9 +151,9 @@ namespace RG
         LifeTimeRange lifeTime = {firstPass, lastPass};
         uint32_t bufferSize = desc.Size;
 
-        for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
+        for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
         {
-            FHeap& heap = mAllocatedHeaps[i];
+            FHeap& heap = m_AllocatedHeaps[i];
             if (heap.Heap->GetDesc().Size < bufferSize || heap.IsOverlapping(lifeTime)) continue;
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
@@ -171,7 +171,7 @@ namespace RG
             newDesc.Heap = heap.Heap;
 
             AliasedResource aliasedBuffer;
-            aliasedBuffer.Resource = mpDevice->CreateBuffer(newDesc, "RGBuffer_" + name);
+            aliasedBuffer.Resource = m_pDevice->CreateBuffer(newDesc, "RGBuffer_" + name);
             aliasedBuffer.LifeTime = lifeTime;
             aliasedBuffer.LastUsedState = lastState;
             heap.Resources.push_back(aliasedBuffer);
@@ -188,16 +188,16 @@ namespace RG
     {
         if (resource != nullptr)
         {
-            for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
+            for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
             {
-                FHeap& heap = mAllocatedHeaps[i];
+                FHeap& heap = m_AllocatedHeaps[i];
                 for (size_t j = 0; j < heap.Resources.size(); j++)
                 {
                     AliasedResource& aliasedRes = heap.Resources[j];
                     if (aliasedRes.Resource == resource)
                     {
                         aliasedRes.LifeTime.Reset();
-                        aliasedRes.LastUsedFrame = mpDevice->GetFrameID();
+                        aliasedRes.LastUsedFrame = m_pDevice->GetFrameID();
                         if (bIsSetState)
                         {
                             aliasedRes.LastUsedState = state;
@@ -212,9 +212,9 @@ namespace RG
 
     RHI::RHIResource *RenderGraphResourceAllocator::GetAliasedPreviousResource(RHI::RHIResource *resource, uint32_t firstPass, RHI::ERHIAccessFlags &lastUsedState)
     {
-        for (size_t i = 0; i < mAllocatedHeaps.size(); i++)
+        for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
         {
-            FHeap& heap = mAllocatedHeaps[i];
+            FHeap& heap = m_AllocatedHeaps[i];
             if (!heap.Contains(resource)) continue;
 
             AliasedResource* aliasedRes = nullptr;
@@ -244,35 +244,35 @@ namespace RG
 
     RHI::RHIDescriptor *RenderGraphResourceAllocator::GetDescriptor(RHI::RHIResource *resource, const RHI::RHIShaderResourceViewDesc &desc)
     {
-        for (size_t i = 0; i < mAllocatedSRVs.size(); i++)
+        for (size_t i = 0; i < m_AllocatedSRVs.size(); i++)
         {
-            if (mAllocatedSRVs[i].Resource == resource && mAllocatedSRVs[i].Desc == desc)
+            if (m_AllocatedSRVs[i].Resource == resource && m_AllocatedSRVs[i].Desc == desc)
             {
-                return mAllocatedSRVs[i].Descriptor;
+                return m_AllocatedSRVs[i].Descriptor;
             }
         }
-        RHI::RHIDescriptor* srv = mpDevice->CreateShaderResourceView(resource, desc, resource->GetName());
-        mAllocatedSRVs.push_back({resource, srv, desc});
+        RHI::RHIDescriptor* srv = m_pDevice->CreateShaderResourceView(resource, desc, resource->GetName());
+        m_AllocatedSRVs.push_back({resource, srv, desc});
         return srv;
     }
 
     RHI::RHIDescriptor *RenderGraphResourceAllocator::GetDescriptor(RHI::RHIResource *resource, const RHI::RHIUnorderedAccessViewDesc &desc)
     {
-        for (size_t i = 0; i < mAllocatedUAVs.size(); i++)
+        for (size_t i = 0; i < m_AllocatedUAVs.size(); i++)
         {
-            if (mAllocatedUAVs[i].Resource == resource && mAllocatedUAVs[i].Desc == desc)
+            if (m_AllocatedUAVs[i].Resource == resource && m_AllocatedUAVs[i].Desc == desc)
             {
-                return mAllocatedUAVs[i].Descriptor;
+                return m_AllocatedUAVs[i].Descriptor;
             }
         }
-        RHI::RHIDescriptor* uav = mpDevice->CreateUnorderedAccessView(resource, desc, resource->GetName());
-        mAllocatedUAVs.push_back({resource, uav, desc});
+        RHI::RHIDescriptor* uav = m_pDevice->CreateUnorderedAccessView(resource, desc, resource->GetName());
+        m_AllocatedUAVs.push_back({resource, uav, desc});
         return uav;
     }
 
     void RenderGraphResourceAllocator::CheckHeapUsage(FHeap &heap)
     {
-        uint64_t currentFrame = mpDevice->GetFrameID();
+        uint64_t currentFrame = m_pDevice->GetFrameID();
         for (auto iter = heap.Resources.begin(); iter != heap.Resources.end();)
         {
             const AliasedResource aliasedRes = *iter;
@@ -291,24 +291,24 @@ namespace RG
 
     void RenderGraphResourceAllocator::DeleteDescriptor(RHI::RHIResource *resource)
     {
-        for (auto iter = mAllocatedSRVs.begin(); iter != mAllocatedSRVs.end();)
+        for (auto iter = m_AllocatedSRVs.begin(); iter != m_AllocatedSRVs.end();)
         {
             if (iter->Resource == resource)
             {
                 delete iter->Descriptor;
-                iter = mAllocatedSRVs.erase(iter);
+                iter = m_AllocatedSRVs.erase(iter);
             }
             else
             {
                 ++iter;
             }
         }
-        for (auto iter = mAllocatedUAVs.begin(); iter != mAllocatedUAVs.end();)
+        for (auto iter = m_AllocatedUAVs.begin(); iter != m_AllocatedUAVs.end();)
         {
             if (iter->Resource == resource)
             {
                 delete iter->Descriptor;
-                iter = mAllocatedUAVs.erase(iter);
+                iter = m_AllocatedUAVs.erase(iter);
             }
             else
             {
@@ -325,7 +325,7 @@ namespace RG
         eastl::string heapName = fmt::format("RG Heap {:.1} MB", heapDesc.Size / (1024.0f * 1024.0f)).c_str();
 
         FHeap heap;
-        heap.Heap = mpDevice->CreateHeap(heapDesc, heapName);
-        mAllocatedHeaps.push_back(heap);
+        heap.Heap = m_pDevice->CreateHeap(heapDesc, heapName);
+        m_AllocatedHeaps.push_back(heap);
     }
 }

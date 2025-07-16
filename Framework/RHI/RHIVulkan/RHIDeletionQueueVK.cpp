@@ -6,7 +6,7 @@ namespace RHI
 {
     RHIDeletionQueueVK::RHIDeletionQueueVK(RHIDeviceVK *device)
     {
-        mDevice = device;
+        m_Device = device;
     }
 
     RHIDeletionQueueVK::~RHIDeletionQueueVK()
@@ -16,10 +16,10 @@ namespace RHI
 
     void RHIDeletionQueueVK::Flush(bool forceDelete)
     {
-        uint64_t frameID = mDevice->GetFrameID();
-        vk::Instance instance = mDevice->GetInstance();
-        vk::Device device = mDevice->GetDevice();
-        VmaAllocator allocator = mDevice->GetVmaAllocator();
+        uint64_t frameID = m_Device->GetFrameID();
+        vk::Instance instance = m_Device->GetInstance();
+        vk::Device device = m_Device->GetDevice();
+        VmaAllocator allocator = m_Device->GetVmaAllocator();
 
         #define ITERATE_QUEUE(queue, deletionFunc)                                   \
             while (!queue.empty())                                                   \
@@ -33,131 +33,131 @@ namespace RHI
                 queue.pop();                                                         \
             }
         
-        ITERATE_QUEUE(mImageQueue, device.destroyImage)
-        ITERATE_QUEUE(mImageViewQueue, device.destroyImageView)
-        ITERATE_QUEUE(mBufferQueue, device.destroyBuffer)
-        ITERATE_QUEUE(mSamplerQueue, device.destroySampler)
-        ITERATE_QUEUE(mPipelineQueue, device.destroyPipeline)
-        ITERATE_QUEUE(mShaderQueue, device.destroyShaderModule)
-        ITERATE_QUEUE(mSemaphoreQueue, device.destroySemaphore)
-        ITERATE_QUEUE(mSwapchainQueue, device.destroySwapchainKHR)
-        ITERATE_QUEUE(mCommandPoolQueue, device.destroyCommandPool)
+        ITERATE_QUEUE(m_ImageQueue, device.destroyImage)
+        ITERATE_QUEUE(m_ImageViewQueue, device.destroyImageView)
+        ITERATE_QUEUE(m_BufferQueue, device.destroyBuffer)
+        ITERATE_QUEUE(m_SamplerQueue, device.destroySampler)
+        ITERATE_QUEUE(m_PipelineQueue, device.destroyPipeline)
+        ITERATE_QUEUE(m_ShaderQueue, device.destroyShaderModule)
+        ITERATE_QUEUE(m_SemaphoreQueue, device.destroySemaphore)
+        ITERATE_QUEUE(m_SwapchainQueue, device.destroySwapchainKHR)
+        ITERATE_QUEUE(m_CommandPoolQueue, device.destroyCommandPool)
 
-        while (!mSurfaceQueue.empty())
+        while (!m_SurfaceQueue.empty())
         {
-            auto item = mSurfaceQueue.front();
+            auto item = m_SurfaceQueue.front();
             if (!forceDelete && item.second + RHI_MAX_INFLIGHT_FRAMES > frameID)
             {
                 break;
             }
             instance.destroySurfaceKHR(item.first);
-            mSurfaceQueue.pop();
+            m_SurfaceQueue.pop();
         }
-        while (!mAllocationQueue.empty())
+        while (!m_AllocationQueue.empty())
         {
-            auto item = mAllocationQueue.front();
+            auto item = m_AllocationQueue.front();
             if (!forceDelete && item.second + RHI_MAX_INFLIGHT_FRAMES > frameID)
             {
                 break;
             }
             vmaFreeMemory(allocator, item.first);
-            mAllocationQueue.pop();
+            m_AllocationQueue.pop();
         }
-        while (!mResourceDescriptorQueue.empty())
+        while (!m_ResourceDescriptorQueue.empty())
         {
-            auto item = mResourceDescriptorQueue.front();
+            auto item = m_ResourceDescriptorQueue.front();
             if (!forceDelete && item.second + RHI_MAX_INFLIGHT_FRAMES > frameID)
             {
                 break;
             }
-            mDevice->GetResourceDescriptorAllocator()->Free(item.first);
-            mResourceDescriptorQueue.pop();
+            m_Device->GetResourceDescriptorAllocator()->Free(item.first);
+            m_ResourceDescriptorQueue.pop();
         }
-        while (!mSamplerDescriptorQueue.empty())
+        while (!m_SamplerDescriptorQueue.empty())
         {
-            auto item = mSamplerDescriptorQueue.front();
+            auto item = m_SamplerDescriptorQueue.front();
             if (!forceDelete && item.second + RHI_MAX_INFLIGHT_FRAMES > frameID)
             {
                 break;
             }
-            mDevice->GetSamplerDescriptorAllocator()->Free(item.first);
-            mSamplerDescriptorQueue.pop();
+            m_Device->GetSamplerDescriptorAllocator()->Free(item.first);
+            m_SamplerDescriptorQueue.pop();
         }
     }
 
     void RHIDeletionQueueVK::FreeResourceDescriptor(uint32_t index, uint64_t frameID)
     {
-        mResourceDescriptorQueue.push(eastl::make_pair(index, frameID));
+        m_ResourceDescriptorQueue.push(eastl::make_pair(index, frameID));
     }
 
     void RHIDeletionQueueVK::FreeSamplerDescriptor(uint32_t index, uint64_t frameID)
     {
-        mSamplerDescriptorQueue.push(eastl::make_pair(index, frameID));
+        m_SamplerDescriptorQueue.push(eastl::make_pair(index, frameID));
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::Image object, uint64_t frameID)
     {
-        mImageQueue.push({ object, frameID });
+        m_ImageQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::ImageView object, uint64_t frameID)
     {
-        mImageViewQueue.push({ object, frameID });
+        m_ImageViewQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::Buffer object, uint64_t frameID)
     {
-        mBufferQueue.push({ object, frameID });
+        m_BufferQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(VmaAllocation object, uint64_t frameID)
     {
-        mAllocationQueue.push({ object, frameID });
+        m_AllocationQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::Sampler object, uint64_t frameID)
     {
-        mSamplerQueue.push({ object, frameID });
+        m_SamplerQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::Pipeline object, uint64_t frameID)
     {
-        mPipelineQueue.push({ object, frameID });
+        m_PipelineQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::ShaderModule object, uint64_t frameID)
     {
-        mShaderQueue.push({ object, frameID });
+        m_ShaderQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::Semaphore object, uint64_t frameID)
     {
-        mSemaphoreQueue.push({ object, frameID });
+        m_SemaphoreQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::SwapchainKHR object, uint64_t frameID)
     {
-        mSwapchainQueue.push({ object, frameID });
+        m_SwapchainQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::SurfaceKHR object, uint64_t frameID)
     {
-        mSurfaceQueue.push({ object, frameID });
+        m_SurfaceQueue.push({ object, frameID });
     }
 
     template<>
     void RHIDeletionQueueVK::Delete(vk::CommandPool object, uint64_t frameID)
     {
-        mCommandPoolQueue.push({ object, frameID });
+        m_CommandPoolQueue.push({ object, frameID });
     }
 }

@@ -16,15 +16,15 @@ namespace Renderer
         void Render1stPhase(RG::RenderGraph* pRG);
         void Render2ndPhase(RG::RenderGraph* pRG);
 
-        RG::RGHandle GetDiffuseRT() const { return mDiffuseRT; }
-        RG::RGHandle GetSpecularRT() const { return mSpecularRT; }
-        RG::RGHandle GetNormalRT() const { return mNormalRT; }
-        RG::RGHandle GetEmissiveRT() const { return mEmissiveRT; }
-        RG::RGHandle GetCustomDataRT() const { return mCustomDataRT; }
-        RG::RGHandle GetDepthRT() const { return mDepthRT; }
+        RG::RGHandle GetDiffuseRT() const { return m_DiffuseRT; }
+        RG::RGHandle GetSpecularRT() const { return m_SpecularRT; }
+        RG::RGHandle GetNormalRT() const { return m_NormalRT; }
+        RG::RGHandle GetEmissiveRT() const { return m_EmissiveRT; }
+        RG::RGHandle GetCustomDataRT() const { return m_CustomDataRT; }
+        RG::RGHandle GetDepthRT() const { return m_DepthRT; }
 
-        RG::RGHandle GetMeshletListBuffer2ndPhase() const { return mMeshletListBuffer2ndPhase; }
-        RG::RGHandle GetMeshletListCounterBuffer2ndPhase() const { return mMeshletListCounterBuffer2ndPhase; }
+        RG::RGHandle GetMeshletListBuffer2ndPhase() const { return m_MeshletListBuffer2ndPhase; }
+        RG::RGHandle GetMeshletListCounterBuffer2ndPhase() const { return m_MeshletListCounterBuffer2ndPhase; }
 
     private:
         void MergeBatches();
@@ -40,16 +40,16 @@ namespace Renderer
         void BuildIndirectCommand(RHI::RHICommandList* pCmdList, RG::RGBuffer* pCounterBufferSRV, RG::RGBuffer* pIndirectCmdBufferUAV);
 
     private:
-        RendererBase* mpRenderer;
+        RendererBase* m_pRenderer;
 
-        RHI::RHIPipelineState* mInstanceCulling1stPhasePSO = nullptr;
-        RHI::RHIPipelineState* mInstanceCulling2ndPhasePSO = nullptr;
+        RHI::RHIPipelineState* m_InstanceCulling1stPhasePSO = nullptr;
+        RHI::RHIPipelineState* m_InstanceCulling2ndPhasePSO = nullptr;
 
-        RHI::RHIPipelineState* mBuildMeshletListPSO = nullptr;
-        RHI::RHIPipelineState* mBuildInstanceCullingCmdPSO = nullptr;
-        RHI::RHIPipelineState* mBuildIndirectCmdPSO = nullptr;
+        RHI::RHIPipelineState* m_BuildMeshletListPSO = nullptr;
+        RHI::RHIPipelineState* m_BuildInstanceCullingCmdPSO = nullptr;
+        RHI::RHIPipelineState* m_BuildIndirectCmdPSO = nullptr;
 
-        eastl::vector<RenderBatch> mInstance;
+        eastl::vector<RenderBatch> m_Instance;
 
         struct IndirectBatch
         {
@@ -58,25 +58,25 @@ namespace Renderer
             uint32_t OriginMeshletCount;
             uint32_t MeshletListBufferOffset;
         };
-        eastl::vector<IndirectBatch> mIndirectBatches;
-        eastl::vector<RenderBatch> mNonGPUDrivenBatches;
+        eastl::vector<IndirectBatch> m_IndirectBatches;
+        eastl::vector<RenderBatch> m_NonGPUDrivenBatches;
 
-        uint32_t mTotalInstanceCount = 0;
-        uint32_t mTotalMeshletCount = 0;
+        uint32_t m_TotalInstanceCount = 0;
+        uint32_t m_TotalMeshletCount = 0;
 
-        uint32_t mInstnaceIndexAddress = 0;
+        uint32_t m_InstnaceIndexAddress = 0;
 
-        RG::RGHandle mDiffuseRT;
-        RG::RGHandle mSpecularRT;
-        RG::RGHandle mNormalRT;
-        RG::RGHandle mEmissiveRT;
-        RG::RGHandle mCustomDataRT;
-        RG::RGHandle mDepthRT;
+        RG::RGHandle m_DiffuseRT;
+        RG::RGHandle m_SpecularRT;
+        RG::RGHandle m_NormalRT;
+        RG::RGHandle m_EmissiveRT;
+        RG::RGHandle m_CustomDataRT;
+        RG::RGHandle m_DepthRT;
 
-        RG::RGHandle mObjectListBuffer2ndPhase;
-        RG::RGHandle mObjectListCounterBuffer2ndPhase;
+        RG::RGHandle m_ObjectListBuffer2ndPhase;
+        RG::RGHandle m_ObjectListCounterBuffer2ndPhase;
 
-        RG::RGHandle mMeshletListBuffer2ndPhase;
-        RG::RGHandle mMeshletListCounterBuffer2ndPhase;
+        RG::RGHandle m_MeshletListBuffer2ndPhase;
+        RG::RGHandle m_MeshletListCounterBuffer2ndPhase;
     };
 }

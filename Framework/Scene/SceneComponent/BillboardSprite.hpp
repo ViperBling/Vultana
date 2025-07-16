@@ -14,9 +14,9 @@ namespace Scene
         void Render();
     
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
-        RHI::RHIPipelineState* mpSpritePSO = nullptr;
-        RHI::RHIPipelineState* mpSpriteObjectIDPSO = nullptr;
+        Renderer::RendererBase* m_pRenderer = nullptr;
+        RHI::RHIPipelineState* m_pSpritePSO = nullptr;
+        RHI::RHIPipelineState* m_pSpriteObjectIDPSO = nullptr;
 
         struct Sprite
         {
@@ -29,6 +29,6 @@ namespace Scene
             float Distance;
         };
 
-        eastl::vector<Sprite*> mSprites;
+        eastl::vector<Sprite*> m_Sprites;
     };
 }

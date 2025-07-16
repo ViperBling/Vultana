@@ -36,15 +36,15 @@ namespace Scene
         Animation(const eastl::string& name);
         void Update(SkeletalMesh* mesh, float deltaTime);
 
-        void ResetAnimation() { mCurrentAnimTime = 0.0f; }
+        void ResetAnimation() { m_CurrentAnimTime = 0.0f; }
     
     private:
         void UpdateChannel(SkeletalMesh* mesh, const FAnimationChannel& channel);
     
     private:
-        eastl::string mName;
-        eastl::vector<FAnimationChannel> mChannels;
-        float mTimeDuration = 0.0f;
-        float mCurrentAnimTime = 0.0f;
+        eastl::string m_Name;
+        eastl::vector<FAnimationChannel> m_Channels;
+        float m_TimeDuration = 0.0f;
+        float m_CurrentAnimTime = 0.0f;
     };
 }

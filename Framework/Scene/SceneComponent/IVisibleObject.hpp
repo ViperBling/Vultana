@@ -18,26 +18,26 @@ namespace Scene
         virtual bool FrustumCull(const float4* plane, uint32_t planeCount) const { return true; }
         virtual void OnGUI();
 
-        virtual float3 GetPosition() const { return mPosition; }
-        virtual void SetPosition(const float3& position) { mPosition = position; }
+        virtual float3 GetPosition() const { return m_Position; }
+        virtual void SetPosition(const float3& position) { m_Position = position; }
 
-        virtual quaternion GetRotation() const { return mRotation; }
-        virtual void SetRotation(const quaternion& rotation) { mRotation = rotation; }
+        virtual quaternion GetRotation() const { return m_Rotation; }
+        virtual void SetRotation(const quaternion& rotation) { m_Rotation = rotation; }
 
-        virtual float3 GetScale() const { return mScale; }
-        virtual void SetScale(const float3& scale) { mScale = scale; }
+        virtual float3 GetScale() const { return m_Scale; }
+        virtual void SetScale(const float3& scale) { m_Scale = scale; }
 
-        virtual const eastl::string& GetName() const { return mName; }
-        virtual void SetName(const eastl::string& name) { mName = name; }
+        virtual const eastl::string& GetName() const { return m_Name; }
+        virtual void SetName(const eastl::string& name) { m_Name = name; }
 
-        void SetID(uint32_t id) { mID = id; }
+        void SetID(uint32_t id) { m_ID = id; }
 
     protected:
-        uint32_t mID = 0;
-        eastl::string mName;
+        uint32_t m_ID = 0;
+        eastl::string m_Name;
 
-        float3 mPosition = float3(0.0f);
-        quaternion mRotation = { 0.0f, 0.0f, 0.0f, 1.0f };
-        float3 mScale = float3(1.0f);
+        float3 m_Position = float3(0.0f);
+        quaternion m_Rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+        float3 m_Scale = float3(1.0f);
     };
 }

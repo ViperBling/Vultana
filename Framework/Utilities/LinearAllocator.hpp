@@ -8,31 +8,31 @@ class LinearAllocator
 public:
     LinearAllocator(uint32_t memSize)
     {
-        mpMemory = VTNA_ALLOC(memSize);
-        mMemorySize = memSize;
+        m_pMemory = VTNA_ALLOC(memSize);
+        m_MemorySize = memSize;
     }
 
     ~LinearAllocator()
     {
-        VTNA_FREE(mpMemory);
+        VTNA_FREE(m_pMemory);
     }
 
     void* Allocate(uint32_t size, uint32_t alignment = 1)
     {
-        uint32_t address = RoundUpPow2(mPointerOffset, alignment);
-        assert(address + size <= mMemorySize);
-        mPointerOffset = address + size;
+        uint32_t address = RoundUpPow2(m_PointerOffset, alignment);
+        assert(address + size <= m_MemorySize);
+        m_PointerOffset = address + size;
 
-        return (char*)mpMemory + address;
+        return (char*)m_pMemory + address;
     }
 
     void Reset()
     {
-        mPointerOffset = 0;
+        m_PointerOffset = 0;
     }
 
 private:
-    void* mpMemory = nullptr;
-    uint32_t mMemorySize = 0;
-    uint32_t mPointerOffset = 0;
+    void* m_pMemory = nullptr;
+    uint32_t m_MemorySize = 0;
+    uint32_t m_PointerOffset = 0;
 };

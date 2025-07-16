@@ -25,10 +25,10 @@ namespace Window
 
         void Create();
 
-        void* GetHandle() const { return mHwnd; }
+        void* GetHandle() const { return m_Hwnd; }
 
     private:
-        Win32WindowDesc mDesc;
-        HWND mHwnd = nullptr;
+        Win32WindowDesc m_Desc;
+        HWND m_Hwnd = nullptr;
     };
 }

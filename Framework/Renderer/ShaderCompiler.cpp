@@ -16,29 +16,29 @@ namespace Renderer
     {
     public:
         DXCIncludeHandler(ShaderCache* pShaderCache, IDxcUtils* pDxcUtils)
-            : mpShaderCache(pShaderCache)
-            , mpDxcUtils(pDxcUtils)
+            : m_pShaderCache(pShaderCache)
+            , m_pDxcUtils(pDxcUtils)
         {}
 
         HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource) override
         {
             eastl::string absPath = std::filesystem::absolute(pFilename).string().c_str();
-            eastl::string source = mpShaderCache->GetCachedFileContent(absPath);
+            eastl::string source = m_pShaderCache->GetCachedFileContent(absPath);
 
             *ppIncludeSource = nullptr;
-            return mpDxcUtils->CreateBlob(source.data(), (UINT32)source.size(), CP_UTF8, reinterpret_cast<IDxcBlobEncoding**>(ppIncludeSource));
+            return m_pDxcUtils->CreateBlob(source.data(), (UINT32)source.size(), CP_UTF8, reinterpret_cast<IDxcBlobEncoding**>(ppIncludeSource));
         }
 
         ULONG STDMETHODCALLTYPE AddRef() override
         {
-            ++mRef;
-            return mRef;
+            ++m_Ref;
+            return m_Ref;
         }
 
         ULONG STDMETHODCALLTYPE Release() override
         {
-            --mRef;
-            ULONG result = mRef;
+            --m_Ref;
+            ULONG result = m_Ref;
             if (result == 0)
             {
                 delete this;
@@ -67,9 +67,9 @@ namespace Renderer
         }
     
     private:
-        ShaderCache* mpShaderCache = nullptr;
-        IDxcUtils* mpDxcUtils = nullptr;
-        std::atomic<ULONG> mRef = 0;
+        ShaderCache* m_pShaderCache = nullptr;
+        IDxcUtils* m_pDxcUtils = nullptr;
+        std::atomic<ULONG> m_Ref = 0;
     };
 
     inline const wchar_t* GetShaderProfile(RHI::ERHIShaderType type)
@@ -91,7 +91,7 @@ namespace Renderer
         }
     }
 
-    ShaderCompiler::ShaderCompiler(RendererBase *renderer) : mpRenderer(renderer)
+    ShaderCompiler::ShaderCompiler(RendererBase *renderer) : m_pRenderer(renderer)
     {
         HMODULE dxcModule = LoadLibrary(L"dxcompiler.dll");
 
@@ -99,27 +99,27 @@ namespace Renderer
         {
             DxcCreateInstanceProc dxcCreateInstance = (DxcCreateInstanceProc)GetProcAddress(dxcModule, "DxcCreateInstance");
 
-            DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&mpDxcUtils));
-            DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&mpDxcCompiler));
+            DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_pDxcUtils));
+            DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_pDxcCompiler));
 
-            mpDxcIncludeHandler = new DXCIncludeHandler(renderer->GetShaderCache(), mpDxcUtils);
-            mpDxcIncludeHandler->AddRef();
+            m_pDxcIncludeHandler = new DXCIncludeHandler(renderer->GetShaderCache(), m_pDxcUtils);
+            m_pDxcIncludeHandler->AddRef();
         }
     }
 
     ShaderCompiler::~ShaderCompiler()
     {
-        if (mpDxcIncludeHandler)
+        if (m_pDxcIncludeHandler)
         {
-            mpDxcIncludeHandler->Release();
+            m_pDxcIncludeHandler->Release();
         }
-        if (mpDxcCompiler)
+        if (m_pDxcCompiler)
         {
-            mpDxcCompiler->Release();
+            m_pDxcCompiler->Release();
         }
-        if (mpDxcUtils)
+        if (m_pDxcUtils)
         {
-            mpDxcUtils->Release();
+            m_pDxcUtils->Release();
         }
     }
 
@@ -148,7 +148,7 @@ namespace Renderer
         {
             arguments.push_back(L"-D"); arguments.push_back(wstrDefines[i].c_str());
         }
-        switch (mpRenderer->GetDevice()->GetDesc().RenderBackend)
+        switch (m_pRenderer->GetDevice()->GetDesc().RenderBackend)
         {
         case RHI::ERHIRenderBackend::Vulkan:
             arguments.push_back(L"-D");
@@ -204,7 +204,7 @@ namespace Renderer
         }
 
         CComPtr<IDxcResult> pResult;
-        mpDxcCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), mpDxcIncludeHandler, IID_PPV_ARGS(&pResult));
+        m_pDxcCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), m_pDxcIncludeHandler, IID_PPV_ARGS(&pResult));
         
         CComPtr<IDxcBlobUtf8> pError = nullptr;
         pResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&pError), nullptr);

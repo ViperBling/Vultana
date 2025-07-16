@@ -20,8 +20,8 @@ namespace RHI
     public:
         virtual ~RHIDevice() = default;
 
-        const RHIDeviceDesc& GetDesc() const { return mDesc; }
-        uint64_t GetFrameID() const { return mFrameID; }
+        const RHIDeviceDesc& GetDesc() const { return m_Desc; }
+        uint64_t GetFrameID() const { return m_FrameID; }
 
         virtual bool Initialize() = 0;
         virtual void BeginFrame() = 0;
@@ -49,7 +49,7 @@ namespace RHI
         virtual bool DumpMemoryStats(const eastl::string& filename) = 0;
 
     protected:
-        RHIDeviceDesc mDesc;
-        uint64_t mFrameID = 0;
+        RHIDeviceDesc m_Desc;
+        uint64_t m_FrameID = 0;
     };
 }

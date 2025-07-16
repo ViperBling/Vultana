@@ -18,14 +18,14 @@ namespace RenderResources
 
         bool Create(uint32_t stride, uint32_t indexCount, RHI::ERHIMemoryType memoryType);
 
-        RHI::RHIBuffer* GetBuffer() const { return mpBuffer.get(); }
-        uint32_t GetIndexCount() const { return mIndexCount; }
-        RHI::ERHIFormat GetFormat() const { return mpBuffer->GetDesc().Format; }
+        RHI::RHIBuffer* GetBuffer() const { return m_pBuffer.get(); }
+        uint32_t GetIndexCount() const { return m_IndexCount; }
+        RHI::ERHIFormat GetFormat() const { return m_pBuffer->GetDesc().Format; }
     
     protected:
-        eastl::string mName;
+        eastl::string m_Name;
 
-        eastl::unique_ptr<RHI::RHIBuffer> mpBuffer;
-        uint32_t mIndexCount = 0;
+        eastl::unique_ptr<RHI::RHIBuffer> m_pBuffer;
+        uint32_t m_IndexCount = 0;
     };
 }

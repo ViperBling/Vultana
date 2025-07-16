@@ -8,13 +8,13 @@ namespace RenderResources
 {
     IndexBuffer::IndexBuffer(const eastl::string &name)
     {
-        mName = name;
+        m_Name = name;
     }
 
     bool IndexBuffer::Create(uint32_t stride, uint32_t indexCount, RHI::ERHIMemoryType memoryType)
     {
         assert(stride == 2 || stride == 4);
-        mIndexCount = indexCount;
+        m_IndexCount = indexCount;
 
         Renderer::RendererBase *renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         RHI::RHIDevice *device = renderer->GetDevice();
@@ -25,8 +25,8 @@ namespace RenderResources
         desc.Format = stride == 2 ? RHI::ERHIFormat::R16UI : RHI::ERHIFormat::R32UI;
         desc.MemoryType = memoryType;
 
-        mpBuffer.reset(device->CreateBuffer(desc, mName));
-        if (mpBuffer == nullptr)
+        m_pBuffer.reset(device->CreateBuffer(desc, m_Name));
+        if (m_pBuffer == nullptr)
         {
             return false;
         }

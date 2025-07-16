@@ -6,7 +6,7 @@ namespace RenderResources
 {
     StructuredBuffer::StructuredBuffer(const eastl::string &name)
     {
-        mName = name;
+        m_Name = name;
     }
 
     bool StructuredBuffer::Create(uint32_t stride, uint32_t elementCount, RHI::ERHIMemoryType memoryType, bool isUAV)
@@ -26,8 +26,8 @@ namespace RenderResources
             desc.Usage |= RHI::RHIBufferUsageUnorderedAccess;
         }
 
-        mpBuffer.reset(device->CreateBuffer(desc, mName));
-        if (mpBuffer == nullptr)
+        m_pBuffer.reset(device->CreateBuffer(desc, m_Name));
+        if (m_pBuffer == nullptr)
         {
             return false;
         }
@@ -38,8 +38,8 @@ namespace RenderResources
         // we initialized Texture in constructor, so we need to set buffer offset to 0 here incase it's uninitialized.
         srvDesc.Buffer.Offset = 0;
         srvDesc.Buffer.Size = elementCount * stride;
-        mpSRV.reset(device->CreateShaderResourceView(mpBuffer.get(), srvDesc, mName + "_SRV"));
-        if (mpSRV == nullptr)
+        m_pSRV.reset(device->CreateShaderResourceView(m_pBuffer.get(), srvDesc, m_Name + "_SRV"));
+        if (m_pSRV == nullptr)
         {
             return false;
         }
@@ -52,8 +52,8 @@ namespace RenderResources
             // we initialized Texture in constructor, so we need to set buffer offset to 0 here incase it's uninitialized.
             srvDesc.Buffer.Offset = 0;
             uavDesc.Buffer.Size = elementCount * stride;
-            mpUAV.reset(device->CreateUnorderedAccessView(mpBuffer.get(), uavDesc, mName + "_UAV"));
-            if (mpUAV == nullptr)
+            m_pUAV.reset(device->CreateUnorderedAccessView(m_pBuffer.get(), uavDesc, m_Name + "_UAV"));
+            if (m_pUAV == nullptr)
             {
                 return false;
             }

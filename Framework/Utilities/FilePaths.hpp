@@ -26,7 +26,7 @@ namespace Utility
         static std::filesystem::path ProjectPluginAssetPath(const std::string& pluginName);
 
     private:
-        static std::filesystem::path mWorkingDir;
-        static std::filesystem::path mCurrentProjectFile;
+        static std::filesystem::path m_WorkingDir;
+        static std::filesystem::path m_CurrentProjectFile;
     };
 } // namespace Utility

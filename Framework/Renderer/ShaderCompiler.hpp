@@ -28,9 +28,9 @@ namespace Renderer
             eastl::vector<uint8_t>& output);
 
     private:
-        RendererBase* mpRenderer = nullptr;
-        IDxcCompiler3* mpDxcCompiler = nullptr;
-        IDxcUtils* mpDxcUtils = nullptr;
-        IDxcIncludeHandler* mpDxcIncludeHandler = nullptr;
+        RendererBase* m_pRenderer = nullptr;
+        IDxcCompiler3* m_pDxcCompiler = nullptr;
+        IDxcUtils* m_pDxcUtils = nullptr;
+        IDxcIncludeHandler* m_pDxcIncludeHandler = nullptr;
     };
 }

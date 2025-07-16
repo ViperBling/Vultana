@@ -29,8 +29,8 @@ namespace Scene
 
     Camera::Camera()
     {
-        mPosition = { 0.0f, 0.0f, 0.0f };
-        mRotation = { 0.0f, 0.0f, 0.0f };
+        m_Position = { 0.0f, 0.0f, 0.0f };
+        m_Rotation = { 0.0f, 0.0f, 0.0f };
 
         Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&Camera::OnWindowResize, this);
     }
@@ -42,66 +42,66 @@ namespace Scene
 
     void Camera::SetPerspective(float aspectRatio, float yFov, float zNear)
     {
-        mAspectRatio = aspectRatio;
-        mFov = yFov;
-        mNear = zNear;
+        m_AspectRatio = aspectRatio;
+        m_Fov = yFov;
+        m_Near = zNear;
 
         float h = 1.0 / tan(0.5f * DegreeToRadian(yFov));
         float w = h / aspectRatio;
-        mProjection = float4x4(0.0);
-        mProjection[0][0] = w;
-        mProjection[1][1] = h;
-        mProjection[2][2] = 0.0f;
-        mProjection[2][3] = 1.0f;
-        mProjection[3][2] = mNear;
+        m_Projection = float4x4(0.0);
+        m_Projection[0][0] = w;
+        m_Projection[1][1] = h;
+        m_Projection[2][2] = 0.0f;
+        m_Projection[2][3] = 1.0f;
+        m_Projection[3][2] = m_Near;
     }
 
     void Camera::SetPosition(const float3 &position)
     {
-        mPosition = position;
+        m_Position = position;
     }
 
     void Camera::SetRotation(const float3 &rotation)
     {
-        mRotation = rotation;
+        m_Rotation = rotation;
     }
 
     void Camera::SetFOV(float fov)
     {
-        mFov = fov;
-        SetPerspective(mAspectRatio, mFov, mNear);
+        m_Fov = fov;
+        SetPerspective(m_AspectRatio, m_Fov, m_Near);
     }
 
     void Camera::Tick(float deltaTime)
     {
         GUICommand("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
 
-        mbMoved = false;
+        m_bMoved = false;
 
         UpdateCameraPosition(deltaTime);
         UpdateCameraRotation(deltaTime);
 
         UpdateMatrix();
 
-        if (!mbFrustumLocked)
+        if (!m_bFrustumLocked)
         {
-            mFrustumViewPos = mPosition;
+            m_FrustumViewPos = m_Position;
             // No jitter, use original vp matrix
-            UpdateFrustumPlanes(mViewProjMat);
+            UpdateFrustumPlanes(m_ViewProjMat);
         }
     }
 
     void Camera::SetupCameraCB(FCameraConstants &cameraCB)
     {
         cameraCB.CameraPosition = GetPosition();
-        cameraCB.NearPlane = mNear;
+        cameraCB.NearPlane = m_Near;
 
-        cameraCB.MtxView = mView;
-        cameraCB.MtxViewInverse = Inverse(mView);
-        cameraCB.MtxProjection = mProjection;
-        cameraCB.MtxProjectionInverse = Inverse(mProjection);
-        cameraCB.MtxViewProjection = mViewProjMat;
-        cameraCB.MtxViewProjectionInverse = Inverse(mViewProjMat);
+        cameraCB.MtxView = m_View;
+        cameraCB.MtxViewInverse = Inverse(m_View);
+        cameraCB.MtxProjection = m_Projection;
+        cameraCB.MtxProjectionInverse = Inverse(m_Projection);
+        cameraCB.MtxViewProjection = m_ViewProjMat;
+        cameraCB.MtxViewProjectionInverse = Inverse(m_ViewProjMat);
     }
 
     void Camera::DrawViewFrustum(RHI::RHICommandList *pCmdList)
@@ -113,76 +113,76 @@ namespace Scene
         // https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
 
         // Left clipping plane
-        mFrustumPlanes[0].x = matrix[0][3] + matrix[0][0];
-        mFrustumPlanes[0].y = matrix[1][3] + matrix[1][0];
-        mFrustumPlanes[0].z = matrix[2][3] + matrix[2][0];
-        mFrustumPlanes[0].w = matrix[3][3] + matrix[3][0];
-        mFrustumPlanes[0] = NormalizePlane(mFrustumPlanes[0]);
+        m_FrustumPlanes[0].x = matrix[0][3] + matrix[0][0];
+        m_FrustumPlanes[0].y = matrix[1][3] + matrix[1][0];
+        m_FrustumPlanes[0].z = matrix[2][3] + matrix[2][0];
+        m_FrustumPlanes[0].w = matrix[3][3] + matrix[3][0];
+        m_FrustumPlanes[0] = NormalizePlane(m_FrustumPlanes[0]);
 
         // Right clipping plane
-        mFrustumPlanes[1].x = matrix[0][3] - matrix[0][0];
-        mFrustumPlanes[1].y = matrix[1][3] - matrix[1][0];
-        mFrustumPlanes[1].z = matrix[2][3] - matrix[2][0];
-        mFrustumPlanes[1].w = matrix[3][3] - matrix[3][0];
-        mFrustumPlanes[1] = NormalizePlane(mFrustumPlanes[1]);
+        m_FrustumPlanes[1].x = matrix[0][3] - matrix[0][0];
+        m_FrustumPlanes[1].y = matrix[1][3] - matrix[1][0];
+        m_FrustumPlanes[1].z = matrix[2][3] - matrix[2][0];
+        m_FrustumPlanes[1].w = matrix[3][3] - matrix[3][0];
+        m_FrustumPlanes[1] = NormalizePlane(m_FrustumPlanes[1]);
 
         // Top clipping plane
-        mFrustumPlanes[2].x = matrix[0][3] - matrix[0][1];
-        mFrustumPlanes[2].y = matrix[1][3] - matrix[1][1];
-        mFrustumPlanes[2].z = matrix[2][3] - matrix[2][1];
-        mFrustumPlanes[2].w = matrix[3][3] - matrix[3][1];
-        mFrustumPlanes[2] = NormalizePlane(mFrustumPlanes[2]);
+        m_FrustumPlanes[2].x = matrix[0][3] - matrix[0][1];
+        m_FrustumPlanes[2].y = matrix[1][3] - matrix[1][1];
+        m_FrustumPlanes[2].z = matrix[2][3] - matrix[2][1];
+        m_FrustumPlanes[2].w = matrix[3][3] - matrix[3][1];
+        m_FrustumPlanes[2] = NormalizePlane(m_FrustumPlanes[2]);
 
         // Bottom clipping plane
-        mFrustumPlanes[3].x = matrix[0][3] + matrix[0][1];
-        mFrustumPlanes[3].y = matrix[1][3] + matrix[1][1];
-        mFrustumPlanes[3].z = matrix[2][3] + matrix[2][1];
-        mFrustumPlanes[3].w = matrix[3][3] + matrix[3][1];
-        mFrustumPlanes[3] = NormalizePlane(mFrustumPlanes[3]);
+        m_FrustumPlanes[3].x = matrix[0][3] + matrix[0][1];
+        m_FrustumPlanes[3].y = matrix[1][3] + matrix[1][1];
+        m_FrustumPlanes[3].z = matrix[2][3] + matrix[2][1];
+        m_FrustumPlanes[3].w = matrix[3][3] + matrix[3][1];
+        m_FrustumPlanes[3] = NormalizePlane(m_FrustumPlanes[3]);
 
         // far clipping plane (reversed depth)
-        mFrustumPlanes[4].x = matrix[0][2];
-        mFrustumPlanes[4].y = matrix[1][2];
-        mFrustumPlanes[4].z = matrix[2][2];
-        mFrustumPlanes[4].w = matrix[3][2];
-        mFrustumPlanes[4] = NormalizePlane(mFrustumPlanes[4]);
+        m_FrustumPlanes[4].x = matrix[0][2];
+        m_FrustumPlanes[4].y = matrix[1][2];
+        m_FrustumPlanes[4].z = matrix[2][2];
+        m_FrustumPlanes[4].w = matrix[3][2];
+        m_FrustumPlanes[4] = NormalizePlane(m_FrustumPlanes[4]);
 
         // near clipping plane (reversed depth)
-        mFrustumPlanes[5].x = matrix[0][3] - matrix[0][2];
-        mFrustumPlanes[5].y = matrix[1][3] - matrix[1][2];
-        mFrustumPlanes[5].z = matrix[2][3] - matrix[2][2];
-        mFrustumPlanes[5].w = matrix[3][3] - matrix[3][2];
-        mFrustumPlanes[5] = NormalizePlane(mFrustumPlanes[5]);
+        m_FrustumPlanes[5].x = matrix[0][3] - matrix[0][2];
+        m_FrustumPlanes[5].y = matrix[1][3] - matrix[1][2];
+        m_FrustumPlanes[5].z = matrix[2][3] - matrix[2][2];
+        m_FrustumPlanes[5].w = matrix[3][3] - matrix[3][2];
+        m_FrustumPlanes[5] = NormalizePlane(m_FrustumPlanes[5]);
     }
 
     void Camera::UpdateMatrix()
     {
-        mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
-        mView = Inverse(mWorld);
-        mViewProjMat = mul(mProjection, mView);
+        m_World = mul(translation_matrix(m_Position), rotation_matrix(RotationQuat(m_Rotation)));
+        m_View = Inverse(m_World);
+        m_ViewProjMat = mul(m_Projection, m_View);
     }
 
     void Camera::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
     {
-        mAspectRatio = static_cast<float>(width) / static_cast<float>(height);
-        SetPerspective(mAspectRatio, mFov, mNear);
+        m_AspectRatio = static_cast<float>(width) / static_cast<float>(height);
+        SetPerspective(m_AspectRatio, m_Fov, m_Near);
     }
 
     void Camera::OnCameraSettingGUI()
     {
         bool perspectiveUpdated = false;
-        perspectiveUpdated |= ImGui::SliderFloat("FOV", &mFov, 5.0f, 135.0f, "%.0f");
-        perspectiveUpdated |= ImGui::SliderFloat("Near Plane", &mNear, 0.0001f, 3.0f, "%.4f");
+        perspectiveUpdated |= ImGui::SliderFloat("FOV", &m_Fov, 5.0f, 135.0f, "%.0f");
+        perspectiveUpdated |= ImGui::SliderFloat("Near Plane", &m_Near, 0.0001f, 3.0f, "%.4f");
 
         if (perspectiveUpdated)
         {
-            SetPerspective(mAspectRatio, mFov, mNear);
+            SetPerspective(m_AspectRatio, m_Fov, m_Near);
         }
 
-        ImGui::SliderFloat("Movement Speed", &mMoveSpeed, 1.0f, 200.0f, "%.0f");
-        ImGui::SliderFloat("Rotation Speed", &mRotateSpeed, 0.1f, 10.0f, "%.1f");
-        ImGui::SliderFloat("Movement Smoothness", &mMoveSmoothness, 0.01f, 1.0f, "%.2f");
-        ImGui::SliderFloat("Rotation Smoothness", &mRotateSmoothness, 0.01f, 1.0f, "%.2f");
+        ImGui::SliderFloat("Movement Speed", &m_MoveSpeed, 1.0f, 200.0f, "%.0f");
+        ImGui::SliderFloat("Rotation Speed", &m_RotateSpeed, 0.1f, 10.0f, "%.1f");
+        ImGui::SliderFloat("Movement Smoothness", &m_MoveSmoothness, 0.01f, 1.0f, "%.2f");
+        ImGui::SliderFloat("Rotation Smoothness", &m_RotateSmoothness, 0.01f, 1.0f, "%.2f");
     }
 
     void Camera::UpdateCameraPosition(float deltaTime)
@@ -191,7 +191,7 @@ namespace Scene
         bool moveRight = false;
         bool moveForward = false;
         bool moveBackward = false;
-        float moveSpeed = mMoveSpeed;
+        float moveSpeed = m_MoveSpeed;
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -215,7 +215,7 @@ namespace Scene
                 moveForward |= io.MouseWheel > 0.0f;
                 moveBackward |= io.MouseWheel < 0.0f;
 
-                moveSpeed *= abs(io.MouseWheel) * mMoveSpeed;
+                moveSpeed *= abs(io.MouseWheel) * m_MoveSpeed;
             }
             if (ImGui::IsMouseDragging(1) && ImGui::IsKeyDown(ImGuiKey_LeftAlt))
             {
@@ -237,13 +237,13 @@ namespace Scene
             moveVelocity = normalize(moveVelocity) * moveSpeed;
         }
 
-        moveVelocity = lerp(mPrevMoveVelocity, moveVelocity, 1.0f - exp(-deltaTime * 10.0f / mMoveSmoothness));
-        mPrevMoveVelocity = moveVelocity;
+        moveVelocity = lerp(m_PrevMoveVelocity, moveVelocity, 1.0f - exp(-deltaTime * 10.0f / m_MoveSmoothness));
+        m_PrevMoveVelocity = moveVelocity;
 
-        mPosition += moveVelocity * deltaTime;
-        mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
+        m_Position += moveVelocity * deltaTime;
+        m_World = mul(translation_matrix(m_Position), rotation_matrix(RotationQuat(m_Rotation)));
 
-        mbMoved |= length(moveVelocity * deltaTime) > 0.0001f;
+        m_bMoved |= length(moveVelocity * deltaTime) > 0.0001f;
     }
 
     void Camera::UpdateCameraRotation(float deltaTime)
@@ -256,17 +256,17 @@ namespace Scene
         {
             if (ImGui::IsMouseDragging(1) && !ImGui::IsKeyDown(ImGuiKey_LeftAlt))
             {
-                rotateVelocity.x = io.MouseDelta.y * mRotateSpeed;
-                rotateVelocity.y = io.MouseDelta.x * mRotateSpeed;
+                rotateVelocity.x = io.MouseDelta.y * m_RotateSpeed;
+                rotateVelocity.y = io.MouseDelta.x * m_RotateSpeed;
             }
         }
-        rotateVelocity = lerp(mPrevRotateVelocity, rotateVelocity, 1.0f - exp(-deltaTime * 10.0f / mRotateSmoothness));
-        mPrevRotateVelocity = rotateVelocity;
+        rotateVelocity = lerp(m_PrevRotateVelocity, rotateVelocity, 1.0f - exp(-deltaTime * 10.0f / m_RotateSmoothness));
+        m_PrevRotateVelocity = rotateVelocity;
 
-        mRotation.x = NormalizeAngle(mRotation.x + rotateVelocity.x * deltaTime * 100.0f);
-        mRotation.y = NormalizeAngle(mRotation.y + rotateVelocity.y * deltaTime * 100.0f);
-        mWorld = mul(translation_matrix(mPosition), rotation_matrix(RotationQuat(mRotation)));
+        m_Rotation.x = NormalizeAngle(m_Rotation.x + rotateVelocity.x * deltaTime * 100.0f);
+        m_Rotation.y = NormalizeAngle(m_Rotation.y + rotateVelocity.y * deltaTime * 100.0f);
+        m_World = mul(translation_matrix(m_Position), rotation_matrix(RotationQuat(m_Rotation)));
 
-        mbMoved |= length(rotateVelocity * deltaTime) > 0.0001f;
+        m_bMoved |= length(rotateVelocity * deltaTime) > 0.0001f;
     }
 }

@@ -3,27 +3,27 @@
 
 namespace Renderer
 {
-    HiZBuffer::HiZBuffer(Renderer::RendererBase *pRenderer) : mpRenderer(pRenderer)
+    HiZBuffer::HiZBuffer(Renderer::RendererBase *pRenderer) : m_pRenderer(pRenderer)
     {
         // RHI::RHIComputePipelineStateDesc computeDesc;
 
         // computeDesc.CS = pRenderer->GetShader("HiZBufferReprojection.hlsl", "DepthReprojectionCS", RHI::ERHIShaderType::CS);
-        // mpDepthReprojectionPSO = pRenderer->GetPipelineState(computeDesc, "HZB Depth Reprojection PSO");
+        // m_pDepthReprojectionPSO = pRenderer->GetPipelineState(computeDesc, "HZB Depth Reprojection PSO");
 
         // computeDesc.CS = pRenderer->GetShader("HiZBufferReprojection.hlsl", "DepthDilationCS", RHI::ERHIShaderType::CS);
-        // mpDepthDilationPSO = pRenderer->GetPipelineState(computeDesc, "HZB Depth Dilation PSO");
+        // m_pDepthDilationPSO = pRenderer->GetPipelineState(computeDesc, "HZB Depth Dilation PSO");
 
         // computeDesc.CS = pRenderer->GetShader("HiZBufferReprojection.hlsl", "InitHZBCS", RHI::ERHIShaderType::CS);
-        // mpInitHZBPSO = pRenderer->GetPipelineState(computeDesc, "HZB Init PSO");
+        // m_pInitHZBPSO = pRenderer->GetPipelineState(computeDesc, "HZB Init PSO");
 
         // computeDesc.CS = pRenderer->GetShader("HiZBufferReprojection.hlsl", "InitSceneHZBCS", RHI::ERHIShaderType::CS);
-        // mpInitSceneHZBPSO = pRenderer->GetPipelineState(computeDesc, "Scene HZB Init PSO");
+        // m_pInitSceneHZBPSO = pRenderer->GetPipelineState(computeDesc, "Scene HZB Init PSO");
 
         // computeDesc.CS = pRenderer->GetShader("HiZBuffer.hlsl", "BuildHZBCS", RHI::ERHIShaderType::CS);
-        // mpDepthMipFilterPSO = pRenderer->GetPipelineState(computeDesc, "HZB Generate Mips PSO");
+        // m_pDepthMipFilterPSO = pRenderer->GetPipelineState(computeDesc, "HZB Generate Mips PSO");
 
         // computeDesc.CS = pRenderer->GetShader("HiZBuffer.hlsl", "BuildHZBCS", RHI::ERHIShaderType::CS, { "MIN_MAX_FILTER=1" });
-        // mpDepthMipFilterMinMaxPSO = pRenderer->GetPipelineState(computeDesc, "HZB Generate Mips PSO");
+        // m_pDepthMipFilterMinMaxPSO = pRenderer->GetPipelineState(computeDesc, "HZB Generate Mips PSO");
     }
 
     void HiZBuffer::GenerateCullingHZB1stPhase(RG::RenderGraph *rg)
@@ -41,7 +41,7 @@ namespace Renderer
         // auto reprojectionPass = rg->AddPass<FDepthReprojectionData>("Depth Reprojection", RG::RenderPassType::Compute,
         // [&](FDepthReprojectionData& data, RG::RGBuilder& builder)
         // {
-        //     // data.PrevDepth = builder.Read(mpRenderer->GetPre)
+        //     // data.PrevDepth = builder.Read(m_pRenderer->GetPre)
         // });
     }
 

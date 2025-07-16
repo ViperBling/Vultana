@@ -6,27 +6,27 @@ namespace RHI
 {
     RHIHeapVK::RHIHeapVK(RHIDeviceVK *device, const RHIHeapDesc &desc, const eastl::string &name)
     {
-        mpDevice = device;
-        mDesc = desc;
-        mName = name;
+        m_pDevice = device;
+        m_Desc = desc;
+        m_Name = name;
     }
 
     RHIHeapVK::~RHIHeapVK()
     {
-        ((RHIDeviceVK*)mpDevice)->Delete(mAllocation);
+        ((RHIDeviceVK*)m_pDevice)->Delete(m_Allocation);
     }
 
     bool RHIHeapVK::Create()
     {
-        assert(mDesc.Size % (64 * 1024) == 0);
+        assert(m_Desc.Size % (64 * 1024) == 0);
 
-        VmaAllocator allocator = ((RHIDeviceVK*)mpDevice)->GetVmaAllocator();
+        VmaAllocator allocator = ((RHIDeviceVK*)m_pDevice)->GetVmaAllocator();
 
         vk::MemoryRequirements memoryReq {};
-        memoryReq.size = mDesc.Size;
+        memoryReq.size = m_Desc.Size;
         memoryReq.alignment = 1;    // not used for dedicated allocations
 
-        switch (mDesc.MemoryType)
+        switch (m_Desc.MemoryType)
         {
         case ERHIMemoryType::GPUOnly:
             memoryReq.memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -45,15 +45,15 @@ namespace RHI
         }
         VmaAllocationCreateInfo vmaAI {};
         vmaAI.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
-        vmaAI.usage = ToVmaUsage(mDesc.MemoryType);
+        vmaAI.usage = ToVmaUsage(m_Desc.MemoryType);
 
-        VkResult result = vmaAllocateMemory(allocator, (VkMemoryRequirements*)&memoryReq, &vmaAI, &mAllocation, nullptr);
+        VkResult result = vmaAllocateMemory(allocator, (VkMemoryRequirements*)&memoryReq, &vmaAI, &m_Allocation, nullptr);
         if (result != VK_SUCCESS)
         {
-            VTNA_LOG_ERROR("[RHIHeapVK] Failed to create {}", mName);
+            VTNA_LOG_ERROR("[RHIHeapVK] Failed to create {}", m_Name);
             return false;
         }
-        vmaSetAllocationName(allocator, mAllocation, mName.c_str());
+        vmaSetAllocationName(allocator, m_Allocation, m_Name.c_str());
 
         return true;
     }

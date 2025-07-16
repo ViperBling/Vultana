@@ -15,8 +15,8 @@ namespace Renderer
         RenderBatch& AddBatch();
         void Render(RG::RenderGraph* pRenderGraph);
 
-        RG::RGHandle GetBasePassColorRT() const { return mBasePassColorRT; }
-        RG::RGHandle GetBasePassDepthRT() const { return mBasePassDepthRT; }
+        RG::RGHandle GetBasePassColorRT() const { return m_BasePassColorRT; }
+        RG::RGHandle GetBasePassDepthRT() const { return m_BasePassDepthRT; }
 
     private:
         void MergeBatches();
@@ -25,16 +25,16 @@ namespace Renderer
         
 
     private:
-        RendererBase* mpRenderer;
+        RendererBase* m_pRenderer;
 
-        RHI::RHIPipelineState* mInstanceCulling1stPhasePSO = nullptr;
-        RHI::RHIPipelineState* mInstanceCulling2ndPhasePSO = nullptr;
+        RHI::RHIPipelineState* m_InstanceCulling1stPhasePSO = nullptr;
+        RHI::RHIPipelineState* m_InstanceCulling2ndPhasePSO = nullptr;
 
-        RHI::RHIPipelineState* mBuildMeshletListPSO = nullptr;
-        RHI::RHIPipelineState* mBuildInstanceCullingCmdPSO = nullptr;
-        RHI::RHIPipelineState* mBuildIndirectCmdPSO = nullptr;
+        RHI::RHIPipelineState* m_BuildMeshletListPSO = nullptr;
+        RHI::RHIPipelineState* m_BuildInstanceCullingCmdPSO = nullptr;
+        RHI::RHIPipelineState* m_BuildIndirectCmdPSO = nullptr;
 
-        eastl::vector<RenderBatch> mInstance;
+        eastl::vector<RenderBatch> m_Instance;
 
         struct IndirectBatch
         {
@@ -43,14 +43,14 @@ namespace Renderer
             uint32_t OriginMeshletCount;
             uint32_t MeshletListBufferOffset;
         };
-        eastl::vector<IndirectBatch> mIndirectBatches;
-        eastl::vector<RenderBatch> mNoGPUDrivenBatches;
+        eastl::vector<IndirectBatch> m_IndirectBatches;
+        eastl::vector<RenderBatch> m_NoGPUDrivenBatches;
 
-        uint32_t mTotalInstanceCount = 0;
-        uint32_t mTotalMeshletCount = 0;
-        uint32_t mInstnaceIndexAddress = 0;
+        uint32_t m_TotalInstanceCount = 0;
+        uint32_t m_TotalMeshletCount = 0;
+        uint32_t m_InstnaceIndexAddress = 0;
 
-        RG::RGHandle mBasePassColorRT;
-        RG::RGHandle mBasePassDepthRT;
+        RG::RGHandle m_BasePassColorRT;
+        RG::RGHandle m_BasePassDepthRT;
     };
 }

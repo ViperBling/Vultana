@@ -17,7 +17,7 @@ namespace Scene
         World();
         ~World();
 
-        Camera* GetCamera() { return mpCamera.get(); }
+        Camera* GetCamera() { return m_pCamera.get(); }
 
         void LoadScene(const eastl::string& file);
 
@@ -40,10 +40,10 @@ namespace Scene
         void CreateModel(tinyxml2::XMLElement* element);
 
     private:
-        eastl::unique_ptr<Camera> mpCamera;
+        eastl::unique_ptr<Camera> m_pCamera;
 
-        eastl::vector<eastl::unique_ptr<IVisibleObject>> mObjects;
-        eastl::vector<eastl::unique_ptr<ILight>> mLights;
-        ILight* mpMainLight = nullptr;
+        eastl::vector<eastl::unique_ptr<IVisibleObject>> m_Objects;
+        eastl::vector<eastl::unique_ptr<ILight>> m_Lights;
+        ILight* m_pMainLight = nullptr;
     };
 }

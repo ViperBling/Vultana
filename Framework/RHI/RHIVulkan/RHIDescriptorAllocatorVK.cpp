@@ -6,11 +6,11 @@ namespace RHI
 {
     RHIConstantBufferAllocatorVK::RHIConstantBufferAllocatorVK(RHIDeviceVK *device, uint32_t bufferSize)
     {
-        mDevice = device;
-        mBufferSize = bufferSize;
+        m_Device = device;
+        m_BufferSize = bufferSize;
 
         vk::BufferCreateInfo bufferCI {};
-        bufferCI.setSize(mBufferSize);
+        bufferCI.setSize(m_BufferSize);
         bufferCI.setUsage(vk::BufferUsageFlagBits::eUniformBuffer | 
                          vk::BufferUsageFlagBits::eShaderDeviceAddress |
                          vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
@@ -20,43 +20,43 @@ namespace RHI
         allocCI.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
         VmaAllocationInfo allocInfo {};
-        vmaCreateBuffer(mDevice->GetVmaAllocator(), (VkBufferCreateInfo *)&bufferCI, &allocCI, (VkBuffer *)&mBuffer, &mAllocation, &allocInfo);
+        vmaCreateBuffer(m_Device->GetVmaAllocator(), (VkBufferCreateInfo *)&bufferCI, &allocCI, (VkBuffer *)&m_Buffer, &m_Allocation, &allocInfo);
 
-        mCPUAddress = allocInfo.pMappedData;
+        m_CPUAddress = allocInfo.pMappedData;
 
         vk::BufferDeviceAddressInfo bufferAddrInfo {};
-        bufferAddrInfo.buffer = mBuffer;
-        mGPUAddress = mDevice->GetDevice().getBufferAddress(&bufferAddrInfo);
+        bufferAddrInfo.buffer = m_Buffer;
+        m_GPUAddress = m_Device->GetDevice().getBufferAddress(&bufferAddrInfo);
     }
 
     RHIConstantBufferAllocatorVK::~RHIConstantBufferAllocatorVK()
     {
-        vmaDestroyBuffer(mDevice->GetVmaAllocator(), mBuffer, mAllocation);
+        vmaDestroyBuffer(m_Device->GetVmaAllocator(), m_Buffer, m_Allocation);
     }
 
     void RHIConstantBufferAllocatorVK::Allocate(uint32_t size, void **cpuAddress, vk::DeviceAddress *gpuAddress)
     {
-        assert(mAllocatedSize + size <= mBufferSize);
+        assert(m_AllocatedSize + size <= m_BufferSize);
 
-        *cpuAddress = (char *)mCPUAddress + mAllocatedSize;
-        *gpuAddress = mGPUAddress + mAllocatedSize;
+        *cpuAddress = (char *)m_CPUAddress + m_AllocatedSize;
+        *gpuAddress = m_GPUAddress + m_AllocatedSize;
 
-        mAllocatedSize += RoundUpPow2(size, 256);
+        m_AllocatedSize += RoundUpPow2(size, 256);
     }
 
     void RHIConstantBufferAllocatorVK::Reset()
     {
-        mAllocatedSize = 0;
+        m_AllocatedSize = 0;
     }
 
     RHIDescriptorAllocatorVK::RHIDescriptorAllocatorVK(RHIDeviceVK *device, uint32_t descSize, uint32_t descCount, vk::BufferUsageFlags usage)
     {
-        mDevice = device;
-        mDescriptorSize = descSize;
-        mDescriptorCount = descCount;
+        m_Device = device;
+        m_DescriptorSize = descSize;
+        m_DescriptorCount = descCount;
 
         vk::BufferCreateInfo bufferCI {};
-        bufferCI.size = mDescriptorSize * mDescriptorCount;
+        bufferCI.size = m_DescriptorSize * m_DescriptorCount;
         bufferCI.usage = usage | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         VmaAllocationCreateInfo allocCI {};
@@ -64,42 +64,42 @@ namespace RHI
         allocCI.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
         VmaAllocationInfo allocInfo {};
-        vmaCreateBuffer(mDevice->GetVmaAllocator(), (VkBufferCreateInfo *)&bufferCI, &allocCI, (VkBuffer *)&mBuffer, &mAllocation, &allocInfo);
+        vmaCreateBuffer(m_Device->GetVmaAllocator(), (VkBufferCreateInfo *)&bufferCI, &allocCI, (VkBuffer *)&m_Buffer, &m_Allocation, &allocInfo);
 
-        mCPUAddress = allocInfo.pMappedData;
+        m_CPUAddress = allocInfo.pMappedData;
 
         vk::BufferDeviceAddressInfo bufferAddrInfo {};
-        bufferAddrInfo.buffer = mBuffer;
-        mGPUAddress = mDevice->GetDevice().getBufferAddress(&bufferAddrInfo);
+        bufferAddrInfo.buffer = m_Buffer;
+        m_GPUAddress = m_Device->GetDevice().getBufferAddress(&bufferAddrInfo);
     }
 
     RHIDescriptorAllocatorVK::~RHIDescriptorAllocatorVK()
     {
-        vmaDestroyBuffer(mDevice->GetVmaAllocator(), mBuffer, mAllocation);
+        vmaDestroyBuffer(m_Device->GetVmaAllocator(), m_Buffer, m_Allocation);
     }
 
     uint32_t RHIDescriptorAllocatorVK::Allocate(void **desc)
     {
         uint32_t index = 0;
 
-        if (!mFreeDescriptors.empty())
+        if (!m_FreeDescriptors.empty())
         {
-            index = mFreeDescriptors.back();
-            mFreeDescriptors.pop_back();
+            index = m_FreeDescriptors.back();
+            m_FreeDescriptors.pop_back();
         }
         else
         {
-            assert(mAllocatedCount < mDescriptorCount);
-            index = mAllocatedCount;
-            ++mAllocatedCount;
+            assert(m_AllocatedCount < m_DescriptorCount);
+            index = m_AllocatedCount;
+            ++m_AllocatedCount;
         }
-        *desc = (char *)mCPUAddress + mDescriptorSize * index;
+        *desc = (char *)m_CPUAddress + m_DescriptorSize * index;
 
         return index;
     }
 
     void RHIDescriptorAllocatorVK::Free(uint32_t index)
     {
-        mFreeDescriptors.push_back(index);
+        m_FreeDescriptors.push_back(index);
     }
 } // namespace RHI

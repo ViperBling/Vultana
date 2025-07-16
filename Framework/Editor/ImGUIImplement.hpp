@@ -21,11 +21,11 @@ namespace Editor
         void SetupRenderStates(RHI::RHICommandList* pCmdList, uint32_t frameIdx);
     
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
-        RHI::RHIPipelineState* mpPSO;
+        Renderer::RendererBase* m_pRenderer = nullptr;
+        RHI::RHIPipelineState* m_pPSO;
 
-        eastl::unique_ptr<RenderResources::Texture2D> mpFontTexture;
-        eastl::unique_ptr<RenderResources::StructuredBuffer> mpVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
-        eastl::unique_ptr<RenderResources::IndexBuffer> mpIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::Texture2D> m_pFontTexture;
+        eastl::unique_ptr<RenderResources::StructuredBuffer> m_pVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::IndexBuffer> m_pIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
     };
 }

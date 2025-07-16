@@ -6,14 +6,14 @@ namespace Renderer
 {
     void RendererBase::BuildRenderGraph(RG::RGHandle &outputColor, RG::RGHandle &outputDepth)
     {
-        mpRenderGraph->Clear();
+        m_pRenderGraph->Clear();
 
         ImportPrevFrameTextures();
 
-        mpForwardBasePass->Render(mpRenderGraph.get());
+        m_pForwardBasePass->Render(m_pRenderGraph.get());
 
-        RG::RGHandle sceneColorRT = mpForwardBasePass->GetBasePassColorRT();
-        RG::RGHandle sceneDepthRT = mpForwardBasePass->GetBasePassDepthRT();
+        RG::RGHandle sceneColorRT = m_pForwardBasePass->GetBasePassColorRT();
+        RG::RGHandle sceneDepthRT = m_pForwardBasePass->GetBasePassDepthRT();
 
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
@@ -22,15 +22,15 @@ namespace Renderer
         outputColor = sceneColorRT;
         outputDepth = sceneDepthRT;
 
-        mpRenderGraph->Present(outputColor, RHI::RHIAccessPixelShaderSRV);
-        mpRenderGraph->Present(outputDepth, RHI::RHIAccessDSV);
+        m_pRenderGraph->Present(outputColor, RHI::RHIAccessPixelShaderSRV);
+        m_pRenderGraph->Present(outputDepth, RHI::RHIAccessDSV);
 
-        mpRenderGraph->Compile();
+        m_pRenderGraph->Compile();
     }
 
     void RendererBase::ObjectIDPass(RG::RGHandle &depth)
     {
-        if (!mbEnableObjectIDRendering) return;
+        if (!m_bEnableObjectIDRendering) return;
         
         struct FIDPassData
         {
@@ -38,12 +38,12 @@ namespace Renderer
             RG::RGHandle SceneDepthTexture;
         };
 
-        auto idPass = mpRenderGraph->AddPass<FIDPassData>("Object ID Pass", RG::RenderPassType::Graphics,
+        auto idPass = m_pRenderGraph->AddPass<FIDPassData>("Object ID Pass", RG::RenderPassType::Graphics,
         [&](FIDPassData& data, RG::RGBuilder& builder)
         {
             RG::RGTexture::Desc desc;
-            desc.Width = mRenderWidth;
-            desc.Height = mRenderHeight;
+            desc.Width = m_RenderWidth;
+            desc.Height = m_RenderHeight;
             desc.Format = RHI::ERHIFormat::R32UI;
             
             data.IDTexture = builder.Create<RG::RGTexture>(desc, "ObjectIDTexture");
@@ -53,9 +53,9 @@ namespace Renderer
         [&](const FIDPassData& data, RHI::RHICommandList* pCmdList)
         {
             Scene::World* pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
-            for (size_t i = 0; i < mIDPassBatches.size(); i++)
+            for (size_t i = 0; i < m_IDPassBatches.size(); i++)
             {
-                DrawBatch(pCmdList, mIDPassBatches[i]);
+                DrawBatch(pCmdList, m_IDPassBatches[i]);
             }
         });
 
@@ -66,7 +66,7 @@ namespace Renderer
             RG::RGHandle SrcTexture;
         };
 
-        mpRenderGraph->AddPass<FCopyIDPassData>("Copy ID To Readback Buffer", RG::RenderPassType::Copy,
+        m_pRenderGraph->AddPass<FCopyIDPassData>("Copy ID To Readback Buffer", RG::RenderPassType::Copy,
         [&](FCopyIDPassData& data, RG::RGBuilder& builder)
         {
             data.SrcTexture = builder.Read(idPass->IDTexture);
@@ -74,18 +74,18 @@ namespace Renderer
         },
         [&](const FCopyIDPassData& data, RHI::RHICommandList* pCmdList)
         {
-            RG::RGTexture* srcTexture = mpRenderGraph->GetTexture(data.SrcTexture);
+            RG::RGTexture* srcTexture = m_pRenderGraph->GetTexture(data.SrcTexture);
 
-            mObjectIDRowPitch = srcTexture->GetTexture()->GetRowPitch();
-            uint32_t size = mObjectIDRowPitch * srcTexture->GetTexture()->GetDesc().Height;
-            if (mpObjectIDBuffer == nullptr || mpObjectIDBuffer->GetDesc().Size < size)
+            m_ObjectIDRowPitch = srcTexture->GetTexture()->GetRowPitch();
+            uint32_t size = m_ObjectIDRowPitch * srcTexture->GetTexture()->GetDesc().Height;
+            if (m_pObjectIDBuffer == nullptr || m_pObjectIDBuffer->GetDesc().Size < size)
             {
                 RHI::RHIBufferDesc desc;
                 desc.Size = size;
                 desc.MemoryType = RHI::ERHIMemoryType::GPUToCPU;
-                mpObjectIDBuffer.reset(mpDevice->CreateBuffer(desc, "RendererBase::ObjectIDBuffer"));
+                m_pObjectIDBuffer.reset(m_pDevice->CreateBuffer(desc, "RendererBase::ObjectIDBuffer"));
             }
-            pCmdList->CopyTextureToBuffer(srcTexture->GetTexture(), mpObjectIDBuffer.get(), 0, 0, 0);
+            pCmdList->CopyTextureToBuffer(srcTexture->GetTexture(), m_pObjectIDBuffer.get(), 0, 0, 0);
         });
     }
 
@@ -97,7 +97,7 @@ namespace Renderer
             RG::RGHandle OutSceneDepthRT;
         };
 
-        auto outlinePass = mpRenderGraph->AddPass<FOutlinePassData>("Outline Pass", RG::RenderPassType::Graphics,
+        auto outlinePass = m_pRenderGraph->AddPass<FOutlinePassData>("Outline Pass", RG::RenderPassType::Graphics,
         [&](FOutlinePassData& data, RG::RGBuilder& builder)
         {
             data.OutSceneColorRT = builder.WriteColor(0, color, 0, RHI::ERHIRenderPassLoadOp::Load);
@@ -105,9 +105,9 @@ namespace Renderer
         },
         [&](const FOutlinePassData& data, RHI::RHICommandList* pCmdList)
         {
-            for (size_t i = 0; i < mOutlinePassBatches.size(); i++)
+            for (size_t i = 0; i < m_OutlinePassBatches.size(); i++)
             {
-                DrawBatch(pCmdList, mOutlinePassBatches[i]);
+                DrawBatch(pCmdList, m_OutlinePassBatches[i]);
             }
         });
 
@@ -123,7 +123,7 @@ namespace Renderer
             RG::RGHandle DstSceneDepthTexture;
         };
 
-        mpRenderGraph->AddPass<FCopyDepthPassData>("Copy History Pass", RG::RenderPassType::Compute,
+        m_pRenderGraph->AddPass<FCopyDepthPassData>("Copy History Pass", RG::RenderPassType::Compute,
         [&](FCopyDepthPassData& data, RG::RGBuilder& builder)
         {
             data.SrcSceneDepthTexture = builder.Read(sceneDepth);
@@ -131,13 +131,13 @@ namespace Renderer
         },
         [&](const FCopyDepthPassData& data, RHI::RHICommandList* pCmdList)
         {
-            RG::RGTexture* srcSceneDepthTexture = mpRenderGraph->GetTexture(data.SrcSceneDepthTexture);
+            RG::RGTexture* srcSceneDepthTexture = m_pRenderGraph->GetTexture(data.SrcSceneDepthTexture);
 
             uint32_t cb[2] = { srcSceneDepthTexture->GetSRV()->GetHeapIndex(), srcSceneDepthTexture->GetUAV()->GetHeapIndex() };
 
-            pCmdList->SetPipelineState(mpCopyDepthPSO);
+            pCmdList->SetPipelineState(m_pCopyDepthPSO);
             pCmdList->SetComputeConstants(0, cb, sizeof(cb));
-            pCmdList->Dispatch(DivideRoudingUp(mRenderWidth, 8), DivideRoudingUp(mRenderHeight, 8), 1);
+            pCmdList->Dispatch(DivideRoudingUp(m_RenderWidth, 8), DivideRoudingUp(m_RenderHeight, 8), 1);
         });
 
         struct FCopyPassData
@@ -149,7 +149,7 @@ namespace Renderer
             RG::RGHandle DstSceneColorTexture;
         };
 
-        mpRenderGraph->AddPass<FCopyPassData>("Copy History Textures Pass", RG::RenderPassType::Copy,
+        m_pRenderGraph->AddPass<FCopyPassData>("Copy History Textures Pass", RG::RenderPassType::Copy,
         [&](FCopyPassData& data, RG::RGBuilder& builder)
         {
             // data.SrcSceneNormalTexture = builder.Read(sceneNormal);
@@ -162,34 +162,34 @@ namespace Renderer
         },
         [&](const FCopyPassData& data, RHI::RHICommandList* pCmdList)
         {
-            // RG::RGTexture* srcSceneNormalTexture = mpRenderGraph->GetTexture(data.SrcSceneNormalTexture);
-            RG::RGTexture* srcSceneColorTexture = mpRenderGraph->GetTexture(data.SrcSceneColorTexture);
+            // RG::RGTexture* srcSceneNormalTexture = m_pRenderGraph->GetTexture(data.SrcSceneNormalTexture);
+            RG::RGTexture* srcSceneColorTexture = m_pRenderGraph->GetTexture(data.SrcSceneColorTexture);
 
-            // pCmdList->CopyTexture(srcSceneNormalTexture->GetTexture(), mpPrevNormalTexture->GetTexture(), 0, 0,  0, 0);
-            pCmdList->CopyTexture(srcSceneColorTexture->GetTexture(), mpPrevSceneColorTexture->GetTexture(), 0, 0, 0, 0);
+            // pCmdList->CopyTexture(srcSceneNormalTexture->GetTexture(), m_pPrevNormalTexture->GetTexture(), 0, 0,  0, 0);
+            pCmdList->CopyTexture(srcSceneColorTexture->GetTexture(), m_pPrevSceneColorTexture->GetTexture(), 0, 0, 0, 0);
         });
     }
 
     void RendererBase::ImportPrevFrameTextures()
     {
-        if (mpPrevSceneDepthTexture == nullptr || mpPrevSceneDepthTexture->GetTexture()->GetDesc().Width != mRenderWidth || mpPrevSceneDepthTexture->GetTexture()->GetDesc().Height != mRenderHeight)
+        if (m_pPrevSceneDepthTexture == nullptr || m_pPrevSceneDepthTexture->GetTexture()->GetDesc().Width != m_RenderWidth || m_pPrevSceneDepthTexture->GetTexture()->GetDesc().Height != m_RenderHeight)
         {
-            mpPrevSceneDepthTexture.reset(CreateTexture2D(mRenderWidth, mRenderHeight, 1, RHI::ERHIFormat::R32F, RHI::RHITextureUsageUnorderedAccess, "PrevSceneDepthTexture"));
-            // mpPrevNormalTexture.reset(CreateTexture2D(mRenderWidth, mRenderHeight, 1, RHI::ERHIFormat::RGBA8UNORM, RHI::RHITextureUsageUnorderedAccess, "PrevSceneNormalTexture"));
-            mpPrevSceneColorTexture.reset(CreateTexture2D(mRenderWidth, mRenderHeight, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageUnorderedAccess, "PrevSceneColorTexture"));
+            m_pPrevSceneDepthTexture.reset(CreateTexture2D(m_RenderWidth, m_RenderHeight, 1, RHI::ERHIFormat::R32F, RHI::RHITextureUsageUnorderedAccess, "PrevSceneDepthTexture"));
+            // m_pPrevNormalTexture.reset(CreateTexture2D(m_RenderWidth, m_RenderHeight, 1, RHI::ERHIFormat::RGBA8UNORM, RHI::RHITextureUsageUnorderedAccess, "PrevSceneNormalTexture"));
+            m_pPrevSceneColorTexture.reset(CreateTexture2D(m_RenderWidth, m_RenderHeight, 1, RHI::ERHIFormat::RGBA16F, RHI::RHITextureUsageUnorderedAccess, "PrevSceneColorTexture"));
 
-            mbHistoryValid = false;
+            m_bHistoryValid = false;
         }
         else
         {
-            mbHistoryValid = true;
+            m_bHistoryValid = true;
         }
 
-        m_PrevSceneDepthHandle = mpRenderGraph->Import(mpPrevSceneDepthTexture->GetTexture(), RHI::RHIAccessComputeUAV);
-        // m_PrevNormalHandle = mpRenderGraph->Import(mpPrevNormalTexture->GetTexture(), mbHistoryValid ? RHI::RHIAccessCopyDst : RHI::RHIAccessComputeUAV);
-        m_PrevSceneColorHandle = mpRenderGraph->Import(mpPrevSceneColorTexture->GetTexture(), mbHistoryValid ? RHI::RHIAccessCopyDst : RHI::RHIAccessComputeUAV);
+        m_PrevSceneDepthHandle = m_pRenderGraph->Import(m_pPrevSceneDepthTexture->GetTexture(), RHI::RHIAccessComputeUAV);
+        // m_PrevNormalHandle = m_pRenderGraph->Import(m_pPrevNormalTexture->GetTexture(), m_bHistoryValid ? RHI::RHIAccessCopyDst : RHI::RHIAccessComputeUAV);
+        m_PrevSceneColorHandle = m_pRenderGraph->Import(m_pPrevSceneColorTexture->GetTexture(), m_bHistoryValid ? RHI::RHIAccessCopyDst : RHI::RHIAccessComputeUAV);
 
-        if (!mbHistoryValid)
+        if (!m_bHistoryValid)
         {
             struct FClearHistoryPassData
             {
@@ -198,7 +198,7 @@ namespace Renderer
                 RG::RGHandle SceneColor;
             };
 
-            auto clearHistoryPass = mpRenderGraph->AddPass<FClearHistoryPassData>("Clear History Pass", RG::RenderPassType::Compute,
+            auto clearHistoryPass = m_pRenderGraph->AddPass<FClearHistoryPassData>("Clear History Pass", RG::RenderPassType::Compute,
             [&](FClearHistoryPassData& data, RG::RGBuilder& builder)
             {
                 data.LinearSceneDepth = builder.Write(m_PrevSceneDepthHandle);
@@ -208,9 +208,9 @@ namespace Renderer
             [=](const FClearHistoryPassData& data, RHI::RHICommandList* pCmdList)
             {
                 float clearValue[4] = { 0 };
-                pCmdList->ClearUAV(mpPrevSceneDepthTexture->GetTexture(), mpPrevSceneDepthTexture->GetUAV(), clearValue);
-                // pCmdList->ClearUAV(mpPrevNormalTexture->GetTexture(), mpPrevNormalTexture->GetUAV(), clearValue);
-                pCmdList->ClearUAV(mpPrevSceneColorTexture->GetTexture(), mpPrevSceneColorTexture->GetUAV(), clearValue);
+                pCmdList->ClearUAV(m_pPrevSceneDepthTexture->GetTexture(), m_pPrevSceneDepthTexture->GetUAV(), clearValue);
+                // pCmdList->ClearUAV(m_pPrevNormalTexture->GetTexture(), m_pPrevNormalTexture->GetUAV(), clearValue);
+                pCmdList->ClearUAV(m_pPrevSceneColorTexture->GetTexture(), m_pPrevSceneColorTexture->GetUAV(), clearValue);
             });
             m_PrevSceneDepthHandle = clearHistoryPass->LinearSceneDepth;
             // m_PrevNormalHandle = clearHistoryPass->SceneNormal;

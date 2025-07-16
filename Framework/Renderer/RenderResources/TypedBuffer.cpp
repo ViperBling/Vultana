@@ -23,16 +23,16 @@ namespace RenderResources
             desc.Usage |= RHI::RHIBufferUsageUnorderedAccess;
         }
 
-        mpBuffer.reset(pDevice->CreateBuffer(desc, mName));
-        if (mpBuffer == nullptr) return false;
+        m_pBuffer.reset(pDevice->CreateBuffer(desc, m_Name));
+        if (m_pBuffer == nullptr) return false;
 
         RHI::RHIShaderResourceViewDesc srvDesc;
         srvDesc.Format = format;
         srvDesc.Type = RHI::ERHIShaderResourceViewType::TypedBuffer;
         srvDesc.Buffer.Size = stride * elementCount;
         srvDesc.Buffer.Offset = 0;
-        mpSRV.reset(pDevice->CreateShaderResourceView(mpBuffer.get(), srvDesc, mName));
-        if (mpSRV == nullptr) return false;
+        m_pSRV.reset(pDevice->CreateShaderResourceView(m_pBuffer.get(), srvDesc, m_Name));
+        if (m_pSRV == nullptr) return false;
 
         if (isUAV)
         {
@@ -41,8 +41,8 @@ namespace RenderResources
             uavDesc.Type = RHI::ERHIUnorderedAccessViewType::TypedBuffer;
             uavDesc.Buffer.Size = stride * elementCount;
             uavDesc.Buffer.Offset = 0;
-            mpUAV.reset(pDevice->CreateUnorderedAccessView(mpBuffer.get(), uavDesc, mName));
-            if (mpUAV == nullptr) return false;
+            m_pUAV.reset(pDevice->CreateUnorderedAccessView(m_pBuffer.get(), uavDesc, m_Name));
+            if (m_pUAV == nullptr) return false;
         }
 
         return true;

@@ -36,7 +36,7 @@ namespace Window
 {
     Win32Window::Win32Window(const Win32WindowDesc &desc)
     {
-        mDesc = desc;
+        m_Desc = desc;
     }
 
     Win32Window::~Win32Window()
@@ -50,22 +50,22 @@ namespace Window
         wndClass.cbSize = sizeof(WNDCLASSEX);
         wndClass.style = CS_HREDRAW | CS_VREDRAW;
         wndClass.lpfnWndProc = WindowProc;
-        wndClass.hInstance = mDesc.Instance;
+        wndClass.hInstance = m_Desc.Instance;
         wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
         wndClass.lpszClassName = L"VultanaEngine";
         RegisterClassEx(&wndClass);
 
-        RECT windowRect = { 0, 0, (LONG)mDesc.Size.x, (LONG)mDesc.Size.y };
+        RECT windowRect = { 0, 0, (LONG)m_Desc.Size.x, (LONG)m_Desc.Size.y };
         AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
-        mHwnd = CreateWindow(
+        m_Hwnd = CreateWindow(
             wndClass.lpszClassName, 
             L"VultanaEngine",
             WS_OVERLAPPEDWINDOW, 
-            mDesc.Position.x, mDesc.Position.y, 
+            m_Desc.Position.x, m_Desc.Position.y, 
             windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, 
-            nullptr, nullptr, mDesc.Instance, nullptr);
+            nullptr, nullptr, m_Desc.Instance, nullptr);
 
-        ShowWindow(mHwnd, mDesc.ShowCmd);
+        ShowWindow(m_Hwnd, m_Desc.ShowCmd);
     }
 }

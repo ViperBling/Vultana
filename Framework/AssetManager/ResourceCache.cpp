@@ -11,8 +11,8 @@ namespace Assets
 
     RenderResources::Texture2D *ResourceCache::GetTexture2D(const eastl::string &file, bool srgb)
     {
-        auto iter = mCachedTexture2D.find(file);
-        if (iter != mCachedTexture2D.end())
+        auto iter = m_CachedTexture2D.find(file);
+        if (iter != m_CachedTexture2D.end())
         {
             iter->second.RefCount++;
             return (RenderResources::Texture2D*)iter->second.Data;
@@ -21,7 +21,7 @@ namespace Assets
         FResource texture;
         texture.RefCount = 1;
         texture.Data = pRenderer->CreateTexture2D(file, srgb);
-        mCachedTexture2D.insert(eastl::make_pair(file, texture));
+        m_CachedTexture2D.insert(eastl::make_pair(file, texture));
 
         return (RenderResources::Texture2D*)texture.Data;
     }
@@ -32,7 +32,7 @@ namespace Assets
         {
             return;
         }
-        for (auto iter = mCachedTexture2D.begin(); iter != mCachedTexture2D.end(); iter++)
+        for (auto iter = m_CachedTexture2D.begin(); iter != m_CachedTexture2D.end(); iter++)
         {
             if (iter->second.Data == texture)
             {
@@ -40,7 +40,7 @@ namespace Assets
                 if (iter->second.RefCount == 0)
                 {
                     delete texture;
-                    mCachedTexture2D.erase(iter);
+                    m_CachedTexture2D.erase(iter);
                 }
                 return;
             }
@@ -50,8 +50,8 @@ namespace Assets
 
     OffsetAllocator::Allocation ResourceCache::GetSceneBuffer(const eastl::string &name, const void *data, uint32_t size)
     {
-        auto iter = mCachedSceneBuffer.find(name);
-        if (iter != mCachedSceneBuffer.end())
+        auto iter = m_CachedSceneBuffer.find(name);
+        if (iter != m_CachedSceneBuffer.end())
         {
             iter->second.RefCount++;
             return iter->second.Allocation;
@@ -61,7 +61,7 @@ namespace Assets
         FSceneBuffer buffer;
         buffer.RefCount = 1;
         buffer.Allocation = pRenderer->AllocateSceneStaticBuffer(data, size);
-        mCachedSceneBuffer.insert(eastl::make_pair(name, buffer));
+        m_CachedSceneBuffer.insert(eastl::make_pair(name, buffer));
         return buffer.Allocation;
     }
 
@@ -71,7 +71,7 @@ namespace Assets
         {
             return;
         }
-        for (auto iter = mCachedSceneBuffer.begin(); iter != mCachedSceneBuffer.end(); iter++)
+        for (auto iter = m_CachedSceneBuffer.begin(); iter != m_CachedSceneBuffer.end(); iter++)
         {
             if (iter->second.Allocation.metadata == allocation.metadata &&
                 iter->second.Allocation.offset == allocation.offset)
@@ -81,7 +81,7 @@ namespace Assets
                 {
                     auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
                     pRenderer->FreeSceneStaticBuffer(allocation);
-                    mCachedSceneBuffer.erase(iter);
+                    m_CachedSceneBuffer.erase(iter);
                 }
                 return;
             }

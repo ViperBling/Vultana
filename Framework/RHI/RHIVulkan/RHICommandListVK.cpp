@@ -16,83 +16,83 @@ namespace RHI
 {
     RHICommandListVK::RHICommandListVK(RHIDeviceVK *device, ERHICommandQueueType queueType, const eastl::string &name)
     {
-        mpDevice = device;
-        mCmdQueueType = queueType;
-        mName = name;
+        m_pDevice = device;
+        m_CmdQueueType = queueType;
+        m_Name = name;
     }
 
     RHICommandListVK::~RHICommandListVK()
     {
-        ((RHIDeviceVK*)mpDevice)->Delete(mCmdPool);
+        ((RHIDeviceVK*)m_pDevice)->Delete(m_CmdPool);
     }
 
     bool RHICommandListVK::Create()
     {
-        auto device = (RHIDeviceVK*)mpDevice;
+        auto device = (RHIDeviceVK*)m_pDevice;
 
         vk::CommandPoolCreateInfo cmdPoolCI {};
 
-        switch (mCmdQueueType)
+        switch (m_CmdQueueType)
         {
         case ERHICommandQueueType::Graphics:
             cmdPoolCI.setQueueFamilyIndex(device->GetGraphicsQueueIndex());
-            mQueue = device->GetGraphicsQueue();
+            m_Queue = device->GetGraphicsQueue();
             break;
         case ERHICommandQueueType::Compute:
             cmdPoolCI.setQueueFamilyIndex(device->GetComputeQueueIndex());
-            mQueue = device->GetComputeQueue();
+            m_Queue = device->GetComputeQueue();
             break;
         case ERHICommandQueueType::Copy:
             cmdPoolCI.setQueueFamilyIndex(device->GetCopyQueueIndex());
-            mQueue = device->GetCopyQueue();
+            m_Queue = device->GetCopyQueue();
             break;
         default:
             break;
         }
 
         vk::Device deviceHandle = device->GetDevice();
-        mDynamicLoader = device->GetDynamicLoader();
-        vk::Result res = deviceHandle.createCommandPool(&cmdPoolCI, nullptr, &mCmdPool);
+        m_DynamicLoader = device->GetDynamicLoader();
+        vk::Result res = deviceHandle.createCommandPool(&cmdPoolCI, nullptr, &m_CmdPool);
         if (res != vk::Result::eSuccess)
         {
             VTNA_LOG_ERROR("[RHICommandListVK] Failed to create command pool");
             return false;
         }
-        SetDebugName(deviceHandle, vk::ObjectType::eCommandPool, (uint64_t)(VkCommandPool)mCmdPool, mName.c_str(), mDynamicLoader);
+        SetDebugName(deviceHandle, vk::ObjectType::eCommandPool, (uint64_t)(VkCommandPool)m_CmdPool, m_Name.c_str(), m_DynamicLoader);
 
         return true;
     }
 
     void RHICommandListVK::ResetAllocator()
     {
-        vk::Device deviceHandle = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        deviceHandle.resetCommandPool(mCmdPool);
+        vk::Device deviceHandle = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        deviceHandle.resetCommandPool(m_CmdPool);
 
-        for (size_t i = 0; i < mPendingCmdBuffers.size(); i++)
+        for (size_t i = 0; i < m_PendingCmdBuffers.size(); i++)
         {
-            mFreeCmdBuffers.push_back(mPendingCmdBuffers[i]);
+            m_FreeCmdBuffers.push_back(m_PendingCmdBuffers[i]);
         }
-        mPendingCmdBuffers.clear();
+        m_PendingCmdBuffers.clear();
     }
 
     void RHICommandListVK::Begin()
     {
         vk::Result res;
 
-        if (!mFreeCmdBuffers.empty())
+        if (!m_FreeCmdBuffers.empty())
         {
-            mCmdBuffer = mFreeCmdBuffers.back();
-            mFreeCmdBuffers.pop_back();
+            m_CmdBuffer = m_FreeCmdBuffers.back();
+            m_FreeCmdBuffers.pop_back();
         }
         else
         {
             vk::CommandBufferAllocateInfo cmdBufferAI {};
-            cmdBufferAI.setCommandPool(mCmdPool);
+            cmdBufferAI.setCommandPool(m_CmdPool);
             cmdBufferAI.setLevel(vk::CommandBufferLevel::ePrimary);
             cmdBufferAI.setCommandBufferCount(1);
 
-            vk::Device deviceHandle = ((RHIDeviceVK*)mpDevice)->GetDevice();
-            res = deviceHandle.allocateCommandBuffers(&cmdBufferAI, &mCmdBuffer);
+            vk::Device deviceHandle = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+            res = deviceHandle.allocateCommandBuffers(&cmdBufferAI, &m_CmdBuffer);
             if (res != vk::Result::eSuccess)
             {
                 VTNA_LOG_ERROR("[RHICommandListVK] Failed to allocate command buffer");
@@ -102,7 +102,7 @@ namespace RHI
         vk::CommandBufferBeginInfo cmdBufferBI {};
         cmdBufferBI.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
-        mCmdBuffer.begin(cmdBufferBI);
+        m_CmdBuffer.begin(cmdBufferBI);
 
         ResetState();
     }
@@ -111,28 +111,28 @@ namespace RHI
     {
         FlushBarriers();
 
-        mCmdBuffer.end();
-        mPendingCmdBuffers.push_back(mCmdBuffer);
+        m_CmdBuffer.end();
+        m_PendingCmdBuffers.push_back(m_CmdBuffer);
     }
 
     void RHICommandListVK::Wait(RHIFence *fence, uint64_t value)
     {
-        mPendingWaits.emplace_back(fence, value);
+        m_PendingWaits.emplace_back(fence, value);
     }
 
     void RHICommandListVK::Signal(RHIFence *fence, uint64_t value)
     {
-        mPendingSignals.emplace_back(fence, value);
+        m_PendingSignals.emplace_back(fence, value);
     }
 
     void RHICommandListVK::Present(RHISwapchain *swapchain)
     {
-        mPendingSwapchain.push_back(swapchain);
+        m_PendingSwapchain.push_back(swapchain);
     }
 
     void RHICommandListVK::Submit()
     {
-        ((RHIDeviceVK*)mpDevice)->FlushLayoutTransition(mCmdQueueType);
+        ((RHIDeviceVK*)m_pDevice)->FlushLayoutTransition(m_CmdQueueType);
 
         eastl::vector<vk::Semaphore> waitSemaphores;
         eastl::vector<vk::Semaphore> signalSemaphores;
@@ -140,24 +140,24 @@ namespace RHI
         eastl::vector<uint64_t> signalValues;
         eastl::vector<vk::PipelineStageFlags> waitStages;
 
-        for (size_t i = 0; i < mPendingWaits.size(); i++)
+        for (size_t i = 0; i < m_PendingWaits.size(); i++)
         {
-            waitSemaphores.push_back((VkSemaphore)mPendingWaits[i].first->GetNativeHandle());
+            waitSemaphores.push_back((VkSemaphore)m_PendingWaits[i].first->GetNativeHandle());
             waitStages.push_back(vk::PipelineStageFlagBits::eTopOfPipe);
-            waitValues.push_back(mPendingWaits[i].second);
+            waitValues.push_back(m_PendingWaits[i].second);
         }
-        mPendingWaits.clear();
+        m_PendingWaits.clear();
 
-        for (size_t i = 0; i < mPendingSignals.size(); i++)
+        for (size_t i = 0; i < m_PendingSignals.size(); i++)
         {
-            signalSemaphores.push_back((VkSemaphore)mPendingSignals[i].first->GetNativeHandle());
-            signalValues.push_back(mPendingSignals[i].second);
+            signalSemaphores.push_back((VkSemaphore)m_PendingSignals[i].first->GetNativeHandle());
+            signalValues.push_back(m_PendingSignals[i].second);
         }
-        mPendingSignals.clear();
+        m_PendingSignals.clear();
 
-        for (size_t i = 0; i < mPendingSwapchain.size(); i++)
+        for (size_t i = 0; i < m_PendingSwapchain.size(); i++)
         {
-            auto swapchain = (RHISwapchainVK*)mPendingSwapchain[i];
+            auto swapchain = (RHISwapchainVK*)m_PendingSwapchain[i];
             waitSemaphores.push_back(swapchain->GetAcquireSemaphore());
             waitStages.push_back(vk::PipelineStageFlagBits::eTopOfPipe);
             signalSemaphores.push_back(swapchain->GetPresentSemaphore());
@@ -175,23 +175,23 @@ namespace RHI
         submitInfo.setWaitSemaphores(waitSemaphores);
         submitInfo.setSignalSemaphores(signalSemaphores);
         submitInfo.setWaitDstStageMask(waitStages);
-        submitInfo.setCommandBuffers(mCmdBuffer);
+        submitInfo.setCommandBuffers(m_CmdBuffer);
 
-        mQueue.submit(submitInfo);
+        m_Queue.submit(submitInfo);
 
-        for (size_t i = 0; i < mPendingSwapchain.size(); i++)
+        for (size_t i = 0; i < m_PendingSwapchain.size(); i++)
         {
-            auto swapchain = (RHISwapchainVK*)mPendingSwapchain[i];
-            swapchain->Present(mQueue);
+            auto swapchain = (RHISwapchainVK*)m_PendingSwapchain[i];
+            swapchain->Present(m_Queue);
         }
-        mPendingSwapchain.clear();
+        m_PendingSwapchain.clear();
     }
     
     void RHICommandListVK::ResetState()
     {
-        if (mCmdQueueType == ERHICommandQueueType::Graphics || mCmdQueueType == ERHICommandQueueType::Compute)
+        if (m_CmdQueueType == ERHICommandQueueType::Graphics || m_CmdQueueType == ERHICommandQueueType::Compute)
         {
-            auto device = (RHIDeviceVK*)mpDevice;
+            auto device = (RHIDeviceVK*)m_pDevice;
 
             vk::DescriptorBufferBindingInfoEXT descBufferBI[3] {};
             descBufferBI[0].setAddress(device->GetConstantBufferAllocator()->GetGPUAddress());
@@ -201,16 +201,16 @@ namespace RHI
             descBufferBI[2].setAddress(device->GetSamplerDescriptorAllocator()->GetGPUAddress());
             descBufferBI[2].setUsage(vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
 
-            mCmdBuffer.bindDescriptorBuffersEXT(3, descBufferBI, mDynamicLoader);
+            m_CmdBuffer.bindDescriptorBuffersEXT(3, descBufferBI, m_DynamicLoader);
 
             uint32_t bufferIndices[] = { 1, 2 };
             vk::DeviceSize offsets[] = { 0, 0 };
 
-            mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 1, 2, bufferIndices, offsets, mDynamicLoader);
+            m_CmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 1, 2, bufferIndices, offsets, m_DynamicLoader);
 
-            if (mCmdQueueType == ERHICommandQueueType::Graphics)
+            if (m_CmdQueueType == ERHICommandQueueType::Graphics)
             {
-                mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 1, 2, bufferIndices, offsets, mDynamicLoader);
+                m_CmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 1, 2, bufferIndices, offsets, m_DynamicLoader);
             }
         }
     }
@@ -228,12 +228,12 @@ namespace RHI
         vk::DebugUtilsLabelEXT label {};
         label.pLabelName = eventName.c_str();
 
-        mCmdBuffer.beginDebugUtilsLabelEXT(label, mDynamicLoader);
+        m_CmdBuffer.beginDebugUtilsLabelEXT(label, m_DynamicLoader);
     }
 
     void RHICommandListVK::EndEvent()
     {
-        mCmdBuffer.endDebugUtilsLabelEXT(mDynamicLoader);
+        m_CmdBuffer.endDebugUtilsLabelEXT(m_DynamicLoader);
     }
 
     void RHICommandListVK::CopyBufferToTexture(RHIBuffer *srcBuffer, RHITexture *dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset)
@@ -259,7 +259,7 @@ namespace RHI
         copyInfo.regionCount = 1;
         copyInfo.pRegions = &copy2;
 
-        mCmdBuffer.copyBufferToImage2(copyInfo);
+        m_CmdBuffer.copyBufferToImage2(copyInfo);
     }
 
     void RHICommandListVK::CopyTextureToBuffer(RHITexture *srcTexture, RHIBuffer *dstBuffer, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset)
@@ -285,7 +285,7 @@ namespace RHI
         copyInfo.regionCount = 1;
         copyInfo.pRegions = &copy2;
 
-        mCmdBuffer.copyImageToBuffer2(copyInfo);
+        m_CmdBuffer.copyImageToBuffer2(copyInfo);
     }
 
     void RHICommandListVK::CopyBuffer(RHIBuffer *src, RHIBuffer *dst, uint32_t srcOffset, uint32_t dstOffset, uint32_t size)
@@ -303,7 +303,7 @@ namespace RHI
         copyInfo2.regionCount = 1;
         copyInfo2.pRegions = &copy2;
 
-        mCmdBuffer.copyBuffer2(copyInfo2);
+        m_CmdBuffer.copyBuffer2(copyInfo2);
     }
 
     void RHICommandListVK::CopyTexture(RHITexture *src, RHITexture *dst, uint32_t srcMipLevel, uint32_t dstMipLevel, uint32_t srcArraySlice, uint32_t dstArraySlice)
@@ -331,36 +331,36 @@ namespace RHI
         copyInfo2.regionCount = 1;
         copyInfo2.pRegions = &copy2;
 
-        mCmdBuffer.copyImage2(copyInfo2);
+        m_CmdBuffer.copyImage2(copyInfo2);
     }
 
     void RHICommandListVK::ClearUAV(RHIResource *resource, RHIDescriptor *uav, const float *clearValue)
     {
-        ConstantData constantData = mComputeConstants;
+        ConstantData constantData = m_ComputeConstants;
 
         const RHI::RHIUnorderedAccessViewDesc& uavDesc = static_cast<RHI::RHIUnorderedAccessViewVK*>(uav)->GetDesc();
         Renderer::ClearUAV(this, resource, uav, uavDesc, clearValue);
 
-        mComputeConstants = constantData;
-        mComputeConstants.dirty = true;
+        m_ComputeConstants = constantData;
+        m_ComputeConstants.dirty = true;
     }
 
     void RHICommandListVK::ClearUAV(RHIResource *resource, RHIDescriptor *uav, const uint32_t *clearValue)
     {
-        ConstantData constantData = mComputeConstants;
+        ConstantData constantData = m_ComputeConstants;
 
         const RHI::RHIUnorderedAccessViewDesc& uavDesc = static_cast<RHI::RHIUnorderedAccessViewVK*>(uav)->GetDesc();
         Renderer::ClearUAV(this, resource, uav, uavDesc, clearValue);
 
-        mComputeConstants = constantData;
-        mComputeConstants.dirty = true;
+        m_ComputeConstants = constantData;
+        m_ComputeConstants.dirty = true;
     }
 
     void RHICommandListVK::WriteBuffer(RHIBuffer *buffer, uint32_t offset, uint32_t data)
     {
         FlushBarriers();
 
-        mCmdBuffer.updateBuffer((VkBuffer)buffer->GetNativeHandle(), offset, sizeof(uint32_t), &data);
+        m_CmdBuffer.updateBuffer((VkBuffer)buffer->GetNativeHandle(), offset, sizeof(uint32_t), &data);
     }
 
     void RHICommandListVK::TextureBarrier(RHITexture *texture, uint32_t subResouce, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter)
@@ -400,7 +400,7 @@ namespace RHI
             barrier.subresourceRange.layerCount = 1;
         }
 
-        mImageMemoryBarriers.push_back(barrier);
+        m_ImageMemoryBarriers.push_back(barrier);
     }
 
     void RHICommandListVK::BufferBarrier(RHIBuffer *buffer, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter)
@@ -414,7 +414,7 @@ namespace RHI
         barrier2.setSrcAccessMask(GetAccessMask(accessFlagBefore));
         barrier2.setDstAccessMask(GetAccessMask(accessFlagAfter));
 
-        mBufferMemoryBarriers.push_back(barrier2);
+        m_BufferMemoryBarriers.push_back(barrier2);
     }
 
     void RHICommandListVK::GlobalBarrier(ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter)
@@ -425,23 +425,23 @@ namespace RHI
         barrier2.setSrcAccessMask(GetAccessMask(accessFlagBefore));
         barrier2.setDstAccessMask(GetAccessMask(accessFlagAfter));
 
-        mMemoryBarriers.push_back(barrier2);
+        m_MemoryBarriers.push_back(barrier2);
     }
 
     void RHICommandListVK::FlushBarriers()
     {
-        if (!mMemoryBarriers.empty() || !mBufferMemoryBarriers.empty() || !mImageMemoryBarriers.empty())
+        if (!m_MemoryBarriers.empty() || !m_BufferMemoryBarriers.empty() || !m_ImageMemoryBarriers.empty())
         {
             vk::DependencyInfo dependencyInfo {};
-            dependencyInfo.setMemoryBarriers(mMemoryBarriers);
-            dependencyInfo.setBufferMemoryBarriers(mBufferMemoryBarriers);
-            dependencyInfo.setImageMemoryBarriers(mImageMemoryBarriers);
+            dependencyInfo.setMemoryBarriers(m_MemoryBarriers);
+            dependencyInfo.setBufferMemoryBarriers(m_BufferMemoryBarriers);
+            dependencyInfo.setImageMemoryBarriers(m_ImageMemoryBarriers);
 
-            mCmdBuffer.pipelineBarrier2(dependencyInfo);
+            m_CmdBuffer.pipelineBarrier2(dependencyInfo);
 
-            mMemoryBarriers.clear();
-            mBufferMemoryBarriers.clear();
-            mImageMemoryBarriers.clear();
+            m_MemoryBarriers.clear();
+            m_BufferMemoryBarriers.clear();
+            m_ImageMemoryBarriers.clear();
         }
     }
 
@@ -519,36 +519,36 @@ namespace RHI
         {
             renderInfo.pStencilAttachment = &stencilAttachment;
         }
-        mCmdBuffer.beginRendering(renderInfo);
+        m_CmdBuffer.beginRendering(renderInfo);
 
         SetViewport(0, 0, width, height);
     }
 
     void RHICommandListVK::EndRenderPass()
     {
-        mCmdBuffer.endRendering();
+        m_CmdBuffer.endRendering();
     }
 
     void RHICommandListVK::SetPipelineState(RHIPipelineState *pipelineState)
     {
         vk::PipelineBindPoint bindPoint = pipelineState->GetType() == ERHIPipelineType::Compute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
-        mCmdBuffer.bindPipeline(bindPoint, (VkPipeline)pipelineState->GetNativeHandle());
+        m_CmdBuffer.bindPipeline(bindPoint, (VkPipeline)pipelineState->GetNativeHandle());
     }
 
     void RHICommandListVK::SetStencilReference(uint8_t stencil)
     {
-        mCmdBuffer.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack, stencil);
+        m_CmdBuffer.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack, stencil);
     }
 
     void RHICommandListVK::SetBlendFactor(const float *blendFactor)
     {
-        mCmdBuffer.setBlendConstants(blendFactor);
+        m_CmdBuffer.setBlendConstants(blendFactor);
     }
 
     void RHICommandListVK::SetIndexBuffer(RHIBuffer *buffer, uint32_t offset, ERHIFormat format)
     {
         vk::IndexType type = format == ERHIFormat::R16UI ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
-        mCmdBuffer.bindIndexBuffer((VkBuffer)buffer->GetNativeHandle(), offset, type);
+        m_CmdBuffer.bindIndexBuffer((VkBuffer)buffer->GetNativeHandle(), offset, type);
     }
 
     void RHICommandListVK::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
@@ -561,7 +561,7 @@ namespace RHI
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
-        mCmdBuffer.setViewport(0, 1, &viewport);
+        m_CmdBuffer.setViewport(0, 1, &viewport);
         SetScissorRect(x, y, width, height);
     }
 
@@ -573,7 +573,7 @@ namespace RHI
         scissor.extent.width = width;
         scissor.extent.height = height;
 
-        mCmdBuffer.setScissor(0, 1, &scissor);
+        m_CmdBuffer.setScissor(0, 1, &scissor);
     }
 
     void RHICommandListVK::SetGraphicsConstants(uint32_t slot, const void *data, size_t dataSize)
@@ -581,24 +581,24 @@ namespace RHI
         if (slot == 0)
         {
             assert(dataSize <= RHI_MAX_ROOT_CONSTANTS * sizeof(uint32_t));
-            memcpy(mGraphicsConstants.cb0, data, dataSize);
+            memcpy(m_GraphicsConstants.cb0, data, dataSize);
         }
         else
         {
             assert(slot < RHI_MAX_CBV_BINDING);
-            vk::DeviceAddress gpuAddress = ((RHIDeviceVK*)mpDevice)->AllocateConstantBuffer(data, dataSize);
+            vk::DeviceAddress gpuAddress = ((RHIDeviceVK*)m_pDevice)->AllocateConstantBuffer(data, dataSize);
             if (slot == 1)
             {
-                mGraphicsConstants.cbv1.address = gpuAddress;
-                mGraphicsConstants.cbv1.range = dataSize;
+                m_GraphicsConstants.cbv1.address = gpuAddress;
+                m_GraphicsConstants.cbv1.range = dataSize;
             }
             else
             {
-                mGraphicsConstants.cbv2.address = gpuAddress;
-                mGraphicsConstants.cbv2.range = dataSize;
+                m_GraphicsConstants.cbv2.address = gpuAddress;
+                m_GraphicsConstants.cbv2.range = dataSize;
             }
         }
-        mGraphicsConstants.dirty = true;
+        m_GraphicsConstants.dirty = true;
     }
 
     void RHICommandListVK::SetComputeConstants(uint32_t slot, const void *data, size_t dataSize)
@@ -606,89 +606,89 @@ namespace RHI
         if (slot == 0)
         {
             assert(dataSize <= RHI_MAX_ROOT_CONSTANTS * sizeof(uint32_t));
-            memcpy(mComputeConstants.cb0, data, dataSize);
+            memcpy(m_ComputeConstants.cb0, data, dataSize);
         }
         else
         {
             assert(slot < RHI_MAX_CBV_BINDING);
-            vk::DeviceAddress gpuAddress = ((RHIDeviceVK*)mpDevice)->AllocateConstantBuffer(data, dataSize);
+            vk::DeviceAddress gpuAddress = ((RHIDeviceVK*)m_pDevice)->AllocateConstantBuffer(data, dataSize);
             if (slot == 1)
             {
-                mComputeConstants.cbv1.address = gpuAddress;
-                mComputeConstants.cbv1.range = dataSize;
+                m_ComputeConstants.cbv1.address = gpuAddress;
+                m_ComputeConstants.cbv1.range = dataSize;
             }
             else
             {
-                mComputeConstants.cbv2.address = gpuAddress;
-                mComputeConstants.cbv2.range = dataSize;
+                m_ComputeConstants.cbv2.address = gpuAddress;
+                m_ComputeConstants.cbv2.range = dataSize;
             }
         }
-        mComputeConstants.dirty = true;
+        m_ComputeConstants.dirty = true;
     }
 
     void RHICommandListVK::Draw(uint32_t vertexCount, uint32_t instanceCount)
     {
         UpdateGraphicsDescriptorBuffer();
-        mCmdBuffer.draw(vertexCount, instanceCount, 0, 0);
+        m_CmdBuffer.draw(vertexCount, instanceCount, 0, 0);
     }
 
     void RHICommandListVK::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t indexOffset)
     {
         UpdateGraphicsDescriptorBuffer();
-        mCmdBuffer.drawIndexed(indexCount, instanceCount, indexOffset, 0, 0);
+        m_CmdBuffer.drawIndexed(indexCount, instanceCount, indexOffset, 0, 0);
     }
 
     void RHICommandListVK::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
     {
         FlushBarriers();
         UpdateComputeDescriptorBuffer();
-        mCmdBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
+        m_CmdBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
     }
 
     void RHICommandListVK::DispatchMesh(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
     {
         UpdateGraphicsDescriptorBuffer();
-        mCmdBuffer.drawMeshTasksEXT(groupCountX, groupCountY, groupCountZ, mDynamicLoader);
+        m_CmdBuffer.drawMeshTasksEXT(groupCountX, groupCountY, groupCountZ, m_DynamicLoader);
     }
 
     void RHICommandListVK::DrawIndirect(RHIBuffer *buffer, uint32_t offset)
     {
         UpdateGraphicsDescriptorBuffer();
-        mCmdBuffer.drawIndirect((VkBuffer)buffer->GetNativeHandle(), offset, 1, 0);
+        m_CmdBuffer.drawIndirect((VkBuffer)buffer->GetNativeHandle(), offset, 1, 0);
     }
 
     void RHICommandListVK::DrawIndexedIndirect(RHIBuffer *buffer, uint32_t offset)
     {
         UpdateGraphicsDescriptorBuffer();
-        mCmdBuffer.drawIndexedIndirect((VkBuffer)buffer->GetNativeHandle(), offset, 1, 0);
+        m_CmdBuffer.drawIndexedIndirect((VkBuffer)buffer->GetNativeHandle(), offset, 1, 0);
     }
 
     void RHICommandListVK::DispatchIndirect(RHIBuffer *buffer, uint32_t offset)
     {
         FlushBarriers();
         UpdateComputeDescriptorBuffer();
-        mCmdBuffer.dispatchIndirect((VkBuffer)buffer->GetNativeHandle(), offset);
+        m_CmdBuffer.dispatchIndirect((VkBuffer)buffer->GetNativeHandle(), offset);
     }
 
      void RHICommandListVK::DispatchMeshIndirect(RHIBuffer *buffer, uint32_t offset)
     {
         UpdateGraphicsDescriptorBuffer();
 
-        mCmdBuffer.drawMeshTasksIndirectEXT((VkBuffer)buffer->GetNativeHandle(), offset, 1, 0, mDynamicLoader);
+        m_CmdBuffer.drawMeshTasksIndirectEXT((VkBuffer)buffer->GetNativeHandle(), offset, 1, 0, m_DynamicLoader);
     }
 
     void RHICommandListVK::MultiDrawIndirect(uint32_t maxCount, RHIBuffer *argsBuffer, uint32_t argsBufferOffset, RHIBuffer *countBuffer, uint32_t countBufferOffset)
     {
         UpdateGraphicsDescriptorBuffer();
 
-        mCmdBuffer.drawIndirectCount((VkBuffer)argsBuffer->GetNativeHandle(), argsBufferOffset, (VkBuffer)countBuffer->GetNativeHandle(), countBufferOffset, maxCount, sizeof(RHIDrawCommand));
+        m_CmdBuffer.drawIndirectCount((VkBuffer)argsBuffer->GetNativeHandle(), argsBufferOffset, (VkBuffer)countBuffer->GetNativeHandle(), countBufferOffset, maxCount, sizeof(RHIDrawCommand));
     }
 
     void RHICommandListVK::MultiDrawIndexedIndirect(uint32_t maxCount, RHIBuffer *argsBuffer, uint32_t argsBufferOffset, RHIBuffer *countBuffer, uint32_t countBufferOffset)
     {
         UpdateGraphicsDescriptorBuffer();
 
-        mCmdBuffer.drawIndexedIndirectCount((VkBuffer)argsBuffer->GetNativeHandle(), argsBufferOffset, (VkBuffer)countBuffer->GetNativeHandle(), countBufferOffset, maxCount, sizeof(RHIDrawIndexedCommand));
+        m_CmdBuffer.drawIndexedIndirectCount((VkBuffer)argsBuffer->GetNativeHandle(), argsBufferOffset, (VkBuffer)countBuffer->GetNativeHandle(), countBufferOffset, maxCount, sizeof(RHIDrawIndexedCommand));
     }
 
     void RHICommandListVK::MultiDispatchIndirect(uint32_t maxCount, RHIBuffer *argsBuffer, uint32_t argsBufferOffset, RHIBuffer *countBuffer, uint32_t countBufferOffset)
@@ -704,34 +704,34 @@ namespace RHI
     {
         UpdateGraphicsDescriptorBuffer();
 
-        mCmdBuffer.drawMeshTasksIndirectCountEXT((VkBuffer)argsBuffer->GetNativeHandle(), argsBufferOffset, (VkBuffer)countBuffer->GetNativeHandle(), countBufferOffset, maxCount, sizeof(RHIDispatchCommand), mDynamicLoader);
+        m_CmdBuffer.drawMeshTasksIndirectCountEXT((VkBuffer)argsBuffer->GetNativeHandle(), argsBufferOffset, (VkBuffer)countBuffer->GetNativeHandle(), countBufferOffset, maxCount, sizeof(RHIDispatchCommand), m_DynamicLoader);
     }
 
     void RHICommandListVK::UpdateGraphicsDescriptorBuffer()
     {
-        if (!mGraphicsConstants.dirty) return;
+        if (!m_GraphicsConstants.dirty) return;
 
-        auto device = (RHIDeviceVK*)mpDevice;
-        vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(mGraphicsConstants.cb0, mGraphicsConstants.cbv1, mGraphicsConstants.cbv2);
+        auto device = (RHIDeviceVK*)m_pDevice;
+        vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(m_GraphicsConstants.cb0, m_GraphicsConstants.cbv1, m_GraphicsConstants.cbv2);
 
         uint32_t bufferIndices[] = { 0 };
         vk::DeviceSize offsets[] = { cbvDescOffset };
-        mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 0, 1, bufferIndices, offsets, mDynamicLoader);
+        m_CmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eGraphics, device->GetPipelineLayout(), 0, 1, bufferIndices, offsets, m_DynamicLoader);
 
-        mGraphicsConstants.dirty = false;
+        m_GraphicsConstants.dirty = false;
     }
 
     void RHICommandListVK::UpdateComputeDescriptorBuffer()
     {
-        if (!mGraphicsConstants.dirty) return;
+        if (!m_GraphicsConstants.dirty) return;
 
-        auto device = (RHIDeviceVK*)mpDevice;
-        vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(mComputeConstants.cb0, mComputeConstants.cbv1, mComputeConstants.cbv2);
+        auto device = (RHIDeviceVK*)m_pDevice;
+        vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(m_ComputeConstants.cb0, m_ComputeConstants.cbv1, m_ComputeConstants.cbv2);
 
         uint32_t bufferIndices[] = { 0 };
         vk::DeviceSize offsets[] = { cbvDescOffset };
-        mCmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 0, 1, bufferIndices, offsets, mDynamicLoader);
+        m_CmdBuffer.setDescriptorBufferOffsetsEXT(vk::PipelineBindPoint::eCompute, device->GetPipelineLayout(), 0, 1, bufferIndices, offsets, m_DynamicLoader);
 
-        mComputeConstants.dirty = false;
+        m_ComputeConstants.dirty = false;
     }
 }

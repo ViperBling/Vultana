@@ -6,19 +6,19 @@ namespace RHI
 {
     RHIFenceVK::RHIFenceVK(RHIDeviceVK *device, const eastl::string &name)
     {
-        mpDevice = device;
-        mName = name;
+        m_pDevice = device;
+        m_Name = name;
     }
 
     RHIFenceVK::~RHIFenceVK()
     {
-        ((RHIDeviceVK*)mpDevice)->Delete(mSemaphore);
+        ((RHIDeviceVK*)m_pDevice)->Delete(m_Semaphore);
     }
 
     bool RHIFenceVK::Create()
     {
-        auto device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        auto device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
 
         vk::SemaphoreTypeCreateInfoKHR semaphoreTypeCI {};
         semaphoreTypeCI.semaphoreType = vk::SemaphoreType::eTimeline;
@@ -27,13 +27,13 @@ namespace RHI
         vk::SemaphoreCreateInfo semaphoreCI {};
         semaphoreCI.pNext = &semaphoreTypeCI;
 
-        mSemaphore = device.createSemaphore(semaphoreCI);
-        if (!mSemaphore)
+        m_Semaphore = device.createSemaphore(semaphoreCI);
+        if (!m_Semaphore)
         {
-            VTNA_LOG_ERROR("[RHIFenceVK] Failed to create {}", mName);
+            VTNA_LOG_ERROR("[RHIFenceVK] Failed to create {}", m_Name);
             return false;
         }
-        SetDebugName(device, vk::ObjectType::eSemaphore, mSemaphore, mName.c_str(), dynamicLoader);
+        SetDebugName(device, vk::ObjectType::eSemaphore, m_Semaphore, m_Name.c_str(), dynamicLoader);
 
         return true;
     }
@@ -42,20 +42,20 @@ namespace RHI
     {
         vk::SemaphoreWaitInfo waitInfo {};
         waitInfo.semaphoreCount = 1;
-        waitInfo.pSemaphores = &mSemaphore;
+        waitInfo.pSemaphores = &m_Semaphore;
         waitInfo.pValues = &value;
         
-        auto device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
         assert(device.waitSemaphores(waitInfo, UINT64_MAX) == vk::Result::eSuccess);
     }
 
     void RHIFenceVK::Signal(uint64_t value)
     {
         vk::SemaphoreSignalInfo signalInfo {};
-        signalInfo.semaphore = mSemaphore;
+        signalInfo.semaphore = m_Semaphore;
         signalInfo.value = value;
 
-        auto device = ((RHIDeviceVK*)mpDevice)->GetDevice();
+        auto device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
         device.signalSemaphore(signalInfo);
     }
 }
