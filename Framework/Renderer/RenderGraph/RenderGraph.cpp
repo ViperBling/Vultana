@@ -4,64 +4,64 @@
 namespace RG
 {
     RenderGraph::RenderGraph::RenderGraph(Renderer::RendererBase *pRenderer)
-        : mResourceAllocator(pRenderer->GetDevice())
+        : m_ResourceAllocator(pRenderer->GetDevice())
     {
         RHI::RHIDevice *pDevice = pRenderer->GetDevice();
-        mpGraphicsQueueFence.reset(pDevice->CreateFence("RenderGraph::GraphicsQueueFence"));
-        mpComputeQueueFence.reset(pDevice->CreateFence("RenderGraph::ComputeQueueFence"));
+        m_pGraphicsQueueFence.reset(pDevice->CreateFence("RenderGraph::GraphicsQueueFence"));
+        m_pComputeQueueFence.reset(pDevice->CreateFence("RenderGraph::ComputeQueueFence"));
     }
 
     void RenderGraph::EndEvent()
     {
-        if (!mEventNames.empty())
+        if (!m_EventNames.empty())
         {
-            mEventNames.pop_back();
+            m_EventNames.pop_back();
         }
         else
         {
-            mPasses.back()->EndEvent();
+            m_Passes.back()->EndEvent();
         }
     }
 
     void RenderGraph::Clear()
     {
-        for (size_t i = 0; i < mObjFinalizers.size(); i++)
+        for (size_t i = 0; i < m_ObjFinalizers.size(); i++)
         {
-            mObjFinalizers[i].Finalizer(mObjFinalizers[i].Object);
+            m_ObjFinalizers[i].Finalizer(m_ObjFinalizers[i].Object);
         }
-        mObjFinalizers.clear();
+        m_ObjFinalizers.clear();
 
-        mGraph.Clear();
+        m_Graph.Clear();
 
-        mPasses.clear();
-        mResourceNodes.clear();
-        mResources.clear();
+        m_Passes.clear();
+        m_ResourceNodes.clear();
+        m_Resources.clear();
 
-        mAllocator.Reset();
-        mResourceAllocator.Reset();
+        m_Allocator.Reset();
+        m_ResourceAllocator.Reset();
 
-        mOutputResources.clear();
+        m_OutputResources.clear();
     }
 
     void RenderGraph::Compile()
     {
-        mGraph.Cull();
+        m_Graph.Cull();
 
         RenderGraphAsyncResolveContext context;
 
-        for (size_t i = 0; i < mPasses.size(); i++)
+        for (size_t i = 0; i < m_Passes.size(); i++)
         {
-            RenderGraphPassBase* pass = mPasses[i];
+            RenderGraphPassBase* pass = m_Passes[i];
             if (!pass->IsCulled())
             {
-                pass->ResolveAsyncComputeBarrier(mGraph, context);
+                pass->ResolveAsyncComputeBarrier(m_Graph, context);
             }
         }
 
         eastl::vector<DAGEdge*> edges;
-        for (size_t i = 0; i < mResourceNodes.size(); i++)
+        for (size_t i = 0; i < m_ResourceNodes.size(); i++)
         {
-            RenderGraphResourceNode* node = mResourceNodes[i];
+            RenderGraphResourceNode* node = m_ResourceNodes[i];
             if (node->IsCulled())
             {
                 continue;
@@ -69,22 +69,22 @@ namespace RG
 
             RenderGraphResource* resource = node->GetResource();
 
-            mGraph.GetOutgoingEdges(node, edges);
+            m_Graph.GetOutgoingEdges(node, edges);
             for (size_t j = 0; j < edges.size(); j++)
             {
                 RenderGraphEdge* edge = static_cast<RenderGraphEdge*>(edges[j]);
-                RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(mGraph.GetNode(edge->GetToNode()));
+                RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(m_Graph.GetNode(edge->GetToNode()));
                 if (!pass->IsCulled())
                 {
                     resource->Resolve(edge, pass);
                 }
             }
 
-            mGraph.GetIncomingEdges(node, edges);
+            m_Graph.GetIncomingEdges(node, edges);
             for (size_t j = 0; j < edges.size(); j++)
             {
                 RenderGraphEdge* edge = static_cast<RenderGraphEdge*>(edges[j]);
-                RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(mGraph.GetNode(edge->GetFromNode()));
+                RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(m_Graph.GetNode(edge->GetFromNode()));
                 if (!pass->IsCulled())
                 {
                     resource->Resolve(edge, pass);
@@ -92,21 +92,21 @@ namespace RG
             }
         }
 
-        for (size_t i = 0; i < mResources.size(); i++)
+        for (size_t i = 0; i < m_Resources.size(); i++)
         {
-            RenderGraphResource* resource = mResources[i];
+            RenderGraphResource* resource = m_Resources[i];
             if (resource->IsUsed())
             {
                 resource->Realize();
             }
         }
 
-        for (size_t i = 0; i < mPasses.size(); i++)
+        for (size_t i = 0; i < m_Passes.size(); i++)
         {
-            RenderGraphPassBase* pass = mPasses[i];
+            RenderGraphPassBase* pass = m_Passes[i];
             if (!pass->IsCulled())
             {
-                pass->ResolveBarriers(mGraph);
+                pass->ResolveBarriers(m_Graph);
             }
         }
     }
@@ -119,29 +119,29 @@ namespace RG
         context.pRenderer = pRenderer;
         context.GraphicsCmdList = pGraphicsCmdList;
         context.ComputeCmdList = pComputeCmdList;
-        context.GraphicsFence = mpGraphicsQueueFence.get();
-        context.ComputeFence = mpComputeQueueFence.get();
-        context.InitialGraphicsFenceValue = mGraphicsQueueFenceValue;
-        context.InitialComputeFenceValue = mComputeQueueFenceValue;
+        context.GraphicsFence = m_pGraphicsQueueFence.get();
+        context.ComputeFence = m_pComputeQueueFence.get();
+        context.InitialGraphicsFenceValue = m_GraphicsQueueFenceValue;
+        context.InitialComputeFenceValue = m_ComputeQueueFenceValue;
 
-        for (size_t i = 0; i < mPasses.size(); i++)
+        for (size_t i = 0; i < m_Passes.size(); i++)
         {
-            RenderGraphPassBase* pass = mPasses[i];
+            RenderGraphPassBase* pass = m_Passes[i];
             pass->Execute(*this, context);
         }
-        mGraphicsQueueFenceValue = context.LastSignalGraphicsFenceValue;
-        mComputeQueueFenceValue = context.LastSignalComputeFenceValue;
+        m_GraphicsQueueFenceValue = context.LastSignalGraphicsFenceValue;
+        m_ComputeQueueFenceValue = context.LastSignalComputeFenceValue;
 
-        for (size_t i = 0; i < mOutputResources.size(); i++)
+        for (size_t i = 0; i < m_OutputResources.size(); i++)
         {
-            const PresentTarget& target = mOutputResources[i];
+            const PresentTarget& target = m_OutputResources[i];
             if (target.Resource->GetFinalState() != target.State)
             {
                 target.Resource->Barrier(pGraphicsCmdList, 0, target.Resource->GetFinalState(), target.State);
                 target.Resource->SetFinalState(target.State);
             }
         }
-        mOutputResources.clear();
+        m_OutputResources.clear();
     }
 
     void RenderGraph::Present(const RGHandle &handle, RHI::ERHIAccessFlags finalState)
@@ -151,41 +151,41 @@ namespace RG
         RenderGraphResource* resource = GetTexture(handle);
         resource->SetExported(true);
 
-        RenderGraphResourceNode* node = mResourceNodes[handle.Node];
+        RenderGraphResourceNode* node = m_ResourceNodes[handle.Node];
         node->MakeTarget();
 
         PresentTarget target = {};
         target.Resource = resource;
         target.State = finalState;
-        mOutputResources.push_back(target);
+        m_OutputResources.push_back(target);
     }
 
     RGHandle RenderGraph::Import(RHI::RHITexture *texture, RHI::ERHIAccessFlags state)
     {
-        auto resource = Allocate<RGTexture>(mResourceAllocator, texture, state);
-        auto node = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, 0);
+        auto resource = Allocate<RGTexture>(m_ResourceAllocator, texture, state);
+        auto node = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, 0);
 
         RGHandle handle;
-        handle.Index = (uint16_t)mResources.size();
-        handle.Node = (uint16_t)mResourceNodes.size();
+        handle.Index = (uint16_t)m_Resources.size();
+        handle.Node = (uint16_t)m_ResourceNodes.size();
         
-        mResources.push_back(resource);
-        mResourceNodes.push_back(node);
+        m_Resources.push_back(resource);
+        m_ResourceNodes.push_back(node);
 
         return handle;
     }
 
     RGHandle RenderGraph::Import(RHI::RHIBuffer *buffer, RHI::ERHIAccessFlags state)
     {
-        auto resource = Allocate<RGBuffer>(mResourceAllocator, buffer, state);
-        auto node = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, 0);
+        auto resource = Allocate<RGBuffer>(m_ResourceAllocator, buffer, state);
+        auto node = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, 0);
 
         RGHandle handle;
-        handle.Index = (uint16_t)mResources.size();
-        handle.Node = (uint16_t)mResourceNodes.size();
+        handle.Index = (uint16_t)m_Resources.size();
+        handle.Node = (uint16_t)m_ResourceNodes.size();
 
-        mResources.push_back(resource);
-        mResourceNodes.push_back(node);
+        m_Resources.push_back(resource);
+        m_ResourceNodes.push_back(node);
 
         return handle;
     }
@@ -196,7 +196,7 @@ namespace RG
         {
             return nullptr;
         }
-        RenderGraphResource* resource = mResources[handle.Index];
+        RenderGraphResource* resource = m_Resources[handle.Index];
         assert(dynamic_cast<RGTexture*>(resource) != nullptr);
         return static_cast<RGTexture*>(resource);
     }
@@ -207,21 +207,21 @@ namespace RG
         {
             return nullptr;
         }
-        RenderGraphResource* resource = mResources[handle.Index];
+        RenderGraphResource* resource = m_Resources[handle.Index];
         assert(dynamic_cast<RGBuffer*>(resource) != nullptr);
         return static_cast<RGBuffer*>(resource);
     }
 
     eastl::string RenderGraph::Export()
     {
-        return mGraph.ExportGraphViz();
+        return m_Graph.ExportGraphViz();
     }
 
     RGHandle RenderGraph::Read(RenderGraphPassBase *pass, const RGHandle &input, RHI::ERHIAccessFlags usage, uint32_t subresource)
     {
         assert(input.IsValid());
-        RenderGraphResourceNode* inputNode = mResourceNodes[input.Node];
-        AllocatePOD<RenderGraphEdge>(mGraph, inputNode, pass, usage, subresource);
+        RenderGraphResourceNode* inputNode = m_ResourceNodes[input.Node];
+        AllocatePOD<RenderGraphEdge>(m_Graph, inputNode, pass, usage, subresource);
 
         return input;
     }
@@ -229,19 +229,19 @@ namespace RG
     RGHandle RenderGraph::Write(RenderGraphPassBase *pass, const RGHandle &input, RHI::ERHIAccessFlags usage, uint32_t subresource)
     {
         assert(input.IsValid());
-        RenderGraphResource* resource = mResources[input.Index];
+        RenderGraphResource* resource = m_Resources[input.Index];
 
-        RenderGraphResourceNode* inputNode = mResourceNodes[input.Node];
-        AllocatePOD<RenderGraphEdge>(mGraph, inputNode, pass, usage, subresource);
+        RenderGraphResourceNode* inputNode = m_ResourceNodes[input.Node];
+        AllocatePOD<RenderGraphEdge>(m_Graph, inputNode, pass, usage, subresource);
 
-        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, inputNode->GetVersion() + 1);
-        AllocatePOD<RenderGraphEdge>(mGraph, pass, outputNode, usage, subresource);
+        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, inputNode->GetVersion() + 1);
+        AllocatePOD<RenderGraphEdge>(m_Graph, pass, outputNode, usage, subresource);
 
         RGHandle output;
         output.Index = input.Index;
-        output.Node = (uint16_t)mResourceNodes.size();
+        output.Node = (uint16_t)m_ResourceNodes.size();
 
-        mResourceNodes.push_back(outputNode);
+        m_ResourceNodes.push_back(outputNode);
 
         return output;
     }
@@ -249,21 +249,21 @@ namespace RG
     RGHandle RenderGraph::WriteColor(RenderGraphPassBase *pass, uint32_t colorIndex, const RGHandle &input, uint32_t subresource, RHI::ERHIRenderPassLoadOp loadOp, const float4 &clearColor)
     {
         assert(input.IsValid());
-        RenderGraphResource* resource = mResources[input.Index];
+        RenderGraphResource* resource = m_Resources[input.Index];
 
         RHI::ERHIAccessFlags usage = RHI::RHIAccessRTV;
 
-        RenderGraphResourceNode* inputNode = mResourceNodes[input.Node];
-        AllocatePOD<RGEdgeColorAttachment>(mGraph, inputNode, pass, usage, subresource, colorIndex, loadOp, clearColor);
+        RenderGraphResourceNode* inputNode = m_ResourceNodes[input.Node];
+        AllocatePOD<RGEdgeColorAttachment>(m_Graph, inputNode, pass, usage, subresource, colorIndex, loadOp, clearColor);
 
-        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, inputNode->GetVersion() + 1);
-        AllocatePOD<RGEdgeColorAttachment>(mGraph, pass, outputNode, usage, subresource, colorIndex, loadOp, clearColor);
+        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, inputNode->GetVersion() + 1);
+        AllocatePOD<RGEdgeColorAttachment>(m_Graph, pass, outputNode, usage, subresource, colorIndex, loadOp, clearColor);
 
         RGHandle output;
         output.Index = input.Index;
-        output.Node = (uint16_t)mResourceNodes.size();
+        output.Node = (uint16_t)m_ResourceNodes.size();
 
-        mResourceNodes.push_back(outputNode);
+        m_ResourceNodes.push_back(outputNode);
 
         return output;
     }
@@ -271,21 +271,21 @@ namespace RG
     RGHandle RenderGraph::WriteDepth(RenderGraphPassBase *pass, const RGHandle &input, uint32_t subresource, RHI::ERHIRenderPassLoadOp depthLoadOp, RHI::ERHIRenderPassLoadOp stencilLoadOp, float clearDepth, uint32_t clearStencil)
     {
         assert(input.IsValid());
-        RenderGraphResource* resource = mResources[input.Index];
+        RenderGraphResource* resource = m_Resources[input.Index];
 
         RHI::ERHIAccessFlags usage = RHI::RHIAccessDSV;
 
-        RenderGraphResourceNode* inputNode = mResourceNodes[input.Node];
-        AllocatePOD<RGEdgeDepthAttachment>(mGraph, inputNode, pass, usage, subresource, depthLoadOp, stencilLoadOp, clearDepth, clearStencil);
+        RenderGraphResourceNode* inputNode = m_ResourceNodes[input.Node];
+        AllocatePOD<RGEdgeDepthAttachment>(m_Graph, inputNode, pass, usage, subresource, depthLoadOp, stencilLoadOp, clearDepth, clearStencil);
 
-        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, inputNode->GetVersion() + 1);
-        AllocatePOD<RGEdgeDepthAttachment>(mGraph, pass, outputNode, usage, subresource, depthLoadOp, stencilLoadOp, clearDepth, clearStencil);
+        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, inputNode->GetVersion() + 1);
+        AllocatePOD<RGEdgeDepthAttachment>(m_Graph, pass, outputNode, usage, subresource, depthLoadOp, stencilLoadOp, clearDepth, clearStencil);
 
         RGHandle output;
         output.Index = input.Index;
-        output.Node = (uint16_t)mResourceNodes.size();
+        output.Node = (uint16_t)m_ResourceNodes.size();
 
-        mResourceNodes.push_back(outputNode);
+        m_ResourceNodes.push_back(outputNode);
 
         return output;
     }
@@ -293,21 +293,21 @@ namespace RG
     RGHandle RenderGraph::ReadDepth(RenderGraphPassBase *pass, const RGHandle &input, uint32_t subresource)
     {
         assert(input.IsValid());
-        RenderGraphResource* resource = mResources[input.Index];
+        RenderGraphResource* resource = m_Resources[input.Index];
 
         RHI::ERHIAccessFlags usage = RHI::RHIAccessDSVReadOnly;
 
-        RenderGraphResourceNode* inputNode = mResourceNodes[input.Node];
-        AllocatePOD<RGEdgeDepthAttachment>(mGraph, inputNode, pass, usage, subresource, RHI::ERHIRenderPassLoadOp::Load, RHI::ERHIRenderPassLoadOp::Load, 0.0f, 0);
+        RenderGraphResourceNode* inputNode = m_ResourceNodes[input.Node];
+        AllocatePOD<RGEdgeDepthAttachment>(m_Graph, inputNode, pass, usage, subresource, RHI::ERHIRenderPassLoadOp::Load, RHI::ERHIRenderPassLoadOp::Load, 0.0f, 0);
 
-        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, inputNode->GetVersion() + 1);
-        AllocatePOD<RGEdgeDepthAttachment>(mGraph, pass, outputNode, usage, subresource, RHI::ERHIRenderPassLoadOp::Load, RHI::ERHIRenderPassLoadOp::Load, 0.0f, 0);
+        RenderGraphResourceNode* outputNode = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, inputNode->GetVersion() + 1);
+        AllocatePOD<RGEdgeDepthAttachment>(m_Graph, pass, outputNode, usage, subresource, RHI::ERHIRenderPassLoadOp::Load, RHI::ERHIRenderPassLoadOp::Load, 0.0f, 0);
 
         RGHandle output;
         output.Index = input.Index;
-        output.Node = (uint16_t)mResourceNodes.size();
+        output.Node = (uint16_t)m_ResourceNodes.size();
 
-        mResourceNodes.push_back(outputNode);
+        m_ResourceNodes.push_back(outputNode);
 
         return output;
     }

@@ -14,9 +14,9 @@ namespace RHI
         ~RHIShaderVK();
 
         virtual bool Create(eastl::span<uint8_t> data) override;
-        virtual void* GetNativeHandle() const override { return mShaderModule; }
+        virtual void* GetNativeHandle() const override { return m_ShaderModule; }
 
     private:
-        vk::ShaderModule mShaderModule;
+        vk::ShaderModule m_ShaderModule;
     };
 }

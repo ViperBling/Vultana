@@ -13,7 +13,7 @@ namespace RG
     {
     public:
         RenderGraphResource(const eastl::string& name)
-            : mName(name)
+            : m_Name(name)
         {}
         virtual ~RenderGraphResource() {}
 
@@ -22,17 +22,17 @@ namespace RG
         virtual RHI::RHIResource* GetResource() = 0;
         virtual RHI::ERHIAccessFlags GetInitialState() = 0;
 
-        const eastl::string& GetName() const { return mName; }
-        DAGNodeID GetFirstPassID() const { return mFirstPass; }
-        DAGNodeID GetLastPassID() const { return mLastPass; }
+        const eastl::string& GetName() const { return m_Name; }
+        DAGNodeID GetFirstPassID() const { return m_FirstPass; }
+        DAGNodeID GetLastPassID() const { return m_LastPass; }
 
-        bool IsUsed() const { return mFirstPass != UINT32_MAX; }
-        bool IsImported() const { return mbImported; }
-        bool IsExported() const { return mbExported; }
-        bool SetExported(bool value) { return mbExported = value; }
+        bool IsUsed() const { return m_FirstPass != UINT32_MAX; }
+        bool IsImported() const { return m_bImported; }
+        bool IsExported() const { return m_bExported; }
+        bool SetExported(bool value) { return m_bExported = value; }
 
-        RHI::ERHIAccessFlags GetFinalState() const { return mLastState; }
-        virtual void SetFinalState(RHI::ERHIAccessFlags state) { mLastState = state; }
+        RHI::ERHIAccessFlags GetFinalState() const { return m_LastState; }
+        virtual void SetFinalState(RHI::ERHIAccessFlags state) { m_LastState = state; }
 
         bool IsOverlapping() const { return !IsImported() && !IsExported(); }
 
@@ -40,14 +40,14 @@ namespace RG
         virtual void Barrier(RHI::RHICommandList* pCmdList, uint32_t subresource, RHI::ERHIAccessFlags accessBefore, RHI::ERHIAccessFlags accessAfter) = 0;
     
     protected:
-        eastl::string mName;
+        eastl::string m_Name;
 
-        DAGNodeID mFirstPass = UINT32_MAX;
-        DAGNodeID mLastPass = 0;
-        RHI::ERHIAccessFlags mLastState = RHI::RHIAccessDiscard;
+        DAGNodeID m_FirstPass = UINT32_MAX;
+        DAGNodeID m_LastPass = 0;
+        RHI::ERHIAccessFlags m_LastState = RHI::RHIAccessDiscard;
 
-        bool mbImported = false;
-        bool mbExported = false;
+        bool m_bImported = false;
+        bool m_bExported = false;
     };
 
     class RGTexture : public RenderGraphResource
@@ -59,23 +59,23 @@ namespace RG
         RGTexture(RenderGraphResourceAllocator& allocator, RHI::RHITexture* texture, RHI::ERHIAccessFlags state);
         ~RGTexture();
 
-        RHI::RHITexture* GetTexture() { return mpTexture; }
+        RHI::RHITexture* GetTexture() { return m_pTexture; }
         RHI::RHIDescriptor* GetSRV();
         RHI::RHIDescriptor* GetUAV();
         RHI::RHIDescriptor* GetUAV(uint32_t mipLevel, uint32_t slice);
 
         virtual void Resolve(RenderGraphEdge* edge, RenderGraphPassBase* pass) override;
         virtual void Realize() override;
-        virtual RHI::RHIResource* GetResource() override { return mpTexture; }
-        virtual RHI::ERHIAccessFlags GetInitialState() override { return mInitialState; }
+        virtual RHI::RHIResource* GetResource() override { return m_pTexture; }
+        virtual RHI::ERHIAccessFlags GetInitialState() override { return m_InitialState; }
         virtual RHI::RHIResource* GetAliasedPrevResource(RHI::ERHIAccessFlags& lastUsedState) override;
         virtual void Barrier(RHI::RHICommandList* pCmdList, uint32_t subresource, RHI::ERHIAccessFlags accessBefore, RHI::ERHIAccessFlags accessAfter) override;
 
     private:
-        Desc mDesc;
-        RHI::RHITexture* mpTexture = nullptr;
-        RHI::ERHIAccessFlags mInitialState = RHI::RHIAccessDiscard;
-        RenderGraphResourceAllocator& mAllocator;
+        Desc m_Desc;
+        RHI::RHITexture* m_pTexture = nullptr;
+        RHI::ERHIAccessFlags m_InitialState = RHI::RHIAccessDiscard;
+        RenderGraphResourceAllocator& m_Allocator;
     };
 
     class RGBuffer : public RenderGraphResource
@@ -87,21 +87,21 @@ namespace RG
         RGBuffer(RenderGraphResourceAllocator& allocator, RHI::RHIBuffer* buffer, RHI::ERHIAccessFlags state);
         ~RGBuffer();
 
-        RHI::RHIBuffer* GetBuffer() { return mpBuffer; }
+        RHI::RHIBuffer* GetBuffer() { return m_pBuffer; }
         RHI::RHIDescriptor* GetSRV();
         RHI::RHIDescriptor* GetUAV();
 
         virtual void Resolve(RenderGraphEdge* edge, RenderGraphPassBase* pass) override;
         virtual void Realize() override;
-        virtual RHI::RHIResource* GetResource() override { return mpBuffer; }
-        virtual RHI::ERHIAccessFlags GetInitialState() override { return mInitialState; }
+        virtual RHI::RHIResource* GetResource() override { return m_pBuffer; }
+        virtual RHI::ERHIAccessFlags GetInitialState() override { return m_InitialState; }
         virtual RHI::RHIResource* GetAliasedPrevResource(RHI::ERHIAccessFlags& lastUsedState) override;
         virtual void Barrier(RHI::RHICommandList* pCmdList, uint32_t subresource, RHI::ERHIAccessFlags accessBefore, RHI::ERHIAccessFlags accessAfter) override;
 
     private:
-        Desc mDesc;
-        RHI::RHIBuffer* mpBuffer = nullptr;
-        RHI::ERHIAccessFlags mInitialState = RHI::RHIAccessDiscard;
-        RenderGraphResourceAllocator& mAllocator;
+        Desc m_Desc;
+        RHI::RHIBuffer* m_pBuffer = nullptr;
+        RHI::ERHIAccessFlags m_InitialState = RHI::RHIAccessDiscard;
+        RenderGraphResourceAllocator& m_Allocator;
     };
 } // namespace RenderGraph

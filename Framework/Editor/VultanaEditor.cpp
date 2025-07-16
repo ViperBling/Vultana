@@ -13,34 +13,34 @@
 
 namespace Editor
 {
-    VultanaEditor::VultanaEditor(Renderer::RendererBase* pRenderer) : mpRenderer(pRenderer)
+    VultanaEditor::VultanaEditor(Renderer::RendererBase* pRenderer) : m_pRenderer(pRenderer)
     {
-        mpGUI = eastl::make_unique<ImGuiImplement>(pRenderer);
-        mpGUI->Init();
+        m_pGUI = eastl::make_unique<ImGuiImplement>(pRenderer);
+        m_pGUI->Init();
 
         ifd::FileDialog::Instance().CreateTexture = [this, pRenderer](uint8_t* data, int w, int h, char fmt) -> void*
         {
             auto pTexture = pRenderer->CreateTexture2D(w, h, 1, fmt == 1 ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::BGRA8SRGB, 0, "ImFileDialogIcon");
             pRenderer->UploadTexture(pTexture->GetTexture(), data);
 
-            mFileDialogIcons.insert(eastl::make_pair(pTexture->GetSRV(), pTexture));
+            m_FileDialogIcons.insert(eastl::make_pair(pTexture->GetSRV(), pTexture));
 
             return pTexture->GetSRV();
         };
         ifd::FileDialog::Instance().DeleteTexture = [this](void* tex)
         {
-            mPendingDeletions.push_back(static_cast<RHI::RHIDescriptor*>(tex));
+            m_PendingDeletions.push_back(static_cast<RHI::RHIDescriptor*>(tex));
         };
 
         eastl::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
-        mpTranslateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/TranslateIcon.png", true));
-        mpRotateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/RotateIcon.png", true));
-        mpScaleIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/ScaleIcon.png", true));
+        m_pTranslateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/TranslateIcon.png", true));
+        m_pRotateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/RotateIcon.png", true));
+        m_pScaleIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/ScaleIcon.png", true));
     }
 
     VultanaEditor::~VultanaEditor()
     {
-        for (auto iter = mFileDialogIcons.begin(); iter != mFileDialogIcons.end(); iter++)
+        for (auto iter = m_FileDialogIcons.begin(); iter != m_FileDialogIcons.end(); iter++)
         {
             delete iter->first;
             delete iter->second;
@@ -49,7 +49,7 @@ namespace Editor
 
     void VultanaEditor::NewFrame()
     {
-        mpGUI->NewFrame();
+        m_pGUI->NewFrame();
     }
 
     void VultanaEditor::Tick()
@@ -60,7 +60,7 @@ namespace Editor
         if (!io.WantCaptureMouse && io.MouseClicked[0])
         {
             ImVec2 mousePos = io.MouseClickedPos[0];
-            mpRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
+            m_pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
         }
 
         BuildDockLayout();
@@ -69,15 +69,15 @@ namespace Editor
         DrawGizmo();
         DrawFrameStats();
 
-        if (mbShowRenderer)
+        if (m_bShowRenderer)
         {
-            ImGui::Begin("Renderer", &mbShowRenderer);
-            // mpRenderer->OnGUI();
+            ImGui::Begin("Renderer", &m_bShowRenderer);
+            // m_pRenderer->OnGUI();
             ImGui::End();
         }
-        if (mbShowWorldOutliner)
+        if (m_bShowWorldOutliner)
         {
-            ImGui::Begin("WorldOutliner", &mbShowWorldOutliner);
+            ImGui::Begin("WorldOutliner", &m_bShowWorldOutliner);
             auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
             pWorld->OnGUI();
             ImGui::End();
@@ -86,41 +86,41 @@ namespace Editor
 
     void VultanaEditor::Render(RHI::RHICommandList *pCmdList)
     {
-        if (mbShowInspector)
+        if (m_bShowInspector)
         {
-            DrawWindow("Inspector", &mbShowInspector);
+            DrawWindow("Inspector", &m_bShowInspector);
         }
-        if (mbShowSettings)
+        if (m_bShowSettings)
         {
-            DrawWindow("Settings", &mbShowSettings);
+            DrawWindow("Settings", &m_bShowSettings);
         }
-        mpGUI->Render(pCmdList);
-        mCommands.clear();
+        m_pGUI->Render(pCmdList);
+        m_Commands.clear();
     }
 
     void VultanaEditor::AddGUICommand(const eastl::string &window, const eastl::string &section, const eastl::function<void()> &command)
     {
-        mCommands[window].push_back({ section, command });
+        m_Commands[window].push_back({ section, command });
     }
 
     void VultanaEditor::BuildDockLayout()
     {
-        mDockSpace = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        m_DockSpace = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-        if (mbResetLayout)
+        if (m_bResetLayout)
         {
-            ImGui::DockBuilderRemoveNode(mDockSpace);
-            ImGui::DockBuilderAddNode(mDockSpace, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderSetNodeSize(mDockSpace, ImGui::GetMainViewport()->WorkSize);
-            mbResetLayout = false;
+            ImGui::DockBuilderRemoveNode(m_DockSpace);
+            ImGui::DockBuilderAddNode(m_DockSpace, ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(m_DockSpace, ImGui::GetMainViewport()->WorkSize);
+            m_bResetLayout = false;
         }
-        if (ImGui::DockBuilderGetNode(mDockSpace)->IsLeafNode())
+        if (ImGui::DockBuilderGetNode(m_DockSpace)->IsLeafNode())
         {
             ImGuiID left, right;
-            ImGui::DockBuilderSplitNode(mDockSpace, ImGuiDir_Right, 0.2, &right, &left);
+            ImGui::DockBuilderSplitNode(m_DockSpace, ImGuiDir_Right, 0.2, &right, &left);
             ImGui::DockBuilderDockWindow("Renderer", left);
             ImGui::DockBuilderDockWindow("WorldOutliner", right);
-            ImGui::DockBuilderFinish(mDockSpace);
+            ImGui::DockBuilderFinish(m_DockSpace);
         }
     }
 
@@ -136,24 +136,24 @@ namespace Editor
         ImVec4 focusedBG(1.0f, 0.6f, 0.2f, 0.5f);
         ImVec4 normalBG(0.0f, 0.0f, 0.0f, 0.0f);
 
-        if (ImGui::ImageButton("translate_button##editor", (ImTextureID)mpTranslateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Translate ? focusedBG : normalBG) ||
+        if (ImGui::ImageButton("translate_button##editor", (ImTextureID)m_pTranslateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), m_SelectEditMode == ESelectEditMode::Translate ? focusedBG : normalBG) ||
             ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W), false))
         {
-            mSelectEditMode = ESelectEditMode::Translate;
+            m_SelectEditMode = ESelectEditMode::Translate;
         }
 
         ImGui::SameLine(0.0f, 0.0f);
-        if (ImGui::ImageButton("rotate_button##editor", (ImTextureID)mpRotateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Rotate ? focusedBG : normalBG) ||
+        if (ImGui::ImageButton("rotate_button##editor", (ImTextureID)m_pRotateIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), m_SelectEditMode == ESelectEditMode::Rotate ? focusedBG : normalBG) ||
             ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_E), false))
         {
-            mSelectEditMode = ESelectEditMode::Rotate;
+            m_SelectEditMode = ESelectEditMode::Rotate;
         }
 
         ImGui::SameLine(0.0f, 0.0f);
-        if (ImGui::ImageButton("scale_button##editor", (ImTextureID)mpScaleIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), mSelectEditMode == ESelectEditMode::Scale ? focusedBG : normalBG) ||
+        if (ImGui::ImageButton("scale_button##editor", (ImTextureID)m_pScaleIcon->GetSRV(), ImVec2(20, 20), ImVec2(0, 0), ImVec2(1, 1), m_SelectEditMode == ESelectEditMode::Scale ? focusedBG : normalBG) ||
             ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_R), false))
         {
-            mSelectEditMode = ESelectEditMode::Scale;
+            m_SelectEditMode = ESelectEditMode::Scale;
         }
         ImGui::PopStyleVar();
 
@@ -174,14 +174,14 @@ namespace Editor
             }
             if (ImGui::BeginMenu("Debug"))
             {
-                if (ImGui::MenuItem("VSync", "", &mbVSync))
+                if (ImGui::MenuItem("VSync", "", &m_bVSync))
                 {
-                    mpRenderer->GetSwapchain()->SetVSyncEnabled(mbVSync);
+                    m_pRenderer->GetSwapchain()->SetVSyncEnabled(m_bVSync);
                 }
 
                 if (ImGui::MenuItem("Reload Shaders"))
                 {
-                    mpRenderer->ReloadShaders();
+                    m_pRenderer->ReloadShaders();
                 }
 
                 ImGui::EndMenu();   // End Debug Menu
@@ -196,11 +196,11 @@ namespace Editor
             }
             if (ImGui::BeginMenu("Window"))
             {
-                ImGui::MenuItem("Inspector", "", &mbShowInspector);
-                ImGui::MenuItem("Settings", "", &mbShowSettings);
-                ImGui::MenuItem("Renderer", "", &mbShowRenderer);
-                ImGui::MenuItem("WorldOutliner", "", &mbShowWorldOutliner);
-                mbResetLayout = ImGui::MenuItem("Reset Layout");
+                ImGui::MenuItem("Inspector", "", &m_bShowInspector);
+                ImGui::MenuItem("Settings", "", &m_bShowSettings);
+                ImGui::MenuItem("Renderer", "", &m_bShowRenderer);
+                ImGui::MenuItem("WorldOutliner", "", &m_bShowWorldOutliner);
+                m_bResetLayout = ImGui::MenuItem("Reset Layout");
 
                 ImGui::EndMenu();   // End Window Menu
             }
@@ -217,9 +217,9 @@ namespace Editor
             ifd::FileDialog::Instance().Close();
         }
 
-        if (mbShowImGuiDemo)
+        if (m_bShowImGuiDemo)
         {
-            ImGui::ShowDemoWindow(&mbShowImGuiDemo);
+            ImGui::ShowDemoWindow(&m_bShowImGuiDemo);
         }
     }
 
@@ -227,7 +227,7 @@ namespace Editor
     {
         auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
 
-        auto pSelectedObject = pWorld->GetVisibleObject(mpRenderer->GetMouseHitObjectID());
+        auto pSelectedObject = pWorld->GetVisibleObject(m_pRenderer->GetMouseHitObjectID());
         if (pSelectedObject == nullptr) return;
 
         float3 position = pSelectedObject->GetPosition();
@@ -239,7 +239,7 @@ namespace Editor
         ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&mtxWorld);
 
         ImGuizmo::OPERATION operation;
-        switch (mSelectEditMode)
+        switch (m_SelectEditMode)
         {
         case ESelectEditMode::Translate:
             operation = ImGuizmo::TRANSLATE;
@@ -274,7 +274,7 @@ namespace Editor
     void VultanaEditor::DrawFrameStats()
     {
         ImVec2 windowPos(ImGui::GetIO().DisplaySize.x - 200.0f, 50.0f);
-        ImGuiDockNode* dockSpace = ImGui::DockBuilderGetNode(mDockSpace);
+        ImGuiDockNode* dockSpace = ImGui::DockBuilderGetNode(m_DockSpace);
         ImGuiDockNode* centralNode = dockSpace->CentralNode;
         if (centralNode)
         {
@@ -295,7 +295,7 @@ namespace Editor
         auto pEngine = Core::VultanaEngine::GetEngineInstance();
 
         eastl::string file = pEngine->GetWorkingPath() + "Tools/GraphViz/RenderGraph.html";
-        eastl::string graph = mpRenderer->GetRenderGraph()->Export();
+        eastl::string graph = m_pRenderer->GetRenderGraph()->Export();
 
         std::ofstream stream;
         stream.open(file.c_str());
@@ -332,24 +332,24 @@ namespace Editor
 
     void VultanaEditor::FlushPendingTextureDeletions()
     {
-        for (size_t i = 0; i < mPendingDeletions.size(); i++)
+        for (size_t i = 0; i < m_PendingDeletions.size(); i++)
         {
-            RHI::RHIDescriptor* srv = mPendingDeletions[i];
-            auto iter = mFileDialogIcons.find(srv);
-            assert(iter != mFileDialogIcons.end());
+            RHI::RHIDescriptor* srv = m_PendingDeletions[i];
+            auto iter = m_FileDialogIcons.find(srv);
+            assert(iter != m_FileDialogIcons.end());
             auto texture = iter->second;
-            mFileDialogIcons.erase(srv);
+            m_FileDialogIcons.erase(srv);
             delete texture;
         }
-        mPendingDeletions.clear();
+        m_PendingDeletions.clear();
     }
 
     void VultanaEditor::DrawWindow(const eastl::string &window, bool *pOpen)
     {
         ImGui::Begin(window.c_str(), pOpen);
 
-        auto iter = mCommands.find(window);
-        if (iter != mCommands.end())
+        auto iter = m_Commands.find(window);
+        if (iter != m_Commands.end())
         {
             for (size_t i = 0; i < iter->second.size(); i++)
             {

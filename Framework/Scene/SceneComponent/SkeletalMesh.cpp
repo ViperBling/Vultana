@@ -9,18 +9,18 @@ namespace Scene
 {
     Skeleton::Skeleton(const eastl::string &name)
     {
-        mName = name;
-        mpRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        m_Name = name;
+        m_pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
     }
 
     void Skeleton::Update(const SkeletalMesh *mesh)
     {
-        for (size_t i = 0; i < mJoints.size(); i++)
+        for (size_t i = 0; i < m_Joints.size(); i++)
         {
-            const FSkeletalMeshNode* node = mesh->GetNode(mJoints[i]);
-            mJointMatrices[i] = mul(node->GlobalTransform, mInverseBindMatrices[i]);
+            const FSkeletalMeshNode* node = mesh->GetNode(m_Joints[i]);
+            m_JointMatrices[i] = mul(node->GlobalTransform, m_InverseBindMatrices[i]);
         }
-        mJointMatricesAddress = mpRenderer->AllocateSceneConstantBuffer(mJointMatrices.data(), (uint32_t)mJointMatrices.size() * sizeof(float4x4));
+        m_JointMatricesAddress = m_pRenderer->AllocateSceneConstantBuffer(m_JointMatrices.data(), (uint32_t)m_JointMatrices.size() * sizeof(float4x4));
     }
 
     FSkeletalMeshData::~FSkeletalMeshData()
@@ -46,17 +46,17 @@ namespace Scene
 
     SkeletalMesh::SkeletalMesh(const eastl::string &name)
     {
-        // mpRenderer will create on load mesh.
-        mName = name;
+        // m_pRenderer will create on load mesh.
+        m_Name = name;
     }
 
     bool SkeletalMesh::Create()
     {
-        for (size_t i = 0; i < mNodes.size(); i++)
+        for (size_t i = 0; i < m_Nodes.size(); i++)
         {
-            for (size_t j = 0; j < mNodes[i]->Meshes.size(); j++)
+            for (size_t j = 0; j < m_Nodes[i]->Meshes.size(); j++)
             {
-                auto mesh = mNodes[i]->Meshes[j].get();
+                auto mesh = m_Nodes[i]->Meshes[j].get();
                 Create(mesh);
             }
         }
@@ -65,43 +65,43 @@ namespace Scene
 
     void SkeletalMesh::Tick(float deltaTime)
     {
-        float4x4 T = translation_matrix(mPosition);
-        float4x4 R = rotation_matrix(mRotation);
-        float4x4 S = scaling_matrix(mScale);
-        mMtxWorld = mul(T, mul(R, S));
+        float4x4 T = translation_matrix(m_Position);
+        float4x4 R = rotation_matrix(m_Rotation);
+        float4x4 S = scaling_matrix(m_Scale);
+        m_MtxWorld = mul(T, mul(R, S));
 
-        if (mbResetAnim)
+        if (m_bResetAnim)
         {
-            mpAnimation->ResetAnimation();
+            m_pAnimation->ResetAnimation();
         }
-        if (mbAnimated || (mbResetAnim && !mbAnimated))
+        if (m_bAnimated || (m_bResetAnim && !m_bAnimated))
         {
-            mpAnimation->Update(this, deltaTime);
+            m_pAnimation->Update(this, deltaTime);
         }
 
-        for (size_t i = 0; i < mRootNodes.size(); i++)
+        for (size_t i = 0; i < m_RootNodes.size(); i++)
         {
-            UpdateNodeTransform(GetNode(mRootNodes[i]));
+            UpdateNodeTransform(GetNode(m_RootNodes[i]));
         }
         
-        if (mpSkeleton)
+        if (m_pSkeleton)
         {
-            mpSkeleton->Update(this);
+            m_pSkeleton->Update(this);
         }
 
-        for (size_t i = 0; i < mRootNodes.size(); i++)
+        for (size_t i = 0; i < m_RootNodes.size(); i++)
         {
-            UpdateMeshConstants(GetNode(mRootNodes[i]));
+            UpdateMeshConstants(GetNode(m_RootNodes[i]));
         }
     }
 
     void SkeletalMesh::Render(Renderer::RendererBase *pRenderer)
     {
-        for (size_t i = 0; i < mNodes.size(); i++)
+        for (size_t i = 0; i < m_Nodes.size(); i++)
         {
-            for (size_t j = 0; j < mNodes[i]->Meshes.size(); j++)
+            for (size_t j = 0; j < m_Nodes[i]->Meshes.size(); j++)
             {
-                const FSkeletalMeshData* mesh = mNodes[i]->Meshes[j].get();
+                const FSkeletalMeshData* mesh = m_Nodes[i]->Meshes[j].get();
                 Draw(mesh);
             }
         }
@@ -109,7 +109,7 @@ namespace Scene
 
     bool SkeletalMesh::FrustumCull(const float4 *planes, uint32_t planeCount) const
     {
-        return ::FrustumCull(planes, planeCount, mPosition, mRadius);
+        return ::FrustumCull(planes, planeCount, m_Position, m_Radius);
     }
 
     void SkeletalMesh::OnGUI()
@@ -118,30 +118,30 @@ namespace Scene
         
         GUICommand("Inspector", "SkeletalMesh", [&]()
         {
-            ImGui::Checkbox("Play Animation", &mbAnimated);
-            mbResetAnim = ImGui::Button("Reset Animation");
+            ImGui::Checkbox("Play Animation", &m_bAnimated);
+            m_bResetAnim = ImGui::Button("Reset Animation");
         });
     }
 
     FSkeletalMeshNode *SkeletalMesh::GetNode(uint32_t nodeID) const
     {
-        assert(nodeID < mNodes.size());
-        return mNodes[nodeID].get();
+        assert(nodeID < m_Nodes.size());
+        return m_Nodes[nodeID].get();
     }
 
     void SkeletalMesh::Create(FSkeletalMeshData *mesh)
     {
         if (mesh->Material->IsVertexSkinned())
         {
-            mesh->AnimPositionBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
-            // mesh->PrevAnimPositionBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
+            mesh->AnimPositionBuffer = m_pRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
+            // mesh->PrevAnimPositionBuffer = m_pRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
             if (mesh->StaticNormalBuffer.metadata != OffsetAllocator::Allocation::NO_SPACE)
             {
-                mesh->AnimNormalBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
+                mesh->AnimNormalBuffer = m_pRenderer->AllocateSceneAnimationBuffer(sizeof(float3) * mesh->VertexCount);
             }
             if (mesh->StaticTangentBuffer.metadata != OffsetAllocator::Allocation::NO_SPACE)
             {
-                mesh->AnimTangentBuffer = mpRenderer->AllocateSceneAnimationBuffer(sizeof(float4) * mesh->VertexCount);
+                mesh->AnimTangentBuffer = m_pRenderer->AllocateSceneAnimationBuffer(sizeof(float4) * mesh->VertexCount);
             }
         }
     }
@@ -192,21 +192,21 @@ namespace Scene
                 mesh->InstanceData.TangentBufferAddress = mesh->StaticTangentBuffer.offset;
             }
             mesh->InstanceData.bVertexAnimation = isSkinnedMesh;
-            mesh->InstanceData.MaterialDataAddress = mpRenderer->AllocateSceneConstantBuffer((void*)mesh->Material->GetMaterialConstants(), sizeof(FModelMaterialConstants));
-            mesh->InstanceData.ObjectID = mID;
+            mesh->InstanceData.MaterialDataAddress = m_pRenderer->AllocateSceneConstantBuffer((void*)mesh->Material->GetMaterialConstants(), sizeof(FModelMaterialConstants));
+            mesh->InstanceData.ObjectID = m_ID;
 
             auto node = GetNode(mesh->NodeID);
-            float4x4 mtxNodeWorld = mul(mMtxWorld, node->GlobalTransform);
+            float4x4 mtxNodeWorld = mul(m_MtxWorld, node->GlobalTransform);
 
-            mesh->InstanceData.Scale = max(max(abs(mScale.x), abs(mScale.y)), abs(mScale.z)) * mBoundScaleFactor;
-            mesh->InstanceData.Center = mul(mMtxWorld, float4(mesh->Center, 1.0)).xyz();
+            mesh->InstanceData.Scale = max(max(abs(m_Scale.x), abs(m_Scale.y)), abs(m_Scale.z)) * m_BoundScaleFactor;
+            mesh->InstanceData.Center = mul(m_MtxWorld, float4(mesh->Center, 1.0)).xyz();
             mesh->InstanceData.Radius = mesh->Radius * mesh->InstanceData.Scale;
-            mRadius = max(mRadius, mesh->InstanceData.Radius);
+            m_Radius = max(m_Radius, mesh->InstanceData.Radius);
 
-            mesh->InstanceData.MtxWorld = isSkinnedMesh ? mMtxWorld : mtxNodeWorld;
+            mesh->InstanceData.MtxWorld = isSkinnedMesh ? m_MtxWorld : mtxNodeWorld;
             mesh->InstanceData.MtxWorldInverseTranspose = transpose(inverse(mesh->InstanceData.MtxWorld));
 
-            mesh->InstanceIndex = mpRenderer->AddInstance(mesh->InstanceData);
+            mesh->InstanceIndex = m_pRenderer->AddInstance(mesh->InstanceData);
         }
         for (size_t i = 0; i < node->Children.size(); i++)
         {
@@ -218,21 +218,21 @@ namespace Scene
     {
         if (mesh->Material->IsVertexSkinned())
         {
-            Renderer::ComputeBatch& batch = mpRenderer->AddAnimationBatch();
+            Renderer::ComputeBatch& batch = m_pRenderer->AddAnimationBatch();
             UpdateVertexSkinning(batch, mesh);
         }
-        Renderer::RenderBatch& batch = mpRenderer->AddBasePassBatch();
+        Renderer::RenderBatch& batch = m_pRenderer->AddBasePassBatch();
         Draw(batch, mesh, mesh->Material->GetPSO());
 
-        if (mpRenderer->IsEnableMouseHitTest())
+        if (m_pRenderer->IsEnableMouseHitTest())
         {
-            Renderer::RenderBatch& idBatch = mpRenderer->AddObjectIDPassBatch();
+            Renderer::RenderBatch& idBatch = m_pRenderer->AddObjectIDPassBatch();
             Draw(idBatch, mesh, mesh->Material->GetIDPSO());
         }
 
-        if (mID == mpRenderer->GetMouseHitObjectID())
+        if (m_ID == m_pRenderer->GetMouseHitObjectID())
         {
-            Renderer::RenderBatch& outlineBatch = mpRenderer->AddOutlinePassBatch();
+            Renderer::RenderBatch& outlineBatch = m_pRenderer->AddOutlinePassBatch();
             Draw(outlineBatch, mesh, mesh->Material->GetOutlinePSO());
         }
     }
@@ -255,7 +255,7 @@ namespace Scene
 
             mesh->JointIDBuffer.offset,
             mesh->JointWeightBuffer.offset,
-            mpSkeleton->GetJointMatricesAddress(),
+            m_pSkeleton->GetJointMatricesAddress(),
         };
         batch.SetConstantBuffer(1, cb, sizeof(cb));
         batch.Dispatch((mesh->VertexCount + 63) / 64, 1, 1);
@@ -272,7 +272,7 @@ namespace Scene
         batch.SetPipelineState(pPSO);
         batch.SetConstantBuffer(0, rootConstants, sizeof(rootConstants));
 
-        batch.SetIndexBuffer(mpRenderer->GetSceneStaticBuffer(), mesh->IndexBuffer.offset, mesh->IndexBufferFormat);
+        batch.SetIndexBuffer(m_pRenderer->GetSceneStaticBuffer(), mesh->IndexBuffer.offset, mesh->IndexBufferFormat);
         batch.DrawIndexed(mesh->IndexCount);
     }
 }

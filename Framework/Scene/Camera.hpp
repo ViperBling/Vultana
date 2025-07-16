@@ -24,35 +24,35 @@ namespace Scene
         void SetPerspective(float aspectRatio, float yFov, float near);
         void SetPosition(const float3& position);
         void SetRotation(const float3& rotation);
-        void SetMoveSpeed(float speed) { mMoveSpeed = speed; }
-        bool IsMoved() const { return mbMoved; }
-        float GetZNear() const { return mNear; }
+        void SetMoveSpeed(float speed) { m_MoveSpeed = speed; }
+        bool IsMoved() const { return m_bMoved; }
+        float GetZNear() const { return m_Near; }
         void SetFOV(float fov);
 
         void Tick(float deltaTime);
 
-        const float3& GetPosition () const { return mPosition; }
-        const float3& GetRotation () const { return mRotation; }
-        const float4x4& GetWorldMatrix() const { return mWorld; }
-        const float4x4& GetViewMatrix() const { return mView; }
-        const float4x4& GetProjectionMatrix() const { return mProjection; }
-        const float4x4& GetViewProjectionMatrix() const { return mViewProjMat; }
-        float GetMoveSpeed() const { return mMoveSpeed; }
-        float GetFOV() const { return mFov; }
+        const float3& GetPosition () const { return m_Position; }
+        const float3& GetRotation () const { return m_Rotation; }
+        const float4x4& GetWorldMatrix() const { return m_World; }
+        const float4x4& GetViewMatrix() const { return m_View; }
+        const float4x4& GetProjectionMatrix() const { return m_Projection; }
+        const float4x4& GetViewProjectionMatrix() const { return m_ViewProjMat; }
+        float GetMoveSpeed() const { return m_MoveSpeed; }
+        float GetFOV() const { return m_Fov; }
 
-        float3 GetLeft() const { return -mWorld[0].xyz(); }
-        float3 GetRight() const { return mWorld[0].xyz(); }
-        float3 GetForward() const { return mWorld[2].xyz(); }
-        float3 GetBackward() const { return -mWorld[2].xyz(); }
-        float3 GetUp() const { return mWorld[1].xyz(); }
-        float3 GetDown() const { return -mWorld[1].xyz(); }
+        float3 GetLeft() const { return -m_World[0].xyz(); }
+        float3 GetRight() const { return m_World[0].xyz(); }
+        float3 GetForward() const { return m_World[2].xyz(); }
+        float3 GetBackward() const { return -m_World[2].xyz(); }
+        float3 GetUp() const { return m_World[1].xyz(); }
+        float3 GetDown() const { return -m_World[1].xyz(); }
 
         void SetupCameraCB(FCameraConstants& cameraCB);
         void DrawViewFrustum(RHI::RHICommandList* pCmdList);
-        void LockViewFrustum(bool value) { mbFrustumLocked = value; }
-        void SetFrustumViewPosition(const float3& pos) { mFrustumViewPos = pos; }
+        void LockViewFrustum(bool value) { m_bFrustumLocked = value; }
+        void SetFrustumViewPosition(const float3& pos) { m_FrustumViewPos = pos; }
         void UpdateFrustumPlanes(const float4x4& matrix);
-        const float4* GetFrustumPlanes() const { return mFrustumPlanes; }
+        const float4* GetFrustumPlanes() const { return m_FrustumPlanes; }
 
     private:
         void UpdateMatrix();
@@ -63,31 +63,31 @@ namespace Scene
         void UpdateCameraRotation(float deltaTime);
 
     private:
-        float3 mPosition = { 0.0f, 0.0f, 0.0f };
-        float3 mRotation = { 0.0f, 0.0f, 0.0f };        // in degrees
+        float3 m_Position = { 0.0f, 0.0f, 0.0f };
+        float3 m_Rotation = { 0.0f, 0.0f, 0.0f };        // in degrees
 
-        bool mbMoved = false;
+        bool m_bMoved = false;
 
-        float4x4 mWorld;
-        float4x4 mView;
-        float4x4 mProjection;
-        float4x4 mViewProjMat;
+        float4x4 m_World;
+        float4x4 m_View;
+        float4x4 m_Projection;
+        float4x4 m_ViewProjMat;
 
-        float mAspectRatio = 1.0f;
-        float mFov = 45.0f;
-        float mNear = 0.01f;
-        float mFar = 1000.0f;
+        float m_AspectRatio = 1.0f;
+        float m_Fov = 45.0f;
+        float m_Near = 0.01f;
+        float m_Far = 1000.0f;
 
-        float mMoveSpeed = 100.0f;
-        float mRotateSpeed = 1.5f;
+        float m_MoveSpeed = 100.0f;
+        float m_RotateSpeed = 1.5f;
 
-        float3 mPrevMoveVelocity = {};
-        float2 mPrevRotateVelocity = {};
-        float mMoveSmoothness = 0.01f;
-        float mRotateSmoothness = 0.01f;
+        float3 m_PrevMoveVelocity = {};
+        float2 m_PrevRotateVelocity = {};
+        float m_MoveSmoothness = 0.01f;
+        float m_RotateSmoothness = 0.01f;
 
-        bool mbFrustumLocked = false;
-        float4 mFrustumPlanes[6];
-        float3 mFrustumViewPos;
+        bool m_bFrustumLocked = false;
+        float4 m_FrustumPlanes[6];
+        float3 m_FrustumViewPos;
     };
 }

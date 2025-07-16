@@ -4,7 +4,7 @@ namespace Scene
 {
     BillboardSpriteRenderer::BillboardSpriteRenderer(Renderer::RendererBase *pRenderer)
     {
-        mpRenderer = pRenderer;
+        m_pRenderer = pRenderer;
     }
 
     BillboardSpriteRenderer::~BillboardSpriteRenderer()

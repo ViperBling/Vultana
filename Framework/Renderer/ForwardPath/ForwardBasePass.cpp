@@ -12,13 +12,13 @@ namespace Renderer
 
     ForwardBasePass::ForwardBasePass(RendererBase *pRenderer)
     {
-        mpRenderer = pRenderer;
+        m_pRenderer = pRenderer;
     }
 
     RenderBatch &ForwardBasePass::AddBatch()
     {
-        LinearAllocator* allocator = mpRenderer->GetConstantAllocator();
-        return mInstance.emplace_back(*allocator);
+        LinearAllocator* allocator = m_pRenderer->GetConstantAllocator();
+        return m_Instance.emplace_back(*allocator);
     }
 
     void ForwardBasePass::Render(RG::RenderGraph *pRenderGraph)
@@ -26,8 +26,8 @@ namespace Renderer
         auto forwardBasePass = pRenderGraph->AddPass<BasePassData>("Forward Base Pass", RG::RenderPassType::Graphics, [&](BasePassData& data, RG::RGBuilder& builder)
         {
             RG::RGTexture::Desc desc;
-            desc.Width = mpRenderer->GetRenderWidth();
-            desc.Height = mpRenderer->GetRenderHeight();
+            desc.Width = m_pRenderer->GetRenderWidth();
+            desc.Height = m_pRenderer->GetRenderHeight();
             desc.Format = RHI::ERHIFormat::RGBA8SRGB;           // Temporary format only, suitable format is RGBA8SRGB
 
             data.OutColorRT = builder.Create<RG::RGTexture>(desc, "BasePassSceneColorRT");
@@ -40,13 +40,13 @@ namespace Renderer
         },
         [&](const BasePassData& data, RHI::RHICommandList* pCmdList)
         {
-            for (size_t i = 0; i < mInstance.size(); i++)
+            for (size_t i = 0; i < m_Instance.size(); i++)
             {
-                DrawBatch(pCmdList, mInstance[i]);
+                DrawBatch(pCmdList, m_Instance[i]);
             }
-            mInstance.clear();
+            m_Instance.clear();
         });
-        mBasePassColorRT = forwardBasePass->OutColorRT;
-        mBasePassDepthRT = forwardBasePass->OutDepthRT;
+        m_BasePassColorRT = forwardBasePass->OutColorRT;
+        m_BasePassDepthRT = forwardBasePass->OutDepthRT;
     }
 }

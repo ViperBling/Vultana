@@ -18,7 +18,7 @@ namespace RHI
         vk::Semaphore GetAcquireSemaphore();
         vk::Semaphore GetPresentSemaphore();
 
-        virtual void* GetNativeHandle() const override { return mSwapchain; }
+        virtual void* GetNativeHandle() const override { return m_Swapchain; }
         virtual void AcquireNextBackBuffer() override;
         virtual RHITexture* GetBackBuffer() const override;
         virtual bool Resize(uint32_t width, uint32_t height) override;
@@ -33,17 +33,17 @@ namespace RHI
         bool RecreateSwapchain();
     
     private:
-        vk::SwapchainKHR mSwapchain;
-        vk::SurfaceKHR mSurface;
+        vk::SwapchainKHR m_Swapchain;
+        vk::SurfaceKHR m_Surface;
 
-        bool mbEnableVSync = false;
-        bool mbMailboxSupported = false;
+        bool m_bEnableVSync = false;
+        bool m_bMailboxSupported = false;
 
-        uint32_t mCurrentBackBuffer = 0;
-        eastl::vector<RHITexture*> mBackBuffers;
+        uint32_t m_CurrentBackBuffer = 0;
+        eastl::vector<RHITexture*> m_BackBuffers;
 
-        int32_t mFrameSemaphoreIndex = -1;
-        eastl::vector<vk::Semaphore> mAcquireSemaphores;
-        eastl::vector<vk::Semaphore> mPresentSemaphores;
+        int32_t m_FrameSemaphoreIndex = -1;
+        eastl::vector<vk::Semaphore> m_AcquireSemaphores;
+        eastl::vector<vk::Semaphore> m_PresentSemaphores;
     };
 }

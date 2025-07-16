@@ -5,19 +5,19 @@ namespace Scene
 {
     Animation::Animation(const eastl::string &name)
     {
-        mName = name;
+        m_Name = name;
     }
 
     void Animation::Update(SkeletalMesh *mesh, float deltaTime)
     {
-        mCurrentAnimTime += deltaTime;
-        if (mCurrentAnimTime > mTimeDuration)
+        m_CurrentAnimTime += deltaTime;
+        if (m_CurrentAnimTime > m_TimeDuration)
         {
-            mCurrentAnimTime = mCurrentAnimTime - mTimeDuration;
+            m_CurrentAnimTime = m_CurrentAnimTime - m_TimeDuration;
         }
-        for (size_t i = 0; i < mChannels.size(); i++)
+        for (size_t i = 0; i < m_Channels.size(); i++)
         {
-            const FAnimationChannel& channel = mChannels[i];
+            const FAnimationChannel& channel = m_Channels[i];
             UpdateChannel(mesh, channel);
         }
     }
@@ -30,8 +30,8 @@ namespace Scene
         bool found = false;
         for (size_t frame = 0; frame < channel.KeyFrames.size() - 1; ++frame)
         {
-            if (channel.KeyFrames[frame].first <= mCurrentAnimTime &&
-                channel.KeyFrames[frame + 1].first >= mCurrentAnimTime)
+            if (channel.KeyFrames[frame].first <= m_CurrentAnimTime &&
+                channel.KeyFrames[frame + 1].first >= m_CurrentAnimTime)
             {
                 lowerFrame = channel.KeyFrames[frame];
                 upperFrame = channel.KeyFrames[frame + 1];
@@ -43,7 +43,7 @@ namespace Scene
         float interpolationValue;
         if (found)
         {
-            interpolationValue = (mCurrentAnimTime - lowerFrame.first) / (upperFrame.first - lowerFrame.first);
+            interpolationValue = (m_CurrentAnimTime - lowerFrame.first) / (upperFrame.first - lowerFrame.first);
         }
         else
         {

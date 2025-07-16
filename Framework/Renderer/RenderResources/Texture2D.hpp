@@ -18,15 +18,15 @@ namespace RenderResources
 
         bool Create(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags);
 
-        RHI::RHITexture* GetTexture() const { return mpTexture.get(); }
-        RHI::RHIDescriptor* GetSRV() const { return mpSRV.get(); }
+        RHI::RHITexture* GetTexture() const { return m_pTexture.get(); }
+        RHI::RHIDescriptor* GetSRV() const { return m_pSRV.get(); }
         RHI::RHIDescriptor* GetUAV(uint32_t mip = 0) const;
     
     protected:
-        eastl::string mName;
+        eastl::string m_Name;
 
-        eastl::unique_ptr<RHI::RHITexture> mpTexture;
-        eastl::unique_ptr<RHI::RHIDescriptor> mpSRV;
-        eastl::vector<eastl::unique_ptr<RHI::RHIDescriptor>> mUAVs;
+        eastl::unique_ptr<RHI::RHITexture> m_pTexture;
+        eastl::unique_ptr<RHI::RHIDescriptor> m_pSRV;
+        eastl::vector<eastl::unique_ptr<RHI::RHIDescriptor>> m_UAVs;
     };
 }

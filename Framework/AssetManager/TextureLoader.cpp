@@ -147,9 +147,9 @@ namespace Assets
 {
     TextureLoader::~TextureLoader()
     {
-        if (mpDecompressedData)
+        if (m_pDecompressedData)
         {
-            stbi_image_free(mpDecompressedData);
+            stbi_image_free(m_pDecompressedData);
         }
     }
 
@@ -167,8 +167,8 @@ namespace Assets
         uint32_t length = static_cast<uint32_t>(is.tellg());
         is.seekg(0, std::ios::beg);
 
-        mFileData.resize(length);
-        char* buffer = reinterpret_cast<char*>(mFileData.data());
+        m_FileData.resize(length);
+        char* buffer = reinterpret_cast<char*>(m_FileData.data());
 
         is.read(buffer, length);
         is.close();
@@ -185,29 +185,29 @@ namespace Assets
 
     bool TextureLoader::Resize(uint32_t width, uint32_t height)
     {
-        if (mpDecompressedData == nullptr)
+        if (m_pDecompressedData == nullptr)
         {
             return false;
         }
 
         unsigned char* outputData = (unsigned char*)malloc(width * height * 4);
-        auto res = stbir_resize_uint8_linear((const unsigned char*)mpDecompressedData, mWidth, mHeight, 0, outputData, width, height, 0, STBIR_RGBA);
+        auto res = stbir_resize_uint8_linear((const unsigned char*)m_pDecompressedData, m_Width, m_Height, 0, outputData, width, height, 0, STBIR_RGBA);
         if (!res || outputData == nullptr)
         {
             free(outputData);
             return false;
         }
-        stbi_image_free(mpDecompressedData);
+        stbi_image_free(m_pDecompressedData);
 
-        mpDecompressedData = outputData;
-        mWidth = width;
-        mHeight = height;
+        m_pDecompressedData = outputData;
+        m_Width = width;
+        m_Height = height;
         return true;
     }
 
     bool TextureLoader::LoadDDS(bool srgb)
     {
-        uint8_t* data = mFileData.data();
+        uint8_t* data = m_FileData.data();
 
         ddspp::Descriptor desc;
         ddspp::Result res = ddspp::decode_header(data, desc);
@@ -216,16 +216,16 @@ namespace Assets
             VTNA_LOG_DEBUG("[TextureLoader::LoadDDS] failed to decode header");
             return false;
         }
-        mWidth = desc.width;
-        mHeight = desc.height;
-        mDepth = desc.depth;
-        mMipLevels = desc.numMips;
-        mArraySize = desc.arraySize;
-        mFormat = GetTextureFormat(desc.format, srgb);
-        mType = GetTextureType(desc.type, desc.arraySize > 1);
+        m_Width = desc.width;
+        m_Height = desc.height;
+        m_Depth = desc.depth;
+        m_MipLevels = desc.numMips;
+        m_ArraySize = desc.arraySize;
+        m_Format = GetTextureFormat(desc.format, srgb);
+        m_Type = GetTextureType(desc.type, desc.arraySize > 1);
 
-        mpTextureData = data + desc.headerSize;
-        mTextureSize = (uint32_t)mFileData.size() - desc.headerSize;
+        m_pTextureData = data + desc.headerSize;
+        m_TextureSize = (uint32_t)m_FileData.size() - desc.headerSize;
 
         return true;
     }
@@ -233,27 +233,27 @@ namespace Assets
     bool TextureLoader::LoadSTB(bool srgb)
     {
         int x, y, comp;
-        stbi_info_from_memory((stbi_uc*)mFileData.data(), static_cast<int>(mFileData.size()), &x, &y, &comp);
+        stbi_info_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()), &x, &y, &comp);
 
-        bool isHDR = stbi_is_hdr_from_memory((stbi_uc*)mFileData.data(), static_cast<int>(mFileData.size()));
-        bool is16Bits = stbi_is_16_bit_from_memory((stbi_uc*)mFileData.data(), static_cast<int>(mFileData.size()));
+        bool isHDR = stbi_is_hdr_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()));
+        bool is16Bits = stbi_is_16_bit_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()));
         int desiredChannels = comp == 3 ? 4 : 0;
 
         if (isHDR)
         {
-            mpDecompressedData = stbi_loadf_from_memory((stbi_uc*)mFileData.data(), static_cast<int>(mFileData.size()), &x, &y, &comp, desiredChannels);
+            m_pDecompressedData = stbi_loadf_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()), &x, &y, &comp, desiredChannels);
 
             switch (comp)
             {
             case 1:
-                mFormat = RHI::ERHIFormat::R32F;
+                m_Format = RHI::ERHIFormat::R32F;
                 break;
             case 2:
-                mFormat = RHI::ERHIFormat::RG32F;
+                m_Format = RHI::ERHIFormat::RG32F;
                 break;
             case 3:
             case 4:
-                mFormat = RHI::ERHIFormat::RGBA32F;
+                m_Format = RHI::ERHIFormat::RGBA32F;
                 break;
             default:
                 assert(false);
@@ -262,19 +262,19 @@ namespace Assets
         }
         else if (is16Bits)
         {
-            mpDecompressedData = stbi_load_16_from_memory((stbi_uc*)mFileData.data(), static_cast<int>(mFileData.size()), &x, &y, &comp, desiredChannels);
+            m_pDecompressedData = stbi_load_16_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()), &x, &y, &comp, desiredChannels);
 
             switch (comp)
             {
             case 1:
-                mFormat = RHI::ERHIFormat::R16UNORM;
+                m_Format = RHI::ERHIFormat::R16UNORM;
                 break;
             case 2:
-                mFormat = RHI::ERHIFormat::RG16UNORM;
+                m_Format = RHI::ERHIFormat::RG16UNORM;
                 break;
             case 3:
             case 4:
-                mFormat = RHI::ERHIFormat::RGBA16UNORM;
+                m_Format = RHI::ERHIFormat::RGBA16UNORM;
                 break;
             default:
                 assert(false);
@@ -283,33 +283,33 @@ namespace Assets
         }
         else
         {
-            mpDecompressedData = stbi_load_from_memory((stbi_uc*)mFileData.data(), static_cast<int>(mFileData.size()), &x, &y, &comp, desiredChannels);
+            m_pDecompressedData = stbi_load_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()), &x, &y, &comp, desiredChannels);
 
             switch (comp)
             {
             case 1:
-                mFormat = RHI::ERHIFormat::R8UNORM;
+                m_Format = RHI::ERHIFormat::R8UNORM;
                 break;
             case 2:
-                mFormat = RHI::ERHIFormat::RG8UNORM;
+                m_Format = RHI::ERHIFormat::RG8UNORM;
                 break;
             case 3:
             case 4:
-                mFormat = srgb ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::RGBA8UNORM;
+                m_Format = srgb ? RHI::ERHIFormat::RGBA8SRGB : RHI::ERHIFormat::RGBA8UNORM;
                 break;
             default:
                 assert(false);
                 break;
             }
         }
-        if (mpDecompressedData == nullptr)
+        if (m_pDecompressedData == nullptr)
         {
             VTNA_LOG_DEBUG("[TextureLoader::LoadSTB] failed to load image");
             return false;
         }
-        mWidth = x;
-        mHeight = y;
-        mTextureSize = GetFormatRowPitch(mFormat, mWidth) * mHeight;
+        m_Width = x;
+        m_Height = y;
+        m_TextureSize = GetFormatRowPitch(m_Format, m_Width) * m_Height;
 
         return true;
     }

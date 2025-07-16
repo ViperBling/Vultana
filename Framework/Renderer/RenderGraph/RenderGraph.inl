@@ -11,16 +11,16 @@ namespace RG
         RenderGraphEdge(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource)
             : DAGEdge(graph, from, to)
         {
-            mUsage = usage;
-            mSubresource = subresource;
+            m_Usage = usage;
+            m_Subresource = subresource;
         }
 
-        RHI::ERHIAccessFlags GetUsage() const { return mUsage; }
-        uint32_t GetSubresource() const { return mSubresource; }
+        RHI::ERHIAccessFlags GetUsage() const { return m_Usage; }
+        uint32_t GetSubresource() const { return m_Subresource; }
     
     private:
-        RHI::ERHIAccessFlags mUsage;
-        uint32_t mSubresource;
+        RHI::ERHIAccessFlags m_Usage;
+        uint32_t m_Subresource;
     };
 
     class RenderGraphResourceNode : public DAGNode
@@ -28,24 +28,24 @@ namespace RG
     public:
         RenderGraphResourceNode(DirectedAcyclicGraph& graph, RenderGraphResource* resource, uint32_t version)
             : DAGNode(graph)
-            , mGraph(graph)
+            , m_Graph(graph)
         {
-            mpResource = resource;
-            mVersion = version;
+            m_pResource = resource;
+            m_Version = version;
         }
     
-        RenderGraphResource* GetResource() const { return mpResource; }
-        uint32_t GetVersion() const { return mVersion; }
+        RenderGraphResource* GetResource() const { return m_pResource; }
+        uint32_t GetVersion() const { return m_Version; }
 
         virtual eastl::string GetGraphVizName() const override 
         {
-            eastl::string str = mpResource->GetName();
+            eastl::string str = m_pResource->GetName();
             str.append("\nversion:");
-            str.append(eastl::to_string(mVersion));
-            if (mVersion > 0)
+            str.append(eastl::to_string(m_Version));
+            if (m_Version > 0)
             {
                 eastl::vector<DAGEdge*> incomingEdges;
-                mGraph.GetIncomingEdges(this, incomingEdges);
+                m_Graph.GetIncomingEdges(this, incomingEdges);
                 assert(incomingEdges.size() == 1);
                 uint32_t subresource = ((RenderGraphEdge*)incomingEdges[0])->GetSubresource();
                 str.append("\nsubresource:");
@@ -57,9 +57,9 @@ namespace RG
         virtual const char* GetGraphVizShape() const override { return "ellipse"; }
     
     private:
-        RenderGraphResource* mpResource = nullptr;
-        uint32_t mVersion;
-        DirectedAcyclicGraph& mGraph;
+        RenderGraphResource* m_pResource = nullptr;
+        uint32_t m_Version;
+        DirectedAcyclicGraph& m_Graph;
     };
 
     class RGEdgeColorAttachment : public RenderGraphEdge
@@ -68,22 +68,22 @@ namespace RG
         RGEdgeColorAttachment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource, uint32_t colorIndex, RHI::ERHIRenderPassLoadOp loadOp, const float4& clearColor)
             : RenderGraphEdge(graph, from, to, usage, subresource)
         {
-            mColorIndex = colorIndex;
-            mLoadOp = loadOp;
-            mClearColor[0] = clearColor[0];
-            mClearColor[1] = clearColor[1];
-            mClearColor[2] = clearColor[2];
-            mClearColor[3] = clearColor[3];
+            m_ColorIndex = colorIndex;
+            m_LoadOp = loadOp;
+            m_ClearColor[0] = clearColor[0];
+            m_ClearColor[1] = clearColor[1];
+            m_ClearColor[2] = clearColor[2];
+            m_ClearColor[3] = clearColor[3];
         }
 
-        uint32_t GetColorIndex() const { return mColorIndex; }
-        RHI::ERHIRenderPassLoadOp GetLoadOp() const { return mLoadOp; }
-        const float* GetClearColor() const { return mClearColor; }
+        uint32_t GetColorIndex() const { return m_ColorIndex; }
+        RHI::ERHIRenderPassLoadOp GetLoadOp() const { return m_LoadOp; }
+        const float* GetClearColor() const { return m_ClearColor; }
     
     private:
-        uint32_t mColorIndex;
-        RHI::ERHIRenderPassLoadOp mLoadOp;
-        float mClearColor[4] = {};
+        uint32_t m_ColorIndex;
+        RHI::ERHIRenderPassLoadOp m_LoadOp;
+        float m_ClearColor[4] = {};
     };
 
     class RGEdgeDepthAttachment : public RenderGraphEdge
@@ -92,25 +92,25 @@ namespace RG
         RGEdgeDepthAttachment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource, RHI::ERHIRenderPassLoadOp depthLoadOp, RHI::ERHIRenderPassLoadOp stencilLoadOp, float clearDepth, uint32_t clearStencil)
             : RenderGraphEdge(graph, from, to, usage, subresource)
         {
-            mDepthLoadOp = depthLoadOp;
-            mStencilLoadOp = stencilLoadOp;
-            mClearDepth = clearDepth;
-            mClearStencil = clearStencil;
-            mbReadOnly = (usage & RHI::RHIAccessDSVReadOnly) ? true : false;
+            m_DepthLoadOp = depthLoadOp;
+            m_StencilLoadOp = stencilLoadOp;
+            m_ClearDepth = clearDepth;
+            m_ClearStencil = clearStencil;
+            m_bReadOnly = (usage & RHI::RHIAccessDSVReadOnly) ? true : false;
         }
 
-        RHI::ERHIRenderPassLoadOp GetDepthLoadOp() const { return mDepthLoadOp; }
-        RHI::ERHIRenderPassLoadOp GetStencilLoadOp() const { return mStencilLoadOp; }
-        float GetClearDepth() const { return mClearDepth; }
-        uint32_t GetClearStencil() const { return mClearStencil; }
-        bool IsReadOnly() const { return mbReadOnly; }
+        RHI::ERHIRenderPassLoadOp GetDepthLoadOp() const { return m_DepthLoadOp; }
+        RHI::ERHIRenderPassLoadOp GetStencilLoadOp() const { return m_StencilLoadOp; }
+        float GetClearDepth() const { return m_ClearDepth; }
+        uint32_t GetClearStencil() const { return m_ClearStencil; }
+        bool IsReadOnly() const { return m_bReadOnly; }
     
     private:
-        RHI::ERHIRenderPassLoadOp mDepthLoadOp;
-        RHI::ERHIRenderPassLoadOp mStencilLoadOp;
-        float mClearDepth;
-        uint32_t mClearStencil;
-        bool mbReadOnly;
+        RHI::ERHIRenderPassLoadOp m_DepthLoadOp;
+        RHI::ERHIRenderPassLoadOp m_StencilLoadOp;
+        float m_ClearDepth;
+        uint32_t m_ClearStencil;
+        bool m_bReadOnly;
     };
 
     template<typename T>
@@ -122,17 +122,17 @@ namespace RG
     template <typename Data, typename Setup, typename Execution>
     inline RenderGraphPass<Data> &RenderGraph::AddPass(const eastl::string &name, RenderPassType type, const Setup &setup, const Execution &execution)
     {
-        auto pass = Allocate<RenderGraphPass<Data>>(name, type, mGraph, execution);
-        for (size_t i = 0; i < mEventNames.size(); i++)
+        auto pass = Allocate<RenderGraphPass<Data>>(name, type, m_Graph, execution);
+        for (size_t i = 0; i < m_EventNames.size(); i++)
         {
-            pass->BeginEvent(mEventNames[i]);
+            pass->BeginEvent(m_EventNames[i]);
         }
-        mEventNames.clear();
+        m_EventNames.clear();
 
         RGBuilder builder(this, pass);
         setup(pass->GetData(), builder);
 
-        mPasses.push_back(pass);
+        m_Passes.push_back(pass);
 
         return *pass;
     }
@@ -140,20 +140,20 @@ namespace RG
     template <typename T, typename... ArgsT>
     inline T *RenderGraph::Allocate(ArgsT &&...args)
     {
-        T* p = (T*)mAllocator.Allocate(sizeof(T));
+        T* p = (T*)m_Allocator.Allocate(sizeof(T));
         new (p) T(args...);
 
         ObjFinalizer finalizer;
         finalizer.Object = p;
         finalizer.Finalizer = &ClassFinalizer<T>;
-        mObjFinalizers.push_back(finalizer);
+        m_ObjFinalizers.push_back(finalizer);
         return p;
     }
 
     template<typename T, typename... ArgsT>
     inline T* RenderGraph::AllocatePOD(ArgsT&&... args)
     {
-        T* p = (T*)mAllocator.Allocate(sizeof(T));
+        T* p = (T*)m_Allocator.Allocate(sizeof(T));
         new (p) T(args...);
         return p;
     }
@@ -161,15 +161,15 @@ namespace RG
     template <typename Resource>
     inline RGHandle RenderGraph::Create(const typename Resource::Desc &desc, const eastl::string &name)
     {
-        auto resource = Allocate<Resource>(mResourceAllocator, name, desc);
-        auto node = AllocatePOD<RenderGraphResourceNode>(mGraph, resource, 0);
+        auto resource = Allocate<Resource>(m_ResourceAllocator, name, desc);
+        auto node = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, 0);
 
         RGHandle handle;
-        handle.Index = (uint16_t)mResources.size();
-        handle.Node = (uint16_t)mResourceNodes.size();
+        handle.Index = (uint16_t)m_Resources.size();
+        handle.Node = (uint16_t)m_ResourceNodes.size();
 
-        mResources.push_back(resource);
-        mResourceNodes.push_back(node);
+        m_Resources.push_back(resource);
+        m_ResourceNodes.push_back(node);
 
         return handle;
     }

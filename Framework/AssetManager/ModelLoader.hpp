@@ -62,12 +62,12 @@ namespace Assets
         RenderResources::Texture2D* LoadTexture(const cgltf_texture_view& textureView, bool srgb);
 
     private:
-        Scene::World* mpWorld = nullptr;
-        eastl::string mFile;
+        Scene::World* m_pWorld = nullptr;
+        eastl::string m_File;
 
-        float3 mPosition = float3(0.0f);
-        quaternion mRotation = quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-        float3 mScale = float3(1.0f);
-        float4x4 mMtxWorld;
+        float3 m_Position = float3(0.0f);
+        quaternion m_Rotation = quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        float3 m_Scale = float3(1.0f);
+        float4x4 m_MtxWorld;
     };
 }

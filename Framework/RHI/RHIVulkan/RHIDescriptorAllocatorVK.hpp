@@ -15,17 +15,17 @@ namespace RHI
         void Allocate(uint32_t size, void** cpuAddress, vk::DeviceAddress* gpuAddress);
         void Reset();
 
-        vk::DeviceAddress GetGPUAddress() const { return mGPUAddress; }
+        vk::DeviceAddress GetGPUAddress() const { return m_GPUAddress; }
 
     
     private:
-        RHIDeviceVK* mDevice = nullptr;
-        vk::Buffer mBuffer = VK_NULL_HANDLE;
-        VmaAllocation mAllocation = VK_NULL_HANDLE;
-        vk::DeviceAddress mGPUAddress = 0;
-        void* mCPUAddress = nullptr;
-        uint32_t mBufferSize = 0;
-        uint32_t mAllocatedSize = 0;
+        RHIDeviceVK* m_Device = nullptr;
+        vk::Buffer m_Buffer = VK_NULL_HANDLE;
+        VmaAllocation m_Allocation = VK_NULL_HANDLE;
+        vk::DeviceAddress m_GPUAddress = 0;
+        void* m_CPUAddress = nullptr;
+        uint32_t m_BufferSize = 0;
+        uint32_t m_AllocatedSize = 0;
     };
 
     class RHIDescriptorAllocatorVK
@@ -37,19 +37,19 @@ namespace RHI
         uint32_t Allocate(void** desc);
         void Free(uint32_t index);
 
-        vk::DeviceAddress GetGPUAddress() const { return mGPUAddress; }
+        vk::DeviceAddress GetGPUAddress() const { return m_GPUAddress; }
     
     private:
-        RHIDeviceVK* mDevice = nullptr;
-        vk::Buffer mBuffer = VK_NULL_HANDLE;
-        VmaAllocation mAllocation = VK_NULL_HANDLE;
-        vk::DeviceAddress mGPUAddress = 0;
-        void* mCPUAddress = nullptr;
-        uint32_t mDescriptorSize = 0;
-        uint32_t mDescriptorCount = 0;
+        RHIDeviceVK* m_Device = nullptr;
+        vk::Buffer m_Buffer = VK_NULL_HANDLE;
+        VmaAllocation m_Allocation = VK_NULL_HANDLE;
+        vk::DeviceAddress m_GPUAddress = 0;
+        void* m_CPUAddress = nullptr;
+        uint32_t m_DescriptorSize = 0;
+        uint32_t m_DescriptorCount = 0;
 
-        uint32_t mAllocatedCount = 0;
-        eastl::vector<uint32_t> mFreeDescriptors;
+        uint32_t m_AllocatedCount = 0;
+        eastl::vector<uint32_t> m_FreeDescriptors;
     };
 }
 

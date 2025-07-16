@@ -60,7 +60,7 @@ namespace Scene
 
     World::World()
     {
-        mpCamera = eastl::make_unique<Camera>();
+        m_pCamera = eastl::make_unique<Camera>();
     }
 
     World::~World()
@@ -90,14 +90,14 @@ namespace Scene
     void World::AddObject(IVisibleObject *object)
     {
         assert(object != nullptr);
-        object->SetID(static_cast<uint32_t>(mObjects.size()));
-        mObjects.push_back(eastl::unique_ptr<IVisibleObject>(object));
+        object->SetID(static_cast<uint32_t>(m_Objects.size()));
+        m_Objects.push_back(eastl::unique_ptr<IVisibleObject>(object));
     }
 
     void World::AddLight(ILight *light)
     {
         assert(light != nullptr);
-        mLights.push_back(eastl::unique_ptr<ILight>(light));
+        m_Lights.push_back(eastl::unique_ptr<ILight>(light));
     }
 
     void World::OnGUI()
@@ -105,7 +105,7 @@ namespace Scene
         // GUICommand("WorldOutliner", "World", [&]()
         // {
             ImGui::Text("World Outliner");
-            for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
+            for (auto iter = m_Objects.begin(); iter != m_Objects.end(); ++iter)
             {
                 ImGui::Text((*iter)->GetName().c_str());
             }
@@ -114,28 +114,28 @@ namespace Scene
 
     void World::Tick(float deltaTime)
     {
-        mpCamera->Tick(deltaTime);
+        m_pCamera->Tick(deltaTime);
 
-        for (auto iter = mObjects.begin(); iter != mObjects.end(); ++iter)
+        for (auto iter = m_Objects.begin(); iter != m_Objects.end(); ++iter)
         {
             (*iter)->Tick(deltaTime);
         }
 
-        for (auto iter = mLights.begin(); iter != mLights.end(); ++iter)
+        for (auto iter = m_Lights.begin(); iter != m_Lights.end(); ++iter)
         {
             (*iter)->Tick(deltaTime);
         }
 
         #pragma region : Frustum Culling
-        eastl::vector<IVisibleObject*> visibleObjects(mObjects.size());
+        eastl::vector<IVisibleObject*> visibleObjects(m_Objects.size());
         eastl::atomic<uint32_t> visibleCount = 0;
         
-        Utilities::ParallelFor((uint32_t)mObjects.size(), [&](uint32_t i)
+        Utilities::ParallelFor((uint32_t)m_Objects.size(), [&](uint32_t i)
         {
-            if (mObjects[i]->FrustumCull(mpCamera->GetFrustumPlanes(), 6))
+            if (m_Objects[i]->FrustumCull(m_pCamera->GetFrustumPlanes(), 6))
             {
                 uint32_t idx = visibleCount.fetch_add(1);
-                visibleObjects[idx] = mObjects[i].get();
+                visibleObjects[idx] = m_Objects[i].get();
             }
         });
         visibleObjects.resize(visibleCount);
@@ -150,24 +150,24 @@ namespace Scene
 
     IVisibleObject *World::GetVisibleObject(uint32_t index) const
     {
-        if (index >= mObjects.size())
+        if (index >= m_Objects.size())
         {
             return nullptr;
         }
-        return mObjects[index].get();
+        return m_Objects[index].get();
     }
 
     ILight *World::GetMainLight()
     {
-        assert(mpMainLight != nullptr);
-        return mpMainLight;
+        assert(m_pMainLight != nullptr);
+        return m_pMainLight;
     }
 
     void World::ClearScene()
     {
-        mObjects.clear();
-        mLights.clear();
-        mpMainLight = nullptr;
+        m_Objects.clear();
+        m_Lights.clear();
+        m_pMainLight = nullptr;
     }
 
     void World::CreateSceneObject(tinyxml2::XMLElement *element)
@@ -214,7 +214,7 @@ namespace Scene
         const tinyxml2::XMLAttribute* mainLight = element->FindAttribute("IsMainLight");
         if (mainLight && mainLight->BoolValue())
         {
-            mpMainLight = light;
+            m_pMainLight = light;
         }
     }
 
@@ -223,18 +223,18 @@ namespace Scene
         const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
         if (position)
         {
-            mpCamera->SetPosition(strToFloat3(position->Value()));
+            m_pCamera->SetPosition(strToFloat3(position->Value()));
         }
         const tinyxml2::XMLAttribute* rotation = element->FindAttribute("Rotation");
         if (rotation)
         {
-            mpCamera->SetRotation(strToFloat3(rotation->Value()));
+            m_pCamera->SetRotation(strToFloat3(rotation->Value()));
         }
 
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         uint32_t width = pRenderer->GetRenderWidth();
         uint32_t height = pRenderer->GetRenderHeight();
-        mpCamera->SetPerspective(static_cast<float>(width) / height, element->FindAttribute("Fov")->FloatValue(), element->FindAttribute("ZNear")->FloatValue());
+        m_pCamera->SetPerspective(static_cast<float>(width) / height, element->FindAttribute("Fov")->FloatValue(), element->FindAttribute("ZNear")->FloatValue());
     }
 
     void World::CreateModel(tinyxml2::XMLElement *element)

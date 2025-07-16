@@ -6,7 +6,7 @@ namespace RenderResources
 {
     Texture2D::Texture2D(const eastl::string &name)
     {
-        mName = name;
+        m_Name = name;
     }
 
     bool Texture2D::Create(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags)
@@ -25,13 +25,13 @@ namespace RenderResources
         {
             desc.AllocationType = RHI::ERHIAllocationType::Committed;
         }
-        mpTexture.reset(pDevice->CreateTexture(desc, mName));
-        if (mpTexture == nullptr) return false;
+        m_pTexture.reset(pDevice->CreateTexture(desc, m_Name));
+        if (m_pTexture == nullptr) return false;
 
         RHI::RHIShaderResourceViewDesc srvDesc;
         srvDesc.Format = format;
-        mpSRV.reset(pDevice->CreateShaderResourceView(mpTexture.get(), srvDesc, mName + "_SRV"));
-        if (mpSRV == nullptr) return false;
+        m_pSRV.reset(pDevice->CreateShaderResourceView(m_pTexture.get(), srvDesc, m_Name + "_SRV"));
+        if (m_pSRV == nullptr) return false;
 
         if (flags & RHI::RHITextureUsageUnorderedAccess)
         {
@@ -40,9 +40,9 @@ namespace RenderResources
                 RHI::RHIUnorderedAccessViewDesc uavDesc;
                 uavDesc.Format = format;
                 uavDesc.Texture.MipSlice = i;
-                auto uav = pDevice->CreateUnorderedAccessView(mpTexture.get(), uavDesc, mName + "_UAV");
+                auto uav = pDevice->CreateUnorderedAccessView(m_pTexture.get(), uavDesc, m_Name + "_UAV");
                 if (uav == nullptr) return false;
-                mUAVs.emplace_back(uav);
+                m_UAVs.emplace_back(uav);
             }
         }
         return true;
@@ -50,6 +50,6 @@ namespace RenderResources
 
     RHI::RHIDescriptor *Texture2D::GetUAV(uint32_t mip) const
     {
-        return mUAVs[mip].get();
+        return m_UAVs[mip].get();
     }
 }

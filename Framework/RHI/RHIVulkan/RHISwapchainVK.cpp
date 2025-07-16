@@ -9,30 +9,30 @@ namespace RHI
 {
     RHISwapchainVK::RHISwapchainVK(RHIDeviceVK *device, const RHISwapchainDesc &desc, const eastl::string &name)
     {
-        mpDevice = device;
-        mDesc = desc;
-        mName = name;
+        m_pDevice = device;
+        m_Desc = desc;
+        m_Name = name;
     }
 
     RHISwapchainVK::~RHISwapchainVK()
     {
-        for (size_t i = 0; i < mBackBuffers.size(); i++)
+        for (size_t i = 0; i < m_BackBuffers.size(); i++)
         {
-            delete mBackBuffers[i];
+            delete m_BackBuffers[i];
         }
-        mBackBuffers.clear();
+        m_BackBuffers.clear();
 
-        auto device = (RHIDeviceVK*)mpDevice;
-        device->Delete(mSwapchain);
-        device->Delete(mSurface);
+        auto device = (RHIDeviceVK*)m_pDevice;
+        device->Delete(m_Swapchain);
+        device->Delete(m_Surface);
 
-        for (size_t i = 0; i < mAcquireSemaphores.size(); i++)
+        for (size_t i = 0; i < m_AcquireSemaphores.size(); i++)
         {
-            device->Delete(mAcquireSemaphores[i]);
+            device->Delete(m_AcquireSemaphores[i]);
         }
-        for (size_t i = 0; i < mPresentSemaphores.size(); i++)
+        for (size_t i = 0; i < m_PresentSemaphores.size(); i++)
         {
-            device->Delete(mPresentSemaphores[i]);
+            device->Delete(m_PresentSemaphores[i]);
         }
     }
 
@@ -44,7 +44,7 @@ namespace RHI
             || !CreateSemaphores()
             )
         {
-            VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create {}", mName);
+            VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create {}", m_Name);
             return false;
         }
         return true;
@@ -56,8 +56,8 @@ namespace RHI
 
         vk::PresentInfoKHR presentInfo {};
         presentInfo.setWaitSemaphores(waitSemphore);
-        presentInfo.setSwapchains(mSwapchain);
-        presentInfo.setImageIndices(mCurrentBackBuffer);
+        presentInfo.setSwapchains(m_Swapchain);
+        presentInfo.setImageIndices(m_CurrentBackBuffer);
 
         vk::Result res = queue.presentKHR(presentInfo);
 
@@ -69,105 +69,105 @@ namespace RHI
 
     vk::Semaphore RHISwapchainVK::GetAcquireSemaphore()
     {
-        return mAcquireSemaphores[mFrameSemaphoreIndex];
+        return m_AcquireSemaphores[m_FrameSemaphoreIndex];
     }
 
     vk::Semaphore RHISwapchainVK::GetPresentSemaphore()
     {
-        return mPresentSemaphores[mFrameSemaphoreIndex];
+        return m_PresentSemaphores[m_FrameSemaphoreIndex];
     }
 
     void RHISwapchainVK::AcquireNextBackBuffer()
     {
-        mFrameSemaphoreIndex = (mFrameSemaphoreIndex + 1) % mAcquireSemaphores.size();
+        m_FrameSemaphoreIndex = (m_FrameSemaphoreIndex + 1) % m_AcquireSemaphores.size();
 
         vk::Semaphore signalSemphore = GetAcquireSemaphore();
 
-        vk::Result res = ((RHIDeviceVK*)mpDevice)->GetDevice().acquireNextImageKHR(mSwapchain, UINT64_MAX, signalSemphore, nullptr, &mCurrentBackBuffer);
+        vk::Result res = ((RHIDeviceVK*)m_pDevice)->GetDevice().acquireNextImageKHR(m_Swapchain, UINT64_MAX, signalSemphore, nullptr, &m_CurrentBackBuffer);
 
         if (res == vk::Result::eSuboptimalKHR || res == vk::Result::eErrorOutOfDateKHR)
         {
             RecreateSwapchain();
 
-            res = ((RHIDeviceVK*)mpDevice)->GetDevice().acquireNextImageKHR(mSwapchain, UINT64_MAX, signalSemphore, nullptr, &mCurrentBackBuffer);
+            res = ((RHIDeviceVK*)m_pDevice)->GetDevice().acquireNextImageKHR(m_Swapchain, UINT64_MAX, signalSemphore, nullptr, &m_CurrentBackBuffer);
             assert(res == vk::Result::eSuccess);
         }
     }
 
     RHITexture *RHISwapchainVK::GetBackBuffer() const
     {
-        return mBackBuffers[mCurrentBackBuffer];
+        return m_BackBuffers[m_CurrentBackBuffer];
     }
 
     bool RHISwapchainVK::Resize(uint32_t width, uint32_t height)
     {
-        if (mDesc.Width == width && mDesc.Height == height)
+        if (m_Desc.Width == width && m_Desc.Height == height)
         {
             return false;
         }
-        mDesc.Width = width;
-        mDesc.Height = height;
+        m_Desc.Width = width;
+        m_Desc.Height = height;
         return RecreateSwapchain();
     }
 
     void RHISwapchainVK::SetVSyncEnabled(bool enabled)
     {
-        if (mbEnableVSync != enabled)
+        if (m_bEnableVSync != enabled)
         {
-            mbEnableVSync = enabled;
+            m_bEnableVSync = enabled;
             RecreateSwapchain();
         }
     }
 
     bool RHISwapchainVK::CreateSurface()
     {
-        vk::Instance instance = ((RHIDeviceVK*)mpDevice)->GetInstance();
-        vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        vk::detail::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
-        vk::PhysicalDevice physcialDevice = ((RHIDeviceVK*)mpDevice)->GetPhysicalDevice();
+        vk::Instance instance = ((RHIDeviceVK*)m_pDevice)->GetInstance();
+        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        vk::detail::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        vk::PhysicalDevice physcialDevice = ((RHIDeviceVK*)m_pDevice)->GetPhysicalDevice();
         
         vk::Win32SurfaceCreateInfoKHR surfaceCI {};
         surfaceCI.hinstance = GetModuleHandle(nullptr);
-        surfaceCI.hwnd = (HWND)mDesc.WindowHandle;
-        // auto wnd = (Window::GLFWindow*)mDesc.WindowHandle;
-        // vk::Result res = wnd->CreateVulkanSurface(instance, mSurface);
-        mSurface = instance.createWin32SurfaceKHR(surfaceCI, nullptr);
+        surfaceCI.hwnd = (HWND)m_Desc.WindowHandle;
+        // auto wnd = (Window::GLFWindow*)m_Desc.WindowHandle;
+        // vk::Result res = wnd->CreateVulkanSurface(instance, m_Surface);
+        m_Surface = instance.createWin32SurfaceKHR(surfaceCI, nullptr);
 
-        SetDebugName(device, vk::ObjectType::eSurfaceKHR, (uint64_t)(VkSurfaceKHR)mSurface, mName.c_str(), dynamicLoader);
+        SetDebugName(device, vk::ObjectType::eSurfaceKHR, (uint64_t)(VkSurfaceKHR)m_Surface, m_Name.c_str(), dynamicLoader);
 
-        auto presentMode = physcialDevice.getSurfacePresentModesKHR(mSurface);
-        mbMailboxSupported = eastl::find(presentMode.begin(), presentMode.end(), vk::PresentModeKHR::eMailbox) != presentMode.end();
+        auto presentMode = physcialDevice.getSurfacePresentModesKHR(m_Surface);
+        m_bMailboxSupported = eastl::find(presentMode.begin(), presentMode.end(), vk::PresentModeKHR::eMailbox) != presentMode.end();
 
         return true;
     }
 
     bool RHISwapchainVK::CreateSwapchain()
     {
-        vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
-        auto physcialDevice = ((RHIDeviceVK*)mpDevice)->GetPhysicalDevice();
-        vk::SwapchainKHR oldSwapchain = mSwapchain;
+        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        auto physcialDevice = ((RHIDeviceVK*)m_pDevice)->GetPhysicalDevice();
+        vk::SwapchainKHR oldSwapchain = m_Swapchain;
 
-        auto presentMode = physcialDevice.getSurfacePresentModesKHR(mSurface);
-        auto surfaceCaps = physcialDevice.getSurfaceCapabilitiesKHR(mSurface);
+        auto presentMode = physcialDevice.getSurfacePresentModesKHR(m_Surface);
+        auto surfaceCaps = physcialDevice.getSurfaceCapabilitiesKHR(m_Surface);
 
         // vk::Extent2D extent = vk::Extent2D(
-        //     eastl::clamp(mDesc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
-        //     eastl::clamp(mDesc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
+        //     eastl::clamp(m_Desc.Width, surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width),
+        //     eastl::clamp(m_Desc.Height, surfaceCaps.minImageExtent.height, surfaceCaps.maxImageExtent.height)
         // );
-        vk::Extent2D extent = vk::Extent2D(mDesc.Width, mDesc.Height);
+        vk::Extent2D extent = vk::Extent2D(m_Desc.Width, m_Desc.Height);
 
         vk::Format viewFormats[2];
-        viewFormats[0] = ToVulkanFormat(mDesc.ColorFormat);
-        viewFormats[1] = ToVulkanFormat(mDesc.ColorFormat, true);
+        viewFormats[0] = ToVulkanFormat(m_Desc.ColorFormat);
+        viewFormats[1] = ToVulkanFormat(m_Desc.ColorFormat, true);
 
         vk::ImageFormatListCreateInfo imageFormatListCI {};
         imageFormatListCI.setViewFormats(viewFormats);
 
         vk::SwapchainCreateInfoKHR swapchainCI {};
-        swapchainCI.setSurface(mSurface);
-        swapchainCI.setMinImageCount(mDesc.BufferCount);
-        swapchainCI.setImageFormat(ToVulkanFormat(mDesc.ColorFormat));
+        swapchainCI.setSurface(m_Surface);
+        swapchainCI.setMinImageCount(m_Desc.BufferCount);
+        swapchainCI.setImageFormat(ToVulkanFormat(m_Desc.ColorFormat));
         swapchainCI.setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear);
         swapchainCI.setImageExtent(extent);
         swapchainCI.setImageArrayLayers(1);
@@ -175,62 +175,62 @@ namespace RHI
         swapchainCI.setImageSharingMode(vk::SharingMode::eExclusive);
         swapchainCI.setPreTransform(vk::SurfaceTransformFlagBitsKHR::eIdentity);
         swapchainCI.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
-        swapchainCI.setPresentMode(mbEnableVSync ? vk::PresentModeKHR::eFifo : (mbMailboxSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate));
+        swapchainCI.setPresentMode(m_bEnableVSync ? vk::PresentModeKHR::eFifo : (m_bMailboxSupported ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate));
         swapchainCI.setClipped(true);
         swapchainCI.setOldSwapchain(oldSwapchain);
 
-        if (IsSRGBFormat(mDesc.ColorFormat))
+        if (IsSRGBFormat(m_Desc.ColorFormat))
         {
             swapchainCI.setFlags(vk::SwapchainCreateFlagBitsKHR::eMutableFormat);
             swapchainCI.setPNext(&imageFormatListCI);
         }
 
-        vk::Result res = device.createSwapchainKHR(&swapchainCI, nullptr, &mSwapchain);
+        vk::Result res = device.createSwapchainKHR(&swapchainCI, nullptr, &m_Swapchain);
         if (res != vk::Result::eSuccess)
         {
             VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create swapchain");
             return false;
         }
-        SetDebugName(device, vk::ObjectType::eSwapchainKHR, (uint64_t)(VkSwapchainKHR)mSwapchain, mName.c_str(), dynamicLoader);
+        SetDebugName(device, vk::ObjectType::eSwapchainKHR, (uint64_t)(VkSwapchainKHR)m_Swapchain, m_Name.c_str(), dynamicLoader);
 
         if (oldSwapchain != VK_NULL_HANDLE)
         {
-            ((RHIDeviceVK*)mpDevice)->Delete(oldSwapchain);
+            ((RHIDeviceVK*)m_pDevice)->Delete(oldSwapchain);
         }
         return true;
     }
 
     bool RHISwapchainVK::CreateTextures()
     {
-        vk::Device device = (VkDevice)mpDevice->GetNativeHandle();
+        vk::Device device = (VkDevice)m_pDevice->GetNativeHandle();
 
         RHI::RHITextureDesc desc {};
-        desc.Width = mDesc.Width;
-        desc.Height = mDesc.Height;
-        desc.Format = mDesc.ColorFormat;
+        desc.Width = m_Desc.Width;
+        desc.Height = m_Desc.Height;
+        desc.Format = m_Desc.ColorFormat;
         desc.Usage = RHITextureUsageRenderTarget;
 
-        auto images = device.getSwapchainImagesKHR(mSwapchain);
+        auto images = device.getSwapchainImagesKHR(m_Swapchain);
 
         for (uint32_t i = 0; i < images.size(); i++)
         {
-            eastl::string name = fmt::format("{} texture {}", mName, i).c_str();
+            eastl::string name = fmt::format("{} texture {}", m_Name, i).c_str();
 
-            RHITextureVK* texture = new RHITextureVK((RHIDeviceVK*)mpDevice, desc, name);
+            RHITextureVK* texture = new RHITextureVK((RHIDeviceVK*)m_pDevice, desc, name);
             texture->Create(images[i]);
             
-            mBackBuffers.push_back(texture);
+            m_BackBuffers.push_back(texture);
         }
         return true;
     }
 
     bool RHISwapchainVK::CreateSemaphores()
     {
-        vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
+        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
         vk::SemaphoreCreateInfo semaphoreCI {};
 
-        for (uint32_t i = 0; i < mDesc.BufferCount; i++)
+        for (uint32_t i = 0; i < m_Desc.BufferCount; i++)
         {
             vk::Semaphore semaphore;
 
@@ -240,11 +240,11 @@ namespace RHI
                 VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create AcquireSemaphore.");
                 return false;
             }
-            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} acquire semaphore {}", mName, i).c_str(), dynamicLoader);
-            mAcquireSemaphores.push_back(semaphore);
+            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} acquire semaphore {}", m_Name, i).c_str(), dynamicLoader);
+            m_AcquireSemaphores.push_back(semaphore);
         }
 
-        for (uint32_t i = 0; i < mDesc.BufferCount; i++)
+        for (uint32_t i = 0; i < m_Desc.BufferCount; i++)
         {
             vk::Semaphore semaphore;
 
@@ -254,35 +254,35 @@ namespace RHI
                 VTNA_LOG_ERROR("[RHISwapchainVK] Failed to create PresentSemaphore.");
                 return false;
             }
-            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} present semaphore {}", mName, i).c_str(), dynamicLoader);
-            mPresentSemaphores.push_back(semaphore);
+            SetDebugName(device, vk::ObjectType::eSemaphore, (uint64_t)(VkSemaphore)semaphore, fmt::format("{} present semaphore {}", m_Name, i).c_str(), dynamicLoader);
+            m_PresentSemaphores.push_back(semaphore);
         }
         return true;
     }
 
     bool RHISwapchainVK::RecreateSwapchain()
     {
-        auto deviceVK = (RHIDeviceVK*)mpDevice;
+        auto deviceVK = (RHIDeviceVK*)m_pDevice;
         auto device = deviceVK->GetDevice();
         device.waitIdle();
 
-        for (size_t i = 0; i < mBackBuffers.size(); i++)
+        for (size_t i = 0; i < m_BackBuffers.size(); i++)
         {
-            delete mBackBuffers[i];
+            delete m_BackBuffers[i];
         }
-        mBackBuffers.clear();
+        m_BackBuffers.clear();
 
-        for (size_t i = 0; i < mAcquireSemaphores.size(); i++)
+        for (size_t i = 0; i < m_AcquireSemaphores.size(); i++)
         {
-            deviceVK->Delete(mAcquireSemaphores[i]);
+            deviceVK->Delete(m_AcquireSemaphores[i]);
         }
-        mAcquireSemaphores.clear();
+        m_AcquireSemaphores.clear();
 
-        for (size_t i = 0; i < mPresentSemaphores.size(); i++)
+        for (size_t i = 0; i < m_PresentSemaphores.size(); i++)
         {
-            deviceVK->Delete(mPresentSemaphores[i]);
+            deviceVK->Delete(m_PresentSemaphores[i]);
         }
-        mPresentSemaphores.clear();
+        m_PresentSemaphores.clear();
 
         return CreateSwapchain() && CreateTextures() && CreateSemaphores();
     }

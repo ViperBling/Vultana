@@ -9,25 +9,25 @@ namespace RHI
 {
     RHIBufferVK::RHIBufferVK(RHIDeviceVK *device, const RHIBufferDesc &desc, const eastl::string &name)
     {
-        mpDevice = device;
-        mDesc = desc;
-        mName = name;
+        m_pDevice = device;
+        m_Desc = desc;
+        m_Name = name;
     }
 
     RHIBufferVK::~RHIBufferVK()
     {
-        ((RHIDeviceVK*)mpDevice)->Delete(mBuffer);
-        ((RHIDeviceVK*)mpDevice)->Delete(mAllocation);
+        ((RHIDeviceVK*)m_pDevice)->Delete(m_Buffer);
+        ((RHIDeviceVK*)m_pDevice)->Delete(m_Allocation);
     }
 
     bool RHIBufferVK::Create()
     {
-        vk::Device device = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
-        VmaAllocator allocator = ((RHIDeviceVK*)mpDevice)->GetVmaAllocator();
+        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        VmaAllocator allocator = ((RHIDeviceVK*)m_pDevice)->GetVmaAllocator();
 
         vk::BufferCreateInfo bufferCI {};
-        bufferCI.size = mDesc.Size;
+        bufferCI.size = m_Desc.Size;
         bufferCI.sharingMode = vk::SharingMode::eExclusive;
         bufferCI.usage = 
             vk::BufferUsageFlagBits::eTransferDst |
@@ -37,17 +37,17 @@ namespace RHI
             vk::BufferUsageFlagBits::eIndirectBuffer |
             vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
-        if (mDesc.Usage & RHIBufferUsageConstantBuffer)
+        if (m_Desc.Usage & RHIBufferUsageConstantBuffer)
         {
             bufferCI.usage |= vk::BufferUsageFlagBits::eUniformBuffer;
         }
-        if (mDesc.Usage & (RHIBufferUsageStructuredBuffer | RHIBufferUsageRawBuffer ))
+        if (m_Desc.Usage & (RHIBufferUsageStructuredBuffer | RHIBufferUsageRawBuffer ))
         {
             bufferCI.usage |= vk::BufferUsageFlagBits::eStorageBuffer;
         }
-        if (mDesc.Usage & RHIBufferUsageTypedBuffer)
+        if (m_Desc.Usage & RHIBufferUsageTypedBuffer)
         {
-            if (mDesc.Usage & RHIBufferUsageUnorderedAccess)
+            if (m_Desc.Usage & RHIBufferUsageUnorderedAccess)
             {
                 bufferCI.usage |= vk::BufferUsageFlagBits::eStorageTexelBuffer;
             }
@@ -58,64 +58,64 @@ namespace RHI
         }
 
         vk::Result result;
-        if (mDesc.Heap != nullptr)
+        if (m_Desc.Heap != nullptr)
         {
-            assert(mDesc.AllocationType == ERHIAllocationType::Placed);
-            assert(mDesc.MemoryType == mDesc.Heap->GetDesc().MemoryType);
-            assert(mDesc.Size + mDesc.HeapOffset <= mDesc.Heap->GetDesc().Size);
+            assert(m_Desc.AllocationType == ERHIAllocationType::Placed);
+            assert(m_Desc.MemoryType == m_Desc.Heap->GetDesc().MemoryType);
+            assert(m_Desc.Size + m_Desc.HeapOffset <= m_Desc.Heap->GetDesc().Size);
 
-            result = (vk::Result)vmaCreateAliasingBuffer2(allocator, (VmaAllocation)mDesc.Heap->GetNativeHandle(), (vk::DeviceSize)mDesc.HeapOffset, (VkBufferCreateInfo*)&bufferCI, (VkBuffer*)(&mBuffer));
+            result = (vk::Result)vmaCreateAliasingBuffer2(allocator, (VmaAllocation)m_Desc.Heap->GetNativeHandle(), (vk::DeviceSize)m_Desc.HeapOffset, (VkBufferCreateInfo*)&bufferCI, (VkBuffer*)(&m_Buffer));
         }
         else
         {
             VmaAllocationCreateInfo vmaAllocCI {};
-            vmaAllocCI.usage = ToVmaUsage(mDesc.MemoryType);
-            if (mDesc.AllocationType == ERHIAllocationType::Committed)
+            vmaAllocCI.usage = ToVmaUsage(m_Desc.MemoryType);
+            if (m_Desc.AllocationType == ERHIAllocationType::Committed)
             {
                 vmaAllocCI.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
             }
-            if (mDesc.MemoryType != ERHIMemoryType::GPUOnly)
+            if (m_Desc.MemoryType != ERHIMemoryType::GPUOnly)
             {
                 vmaAllocCI.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
             }
             VmaAllocationInfo vmaAllocInfo {};
-            result = (vk::Result)vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&bufferCI, &vmaAllocCI, (VkBuffer*)(&mBuffer), &mAllocation, &vmaAllocInfo);
+            result = (vk::Result)vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&bufferCI, &vmaAllocCI, (VkBuffer*)(&m_Buffer), &m_Allocation, &vmaAllocInfo);
 
-            mpData = vmaAllocInfo.pMappedData;
+            m_pData = vmaAllocInfo.pMappedData;
         }
         
         if (result != vk::Result::eSuccess)
         {
-            VTNA_LOG_ERROR("[RHIBufferVK] Failed to create buffer: {}", mName);
+            VTNA_LOG_ERROR("[RHIBufferVK] Failed to create buffer: {}", m_Name);
             return false;
         }
 
-        SetDebugName(device, vk::ObjectType::eBuffer, mBuffer, mName.c_str(), dynamicLoader);
+        SetDebugName(device, vk::ObjectType::eBuffer, m_Buffer, m_Name.c_str(), dynamicLoader);
 
-        if (mAllocation)
+        if (m_Allocation)
         {
-            vmaSetAllocationName(allocator, mAllocation, mName.c_str());
+            vmaSetAllocationName(allocator, m_Allocation, m_Name.c_str());
         }
         return true;
     }
 
     void * RHIBufferVK::GetCPUAddress()
     {
-        return mpData;
+        return m_pData;
     }
     
     uint64_t RHIBufferVK::GetGPUAddress()
     {
         vk::BufferDeviceAddressInfo addressInfo {};
-        addressInfo.buffer = mBuffer;
+        addressInfo.buffer = m_Buffer;
 
-        return ((RHIDeviceVK*)mpDevice)->GetDevice().getBufferAddress(addressInfo);
+        return ((RHIDeviceVK*)m_pDevice)->GetDevice().getBufferAddress(addressInfo);
     }
 
     uint32_t RHIBufferVK::GetRequiredStagingBufferSize() const
     {
         vk::MemoryRequirements memReq {};
-        ((RHIDeviceVK*)mpDevice)->GetDevice().getBufferMemoryRequirements(mBuffer, &memReq);
+        ((RHIDeviceVK*)m_pDevice)->GetDevice().getBufferMemoryRequirements(m_Buffer, &memReq);
         return (uint32_t)memReq.size;
     }
 }

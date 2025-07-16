@@ -32,35 +32,35 @@ namespace Scene
         // virtual void SetScale(const float3& scale) override;
         bool FrustumCull(const float4* plane, uint32_t planeCount) const override;
 
-        Assets::MeshMaterial* GetMaterial() const { return mpMaterial.get(); }
+        Assets::MeshMaterial* GetMaterial() const { return m_pMaterial.get(); }
 
     private:
         void UpdateConstants();
         void Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState* pPSO);
     
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
-        eastl::unique_ptr<Assets::MeshMaterial> mpMaterial = nullptr;
+        Renderer::RendererBase* m_pRenderer = nullptr;
+        eastl::unique_ptr<Assets::MeshMaterial> m_pMaterial = nullptr;
 
-        OffsetAllocator::Allocation mPositionBuffer;
-        OffsetAllocator::Allocation mTexCoordBuffer;
-        OffsetAllocator::Allocation mNormalBuffer;
-        OffsetAllocator::Allocation mTangentBuffer;
+        OffsetAllocator::Allocation m_PositionBuffer;
+        OffsetAllocator::Allocation m_TexCoordBuffer;
+        OffsetAllocator::Allocation m_NormalBuffer;
+        OffsetAllocator::Allocation m_TangentBuffer;
 
-        OffsetAllocator::Allocation mMeshletBuffer;
-        OffsetAllocator::Allocation mMeshletIndicesBuffer;
-        OffsetAllocator::Allocation mMeshletVertexBuffer;
-        uint32_t mMeshletCount = 0;
+        OffsetAllocator::Allocation m_MeshletBuffer;
+        OffsetAllocator::Allocation m_MeshletIndicesBuffer;
+        OffsetAllocator::Allocation m_MeshletVertexBuffer;
+        uint32_t m_MeshletCount = 0;
 
-        OffsetAllocator::Allocation mIndexBuffer;
-        RHI::ERHIFormat mIndexBufferFormat;
-        uint32_t mIndexCount = 0;
-        uint32_t mVertexCount = 0;
+        OffsetAllocator::Allocation m_IndexBuffer;
+        RHI::ERHIFormat m_IndexBufferFormat;
+        uint32_t m_IndexCount = 0;
+        uint32_t m_VertexCount = 0;
 
-        FInstanceData mInstanceData = {};
-        uint32_t mInstanceIndex = 0;
+        FInstanceData m_InstanceData = {};
+        uint32_t m_InstanceIndex = 0;
 
-        float3 mCenter = float3(0.0f);
-        float mRadius = 0.0f;
+        float3 m_Center = float3(0.0f);
+        float m_Radius = 0.0f;
     };
 } // namespace Scene

@@ -21,10 +21,10 @@ namespace Renderer
 {
     RendererBase::RendererBase()
     {
-        mpShaderCache = eastl::make_unique<ShaderCache>(this);
-        mpShaderCompiler = eastl::make_unique<ShaderCompiler>(this);
-        mpPipelineStateCache = eastl::make_unique<PipelineStateCache>(this);
-        mCBAllocator = eastl::make_unique<LinearAllocator>(1024 * 1024 * 8);
+        m_pShaderCache = eastl::make_unique<ShaderCache>(this);
+        m_pShaderCompiler = eastl::make_unique<ShaderCompiler>(this);
+        m_pPipelineStateCache = eastl::make_unique<PipelineStateCache>(this);
+        m_CBAllocator = eastl::make_unique<LinearAllocator>(1024 * 1024 * 8);
         
         Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&RendererBase::OnWindowResize, this);
     }
@@ -33,9 +33,9 @@ namespace Renderer
     {
         WaitGPU();
 
-        if (mpRenderGraph)
+        if (m_pRenderGraph)
         {
-            mpRenderGraph->Clear();
+            m_pRenderGraph->Clear();
         }
 
         Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
@@ -43,15 +43,15 @@ namespace Renderer
 
     bool RendererBase::CreateDevice(RHI::ERHIRenderBackend backend, void *windowHandle, uint32_t width, uint32_t height)
     {
-        mDisplayWidth = width;
-        mDisplayHeight = height;
-        mRenderWidth = width;
-        mRenderHeight = height;
+        m_DisplayWidth = width;
+        m_DisplayHeight = height;
+        m_RenderWidth = width;
+        m_RenderHeight = height;
 
         RHI::RHIDeviceDesc deviceDesc {};
         deviceDesc.RenderBackend = backend;
-        mpDevice.reset(RHI::CreateRHIDevice(deviceDesc));
-        if (mpDevice == nullptr)
+        m_pDevice.reset(RHI::CreateRHIDevice(deviceDesc));
+        if (m_pDevice == nullptr)
         {
             VTNA_LOG_ERROR("[Renderer::CreateDevice] failed to create the RHI device.");
             return false;
@@ -61,45 +61,45 @@ namespace Renderer
         swapchainDesc.Width = width;
         swapchainDesc.Height = height;
         swapchainDesc.WindowHandle = windowHandle;
-        mpSwapchain.reset(mpDevice->CreateSwapchain(swapchainDesc, "RendererBase::Swapchain"));
+        m_pSwapchain.reset(m_pDevice->CreateSwapchain(swapchainDesc, "RendererBase::Swapchain"));
         
-        mpFrameFence.reset(mpDevice->CreateFence("RendererBase::FrameFence"));
+        m_pFrameFence.reset(m_pDevice->CreateFence("RendererBase::FrameFence"));
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
             eastl::string name = fmt::format("RendererBase::CommonCmdList{}", i).c_str();
-            mpCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Graphics, name));
+            m_pCmdList[i].reset(m_pDevice->CreateCommandList(RHI::ERHICommandQueueType::Graphics, name));
         }
 
-        mpAsyncComputeFence.reset(mpDevice->CreateFence("RendererBase::AsyncComputeFence"));
+        m_pAsyncComputeFence.reset(m_pDevice->CreateFence("RendererBase::AsyncComputeFence"));
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
             eastl::string name = fmt::format("RendererBase::AsyncComputeCmdList{}", i).c_str();
-            mpAsyncComputeCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Compute, name));
+            m_pAsyncComputeCmdList[i].reset(m_pDevice->CreateCommandList(RHI::ERHICommandQueueType::Compute, name));
         }
 
-        mpUploadFence.reset(mpDevice->CreateFence("RendererBase::UploadFence"));
+        m_pUploadFence.reset(m_pDevice->CreateFence("RendererBase::UploadFence"));
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
             eastl::string name = fmt::format("RendererBase::UploadCmdList{}", i).c_str();
-            mpUploadCmdList[i].reset(mpDevice->CreateCommandList(RHI::ERHICommandQueueType::Copy, name));
-            mpStagingBufferAllocators[i] = eastl::make_unique<StagingBufferAllocator>(this);
+            m_pUploadCmdList[i].reset(m_pDevice->CreateCommandList(RHI::ERHICommandQueueType::Copy, name));
+            m_pStagingBufferAllocators[i] = eastl::make_unique<StagingBufferAllocator>(this);
         }
 
         CreateCommonResources();
 
-        mpRenderGraph = eastl::make_unique<RG::RenderGraph>(this);
-        mpGPUScene = eastl::make_unique<GPUScene>(this);
-        mpForwardBasePass = eastl::make_unique<ForwardBasePass>(this);
-        mpGPUDrivenDebugLine = eastl::make_unique<GPUDrivenDebugLine>(this);
+        m_pRenderGraph = eastl::make_unique<RG::RenderGraph>(this);
+        m_pGPUScene = eastl::make_unique<GPUScene>(this);
+        m_pForwardBasePass = eastl::make_unique<ForwardBasePass>(this);
+        m_pGPUDrivenDebugLine = eastl::make_unique<GPUDrivenDebugLine>(this);
         
         return true;
     }
 
     void RendererBase::RenderFrame()
     {
-        mpGPUScene->Update();
+        m_pGPUScene->Update();
 
-        BuildRenderGraph(mOutputColorHandle, mOutputDepthHandle);
+        BuildRenderGraph(m_OutputColorHandle, m_OutputDepthHandle);
 
         BeginFrame();
         UploadResource();
@@ -111,35 +111,35 @@ namespace Renderer
 
     void RendererBase::WaitGPU()
     {
-        if (mpFrameFence)
+        if (m_pFrameFence)
         {
-            mpFrameFence->Wait(mCurrentFrameFenceValue);
+            m_pFrameFence->Wait(m_CurrentFrameFenceValue);
         }
     }
 
     RHI::RHIShader *RendererBase::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
-        return mpShaderCache->GetShader(file, entryPoint, type, defines, flags);
+        return m_pShaderCache->GetShader(file, entryPoint, type, defines, flags);
     }
 
     RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
-        return mpPipelineStateCache->GetPipelineState(desc, name);
+        return m_pPipelineStateCache->GetPipelineState(desc, name);
     }
 
     RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
     {
-        return mpPipelineStateCache->GetPipelineState(desc, name);
+        return m_pPipelineStateCache->GetPipelineState(desc, name);
     }
 
     RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
-        return mpPipelineStateCache->GetPipelineState(desc, name);
+        return m_pPipelineStateCache->GetPipelineState(desc, name);
     }
 
     void RendererBase::ReloadShaders()
     {
-        mpShaderCache->ReloadShaders();
+        m_pShaderCache->ReloadShaders();
     }
 
     RenderResources::Texture2D *RendererBase::CreateTexture2D(const eastl::string &file, bool srgb)
@@ -228,45 +228,45 @@ namespace Renderer
 
     RHI::RHIBuffer *RendererBase::GetSceneStaticBuffer() const
     {
-        return mpGPUScene->GetSceneStaticBuffer();
+        return m_pGPUScene->GetSceneStaticBuffer();
     }
 
     OffsetAllocator::Allocation RendererBase::AllocateSceneStaticBuffer(const void *data, uint32_t size)
     {
-        OffsetAllocator::Allocation allocation = mpGPUScene->AllocateStaticBuffer(size);
+        OffsetAllocator::Allocation allocation = m_pGPUScene->AllocateStaticBuffer(size);
         if (data)
         {
-            UploadBuffer(mpGPUScene->GetSceneStaticBuffer(), data, allocation.offset, size);
+            UploadBuffer(m_pGPUScene->GetSceneStaticBuffer(), data, allocation.offset, size);
         }
         return allocation;
     }
 
     void RendererBase::FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation)
     {
-        mpGPUScene->FreeStaticBuffer(allocation);
+        m_pGPUScene->FreeStaticBuffer(allocation);
     }
 
     RHI::RHIBuffer *RendererBase::GetSceneAnimationBuffer() const
     {
-        return mpGPUScene->GetSceneAnimationBuffer();
+        return m_pGPUScene->GetSceneAnimationBuffer();
     }
 
     OffsetAllocator::Allocation RendererBase::AllocateSceneAnimationBuffer(uint32_t size)
     {
-        return mpGPUScene->AllocateAnimationBuffer(size);
+        return m_pGPUScene->AllocateAnimationBuffer(size);
     }
 
     void RendererBase::FreeSceneAnimationBuffer(OffsetAllocator::Allocation allocation)
     {
-        mpGPUScene->FreeAnimationBuffer(allocation);
+        m_pGPUScene->FreeAnimationBuffer(allocation);
     }
 
     uint32_t RendererBase::AllocateSceneConstantBuffer(const void *data, uint32_t size)
     {
-        uint32_t address = mpGPUScene->AllocateConstantBuffer(size);
+        uint32_t address = m_pGPUScene->AllocateConstantBuffer(size);
         if (data)
         {
-            void* dst = (char*)mpGPUScene->GetSceneConstantBuffer()->GetCPUAddress() + address;
+            void* dst = (char*)m_pGPUScene->GetSceneConstantBuffer()->GetCPUAddress() + address;
             memcpy(dst, data, size);
         }
         return address;
@@ -274,7 +274,7 @@ namespace Renderer
 
     uint32_t RendererBase::AddInstance(const FInstanceData &instanceData)
     {
-        return mpGPUScene->AddInstance(instanceData);
+        return m_pGPUScene->AddInstance(instanceData);
     }
 
     inline void imageCopy(char* srcData, char* dstData, uint32_t srcRowPitch, uint32_t dstRowPitch, uint32_t rowNum, uint32_t d)
@@ -296,8 +296,8 @@ namespace Renderer
 
     void RendererBase::UploadTexture(RHI::RHITexture* pTexture, const void *pData)
     {
-        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        StagingBufferAllocator* pAllocator = mpStagingBufferAllocators[frameIndex].get();
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        StagingBufferAllocator* pAllocator = m_pStagingBufferAllocators[frameIndex].get();
 
         uint32_t requiredSize = pTexture->GetRequiredStagingBufferSize();
         StagingBuffer buffer = pAllocator->Allocate(requiredSize);
@@ -310,7 +310,7 @@ namespace Renderer
 
         const uint32_t minWidth = GetFormatBlockWidth(desc.Format);
         const uint32_t minHeight = GetFormatBlockHeight(desc.Format);
-        const uint32_t alignment = mpDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::D3D12 ? 512 : 1;
+        const uint32_t alignment = m_pDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::D3D12 ? 512 : 1;
 
         for (uint32_t slice = 0; slice < desc.ArraySize; ++slice)
         {
@@ -333,7 +333,7 @@ namespace Renderer
                 upload.ArraySlice = slice;
                 upload.Offset = dstOffset;
                 upload.SBForUpload = buffer;
-                mPendingTextureUpload.push_back(upload);
+                m_PendingTextureUpload.push_back(upload);
 
                 srcOffset += srcRowPitch * rowNum;
                 dstOffset += RoundUpPow2(dstRowPitch * rowNum, alignment);
@@ -344,8 +344,8 @@ namespace Renderer
 
     void RendererBase::UploadBuffer(RHI::RHIBuffer *pBuffer, const void *pData, uint32_t offset, uint32_t dataSize)
     {
-        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        StagingBufferAllocator* pAllocator = mpStagingBufferAllocators[frameIndex].get();
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        StagingBufferAllocator* pAllocator = m_pStagingBufferAllocators[frameIndex].get();
 
         StagingBuffer stagingBuffer = pAllocator->Allocate(dataSize);
 
@@ -356,7 +356,7 @@ namespace Renderer
         upload.Buffer = pBuffer;
         upload.Offset = offset;
         upload.SBForUpload = stagingBuffer;
-        mPendingBufferUpload.push_back(upload);
+        m_PendingBufferUpload.push_back(upload);
     }
 
     void RendererBase::SetupGlobalConstants(RHI::RHICommandList *pCmdList)
@@ -367,36 +367,36 @@ namespace Renderer
 
         FSceneConstants sceneConstants {};
         pCamera->SetupCameraCB(sceneConstants.CameraCB);
-        sceneConstants.SceneConstantBufferSRV = mpGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex();
-        sceneConstants.SceneStaticBufferSRV = mpGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex();
-        sceneConstants.SceneAnimationBufferSRV = mpGPUScene->GetSceneAnimationBufferSRV()->GetHeapIndex();
-        sceneConstants.SceneAnimationBufferUAV = mpGPUScene->GetSceneAnimationBufferUAV()->GetHeapIndex();
-        sceneConstants.instanceDataAddress = mpGPUScene->GetInstanceDataAddress();
+        sceneConstants.SceneConstantBufferSRV = m_pGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex();
+        sceneConstants.SceneStaticBufferSRV = m_pGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex();
+        sceneConstants.SceneAnimationBufferSRV = m_pGPUScene->GetSceneAnimationBufferSRV()->GetHeapIndex();
+        sceneConstants.SceneAnimationBufferUAV = m_pGPUScene->GetSceneAnimationBufferUAV()->GetHeapIndex();
+        sceneConstants.instanceDataAddress = m_pGPUScene->GetInstanceDataAddress();
         sceneConstants.LightColor = pMainLight->GetLightColor();
         sceneConstants.LightDirection = pMainLight->GetLightDirection();
         sceneConstants.LightRadius = pMainLight->GetLightRadius();
 
-        sceneConstants.RenderSize = uint2(mRenderWidth, mRenderHeight);
-        sceneConstants.RenderSizeInv = float2(1.0f / mRenderWidth, 1.0f / mRenderHeight);
-        sceneConstants.DisplaySize = uint2(mDisplayWidth, mDisplayHeight);
-        sceneConstants.DisplaySizeInv = float2(1.0f / mDisplayWidth, 1.0f / mDisplayHeight);
+        sceneConstants.RenderSize = uint2(m_RenderWidth, m_RenderHeight);
+        sceneConstants.RenderSizeInv = float2(1.0f / m_RenderWidth, 1.0f / m_RenderHeight);
+        sceneConstants.DisplaySize = uint2(m_DisplayWidth, m_DisplayHeight);
+        sceneConstants.DisplaySizeInv = float2(1.0f / m_DisplayWidth, 1.0f / m_DisplayHeight);
 
-        sceneConstants.PrevSceneDepthSRV = mpPrevSceneDepthTexture->GetSRV()->GetHeapIndex();
-        sceneConstants.PrevSceneColorSRV = mpPrevSceneColorTexture->GetSRV()->GetHeapIndex();
+        sceneConstants.PrevSceneDepthSRV = m_pPrevSceneDepthTexture->GetSRV()->GetHeapIndex();
+        sceneConstants.PrevSceneColorSRV = m_pPrevSceneColorTexture->GetSRV()->GetHeapIndex();
 
-        sceneConstants.DebugLineDrawCommandUAV = mpGPUDrivenDebugLine->GetDrawArgsBufferUAV()->GetHeapIndex();
-        sceneConstants.DebugLineVertexBufferUAV = mpGPUDrivenDebugLine->GetVertexBufferUAV()->GetHeapIndex();
+        sceneConstants.DebugLineDrawCommandUAV = m_pGPUDrivenDebugLine->GetDrawArgsBufferUAV()->GetHeapIndex();
+        sceneConstants.DebugLineVertexBufferUAV = m_pGPUDrivenDebugLine->GetVertexBufferUAV()->GetHeapIndex();
 
-        sceneConstants.PointRepeatSampler = mpPointRepeatSampler->GetHeapIndex();
-        sceneConstants.PointClampSampler = mpPointClampSampler->GetHeapIndex();
-        sceneConstants.BilinearRepeatSampler = mpBilinearRepeatSampler->GetHeapIndex();
-        sceneConstants.BilinearClampSampler = mpBilinearClampSampler->GetHeapIndex();
-        sceneConstants.TrilinearRepeatSampler = mpTrilinearRepeatSampler->GetHeapIndex();
-        sceneConstants.TrilinearClampSampler = mpTrilinearClampSampler->GetHeapIndex();
-        sceneConstants.Aniso2xSampler = mpAniso2xSampler->GetHeapIndex();
-        sceneConstants.Aniso4xSampler = mpAniso4xSampler->GetHeapIndex();
-        sceneConstants.Aniso8xSampler = mpAniso8xSampler->GetHeapIndex();
-        sceneConstants.Aniso16xSampler = mpAniso16xSampler->GetHeapIndex();
+        sceneConstants.PointRepeatSampler = m_pPointRepeatSampler->GetHeapIndex();
+        sceneConstants.PointClampSampler = m_pPointClampSampler->GetHeapIndex();
+        sceneConstants.BilinearRepeatSampler = m_pBilinearRepeatSampler->GetHeapIndex();
+        sceneConstants.BilinearClampSampler = m_pBilinearClampSampler->GetHeapIndex();
+        sceneConstants.TrilinearRepeatSampler = m_pTrilinearRepeatSampler->GetHeapIndex();
+        sceneConstants.TrilinearClampSampler = m_pTrilinearClampSampler->GetHeapIndex();
+        sceneConstants.Aniso2xSampler = m_pAniso2xSampler->GetHeapIndex();
+        sceneConstants.Aniso4xSampler = m_pAniso4xSampler->GetHeapIndex();
+        sceneConstants.Aniso8xSampler = m_pAniso8xSampler->GetHeapIndex();
+        sceneConstants.Aniso16xSampler = m_pAniso16xSampler->GetHeapIndex();
 
         sceneConstants.FrameTime = Core::VultanaEngine::GetEngineInstance()->GetDeltaTime();
         sceneConstants.FrameIndex = (uint32_t)GetFrameID();
@@ -411,27 +411,27 @@ namespace Renderer
 
     RenderBatch &RendererBase::AddBasePassBatch()
     {
-        return mpForwardBasePass->AddBatch();
+        return m_pForwardBasePass->AddBatch();
     }
 
     void RendererBase::RequestMouseHitTest(uint32_t x, uint32_t y)
     {
-        mMouseX = x;
-        mMouseY = y;
-        mbEnableObjectIDRendering = true;
+        m_MouseX = x;
+        m_MouseY = y;
+        m_bEnableObjectIDRendering = true;
     }
 
     void RendererBase::CreateCommonResources()
     {
         RHI::RHISamplerDesc samplerDesc {};
-        mpPointRepeatSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::PointRepeatSampler"));
+        m_pPointRepeatSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::PointRepeatSampler"));
 
         samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
-        mpBilinearRepeatSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::BilinearRepeatSampler"));
+        m_pBilinearRepeatSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::BilinearRepeatSampler"));
 
         samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
-        mpTrilinearRepeatSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::TrilinearRepeatSampler"));
+        m_pTrilinearRepeatSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::TrilinearRepeatSampler"));
 
         samplerDesc.MinFilter = RHI::ERHIFilter::Point;
         samplerDesc.MagFilter = RHI::ERHIFilter::Point;
@@ -439,14 +439,14 @@ namespace Renderer
         samplerDesc.AddressU = RHI::ERHISamplerAddressMode::ClampToEdge;
         samplerDesc.AddressV = RHI::ERHISamplerAddressMode::ClampToEdge;
         samplerDesc.AddressW = RHI::ERHISamplerAddressMode::ClampToEdge;
-        mpPointClampSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::PointClampSampler"));
+        m_pPointClampSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::PointClampSampler"));
 
         samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
-        mpBilinearClampSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::BilinearClampSampler"));
+        m_pBilinearClampSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::BilinearClampSampler"));
 
         samplerDesc.MipFilter = RHI::ERHIFilter::Linear;
-        mpTrilinearClampSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::TrilinearClampSampler"));
+        m_pTrilinearClampSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::TrilinearClampSampler"));
 
         samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
         samplerDesc.MagFilter = RHI::ERHIFilter::Linear;
@@ -456,185 +456,185 @@ namespace Renderer
         samplerDesc.AddressW = RHI::ERHISamplerAddressMode::Repeat;
         samplerDesc.bEnableAnisotropy = true;
         samplerDesc.MaxAnisotropy = 2.0f;
-        mpAniso2xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso2xSampler"));
+        m_pAniso2xSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::Aniso2xSampler"));
 
         samplerDesc.MaxAnisotropy = 4.0f;
-        mpAniso4xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso4xSampler"));
+        m_pAniso4xSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::Aniso4xSampler"));
 
         samplerDesc.MaxAnisotropy = 8.0f;
-        mpAniso8xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso8xSampler"));
+        m_pAniso8xSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::Aniso8xSampler"));
 
         samplerDesc.MaxAnisotropy = 16.0f;
-        mpAniso16xSampler.reset(mpDevice->CreateSampler(samplerDesc, "RendererBase::Aniso16xSampler"));
+        m_pAniso16xSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::Aniso16xSampler"));
 
         RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         copyPSODesc.DepthStencilState.bDepthWrite = false;
-        copyPSODesc.RTFormats[0] = mpSwapchain->GetDesc()->ColorFormat;
+        copyPSODesc.RTFormats[0] = m_pSwapchain->GetDesc()->ColorFormat;
         copyPSODesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
-        mpCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
+        m_pCopyColorPSO = GetPipelineState(copyPSODesc, "CopyColorPSO");
 
         copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS, { "OUTPUT_DEPTH = 1"});
         copyPSODesc.DepthStencilState.bDepthWrite = true;
         copyPSODesc.DepthStencilState.bDepthTest = true;
         copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
-        mpCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyColorDepthPSO");
+        m_pCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyColorDepthPSO");
 
         RHI::RHIComputePipelineStateDesc computePSODesc;
         computePSODesc.CS = GetShader("Copy.hlsl", "CopyDepthCS", RHI::ERHIShaderType::CS);
-        mpCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthPSO");
+        m_pCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthPSO");
     }
 
     void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
     {
         WaitGPU();
         
-        if (mpSwapchain->GetDesc()->WindowHandle == wndHandle)
+        if (m_pSwapchain->GetDesc()->WindowHandle == wndHandle)
         {
-            mpSwapchain->Resize(width, height);
-            mDisplayWidth = width;
-            mDisplayHeight = height;
-            mRenderWidth = mDisplayWidth;
-            mRenderHeight = mDisplayHeight;
+            m_pSwapchain->Resize(width, height);
+            m_DisplayWidth = width;
+            m_DisplayHeight = height;
+            m_RenderWidth = m_DisplayWidth;
+            m_RenderHeight = m_DisplayHeight;
         }
     }
 
     void RendererBase::BeginFrame()
     {
-        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        mpFrameFence->Wait(mFrameFenceValue[frameIndex]);
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        m_pFrameFence->Wait(m_FrameFenceValue[frameIndex]);
 
-        mpDevice->BeginFrame();
+        m_pDevice->BeginFrame();
 
-        RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
+        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
         pCmdList->ResetAllocator();
         pCmdList->Begin();
 
-        RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
+        RHI::RHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
         pComputeCmdList->ResetAllocator();
         pComputeCmdList->Begin();
     }
 
     void RendererBase::UploadResource()
     {
-        if (mPendingTextureUpload.empty() && mPendingBufferUpload.empty()) return;
+        if (m_PendingTextureUpload.empty() && m_PendingBufferUpload.empty()) return;
 
-        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHICommandList* pUploadeCmdList = mpUploadCmdList[frameIndex].get();
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        RHI::RHICommandList* pUploadeCmdList = m_pUploadCmdList[frameIndex].get();
         pUploadeCmdList->ResetAllocator();
         pUploadeCmdList->Begin();
 
         {
             GPU_EVENT_DEBUG(pUploadeCmdList, "RendererBase::UploadResources");
             
-            for (size_t i = 0; i < mPendingBufferUpload.size(); i++)
+            for (size_t i = 0; i < m_PendingBufferUpload.size(); i++)
             {
-                const BufferUpload& upload = mPendingBufferUpload[i];
+                const BufferUpload& upload = m_PendingBufferUpload[i];
                 pUploadeCmdList->CopyBuffer(upload.SBForUpload.Buffer, upload.Buffer, upload.SBForUpload.Offset, upload.Offset, upload.SBForUpload.Size);
             }
 
-            for (size_t i = 0; i < mPendingTextureUpload.size(); i++)
+            for (size_t i = 0; i < m_PendingTextureUpload.size(); i++)
             {
-                const TextureUpload& upload = mPendingTextureUpload[i];
+                const TextureUpload& upload = m_PendingTextureUpload[i];
                 pUploadeCmdList->CopyBufferToTexture(upload.SBForUpload.Buffer, upload.Texture, upload.MipLevel, upload.ArraySlice, upload.SBForUpload.Offset + upload.Offset);
             }
         }
 
         pUploadeCmdList->End();
-        pUploadeCmdList->Signal(mpUploadFence.get(), ++mCurrentUploadFenceValue);
+        pUploadeCmdList->Signal(m_pUploadFence.get(), ++m_CurrentUploadFenceValue);
         pUploadeCmdList->Submit();
 
-        RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
-        pCmdList->Wait(mpUploadFence.get(), mCurrentUploadFenceValue);
+        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        pCmdList->Wait(m_pUploadFence.get(), m_CurrentUploadFenceValue);
 
-        if (mpDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::Vulkan)
+        if (m_pDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::Vulkan)
         {
-            for (size_t i = 0; i < mPendingTextureUpload.size(); i++)
+            for (size_t i = 0; i < m_PendingTextureUpload.size(); i++)
             {
-                const TextureUpload& upload = mPendingTextureUpload[i];
+                const TextureUpload& upload = m_PendingTextureUpload[i];
                 pCmdList->TextureBarrier(upload.Texture, CalcSubresource(upload.Texture->GetDesc(), upload.MipLevel, upload.ArraySlice), RHI::RHIAccessCopyDst, RHI::RHIAccessMaskSRV);
             }
         }
 
-        mPendingBufferUpload.clear();
-        mPendingTextureUpload.clear();
+        m_PendingBufferUpload.clear();
+        m_PendingTextureUpload.clear();
     }
 
     void RendererBase::Render()
     {
-        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
-        RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        RHI::RHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
 
-        GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", mpDevice->GetFrameID()).c_str());
+        GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", m_pDevice->GetFrameID()).c_str());
 
-        mpGPUDrivenDebugLine->Clear(pCmdList);
+        m_pGPUDrivenDebugLine->Clear(pCmdList);
 
         SetupGlobalConstants(pCmdList);
         FlushComputePass(pCmdList);
 
-        mpRenderGraph->Execute(this, pCmdList, pComputeCmdList);
+        m_pRenderGraph->Execute(this, pCmdList, pComputeCmdList);
         
         RenderBackBufferPass(pCmdList);
     }
 
     void RendererBase::EndFrame()
     {
-        uint32_t frameIndex = mpDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHICommandList* pCmdList = mpCmdList[frameIndex].get();
-        RHI::RHICommandList* pComputeCmdList = mpAsyncComputeCmdList[frameIndex].get();
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        RHI::RHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
 
         pComputeCmdList->End();
         pCmdList->End();
 
-        mFrameFenceValue[frameIndex] = ++mCurrentFrameFenceValue;
+        m_FrameFenceValue[frameIndex] = ++m_CurrentFrameFenceValue;
 
-        pCmdList->Present(mpSwapchain.get());
-        pCmdList->Signal(mpFrameFence.get(), mCurrentFrameFenceValue);
+        pCmdList->Present(m_pSwapchain.get());
+        pCmdList->Signal(m_pFrameFence.get(), m_CurrentFrameFenceValue);
         pCmdList->Submit();
 
-        mpStagingBufferAllocators[frameIndex]->Reset();
-        mCBAllocator->Reset();
-        mpGPUScene->ResetFrameData();
+        m_pStagingBufferAllocators[frameIndex]->Reset();
+        m_CBAllocator->Reset();
+        m_pGPUScene->ResetFrameData();
 
-        mAnimationBatches.clear();
-        mIDPassBatches.clear();
-        mOutlinePassBatches.clear();
+        m_AnimationBatches.clear();
+        m_IDPassBatches.clear();
+        m_OutlinePassBatches.clear();
 
-        mpDevice->EndFrame();
+        m_pDevice->EndFrame();
     }
 
     void RendererBase::FlushComputePass(RHI::RHICommandList *pCmdList)
     {
-        if (!mAnimationBatches.empty())
+        if (!m_AnimationBatches.empty())
         {
             GPU_EVENT_DEBUG(pCmdList, "Animation Pass");
             
-            mpGPUScene->BeginAnimationUpdate(pCmdList);
-            for (size_t i = 0; i < mAnimationBatches.size(); i++)
+            m_pGPUScene->BeginAnimationUpdate(pCmdList);
+            for (size_t i = 0; i < m_AnimationBatches.size(); i++)
             {
-                DispatchComputeBatch(pCmdList, mAnimationBatches[i]);
+                DispatchComputeBatch(pCmdList, m_AnimationBatches[i]);
             }
-            mpGPUScene->EndAnimationUpdate(pCmdList);
+            m_pGPUScene->EndAnimationUpdate(pCmdList);
         }
     }
 
     void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
     {
-        mpSwapchain->AcquireNextBackBuffer();
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+        m_pSwapchain->AcquireNextBackBuffer();
+        pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
-        RG::RGTexture* pColorRT = mpRenderGraph->GetTexture(mOutputColorHandle);
-        RG::RGTexture* pDepthRT = mpRenderGraph->GetTexture(mOutputDepthHandle);
+        RG::RGTexture* pColorRT = m_pRenderGraph->GetTexture(m_OutputColorHandle);
+        RG::RGTexture* pDepthRT = m_pRenderGraph->GetTexture(m_OutputDepthHandle);
 
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
 
-            mpGPUDrivenDebugLine->PrepareForDraw(pCmdList);
+            m_pGPUDrivenDebugLine->PrepareForDraw(pCmdList);
 
             RHI::RHIRenderPassDesc renderPassDesc {};
-            renderPassDesc.Color[0].Texture = mpSwapchain->GetBackBuffer();
+            renderPassDesc.Color[0].Texture = m_pSwapchain->GetBackBuffer();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
             renderPassDesc.Depth.Texture = pDepthRT->GetTexture();
             renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Load;
@@ -648,40 +648,40 @@ namespace Renderer
             {
                 pColorRT->GetSRV()->GetHeapIndex(),
                 pDepthRT->GetSRV()->GetHeapIndex(),
-                mpPointRepeatSampler->GetHeapIndex()
+                m_pPointRepeatSampler->GetHeapIndex()
             };
             pCmdList->SetGraphicsConstants(0, constants, sizeof(constants));
-            pCmdList->SetPipelineState(mpCopyColorPSO);
+            pCmdList->SetPipelineState(m_pCopyColorPSO);
             pCmdList->Draw(3);
 
-            for (size_t i = 0; i < mGUIBatches.size(); i++)
+            for (size_t i = 0; i < m_GUIBatches.size(); i++)
             {
-                DrawBatch(pCmdList, mGUIBatches[i]);
+                DrawBatch(pCmdList, m_GUIBatches[i]);
             }
 
-            mpGPUDrivenDebugLine->Draw(pCmdList);
+            m_pGPUDrivenDebugLine->Draw(pCmdList);
             Core::VultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
 
             pCmdList->EndRenderPass();
         }
-        pCmdList->TextureBarrier(mpSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
+        pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 
     void RendererBase::MouseHitTest()
     {
-        if (mbEnableObjectIDRendering)
+        if (m_bEnableObjectIDRendering)
         {
             WaitGPU();
             
-            uint32_t x = mMouseX;
-            uint32_t y = mMouseY;
+            uint32_t x = m_MouseX;
+            uint32_t y = m_MouseY;
 
-            if (mpObjectIDBuffer == nullptr) return;
-            uint8_t* data = (uint8_t*)mpObjectIDBuffer->GetCPUAddress();
-            uint32_t dataOffset = mObjectIDRowPitch * y + x * sizeof(uint32_t);
-            memcpy(&mMouseHitObjectID, data + dataOffset, sizeof(uint32_t));
+            if (m_pObjectIDBuffer == nullptr) return;
+            uint8_t* data = (uint8_t*)m_pObjectIDBuffer->GetCPUAddress();
+            uint32_t dataOffset = m_ObjectIDRowPitch * y + x * sizeof(uint32_t);
+            memcpy(&m_MouseHitObjectID, data + dataOffset, sizeof(uint32_t));
 
-            mbEnableObjectIDRendering = false;
+            m_bEnableObjectIDRendering = false;
         }
     }
 } // namespace Vultana::Renderer

@@ -34,57 +34,57 @@ namespace Assets
         RHI::RHIPipelineState* GetVertexSkinningPSO();
 
         void UpdateConstants();
-        const FModelMaterialConstants* GetMaterialConstants() const { return &mMaterialCB; }
+        const FModelMaterialConstants* GetMaterialConstants() const { return &m_MaterialCB; }
         void OnGUI();
 
-        bool IsFrontFaceCCW() const { return mbFrontFaceCCW; }
-        bool IsDoubleSided() const { return mbDoubleSided; }
-        bool IsAlphaBlend() const { return mbAlphaBlend; }
-        bool IsAlphaTest() const { return mbAlphaTest; }
-        bool IsVertexSkinned() const { return mbSkeletalAnim; }
+        bool IsFrontFaceCCW() const { return m_bFrontFaceCCW; }
+        bool IsDoubleSided() const { return m_bDoubleSided; }
+        bool IsAlphaBlend() const { return m_bAlphaBlend; }
+        bool IsAlphaTest() const { return m_bAlphaTest; }
+        bool IsVertexSkinned() const { return m_bSkeletalAnim; }
 
     private:
         void AddMaterialDefines(eastl::vector<eastl::string>& defines);
 
     private:
-        eastl::string mName;
-        FModelMaterialConstants mMaterialCB = {};
+        eastl::string m_Name;
+        FModelMaterialConstants m_MaterialCB = {};
 
-        RHI::RHIPipelineState* mpPSO = nullptr;
-        RHI::RHIPipelineState* mpIDPSO = nullptr;
-        RHI::RHIPipelineState* mpOutlinePSO = nullptr;
+        RHI::RHIPipelineState* m_pPSO = nullptr;
+        RHI::RHIPipelineState* m_pIDPSO = nullptr;
+        RHI::RHIPipelineState* m_pOutlinePSO = nullptr;
 
-        RHI::RHIPipelineState* mpMeshletPSO = nullptr;
+        RHI::RHIPipelineState* m_pMeshletPSO = nullptr;
 
-        RHI::RHIPipelineState* mpVertexSkinningPSO = nullptr;
+        RHI::RHIPipelineState* m_pVertexSkinningPSO = nullptr;
 
-        EShadingModel mShadingModel = EShadingModel::DefaultPBR;
+        EShadingModel m_ShadingModel = EShadingModel::DefaultPBR;
 
-        RenderResources::Texture2D* mpDiffuseTexture = nullptr;
-        RenderResources::Texture2D* mpSpecularGlossinessTexture = nullptr;
-        float3 mDiffuseColor = float3(1.0f, 1.0f, 1.0f);
-        float3 mSpecularColor = float3(0.0f, 0.0f, 0.0f);
-        float mGlossiness = 0.0f;
+        RenderResources::Texture2D* m_pDiffuseTexture = nullptr;
+        RenderResources::Texture2D* m_pSpecularGlossinessTexture = nullptr;
+        float3 m_DiffuseColor = float3(1.0f, 1.0f, 1.0f);
+        float3 m_SpecularColor = float3(0.0f, 0.0f, 0.0f);
+        float m_Glossiness = 0.0f;
 
-        RenderResources::Texture2D* mpAlbedoTexture = nullptr;
-        RenderResources::Texture2D* mpMetallicRoughTexture = nullptr;
-        float3 mAlbedoColor = float3(1.0f, 1.0f, 1.0f);
-        float mMetallic = 0.0f;
-        float mRoughness = 0.0f;
+        RenderResources::Texture2D* m_pAlbedoTexture = nullptr;
+        RenderResources::Texture2D* m_pMetallicRoughTexture = nullptr;
+        float3 m_AlbedoColor = float3(1.0f, 1.0f, 1.0f);
+        float m_Metallic = 0.0f;
+        float m_Roughness = 0.0f;
 
-        RenderResources::Texture2D* mpNormalTexture = nullptr;
-        RenderResources::Texture2D* mpEmissiveTexture = nullptr;
-        RenderResources::Texture2D* mpAOTexture = nullptr;
-        float3 mEmissiveColor = float3(0.0f, 0.0f, 0.0f);
-        float mAlphaCutout = 0.0f;
-        float mbAlphaTest = false;
+        RenderResources::Texture2D* m_pNormalTexture = nullptr;
+        RenderResources::Texture2D* m_pEmissiveTexture = nullptr;
+        RenderResources::Texture2D* m_pAOTexture = nullptr;
+        float3 m_EmissiveColor = float3(0.0f, 0.0f, 0.0f);
+        float m_AlphaCutout = 0.0f;
+        float m_bAlphaTest = false;
 
-        bool mbAlphaBlend = false;
-        bool mbSkeletalAnim = false;
-        bool mbFrontFaceCCW = false;
-        bool mbDoubleSided = false;
-        bool mbPBRSpecularGlossiness = false;
+        bool m_bAlphaBlend = false;
+        bool m_bSkeletalAnim = false;
+        bool m_bFrontFaceCCW = false;
+        bool m_bDoubleSided = false;
+        bool m_bPBRSpecularGlossiness = false;
 
-        MaterialWorkFlow mWorkFlow = MaterialWorkFlow::PBRMetallicRoughness;
+        MaterialWorkFlow m_WorkFlow = MaterialWorkFlow::PBRMetallicRoughness;
     };
 }

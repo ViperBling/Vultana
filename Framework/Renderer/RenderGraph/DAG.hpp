@@ -18,12 +18,12 @@ namespace RG
         DAGEdge(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to);
         virtual ~DAGEdge() {}
 
-        DAGNodeID GetFromNode() const { return mFromNode; }
-        DAGNodeID GetToNode() const { return mToNode; }
+        DAGNodeID GetFromNode() const { return m_FromNode; }
+        DAGNodeID GetToNode() const { return m_ToNode; }
 
     private:
-        const DAGNodeID mFromNode;
-        const DAGNodeID mToNode;
+        const DAGNodeID m_FromNode;
+        const DAGNodeID m_ToNode;
     };
 
     class DAGNode
@@ -34,13 +34,13 @@ namespace RG
         DAGNode(DirectedAcyclicGraph& graph);
         virtual ~DAGNode() {}
 
-        DAGNodeID GetID() const { return mID; }
+        DAGNodeID GetID() const { return m_ID; }
 
-        void MakeTarget() { mRefCount = TARGET; }
+        void MakeTarget() { m_RefCount = TARGET; }
 
-        bool IsTarget() const { return mRefCount >= TARGET; }
-        bool IsCulled() const { return mRefCount == 0; }
-        uint32_t GetRefCount() const { return IsTarget() ? 1 : mRefCount; }
+        bool IsTarget() const { return m_RefCount >= TARGET; }
+        bool IsCulled() const { return m_RefCount == 0; }
+        uint32_t GetRefCount() const { return IsTarget() ? 1 : m_RefCount; }
 
         virtual eastl::string GetGraphVizName() const { return "unknown"; }
         virtual const char* GetGraphVizColor() const { return !IsCulled() ? "Skyblue" : "Skyblue4"; }
@@ -49,8 +49,8 @@ namespace RG
         eastl::string GraphVizify() const;
 
     private:
-        DAGNodeID mID;
-        uint32_t mRefCount = 0;
+        DAGNodeID m_ID;
+        uint32_t m_RefCount = 0;
 
         static const uint32_t TARGET = 0x80000000u;
     };
@@ -58,8 +58,8 @@ namespace RG
     class DirectedAcyclicGraph
     {
     public:
-        DAGNodeID GenerateNodeID() { return (DAGNodeID)mNodes.size(); }
-        DAGNode* GetNode(DAGNodeID id) const { return mNodes[id]; }
+        DAGNodeID GenerateNodeID() { return (DAGNodeID)m_Nodes.size(); }
+        DAGNode* GetNode(DAGNodeID id) const { return m_Nodes[id]; }
         DAGEdge* GetEdge(DAGNodeID from, DAGNodeID to) const;
 
         void RegisterNode(DAGNode* node);
@@ -75,7 +75,7 @@ namespace RG
         eastl::string ExportGraphViz();
 
     private:
-        eastl::vector<DAGNode*> mNodes;
-        eastl::vector<DAGEdge*> mEdges;
+        eastl::vector<DAGNode*> m_Nodes;
+        eastl::vector<DAGEdge*> m_Edges;
     };
 }

@@ -15,17 +15,17 @@ namespace RHI
         ~RHIShaderResourceViewVK();
 
         bool Create();
-        vk::ImageView GetImageView() const { return mImageView; }
+        vk::ImageView GetImageView() const { return m_ImageView; }
 
-        const RHIShaderResourceViewDesc& GetDesc() const { return mDesc; }
-        virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
-        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
+        const RHIShaderResourceViewDesc& GetDesc() const { return m_Desc; }
+        virtual void* GetNativeHandle() const override { return m_Resource->GetNativeHandle(); }
+        virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
     
     private:
-        RHIResource* mResource = nullptr;
-        RHIShaderResourceViewDesc mDesc {};
-        vk::ImageView mImageView = VK_NULL_HANDLE;
-        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
+        RHIResource* m_Resource = nullptr;
+        RHIShaderResourceViewDesc m_Desc {};
+        vk::ImageView m_ImageView = VK_NULL_HANDLE;
+        uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 
     class RHIUnorderedAccessViewVK : public RHIDescriptor
@@ -36,15 +36,15 @@ namespace RHI
 
         bool Create();
 
-        const RHIUnorderedAccessViewDesc& GetDesc() const { return mDesc; }
-        virtual void* GetNativeHandle() const override { return mResource->GetNativeHandle(); }
-        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
+        const RHIUnorderedAccessViewDesc& GetDesc() const { return m_Desc; }
+        virtual void* GetNativeHandle() const override { return m_Resource->GetNativeHandle(); }
+        virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
 
     private:
-        RHIResource* mResource = nullptr;
-        RHIUnorderedAccessViewDesc mDesc {};
-        vk::ImageView mImageView = VK_NULL_HANDLE;
-        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
+        RHIResource* m_Resource = nullptr;
+        RHIUnorderedAccessViewDesc m_Desc {};
+        vk::ImageView m_ImageView = VK_NULL_HANDLE;
+        uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 
     class RHIConstantBufferViewVK : public RHIDescriptor
@@ -55,14 +55,14 @@ namespace RHI
 
         bool Create();
 
-        const RHIConstantBufferViewDesc& GetDesc() const { return mDesc; }
-        virtual void* GetNativeHandle() const override { return mBuffer->GetNativeHandle(); }
-        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
+        const RHIConstantBufferViewDesc& GetDesc() const { return m_Desc; }
+        virtual void* GetNativeHandle() const override { return m_Buffer->GetNativeHandle(); }
+        virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
 
     private:
-        RHIBuffer* mBuffer = nullptr;
-        RHIConstantBufferViewDesc mDesc {};
-        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
+        RHIBuffer* m_Buffer = nullptr;
+        RHIConstantBufferViewDesc m_Desc {};
+        uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 
     class RHISamplerVK : public RHIDescriptor
@@ -73,13 +73,13 @@ namespace RHI
 
         bool Create();
 
-        const RHISamplerDesc& GetDesc() const { return mDesc; }
-        virtual void* GetNativeHandle() const override { return mSampler; }
-        virtual uint32_t GetHeapIndex() const override { return mHeapIndex; }
+        const RHISamplerDesc& GetDesc() const { return m_Desc; }
+        virtual void* GetNativeHandle() const override { return m_Sampler; }
+        virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
     
     private:
-        RHISamplerDesc mDesc {};
-        vk::Sampler mSampler = VK_NULL_HANDLE;
-        uint32_t mHeapIndex = RHI_INVALID_RESOURCE;
+        RHISamplerDesc m_Desc {};
+        vk::Sampler m_Sampler = VK_NULL_HANDLE;
+        uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 }

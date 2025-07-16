@@ -96,13 +96,13 @@ namespace Assets
 {
     ModelLoader::ModelLoader(Scene::World *pWorld)
     {
-        mpWorld = pWorld;
+        m_pWorld = pWorld;
 
-        float4x4 T = translation_matrix(mPosition);
-        float4x4 R = rotation_matrix(mRotation);
-        float4x4 S = scaling_matrix(mScale);
+        float4x4 T = translation_matrix(m_Position);
+        float4x4 R = rotation_matrix(m_Rotation);
+        float4x4 S = scaling_matrix(m_Scale);
 
-        mMtxWorld = mul(T, mul(R, S));
+        m_MtxWorld = mul(T, mul(R, S));
     }
 
     ModelLoader::~ModelLoader()
@@ -111,33 +111,33 @@ namespace Assets
 
     void ModelLoader::LoadModelSettings(tinyxml2::XMLElement *element)
     {
-        mFile = element->FindAttribute("File")->Value();
+        m_File = element->FindAttribute("File")->Value();
 
         const tinyxml2::XMLAttribute* positionAttr = element->FindAttribute("Position");
         if (positionAttr)
         {
-            mPosition = strToFloat3(positionAttr->Value());
+            m_Position = strToFloat3(positionAttr->Value());
         }
         const tinyxml2::XMLAttribute* rotationAttr = element->FindAttribute("Rotation");
         if (rotationAttr)
         {
-            mRotation = RotationQuat(strToFloat3(rotationAttr->Value()));
+            m_Rotation = RotationQuat(strToFloat3(rotationAttr->Value()));
         }
         const tinyxml2::XMLAttribute* scaleAttr = element->FindAttribute("Scale");
         if (scaleAttr)
         {
-            mScale = strToFloat3(scaleAttr->Value());
+            m_Scale = strToFloat3(scaleAttr->Value());
         }
 
-        float4x4 T = translation_matrix(mPosition);
-        float4x4 R = rotation_matrix(mRotation);
-        float4x4 S = scaling_matrix(mScale);
-        mMtxWorld = mul(T, mul(R, S));
+        float4x4 T = translation_matrix(m_Position);
+        float4x4 R = rotation_matrix(m_Rotation);
+        float4x4 S = scaling_matrix(m_Scale);
+        m_MtxWorld = mul(T, mul(R, S));
     }
 
     void ModelLoader::LoadGLTF(const char *gltfFile)
     {
-        eastl::string file = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : mFile);
+        eastl::string file = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : m_File);
 
         cgltf_options options = {};
         cgltf_data* data = nullptr;
@@ -152,25 +152,25 @@ namespace Assets
 
         if (data->animations_count > 0)
         {
-            Scene::SkeletalMesh* mesh = new Scene::SkeletalMesh(mFile);
-            mesh->mpRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-            mesh->mpAnimation.reset(LoadAnimation(data, &data->animations[0]));
-            mesh->mpSkeleton.reset(LoadSkeleton(data, &data->skins[0]));
+            Scene::SkeletalMesh* mesh = new Scene::SkeletalMesh(m_File);
+            mesh->m_pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            mesh->m_pAnimation.reset(LoadAnimation(data, &data->animations[0]));
+            mesh->m_pSkeleton.reset(LoadSkeleton(data, &data->skins[0]));
 
             for (cgltf_size i = 0; i < data->nodes_count; i++)
             {
-                mesh->mNodes.emplace_back(LoadSkeletalMeshNode(data, &data->nodes[i]));
+                mesh->m_Nodes.emplace_back(LoadSkeletalMeshNode(data, &data->nodes[i]));
             }
             for (cgltf_size i = 0; i < data->scene->nodes_count; i++)
             {
-                mesh->mRootNodes.push_back(GetNodeIndex(data, data->scene->nodes[i]));
+                mesh->m_RootNodes.push_back(GetNodeIndex(data, data->scene->nodes[i]));
             }
 
-            mesh->SetPosition(mPosition);
-            mesh->SetRotation(mRotation);
-            mesh->SetScale(mScale);
+            mesh->SetPosition(m_Position);
+            mesh->SetRotation(m_Rotation);
+            mesh->SetScale(m_Scale);
             mesh->Create();
-            mpWorld->AddObject(mesh);
+            m_pWorld->AddObject(mesh);
         }
         else
         {
@@ -178,7 +178,7 @@ namespace Assets
             {
                 for (cgltf_size node = 0; node < data->scenes[i].nodes_count; node++)
                 {
-                    LoadStaticMeshNode(data, data->scenes[i].nodes[node], mMtxWorld);
+                    LoadStaticMeshNode(data, data->scenes[i].nodes[node], m_MtxWorld);
                 }
             }
         }
@@ -207,7 +207,7 @@ namespace Assets
             {
                 eastl::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->mesh->name ? node->mesh->name : "")).c_str();
                 Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
-                mesh->mpMaterial->mbFrontFaceCCW = bFrontFaceCCW;
+                mesh->m_pMaterial->m_bFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
                 mesh->SetRotation(rotation);
                 mesh->SetScale(scale);
@@ -249,8 +249,8 @@ namespace Assets
 
     Scene::StaticMesh *ModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const eastl::string &name, bool bFrontFaceCCW)
     {
-        Scene::StaticMesh* mesh = new Scene::StaticMesh(mFile + " " + name);
-        mesh->mpMaterial.reset(LoadMaterial(primitive->material));
+        Scene::StaticMesh* mesh = new Scene::StaticMesh(m_File + " " + name);
+        mesh->m_pMaterial.reset(LoadMaterial(primitive->material));
 
         size_t indexCount;
         meshopt_Stream indices = LoadBufferStream(primitive->indices, false, indexCount);
@@ -275,8 +275,8 @@ namespace Assets
                     float3 center = (min + max) * 0.5f;
                     float radius = length(max - min) * 0.5f;
 
-                    mesh->mCenter = center;
-                    mesh->mRadius = radius;
+                    mesh->m_Center = center;
+                    mesh->m_Radius = radius;
                 }
                 break;
             case cgltf_attribute_type_texcoord:
@@ -424,7 +424,7 @@ namespace Assets
         auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         auto resourceCache = ResourceCache::GetInstance();
 
-        mesh->mpRenderer = pRenderer;
+        mesh->m_pRenderer = pRenderer;
 
         if (indices.stride == 1)
         {
@@ -438,40 +438,40 @@ namespace Assets
             indices.data = data;
         }
         
-        mesh->mIndexBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_IndexBuffer", remappedIndices, (uint32_t)indices.stride * (uint32_t)indexCount);
-        mesh->mIndexBufferFormat = indices.stride == 4 ? RHI::ERHIFormat::R32UI : RHI::ERHIFormat::R16UI;
-        mesh->mIndexCount = (uint32_t)indexCount;
-        mesh->mVertexCount = (uint32_t)remappedVertexCount;
+        mesh->m_IndexBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_IndexBuffer", remappedIndices, (uint32_t)indices.stride * (uint32_t)indexCount);
+        mesh->m_IndexBufferFormat = indices.stride == 4 ? RHI::ERHIFormat::R32UI : RHI::ERHIFormat::R16UI;
+        mesh->m_IndexCount = (uint32_t)indexCount;
+        mesh->m_VertexCount = (uint32_t)remappedVertexCount;
 
         for (size_t i = 0; i < vertexTypes.size(); i++)
         {
             switch (vertexTypes[i])
             {
             case cgltf_attribute_type_position:
-                mesh->mPositionBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_PositionBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                mesh->m_PositionBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_PositionBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
                 break;
             case cgltf_attribute_type_texcoord:
-                mesh->mTexCoordBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_TexCoordBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                mesh->m_TexCoordBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_TexCoordBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
                 break;
             case cgltf_attribute_type_normal:
-                mesh->mNormalBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_NormalBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                mesh->m_NormalBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_NormalBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
                 break;
             case cgltf_attribute_type_tangent:
-                mesh->mTangentBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_TangentBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
+                mesh->m_TangentBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_TangentBuffer", remappedVertices[i], (uint32_t)vertexStreams[i].stride * (uint32_t)remappedVertexCount);
                 break;
             default:
                 break;
             }
         }
 
-        mesh->mMeshletCount = (uint32_t)meshletCount;
-        mesh->mMeshletBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(MeshletBound) * (uint32_t)meshletBounds.size());
-        mesh->mMeshletIndicesBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_MeshletIndicesBuffer", meshletTriangles16.data(), sizeof(unsigned short) * (uint32_t)meshletTriangles16.size());
-        mesh->mMeshletVertexBuffer = resourceCache->GetSceneBuffer("Model(" + mFile + " " + name + ")_MeshletVertexBuffer", meshletVertices.data(), sizeof(unsigned int) * (uint32_t)meshletVertices.size());
+        mesh->m_MeshletCount = (uint32_t)meshletCount;
+        mesh->m_MeshletBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(MeshletBound) * (uint32_t)meshletBounds.size());
+        mesh->m_MeshletIndicesBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletIndicesBuffer", meshletTriangles16.data(), sizeof(unsigned short) * (uint32_t)meshletTriangles16.size());
+        mesh->m_MeshletVertexBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletVertexBuffer", meshletVertices.data(), sizeof(unsigned int) * (uint32_t)meshletVertices.size());
 
         mesh->Create();
 
-        mpWorld->AddObject(mesh);
+        m_pWorld->AddObject(mesh);
 
         VTNA_FREE((void*)indices.data);
         for (size_t i = 0; i < vertexStreams.size(); i++)
@@ -490,7 +490,7 @@ namespace Assets
     Scene::Animation *ModelLoader::LoadAnimation(const cgltf_data *data, const cgltf_animation *gltfAnimation)
     {
         Scene::Animation* animation = new Scene::Animation(gltfAnimation->name ? gltfAnimation->name : "");
-        animation->mChannels.reserve(gltfAnimation->channels_count);
+        animation->m_Channels.reserve(gltfAnimation->channels_count);
 
         for (cgltf_size i = 0; i < gltfAnimation->channels_count; i++)
         {
@@ -538,11 +538,11 @@ namespace Assets
 
                 channel.KeyFrames.push_back(eastl::make_pair(time, value));
             }
-            animation->mChannels.push_back(channel);
+            animation->m_Channels.push_back(channel);
 
             assert(timeAccessor->has_min && timeAccessor->has_max);
             float duration = timeAccessor->max[0] - timeAccessor->min[0];
-            animation->mTimeDuration = eastl::max(animation->mTimeDuration, duration);
+            animation->m_TimeDuration = eastl::max(animation->m_TimeDuration, duration);
         }
         return animation;
     }
@@ -555,13 +555,13 @@ namespace Assets
         }
 
         Scene::Skeleton* skeleton = new Scene::Skeleton(gltfSkin->name ? gltfSkin->name : "");
-        skeleton->mJoints.resize(gltfSkin->joints_count);
-        skeleton->mInverseBindMatrices.resize(gltfSkin->joints_count);
-        skeleton->mJointMatrices.resize(gltfSkin->joints_count);
+        skeleton->m_Joints.resize(gltfSkin->joints_count);
+        skeleton->m_InverseBindMatrices.resize(gltfSkin->joints_count);
+        skeleton->m_JointMatrices.resize(gltfSkin->joints_count);
 
         for (cgltf_size i = 0; i < gltfSkin->joints_count; i++)
         {
-            skeleton->mJoints[i] = GetNodeIndex(data, gltfSkin->joints[i]);
+            skeleton->m_Joints[i] = GetNodeIndex(data, gltfSkin->joints[i]);
         }
 
         const cgltf_accessor* accessor = gltfSkin->inverse_bind_matrices;
@@ -587,7 +587,7 @@ namespace Assets
             float4x4 R = rotation_matrix(rotatioin);
             float4x4 S = scaling_matrix(scale);
 
-            skeleton->mInverseBindMatrices[i] = mul(T, mul(R, S));
+            skeleton->m_InverseBindMatrices[i] = mul(T, mul(R, S));
         }
         return skeleton;
     }
@@ -631,8 +631,8 @@ namespace Assets
 
                 Scene::FSkeletalMeshData* mesh = LoadSkeletalMeshData(&gltfNode->mesh->primitives[i], name);
                 mesh->NodeID = node->ID;
-                mesh->Material->mbSkeletalAnim = vertexSkinning;
-                mesh->Material->mbFrontFaceCCW = bFrontFaceCCW;
+                mesh->Material->m_bSkeletalAnim = vertexSkinning;
+                mesh->Material->m_bFrontFaceCCW = bFrontFaceCCW;
 
                 node->Meshes.emplace_back(mesh);
             }
@@ -643,7 +643,7 @@ namespace Assets
     Scene::FSkeletalMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const eastl::string &name)
     {
         Scene::FSkeletalMeshData* mesh = new Scene::FSkeletalMeshData;
-        mesh->Name = mFile + "_" + name;
+        mesh->Name = m_File + "_" + name;
         mesh->Material.reset(LoadMaterial(primitive->material));
 
         Assets::ResourceCache* cache = Assets::ResourceCache::GetInstance();
@@ -651,7 +651,7 @@ namespace Assets
         size_t indexCount;
         meshopt_Stream indices = LoadBufferStream(primitive->indices, false, indexCount);
 
-        mesh->IndexBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_IndexBuffer", indices.data, (uint32_t)indices.stride * (uint32_t)indexCount);
+        mesh->IndexBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_IndexBuffer", indices.data, (uint32_t)indices.stride * (uint32_t)indexCount);
         mesh->IndexBufferFormat = indices.stride == 4 ? RHI::ERHIFormat::R32UI : RHI::ERHIFormat::R16UI;
         mesh->IndexCount = (uint32_t)indexCount;
 
@@ -665,7 +665,7 @@ namespace Assets
             case cgltf_attribute_type_position:
             {
                 vertices = LoadBufferStream(primitive->attributes[i].data, true, vertexCount);
-                mesh->StaticPositionBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_PositionBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
+                mesh->StaticPositionBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_PositionBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
                 {
                     float3 min = float3(primitive->attributes[i].data->min);
                     min.z = -min.z;
@@ -685,20 +685,20 @@ namespace Assets
                 if (primitive->attributes[i].index == 0)
                 {
                     vertices = LoadBufferStream(primitive->attributes[i].data, false, vertexCount);
-                    mesh->TexCoordBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_TexCoordBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
+                    mesh->TexCoordBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_TexCoordBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
                 }
                 break;
             }
             case cgltf_attribute_type_normal:
             {
                 vertices = LoadBufferStream(primitive->attributes[i].data, true, vertexCount);
-                mesh->StaticNormalBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_NormalBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
+                mesh->StaticNormalBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_NormalBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
                 break;
             }
             case cgltf_attribute_type_tangent:
             {
                 vertices = LoadBufferStream(primitive->attributes[i].data, false, vertexCount);
-                mesh->StaticTangentBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_TangentBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
+                mesh->StaticTangentBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_TangentBuffer", vertices.data, (uint32_t)vertices.stride * (uint32_t)vertexCount);
                 break;
             }
             case cgltf_attribute_type_joints:
@@ -714,7 +714,7 @@ namespace Assets
                     cgltf_accessor_read_uint(accessor, j, id, 4);
                     jointIDs.push_back(ushort4(id[0], id[1], id[2], id[3]));
                 }
-                mesh->JointIDBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_JointIDBuffer", jointIDs.data(), sizeof(ushort4) * (uint32_t)accessor->count);
+                mesh->JointIDBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_JointIDBuffer", jointIDs.data(), sizeof(ushort4) * (uint32_t)accessor->count);
                 break;
             }
             case cgltf_attribute_type_weights:
@@ -730,7 +730,7 @@ namespace Assets
                     cgltf_accessor_read_float(accessor, j, weight, 4);
                     jointWeights.push_back(float4(weight));
                 }
-                mesh->JointWeightBuffer = cache->GetSceneBuffer("Model(" + mFile + "_" + name + ")_JointWeightBuffer", jointWeights.data(), sizeof(float4) * (uint32_t)accessor->count);
+                mesh->JointWeightBuffer = cache->GetSceneBuffer("Model(" + m_File + "_" + name + ")_JointWeightBuffer", jointWeights.data(), sizeof(float4) * (uint32_t)accessor->count);
                 break;
             }
             default:
@@ -767,42 +767,42 @@ namespace Assets
         {
             return material;
         }
-        material->mName = gltfMaterial->name ? gltfMaterial->name : "";
+        material->m_Name = gltfMaterial->name ? gltfMaterial->name : "";
 
         if (gltfMaterial->has_pbr_metallic_roughness)
         {
-            material->mWorkFlow = MaterialWorkFlow::PBRMetallicRoughness;
-            material->mpAlbedoTexture = LoadTexture(gltfMaterial->pbr_metallic_roughness.base_color_texture, true);
-            material->mMaterialCB.AlbedoTexture = LoadTextureInfo(material->mpAlbedoTexture, gltfMaterial->pbr_metallic_roughness.base_color_texture);
-            material->mpMetallicRoughTexture = LoadTexture(gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture, false);
-            material->mMaterialCB.MetallicRoughnessTexture = LoadTextureInfo(material->mpMetallicRoughTexture, gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture);
-            material->mAlbedoColor = float3(gltfMaterial->pbr_metallic_roughness.base_color_factor);
-            material->mMetallic = gltfMaterial->pbr_metallic_roughness.metallic_factor;
-            material->mRoughness = gltfMaterial->pbr_metallic_roughness.roughness_factor;
+            material->m_WorkFlow = MaterialWorkFlow::PBRMetallicRoughness;
+            material->m_pAlbedoTexture = LoadTexture(gltfMaterial->pbr_metallic_roughness.base_color_texture, true);
+            material->m_MaterialCB.AlbedoTexture = LoadTextureInfo(material->m_pAlbedoTexture, gltfMaterial->pbr_metallic_roughness.base_color_texture);
+            material->m_pMetallicRoughTexture = LoadTexture(gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture, false);
+            material->m_MaterialCB.MetallicRoughnessTexture = LoadTextureInfo(material->m_pMetallicRoughTexture, gltfMaterial->pbr_metallic_roughness.metallic_roughness_texture);
+            material->m_AlbedoColor = float3(gltfMaterial->pbr_metallic_roughness.base_color_factor);
+            material->m_Metallic = gltfMaterial->pbr_metallic_roughness.metallic_factor;
+            material->m_Roughness = gltfMaterial->pbr_metallic_roughness.roughness_factor;
         }
         else if (gltfMaterial->has_pbr_specular_glossiness)
         {
-            material->mWorkFlow = MaterialWorkFlow::PBRSpecularGlossiness;
-            material->mpDiffuseTexture = LoadTexture(gltfMaterial->pbr_specular_glossiness.diffuse_texture, true);
-            material->mMaterialCB.DiffuseTexture = LoadTextureInfo(material->mpDiffuseTexture, gltfMaterial->pbr_specular_glossiness.diffuse_texture);
-            material->mpSpecularGlossinessTexture = LoadTexture(gltfMaterial->pbr_specular_glossiness.specular_glossiness_texture, false);
-            material->mMaterialCB.SpecularGlossinessTexture = LoadTextureInfo(material->mpSpecularGlossinessTexture, gltfMaterial->pbr_specular_glossiness.specular_glossiness_texture);
-            material->mDiffuseColor = float3(gltfMaterial->pbr_specular_glossiness.diffuse_factor);
-            material->mSpecularColor = float3(gltfMaterial->pbr_specular_glossiness.specular_factor);
-            material->mGlossiness = gltfMaterial->pbr_specular_glossiness.glossiness_factor;
+            material->m_WorkFlow = MaterialWorkFlow::PBRSpecularGlossiness;
+            material->m_pDiffuseTexture = LoadTexture(gltfMaterial->pbr_specular_glossiness.diffuse_texture, true);
+            material->m_MaterialCB.DiffuseTexture = LoadTextureInfo(material->m_pDiffuseTexture, gltfMaterial->pbr_specular_glossiness.diffuse_texture);
+            material->m_pSpecularGlossinessTexture = LoadTexture(gltfMaterial->pbr_specular_glossiness.specular_glossiness_texture, false);
+            material->m_MaterialCB.SpecularGlossinessTexture = LoadTextureInfo(material->m_pSpecularGlossinessTexture, gltfMaterial->pbr_specular_glossiness.specular_glossiness_texture);
+            material->m_DiffuseColor = float3(gltfMaterial->pbr_specular_glossiness.diffuse_factor);
+            material->m_SpecularColor = float3(gltfMaterial->pbr_specular_glossiness.specular_factor);
+            material->m_Glossiness = gltfMaterial->pbr_specular_glossiness.glossiness_factor;
         }
-        material->mpNormalTexture = LoadTexture(gltfMaterial->normal_texture, false);
-        material->mMaterialCB.NormalTexture = LoadTextureInfo(material->mpNormalTexture, gltfMaterial->normal_texture);
-        material->mpEmissiveTexture = LoadTexture(gltfMaterial->emissive_texture, true);
-        material->mMaterialCB.EmissiveTexture = LoadTextureInfo(material->mpEmissiveTexture, gltfMaterial->emissive_texture);
-        material->mpAOTexture = LoadTexture(gltfMaterial->occlusion_texture, false);
-        material->mMaterialCB.AmbientOcclusionTexture = LoadTextureInfo(material->mpAOTexture, gltfMaterial->occlusion_texture);
+        material->m_pNormalTexture = LoadTexture(gltfMaterial->normal_texture, false);
+        material->m_MaterialCB.NormalTexture = LoadTextureInfo(material->m_pNormalTexture, gltfMaterial->normal_texture);
+        material->m_pEmissiveTexture = LoadTexture(gltfMaterial->emissive_texture, true);
+        material->m_MaterialCB.EmissiveTexture = LoadTextureInfo(material->m_pEmissiveTexture, gltfMaterial->emissive_texture);
+        material->m_pAOTexture = LoadTexture(gltfMaterial->occlusion_texture, false);
+        material->m_MaterialCB.AmbientOcclusionTexture = LoadTextureInfo(material->m_pAOTexture, gltfMaterial->occlusion_texture);
 
-        material->mEmissiveColor = float3(gltfMaterial->emissive_factor);
-        material->mAlphaCutout = gltfMaterial->alpha_cutoff;
-        material->mbAlphaTest = gltfMaterial->alpha_mode == cgltf_alpha_mode_mask;
-        material->mbAlphaBlend = gltfMaterial->alpha_mode == cgltf_alpha_mode_blend;
-        material->mbFrontFaceCCW = gltfMaterial->double_sided;
+        material->m_EmissiveColor = float3(gltfMaterial->emissive_factor);
+        material->m_AlphaCutout = gltfMaterial->alpha_cutoff;
+        material->m_bAlphaTest = gltfMaterial->alpha_mode == cgltf_alpha_mode_mask;
+        material->m_bAlphaBlend = gltfMaterial->alpha_mode == cgltf_alpha_mode_blend;
+        material->m_bFrontFaceCCW = gltfMaterial->double_sided;
 
         return material;
     }
@@ -811,8 +811,8 @@ namespace Assets
     {
         if (textureView.texture == nullptr || textureView.texture->image->uri == nullptr) return nullptr;
 
-        size_t lastSlash = mFile.find_last_of('/');
-        eastl::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + mFile.substr(0, lastSlash + 1);
+        size_t lastSlash = m_File.find_last_of('/');
+        eastl::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + m_File.substr(0, lastSlash + 1);
         Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
         auto texture = ResourceCache::GetInstance()->GetTexture2D(texturePath + textureView.texture->image->uri, srgb);
         return texture;

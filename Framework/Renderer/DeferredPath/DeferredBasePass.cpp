@@ -36,13 +36,13 @@ namespace Renderer
 
     DeferredBasePass::DeferredBasePass(RendererBase *pRenderer)
     {
-        mpRenderer = pRenderer;
+        m_pRenderer = pRenderer;
     }
 
     RenderBatch &DeferredBasePass::AddBatch()
     {
-        LinearAllocator* allocator = mpRenderer->GetConstantAllocator();
-        return mInstance.emplace_back(*allocator);
+        LinearAllocator* allocator = m_pRenderer->GetConstantAllocator();
+        return m_Instance.emplace_back(*allocator);
     }
 
     void DeferredBasePass::Render1stPhase(RG::RenderGraph *pRG)

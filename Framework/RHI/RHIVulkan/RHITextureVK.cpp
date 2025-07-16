@@ -10,53 +10,53 @@ namespace RHI
 {
     RHITextureVK::RHITextureVK(RHIDeviceVK *device, const RHITextureDesc &desc, const eastl::string &name)
     {
-        mpDevice = device;
-        mDesc = desc;
-        mName = name;
+        m_pDevice = device;
+        m_Desc = desc;
+        m_Name = name;
     }
 
     RHITextureVK::~RHITextureVK()
     {
-        auto device = (RHIDeviceVK*)mpDevice;
+        auto device = (RHIDeviceVK*)m_pDevice;
         device->CancelDefaultLayoutTransition(this);
 
-        if (!mbSwapchainImage)
+        if (!m_bSwapchainImage)
         {
-            device->Delete(mImage);
-            device->Delete(mAllocation);
+            device->Delete(m_Image);
+            device->Delete(m_Allocation);
         }
-        for (size_t i = 0; i < mRenderViews.size(); i++)
+        for (size_t i = 0; i < m_RenderViews.size(); i++)
         {
-            device->Delete(mRenderViews[i]);
+            device->Delete(m_RenderViews[i]);
         }
     }
 
     bool RHITextureVK::Create()
     {
-        vk::Device deviceHandle = ((RHIDeviceVK*)mpDevice)->GetDevice();
-        VmaAllocator allocator = ((RHIDeviceVK*)mpDevice)->GetVmaAllocator();
+        vk::Device deviceHandle = ((RHIDeviceVK*)m_pDevice)->GetDevice();
+        VmaAllocator allocator = ((RHIDeviceVK*)m_pDevice)->GetVmaAllocator();
 
-        vk::ImageCreateInfo imageCI = ToVulkanImageCreateInfo(mDesc);
+        vk::ImageCreateInfo imageCI = ToVulkanImageCreateInfo(m_Desc);
 
         vk::Result res;
 
-        if (mDesc.Heap != nullptr)
+        if (m_Desc.Heap != nullptr)
         {
-            assert(mDesc.AllocationType == ERHIAllocationType::Placed);
-            assert(mDesc.MemoryType == mDesc.Heap->GetDesc().MemoryType);
+            assert(m_Desc.AllocationType == ERHIAllocationType::Placed);
+            assert(m_Desc.MemoryType == m_Desc.Heap->GetDesc().MemoryType);
 
-            res = (vk::Result)vmaCreateAliasingImage2(allocator, (VmaAllocation)mDesc.Heap->GetNativeHandle(), (VkDeviceSize)mDesc.HeapOffset, (VkImageCreateInfo*)&imageCI, (VkImage*)&mImage);
+            res = (vk::Result)vmaCreateAliasingImage2(allocator, (VmaAllocation)m_Desc.Heap->GetNativeHandle(), (VkDeviceSize)m_Desc.HeapOffset, (VkImageCreateInfo*)&imageCI, (VkImage*)&m_Image);
         }
         else
         {
             VmaAllocationCreateInfo allocCI = {};
-            allocCI.usage = ToVmaUsage(mDesc.MemoryType);
+            allocCI.usage = ToVmaUsage(m_Desc.MemoryType);
 
-            if (mDesc.AllocationType == ERHIAllocationType::Committed)
+            if (m_Desc.AllocationType == ERHIAllocationType::Committed)
             {
                 allocCI.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
             }
-            res = (vk::Result)vmaCreateImage(allocator, (VkImageCreateInfo*)&imageCI, &allocCI, (VkImage*)&mImage, &mAllocation, nullptr);
+            res = (vk::Result)vmaCreateImage(allocator, (VkImageCreateInfo*)&imageCI, &allocCI, (VkImage*)&m_Image, &m_Allocation, nullptr);
         }
 
         if (res != vk::Result::eSuccess)
@@ -64,27 +64,27 @@ namespace RHI
             VTNA_LOG_ERROR("[RHITextureVK] Failed to create image");
             return false;
         }
-        auto dynamicLoder = ((RHIDeviceVK*)mpDevice)->GetDynamicLoader();
-        SetDebugName(deviceHandle, vk::ObjectType::eImage, (uint64_t)(VkImage)mImage, mName.c_str(), dynamicLoder);
+        auto dynamicLoder = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        SetDebugName(deviceHandle, vk::ObjectType::eImage, (uint64_t)(VkImage)m_Image, m_Name.c_str(), dynamicLoder);
 
-        if (mAllocation)
+        if (m_Allocation)
         {
-            vmaSetAllocationName(allocator, mAllocation, mName.c_str());
+            vmaSetAllocationName(allocator, m_Allocation, m_Name.c_str());
         }
-        ((RHIDeviceVK*)mpDevice)->EnqueueDefaultLayoutTransition(this);
+        ((RHIDeviceVK*)m_pDevice)->EnqueueDefaultLayoutTransition(this);
 
         return true;
     }
 
     bool RHITextureVK::Create(vk::Image image)
     {
-        auto device = (RHIDeviceVK*)mpDevice;
+        auto device = (RHIDeviceVK*)m_pDevice;
 
-        mImage = image;
-        mbSwapchainImage = true;
+        m_Image = image;
+        m_bSwapchainImage = true;
 
         auto dynamicLoder = device->GetDynamicLoader();
-        SetDebugName(device->GetDevice(), vk::ObjectType::eImage, (uint64_t)(VkImage)mImage, mName.c_str(), dynamicLoder);
+        SetDebugName(device->GetDevice(), vk::ObjectType::eImage, (uint64_t)(VkImage)m_Image, m_Name.c_str(), dynamicLoder);
         
         device->EnqueueDefaultLayoutTransition(this);
 
@@ -93,40 +93,40 @@ namespace RHI
 
     vk::ImageView RHITextureVK::GetRenderView(uint32_t mipSlice, uint32_t arraySlice)
     {
-        assert(mDesc.Usage & (RHITextureUsageRenderTarget | RHITextureUsageDepthStencil));
+        assert(m_Desc.Usage & (RHITextureUsageRenderTarget | RHITextureUsageDepthStencil));
 
-        if (mRenderViews.empty())
+        if (m_RenderViews.empty())
         {
-            mRenderViews.resize(mDesc.ArraySize * mDesc.MipLevels);
+            m_RenderViews.resize(m_Desc.ArraySize * m_Desc.MipLevels);
         }
 
-        uint32_t index = mDesc.MipLevels * arraySlice + mipSlice;
-        if (!mRenderViews[index])
+        uint32_t index = m_Desc.MipLevels * arraySlice + mipSlice;
+        if (!m_RenderViews[index])
         {
             vk::ImageViewCreateInfo imageViewCI {};
-            imageViewCI.setImage(mImage);
+            imageViewCI.setImage(m_Image);
             imageViewCI.setViewType(vk::ImageViewType::e2D);
-            imageViewCI.setFormat(ToVulkanFormat(mDesc.Format, true));
-            imageViewCI.setSubresourceRange({ GetAspectFlags(mDesc.Format), mipSlice, 1, arraySlice, 1 });
+            imageViewCI.setFormat(ToVulkanFormat(m_Desc.Format, true));
+            imageViewCI.setSubresourceRange({ GetAspectFlags(m_Desc.Format), mipSlice, 1, arraySlice, 1 });
 
-            mRenderViews[index] = ((RHIDeviceVK*)mpDevice)->GetDevice().createImageView(imageViewCI);
+            m_RenderViews[index] = ((RHIDeviceVK*)m_pDevice)->GetDevice().createImageView(imageViewCI);
         }
 
-        return mRenderViews[index];
+        return m_RenderViews[index];
     }
 
     uint32_t RHITextureVK::GetRequiredStagingBufferSize() const
     {
-        vk::MemoryRequirements memReq = ((RHIDeviceVK*)mpDevice)->GetDevice().getImageMemoryRequirements(mImage);
+        vk::MemoryRequirements memReq = ((RHIDeviceVK*)m_pDevice)->GetDevice().getImageMemoryRequirements(m_Image);
         return (uint32_t)memReq.size;
     }
 
     uint32_t RHITextureVK::GetRowPitch(uint32_t mipLevel) const
     {
-        uint32_t minWidth = GetFormatBlockWidth(mDesc.Format);
-        uint32_t width = eastl::max(minWidth, mDesc.Width >> mipLevel);
+        uint32_t minWidth = GetFormatBlockWidth(m_Desc.Format);
+        uint32_t width = eastl::max(minWidth, m_Desc.Width >> mipLevel);
 
-        return GetFormatRowPitch(mDesc.Format, width) * GetFormatBlockHeight(mDesc.Format);
+        return GetFormatRowPitch(m_Desc.Format, width) * GetFormatBlockHeight(m_Desc.Format);
     }
 
     void *RHITextureVK::GetSharedHandle() const

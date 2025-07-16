@@ -24,9 +24,9 @@ namespace Core
 
     void VultanaEngine::Init(void* windowHandle, uint32_t width, uint32_t height)
     {
-        mWorkingPath = "../";
-        // mAssetsPath = "../Assets/";
-        // mShaderPath = "../Shaders/";
+        m_WorkingPath = "../";
+        // m_AssetsPath = "../Assets/";
+        // m_ShaderPath = "../Shaders/";
 
         auto console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
         auto logger = std::make_shared<spdlog::logger>("RealEngine", spdlog::sinks_init_list{ console_sink});
@@ -57,57 +57,57 @@ namespace Core
         {
             VTNA_FREE(ptr);
         };
-        mpTaskScheduler.reset(new enki::TaskScheduler());
-        mpTaskScheduler->Initialize(tsConfig);
+        m_pTaskScheduler.reset(new enki::TaskScheduler());
+        m_pTaskScheduler->Initialize(tsConfig);
 
-        mWndHandle = windowHandle;
+        m_WndHandle = windowHandle;
 
-        eastl::string configFile = mWorkingPath + "Config/VultanaEngine.ini";
+        eastl::string configFile = m_WorkingPath + "Config/VultanaEngine.ini";
         CSimpleIniA configIni;
         if (configIni.LoadFile(configFile.c_str()) < 0)
         {
             VTNA_LOG_ERROR("Failed to load config file: {}", configFile);
         }
 
-        mAssetsPath = configIni.GetValue("Vultana", "AssetsPath");
-        mShaderPath = configIni.GetValue("Vultana", "ShaderPath");
+        m_AssetsPath = configIni.GetValue("Vultana", "AssetsPath");
+        m_ShaderPath = configIni.GetValue("Vultana", "ShaderPath");
 
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
-        mpRenderer = eastl::make_unique<Renderer::RendererBase>();
-        if (!mpRenderer->CreateDevice(renderBackend, mWndHandle, width, height))
+        m_pRenderer = eastl::make_unique<Renderer::RendererBase>();
+        if (!m_pRenderer->CreateDevice(renderBackend, m_WndHandle, width, height))
         {
             VTNA_LOG_ERROR("Failed to create renderer device");
             exit(0);
         }
 
-        mpWorld = eastl::make_unique<Scene::World>();
-        mpWorld->LoadScene(mAssetsPath + configIni.GetValue("World", "SceneFile"));
+        m_pWorld = eastl::make_unique<Scene::World>();
+        m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
 
-        mpEditor = eastl::make_unique<Editor::VultanaEditor>(mpRenderer.get());
+        m_pEditor = eastl::make_unique<Editor::VultanaEditor>(m_pRenderer.get());
 
         stm_setup();
     }
 
     void VultanaEngine::Shutdown()
     {
-        mpTaskScheduler->WaitforAll();
+        m_pTaskScheduler->WaitforAll();
 
-        mpWorld.reset();
-        mpEditor.reset();
+        m_pWorld.reset();
+        m_pEditor.reset();
         
-        mpTaskScheduler.reset();
+        m_pTaskScheduler.reset();
 
-        mpRenderer.reset();
+        m_pRenderer.reset();
 
         spdlog::shutdown();
     }
 
     void VultanaEngine::Tick()
     {
-        mFrameTime = (float)stm_sec(stm_laptime(&mLastFrameTime));
+        m_FrameTime = (float)stm_sec(stm_laptime(&m_LastFrameTime));
 
-        mpEditor->NewFrame();
+        m_pEditor->NewFrame();
 
         ImGuiIO& io = ImGui::GetIO();
         bool isMinimized = io.DisplaySize.x <= 0.0f || io.DisplaySize.y <= 0.0f;
@@ -118,9 +118,9 @@ namespace Core
         }
         else
         {
-            mpEditor->Tick();
-            mpWorld->Tick(mFrameTime);
-            mpRenderer->RenderFrame();
+            m_pEditor->Tick();
+            m_pWorld->Tick(m_FrameTime);
+            m_pRenderer->RenderFrame();
         }
     }
     

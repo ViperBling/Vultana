@@ -7,7 +7,7 @@ namespace Renderer
 {
     GPUDrivenDebugLine::GPUDrivenDebugLine(Renderer::RendererBase * pRenderer)
     {
-        mpRenderer = pRenderer;
+        m_pRenderer = pRenderer;
 
         RHI::RHIGraphicsPipelineStateDesc psoDesc {};
         psoDesc.VS = pRenderer->GetShader("GPUDrivenDebugLine.hlsl", "VSMain", RHI::ERHIShaderType::VS);
@@ -18,14 +18,14 @@ namespace Renderer
         psoDesc.RTFormats[0] = pRenderer->GetSwapchain()->GetDesc()->ColorFormat;
         psoDesc.DepthStencilFormat = RHI::ERHIFormat::D32F;
         psoDesc.PrimitiveType = RHI::ERHIPrimitiveType::LineList;
-        mpPSO = pRenderer->GetPipelineState(psoDesc, "GPUDrivenDebugLine::mpPSO");
+        m_pPSO = pRenderer->GetPipelineState(psoDesc, "GPUDrivenDebugLine::m_pPSO");
 
         RHI::RHIDrawCommand cmd = {};
         cmd.InstanceCount = 1;
-        mpDrawArgsBuffer.reset(pRenderer->CreateRawBuffer(&cmd, sizeof(RHI::RHIDrawCommand), "GPUDrivenDebugLine::mpDrawArgsBuffer", RHI::ERHIMemoryType::GPUOnly, true));
+        m_pDrawArgsBuffer.reset(pRenderer->CreateRawBuffer(&cmd, sizeof(RHI::RHIDrawCommand), "GPUDrivenDebugLine::m_pDrawArgsBuffer", RHI::ERHIMemoryType::GPUOnly, true));
 
         const uint32_t lineVertexStride = 16;
-        mpLineVertexBuffer.reset(pRenderer->CreateStructuredBuffer(nullptr, lineVertexStride, MAX_VERTEX_COUNT, "GPUDrivenDebugLine::mpLineVertexBuffer", RHI::ERHIMemoryType::GPUOnly, true));
+        m_pLineVertexBuffer.reset(pRenderer->CreateStructuredBuffer(nullptr, lineVertexStride, MAX_VERTEX_COUNT, "GPUDrivenDebugLine::m_pLineVertexBuffer", RHI::ERHIMemoryType::GPUOnly, true));
     }
 
     void GPUDrivenDebugLine::Clear(RHI::RHICommandList *pCmdList)
@@ -33,30 +33,30 @@ namespace Renderer
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenDebugLine::Clear");
 
         // Transition Buffer layout
-        pCmdList->BufferBarrier(mpDrawArgsBuffer->GetBuffer(), RHI::RHIAccessIndirectArgs, RHI::RHIAccessCopyDst);
+        pCmdList->BufferBarrier(m_pDrawArgsBuffer->GetBuffer(), RHI::RHIAccessIndirectArgs, RHI::RHIAccessCopyDst);
         
         // Reset Buffer Data
-        pCmdList->WriteBuffer(mpDrawArgsBuffer->GetBuffer(), 0, 0);
+        pCmdList->WriteBuffer(m_pDrawArgsBuffer->GetBuffer(), 0, 0);
         
-        pCmdList->BufferBarrier(mpDrawArgsBuffer->GetBuffer(), RHI::RHIAccessCopyDst, RHI::RHIAccessMaskUAV);
-        pCmdList->BufferBarrier(mpLineVertexBuffer->GetBuffer(), RHI::RHIAccessVertexShaderSRV, RHI::RHIAccessMaskUAV);
+        pCmdList->BufferBarrier(m_pDrawArgsBuffer->GetBuffer(), RHI::RHIAccessCopyDst, RHI::RHIAccessMaskUAV);
+        pCmdList->BufferBarrier(m_pLineVertexBuffer->GetBuffer(), RHI::RHIAccessVertexShaderSRV, RHI::RHIAccessMaskUAV);
     }
 
     void GPUDrivenDebugLine::PrepareForDraw(RHI::RHICommandList *pCmdList)
     {
-        pCmdList->BufferBarrier(mpDrawArgsBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessIndirectArgs);
-        pCmdList->BufferBarrier(mpLineVertexBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessVertexShaderSRV);
+        pCmdList->BufferBarrier(m_pDrawArgsBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessIndirectArgs);
+        pCmdList->BufferBarrier(m_pLineVertexBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessVertexShaderSRV);
     }
 
     void GPUDrivenDebugLine::Draw(RHI::RHICommandList *pCmdList)
     {
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenDebugLine::Draw");
 
-        pCmdList->SetPipelineState(mpPSO);
+        pCmdList->SetPipelineState(m_pPSO);
         
         uint rootConstants[1] = { GetVertexBufferSRV()->GetHeapIndex() };
         pCmdList->SetGraphicsConstants(0, rootConstants, sizeof(rootConstants));
 
-        pCmdList->DrawIndirect(mpDrawArgsBuffer->GetBuffer(), 0);
+        pCmdList->DrawIndirect(m_pDrawArgsBuffer->GetBuffer(), 0);
     }
 }

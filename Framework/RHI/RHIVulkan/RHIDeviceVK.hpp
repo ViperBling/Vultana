@@ -31,7 +31,7 @@ namespace RHI
         virtual bool Initialize() override;
         virtual void BeginFrame() override;
         virtual void EndFrame() override;
-        virtual void* GetNativeHandle() const override { return mDevice; }
+        virtual void* GetNativeHandle() const override { return m_Device; }
 
         virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const eastl::string& name) override;
         virtual RHICommandList* CreateCommandList(ERHICommandQueueType queueType, const eastl::string& name) override;
@@ -53,22 +53,22 @@ namespace RHI
 
         virtual bool DumpMemoryStats(const eastl::string& file) override;
 
-        vk::Instance GetInstance() const { return mInstance; }
-        vk::detail::DispatchLoaderDynamic GetDynamicLoader() const { return mDynamicLoader; }
-        vk::PhysicalDevice GetPhysicalDevice() const { return mPhysicalDevice; }
-        vk::Device GetDevice() const { return mDevice; }
-        VmaAllocator GetVmaAllocator() const { return mAllocator; }
-        uint32_t GetGraphicsQueueIndex() const { return mGraphicsQueueIndex; }
-        uint32_t GetComputeQueueIndex() const { return mComputeQueueIndex; }
-        uint32_t GetCopyQueueIndex() const { return mCopyQueueIndex; }
-        vk::Queue GetGraphicsQueue() const { return mGraphicsQueue; }
-        vk::Queue GetComputeQueue() const { return mComputeQueue; }
-        vk::Queue GetCopyQueue() const { return mCopyQueue; }
-        vk::PipelineLayout GetPipelineLayout() const { return mPipelineLayout; }
-        class RHIDescriptorAllocatorVK* GetResourceDescriptorAllocator() const { return mResourceDesAllocator; }
-        class RHIDescriptorAllocatorVK* GetSamplerDescriptorAllocator() const { return mSamplerDesAllocator; }
+        vk::Instance GetInstance() const { return m_Instance; }
+        vk::detail::DispatchLoaderDynamic GetDynamicLoader() const { return m_DynamicLoader; }
+        vk::PhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+        vk::Device GetDevice() const { return m_Device; }
+        VmaAllocator GetVmaAllocator() const { return m_Allocator; }
+        uint32_t GetGraphicsQueueIndex() const { return m_GraphicsQueueIndex; }
+        uint32_t GetComputeQueueIndex() const { return m_ComputeQueueIndex; }
+        uint32_t GetCopyQueueIndex() const { return m_CopyQueueIndex; }
+        vk::Queue GetGraphicsQueue() const { return m_GraphicsQueue; }
+        vk::Queue GetComputeQueue() const { return m_ComputeQueue; }
+        vk::Queue GetCopyQueue() const { return m_CopyQueue; }
+        vk::PipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
+        class RHIDescriptorAllocatorVK* GetResourceDescriptorAllocator() const { return m_ResourceDesAllocator; }
+        class RHIDescriptorAllocatorVK* GetSamplerDescriptorAllocator() const { return m_SamplerDesAllocator; }
         class RHIConstantBufferAllocatorVK* GetConstantBufferAllocator() const;
-        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& GetDescriptorBufferProperties() const { return mDescBufferProps; }
+        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& GetDescriptorBufferProperties() const { return m_DescBufferProps; }
 
         uint32_t AllocateResourceDescriptor(void** desc);
         uint32_t AllocateSamplerDescriptor(void** desc);
@@ -93,35 +93,35 @@ namespace RHI
         void FindQueueFamilyIndex();
 
     private:
-        vk::Instance mInstance = VK_NULL_HANDLE;
-        vk::DebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;
-        vk::detail::DispatchLoaderDynamic mDynamicLoader = {};
-        vk::PhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
-        vk::Device mDevice = VK_NULL_HANDLE;
-        VmaAllocator mAllocator = VK_NULL_HANDLE;
-        vk::DescriptorSetLayout mDescSetLayout[3] = {};
-        vk::PipelineLayout mPipelineLayout = {};
-        vk::PhysicalDeviceDescriptorBufferPropertiesEXT mDescBufferProps = {};
+        vk::Instance m_Instance = VK_NULL_HANDLE;
+        vk::DebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
+        vk::detail::DispatchLoaderDynamic m_DynamicLoader = {};
+        vk::PhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+        vk::Device m_Device = VK_NULL_HANDLE;
+        VmaAllocator m_Allocator = VK_NULL_HANDLE;
+        vk::DescriptorSetLayout m_DescSetLayout[3] = {};
+        vk::PipelineLayout m_PipelineLayout = {};
+        vk::PhysicalDeviceDescriptorBufferPropertiesEXT m_DescBufferProps = {};
 
-        uint32_t mGraphicsQueueIndex = -1;
-        uint32_t mComputeQueueIndex = -1;
-        uint32_t mCopyQueueIndex = -1;
-        vk::Queue mGraphicsQueue;
-        vk::Queue mComputeQueue;
-        vk::Queue mCopyQueue;
+        uint32_t m_GraphicsQueueIndex = -1;
+        uint32_t m_ComputeQueueIndex = -1;
+        uint32_t m_CopyQueueIndex = -1;
+        vk::Queue m_GraphicsQueue;
+        vk::Queue m_ComputeQueue;
+        vk::Queue m_CopyQueue;
 
-        RHIDeletionQueueVK* mDeferredDeletionQueue = nullptr;
-        RHICommandList* mTransitionCopyCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
-        RHICommandList* mTransitionGraphicsCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+        RHIDeletionQueueVK* m_DeferredDeletionQueue = nullptr;
+        RHICommandList* m_TransitionCopyCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+        RHICommandList* m_TransitionGraphicsCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
 
-        class RHIConstantBufferAllocatorVK* mConstantBufferAllocators[RHI_MAX_INFLIGHT_FRAMES] = {};
-        class RHIDescriptorAllocatorVK* mResourceDesAllocator = nullptr;
-        class RHIDescriptorAllocatorVK* mSamplerDesAllocator = nullptr;
+        class RHIConstantBufferAllocatorVK* m_ConstantBufferAllocators[RHI_MAX_INFLIGHT_FRAMES] = {};
+        class RHIDescriptorAllocatorVK* m_ResourceDesAllocator = nullptr;
+        class RHIDescriptorAllocatorVK* m_SamplerDesAllocator = nullptr;
 
-        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> mPendingGraphicsTransitions;
-        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> mPendingCopyTransitions;
+        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> m_PendingGraphicsTransitions;
+        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> m_PendingCopyTransitions;
 
-        eastl::hash_map<RHITextureDesc, uint32_t> mTextureSizeMap;
+        eastl::hash_map<RHITextureDesc, uint32_t> m_TextureSizeMap;
     };
 
     template<typename T>
@@ -129,7 +129,7 @@ namespace RHI
     {
         if (objectHandle != VK_NULL_HANDLE)
         {
-            mDeferredDeletionQueue->Delete(objectHandle, mFrameID);
+            m_DeferredDeletionQueue->Delete(objectHandle, m_FrameID);
         }
     }
 } // namespace RHI::Vulkan

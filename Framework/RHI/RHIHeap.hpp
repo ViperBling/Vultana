@@ -7,8 +7,8 @@ namespace RHI
     class RHIHeap : public RHIResource
     {
     public:
-        const RHIHeapDesc& GetDesc() const { return mDesc; }
+        const RHIHeapDesc& GetDesc() const { return m_Desc; }
     protected:
-        RHIHeapDesc mDesc {};
+        RHIHeapDesc m_Desc {};
     };
 }

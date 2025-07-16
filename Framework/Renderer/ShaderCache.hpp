@@ -44,8 +44,8 @@ namespace Renderer
         bool IsFileIncluded(const RHI::RHIShader* shader, const eastl::string& file);
     
     private:
-        RendererBase* mpRenderer = nullptr;
-        eastl::hash_map<RHI::RHIShaderDesc, eastl::unique_ptr<RHI::RHIShader>> mCachedShaders;
-        eastl::hash_map<eastl::string, eastl::string> mCachedFile;
+        RendererBase* m_pRenderer = nullptr;
+        eastl::hash_map<RHI::RHIShaderDesc, eastl::unique_ptr<RHI::RHIShader>> m_CachedShaders;
+        eastl::hash_map<eastl::string, eastl::string> m_CachedFile;
     };
 }

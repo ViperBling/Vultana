@@ -14,15 +14,15 @@ namespace Renderer
         void PrepareForDraw(RHI::RHICommandList* pCmdList);
         void Draw(RHI::RHICommandList* pCmdList);
 
-        RHI::RHIDescriptor* GetVertexBufferSRV() const { return mpLineVertexBuffer->GetSRV(); }
-        RHI::RHIDescriptor* GetVertexBufferUAV() const { return mpLineVertexBuffer->GetUAV(); }
-        RHI::RHIDescriptor* GetDrawArgsBufferUAV() const { return mpDrawArgsBuffer->GetUAV(); }
+        RHI::RHIDescriptor* GetVertexBufferSRV() const { return m_pLineVertexBuffer->GetSRV(); }
+        RHI::RHIDescriptor* GetVertexBufferUAV() const { return m_pLineVertexBuffer->GetUAV(); }
+        RHI::RHIDescriptor* GetDrawArgsBufferUAV() const { return m_pDrawArgsBuffer->GetUAV(); }
 
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
-        RHI::RHIPipelineState* mpPSO = nullptr;
+        Renderer::RendererBase* m_pRenderer = nullptr;
+        RHI::RHIPipelineState* m_pPSO = nullptr;
 
-        eastl::unique_ptr<RenderResources::RawBuffer> mpDrawArgsBuffer = nullptr;
-        eastl::unique_ptr<RenderResources::StructuredBuffer> mpLineVertexBuffer = nullptr;
+        eastl::unique_ptr<RenderResources::RawBuffer> m_pDrawArgsBuffer = nullptr;
+        eastl::unique_ptr<RenderResources::StructuredBuffer> m_pLineVertexBuffer = nullptr;
     };
 }

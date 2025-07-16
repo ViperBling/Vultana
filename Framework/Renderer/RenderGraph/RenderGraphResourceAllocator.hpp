@@ -90,9 +90,9 @@ namespace RG
         void AllocateHeap(uint32_t size);
 
     private:
-        RHI::RHIDevice* mpDevice = nullptr;
+        RHI::RHIDevice* m_pDevice = nullptr;
 
-        eastl::vector<FHeap> mAllocatedHeaps;
+        eastl::vector<FHeap> m_AllocatedHeaps;
 
         struct NonOverlappingTexture
         {
@@ -100,9 +100,9 @@ namespace RG
             RHI::ERHIAccessFlags LastUsedState;
             uint64_t LastUsedFrame;
         };
-        eastl::vector<NonOverlappingTexture> mFreeOverlappingTextures;
+        eastl::vector<NonOverlappingTexture> m_FreeOverlappingTextures;
 
-        eastl::vector<SRVDescriptor> mAllocatedSRVs;
-        eastl::vector<UAVDescriptor> mAllocatedUAVs;
+        eastl::vector<SRVDescriptor> m_AllocatedSRVs;
+        eastl::vector<UAVDescriptor> m_AllocatedUAVs;
     };
 } // namespace RG

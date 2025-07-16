@@ -20,16 +20,16 @@ namespace Scene
     public:
         Skeleton(const eastl::string& name);
         void Update(const SkeletalMesh* mesh);
-        uint32_t GetJointMatricesAddress() const { return mJointMatricesAddress; }
+        uint32_t GetJointMatricesAddress() const { return m_JointMatricesAddress; }
 
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
-        eastl::string mName;
-        eastl::vector<uint32_t> mJoints;
-        eastl::vector<float4x4> mInverseBindMatrices;
+        Renderer::RendererBase* m_pRenderer = nullptr;
+        eastl::string m_Name;
+        eastl::vector<uint32_t> m_Joints;
+        eastl::vector<float4x4> m_InverseBindMatrices;
 
-        eastl::vector<float4x4> mJointMatrices;
-        uint32_t mJointMatricesAddress;
+        eastl::vector<float4x4> m_JointMatrices;
+        uint32_t m_JointMatricesAddress;
     };
 
     struct FSkeletalMeshData
@@ -108,19 +108,19 @@ namespace Scene
         void Draw(Renderer::RenderBatch& batch, const FSkeletalMeshData* mesh, RHI::RHIPipelineState* pPSO);
 
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
+        Renderer::RendererBase* m_pRenderer = nullptr;
 
-        float4x4 mMtxWorld;
+        float4x4 m_MtxWorld;
 
-        eastl::unique_ptr<Skeleton> mpSkeleton;
-        eastl::unique_ptr<Animation> mpAnimation;
+        eastl::unique_ptr<Skeleton> m_pSkeleton;
+        eastl::unique_ptr<Animation> m_pAnimation;
 
-        eastl::vector<eastl::unique_ptr<FSkeletalMeshNode>> mNodes;
-        eastl::vector<uint32_t> mRootNodes;
+        eastl::vector<eastl::unique_ptr<FSkeletalMeshNode>> m_Nodes;
+        eastl::vector<uint32_t> m_RootNodes;
 
-        bool mbAnimated = false;
-        bool mbResetAnim = false;
-        float mRadius = 0.0f;
-        float mBoundScaleFactor = 3.0f;
+        bool m_bAnimated = false;
+        bool m_bResetAnim = false;
+        float m_Radius = 0.0f;
+        float m_BoundScaleFactor = 3.0f;
     };
 }

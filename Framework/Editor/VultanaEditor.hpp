@@ -32,19 +32,19 @@ namespace Editor
         void DrawWindow(const eastl::string& window, bool* pOpen);
 
     private:
-        Renderer::RendererBase* mpRenderer = nullptr;
-        eastl::unique_ptr<class ImGuiImplement> mpGUI;
+        Renderer::RendererBase* m_pRenderer = nullptr;
+        eastl::unique_ptr<class ImGuiImplement> m_pGUI;
 
-        bool mbShowImGuiDemo = false;
-        bool mbResetLayout = false;
-        bool mbVSync = false;
+        bool m_bShowImGuiDemo = false;
+        bool m_bResetLayout = false;
+        bool m_bVSync = false;
         
-        bool mbShowInspector = false;
-        bool mbShowSettings = false;
-        bool mbShowRenderer = false;
-        bool mbShowWorldOutliner = false;
+        bool m_bShowInspector = false;
+        bool m_bShowSettings = false;
+        bool m_bShowRenderer = false;
+        bool m_bShowWorldOutliner = false;
 
-        unsigned int mDockSpace = 0;
+        unsigned int m_DockSpace = 0;
 
         struct Command
         {
@@ -52,10 +52,10 @@ namespace Editor
             eastl::function<void()> Function;
         };
         using WindowCmd = eastl::vector<Command>;
-        eastl::hash_map<eastl::string, WindowCmd> mCommands;
+        eastl::hash_map<eastl::string, WindowCmd> m_Commands;
 
-        eastl::hash_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> mFileDialogIcons;
-        eastl::vector<RHI::RHIDescriptor*> mPendingDeletions;
+        eastl::hash_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> m_FileDialogIcons;
+        eastl::vector<RHI::RHIDescriptor*> m_PendingDeletions;
 
         enum class ESelectEditMode
         {
@@ -63,9 +63,9 @@ namespace Editor
             Rotate,
             Scale,
         };
-        ESelectEditMode mSelectEditMode = ESelectEditMode::Translate;
-        eastl::unique_ptr<RenderResources::Texture2D> mpTranslateIcon;
-        eastl::unique_ptr<RenderResources::Texture2D> mpRotateIcon;
-        eastl::unique_ptr<RenderResources::Texture2D> mpScaleIcon;
+        ESelectEditMode m_SelectEditMode = ESelectEditMode::Translate;
+        eastl::unique_ptr<RenderResources::Texture2D> m_pTranslateIcon;
+        eastl::unique_ptr<RenderResources::Texture2D> m_pRotateIcon;
+        eastl::unique_ptr<RenderResources::Texture2D> m_pScaleIcon;
     };
 }

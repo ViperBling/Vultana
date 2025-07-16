@@ -15,9 +15,9 @@ namespace RHI
 
         bool Create();
 
-        virtual void* GetNativeHandle() const override { return mAllocation; }
+        virtual void* GetNativeHandle() const override { return m_Allocation; }
 
     private:
-        VmaAllocation mAllocation = VK_NULL_HANDLE;
+        VmaAllocation m_Allocation = VK_NULL_HANDLE;
     };
 }

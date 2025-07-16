@@ -47,53 +47,53 @@ namespace Renderer
 {
     PipelineStateCache::PipelineStateCache(RendererBase *renderer)
     {
-        mpRenderer = renderer;
+        m_pRenderer = renderer;
     }
 
     RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
-        auto iter = mCachedGraphicsPSO.find(desc);
-        if (iter != mCachedGraphicsPSO.end())
+        auto iter = m_CachedGraphicsPSO.find(desc);
+        if (iter != m_CachedGraphicsPSO.end())
         {
             return iter->second.get();
         }
 
-        RHI::RHIPipelineState* pPSO = mpRenderer->GetDevice()->CreateGraphicsPipelineState(desc, name);
+        RHI::RHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateGraphicsPipelineState(desc, name);
         if (pPSO != nullptr)
         {
-            mCachedGraphicsPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            m_CachedGraphicsPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
         }
         return pPSO;
     }
 
     RHI::RHIPipelineState* PipelineStateCache::GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name)
     {
-        auto iter = mCachedMeshletPSO.find(desc);
-        if (iter != mCachedMeshletPSO.end())
+        auto iter = m_CachedMeshletPSO.find(desc);
+        if (iter != m_CachedMeshletPSO.end())
         {
             return iter->second.get();
         }
 
-        RHI::RHIPipelineState* pPSO = mpRenderer->GetDevice()->CreateMeshShadingPipelineState(desc, name);
+        RHI::RHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateMeshShadingPipelineState(desc, name);
         if (pPSO != nullptr)
         {
-            mCachedMeshletPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            m_CachedMeshletPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
         }
         return pPSO;
     }
 
     RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
-        auto iter = mCachedComputePSO.find(desc);
-        if (iter != mCachedComputePSO.end())
+        auto iter = m_CachedComputePSO.find(desc);
+        if (iter != m_CachedComputePSO.end())
         {
             return iter->second.get();
         }
 
-        RHI::RHIPipelineState* pPSO = mpRenderer->GetDevice()->CreateComputePipelineState(desc, name);
+        RHI::RHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateComputePipelineState(desc, name);
         if (pPSO)
         {
-            mCachedComputePSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            m_CachedComputePSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
         }
 
         return pPSO;
@@ -101,7 +101,7 @@ namespace Renderer
 
     void PipelineStateCache::RecreatePSO(RHI::RHIShader *shader)
     {
-        for (auto iter = mCachedGraphicsPSO.begin(); iter != mCachedGraphicsPSO.end(); iter++)
+        for (auto iter = m_CachedGraphicsPSO.begin(); iter != m_CachedGraphicsPSO.end(); iter++)
         {
             const RHI::RHIGraphicsPipelineStateDesc& desc = iter->first;
             RHI::RHIPipelineState* pPSO = iter->second.get();
@@ -110,7 +110,7 @@ namespace Renderer
                 pPSO->Create();
             }
         }
-        for (auto iter = mCachedMeshletPSO.begin(); iter != mCachedMeshletPSO.end(); iter++)
+        for (auto iter = m_CachedMeshletPSO.begin(); iter != m_CachedMeshletPSO.end(); iter++)
         {
             const RHI::RHIMeshShadingPipelineStateDesc& desc = iter->first;
             RHI::RHIPipelineState* pPSO = iter->second.get();
@@ -119,7 +119,7 @@ namespace Renderer
                 pPSO->Create();
             }
         }
-        for (auto iter = mCachedComputePSO.begin(); iter != mCachedComputePSO.end(); iter++)
+        for (auto iter = m_CachedComputePSO.begin(); iter != m_CachedComputePSO.end(); iter++)
         {
             const RHI::RHIComputePipelineStateDesc& desc = iter->first;
             RHI::RHIPipelineState* pPSO = iter->second.get();

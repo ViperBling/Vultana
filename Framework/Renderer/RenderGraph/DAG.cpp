@@ -7,18 +7,18 @@
 namespace RG
 {
     DAGEdge::DAGEdge(DirectedAcyclicGraph &graph, DAGNode *from, DAGNode *to)
-        : mFromNode(from->GetID())
-        , mToNode(to->GetID())
+        : m_FromNode(from->GetID())
+        , m_ToNode(to->GetID())
     {
-        assert(graph.GetNode(mFromNode) == from);
-        assert(graph.GetNode(mToNode) == to);
+        assert(graph.GetNode(m_FromNode) == from);
+        assert(graph.GetNode(m_ToNode) == to);
 
         graph.RegisterEdge(this);
     }
 
     DAGNode::DAGNode(DirectedAcyclicGraph &graph)
     {
-        mID = graph.GenerateNodeID();
+        m_ID = graph.GenerateNodeID();
         graph.RegisterNode(this);
     }
 
@@ -41,47 +41,47 @@ namespace RG
 
     DAGEdge* DirectedAcyclicGraph::GetEdge(DAGNodeID from, DAGNodeID to) const
     {
-        for (size_t i = 0; i < mEdges.size(); ++i)
+        for (size_t i = 0; i < m_Edges.size(); ++i)
         {
-            if (mEdges[i]->mFromNode == from && mEdges[i]->mToNode == to) { return mEdges[i]; }
+            if (m_Edges[i]->m_FromNode == from && m_Edges[i]->m_ToNode == to) { return m_Edges[i]; }
         }
         return nullptr;
     }
 
     void DirectedAcyclicGraph::RegisterNode(DAGNode *node)
     {
-        assert(node->GetID() == mNodes.size());
-        mNodes.push_back(node);
+        assert(node->GetID() == m_Nodes.size());
+        m_Nodes.push_back(node);
     }
 
     void DirectedAcyclicGraph::RegisterEdge(DAGEdge * edge)
     {
-        mEdges.push_back(edge);
+        m_Edges.push_back(edge);
     }
 
     void DirectedAcyclicGraph::Clear()
     {
-        mEdges.clear();
-        mNodes.clear();
+        m_Edges.clear();
+        m_Nodes.clear();
     }
 
     void DirectedAcyclicGraph::Cull()
     {
         // 遍历图中的边，更新节点的引用计数
-        for (size_t i = 0; i < mEdges.size(); ++i)
+        for (size_t i = 0; i < m_Edges.size(); ++i)
         {
-            DAGEdge* edge = mEdges[i];
-            DAGNode* node = mNodes[edge->mFromNode];
-            node->mRefCount++;
+            DAGEdge* edge = m_Edges[i];
+            DAGNode* node = m_Nodes[edge->m_FromNode];
+            node->m_RefCount++;
         }
 
         // 遍历图中的节点，如果引用计数为0，入栈准备删除
         eastl::vector<DAGNode*> nodesStack;
-        for (size_t i = 0; i < mNodes.size(); ++i)
+        for (size_t i = 0; i < m_Nodes.size(); ++i)
         {
-            if (mNodes[i]->GetRefCount() == 0)
+            if (m_Nodes[i]->GetRefCount() == 0)
             {
-                nodesStack.push_back(mNodes[i]);
+                nodesStack.push_back(m_Nodes[i]);
             }
         }
 
@@ -96,8 +96,8 @@ namespace RG
 
             for (size_t i = 0; i < incomingEdges.size(); ++i)
             {
-                DAGNode* linkedNode = GetNode(incomingEdges[i]->mFromNode);
-                if (--linkedNode->mRefCount == 0)
+                DAGNode* linkedNode = GetNode(incomingEdges[i]->m_FromNode);
+                if (--linkedNode->m_RefCount == 0)
                 {
                     nodesStack.push_back(linkedNode);
                 }
@@ -107,18 +107,18 @@ namespace RG
 
     bool DirectedAcyclicGraph::IsEdgeValid(const DAGEdge *edge) const
     {
-        return !GetNode(edge->mFromNode)->IsCulled() && !GetNode(edge->mToNode)->IsCulled();
+        return !GetNode(edge->m_FromNode)->IsCulled() && !GetNode(edge->m_ToNode)->IsCulled();
     }
 
     void DirectedAcyclicGraph::GetIncomingEdges(const DAGNode *node, eastl::vector<DAGEdge *> &edges) const
     {
         edges.clear();
 
-        for (size_t i = 0; i < mEdges.size(); ++i)
+        for (size_t i = 0; i < m_Edges.size(); ++i)
         {
-            if (mEdges[i]->mToNode == node->GetID())
+            if (m_Edges[i]->m_ToNode == node->GetID())
             {
-                edges.push_back(mEdges[i]);
+                edges.push_back(m_Edges[i]);
             }
         }
     }
@@ -127,11 +127,11 @@ namespace RG
     {
         edges.clear();
 
-        for (size_t i = 0; i < mEdges.size(); ++i)
+        for (size_t i = 0; i < m_Edges.size(); ++i)
         {
-            if (mEdges[i]->mFromNode == node->GetID())
+            if (m_Edges[i]->m_FromNode == node->GetID())
             {
-                edges.push_back(mEdges[i]);
+                edges.push_back(m_Edges[i]);
             }
         }
     }
@@ -144,16 +144,16 @@ namespace RG
         ssOut << "  rankdir=LR;\n";
         ssOut << "  node [fontname=\"helvetica\", fontsize=10]\n\n";
 
-        for (size_t i = 0; i < mNodes.size(); i++)
+        for (size_t i = 0; i < m_Nodes.size(); i++)
         {
-            uint32_t id = mNodes[i]->GetID();
-            eastl::string s = mNodes[i]->GraphVizify();
+            uint32_t id = m_Nodes[i]->GetID();
+            eastl::string s = m_Nodes[i]->GraphVizify();
             ssOut << "  \"N" << id << "\" " << s.c_str() << "\n";
         }
         ssOut << "\n";
-        for (size_t i = 0; i < mNodes.size(); i++)
+        for (size_t i = 0; i < m_Nodes.size(); i++)
         {
-            DAGNode* node = mNodes[i];
+            DAGNode* node = m_Nodes[i];
             uint32_t id = node->GetID();
 
             eastl::vector<DAGEdge*> edges;
@@ -169,7 +169,7 @@ namespace RG
                 ssOut << "  N" << id << " -> { ";
                 while (first != pos)
                 {
-                    DAGNode const* ref = GetNode((*first++)->mToNode);
+                    DAGNode const* ref = GetNode((*first++)->m_ToNode);
                     ssOut << "N" << ref->GetID() << " ";
                 }
                 ssOut << "} [color=" << s.c_str() << "2]\n";
@@ -180,7 +180,7 @@ namespace RG
                 ssOut << "  N" << id << " -> { ";
                 while (first != edges.end())
                 {
-                    DAGNode const* ref = GetNode((*first++)->mToNode);
+                    DAGNode const* ref = GetNode((*first++)->m_ToNode);
                     ssOut << "N" << ref->GetID() << " ";
                 }
                 ssOut << "} [color=" << s.c_str() << "4 style=dashed]\n";

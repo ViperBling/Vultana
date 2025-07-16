@@ -15,11 +15,11 @@ namespace RHI
 
         bool Create();
 
-        virtual void* GetNativeHandle() const override { return mSemaphore; }
+        virtual void* GetNativeHandle() const override { return m_Semaphore; }
         virtual void Wait(uint64_t value) override;
         virtual void Signal(uint64_t value) override;
 
     private:
-        vk::Semaphore mSemaphore;
+        vk::Semaphore m_Semaphore;
     };
 }

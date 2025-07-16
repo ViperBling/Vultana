@@ -11,9 +11,9 @@ namespace RHI
         
         virtual bool Create() = 0;
         
-        ERHIPipelineType GetType() const { return mType; }
+        ERHIPipelineType GetType() const { return m_Type; }
 
     protected:
-        ERHIPipelineType mType;
+        ERHIPipelineType m_Type;
     };
 }

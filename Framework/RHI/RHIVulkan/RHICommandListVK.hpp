@@ -15,7 +15,7 @@ namespace RHI
 
         bool Create();
 
-        virtual void* GetNativeHandle() const override { return mCmdBuffer; }
+        virtual void* GetNativeHandle() const override { return m_CmdBuffer; }
 
         virtual void ResetAllocator() override;
         virtual void Begin() override;
@@ -75,21 +75,21 @@ namespace RHI
         void UpdateComputeDescriptorBuffer();
     
     private:
-        vk::Queue mQueue;
-        vk::CommandPool mCmdPool;
-        vk::CommandBuffer mCmdBuffer;
-        vk::detail::DispatchLoaderDynamic mDynamicLoader;
+        vk::Queue m_Queue;
+        vk::CommandPool m_CmdPool;
+        vk::CommandBuffer m_CmdBuffer;
+        vk::detail::DispatchLoaderDynamic m_DynamicLoader;
 
-        eastl::vector<vk::CommandBuffer> mFreeCmdBuffers;
-        eastl::vector<vk::CommandBuffer> mPendingCmdBuffers;
+        eastl::vector<vk::CommandBuffer> m_FreeCmdBuffers;
+        eastl::vector<vk::CommandBuffer> m_PendingCmdBuffers;
 
-        eastl::vector<vk::MemoryBarrier2> mMemoryBarriers;
-        eastl::vector<vk::BufferMemoryBarrier2> mBufferMemoryBarriers;
-        eastl::vector<vk::ImageMemoryBarrier2> mImageMemoryBarriers;
+        eastl::vector<vk::MemoryBarrier2> m_MemoryBarriers;
+        eastl::vector<vk::BufferMemoryBarrier2> m_BufferMemoryBarriers;
+        eastl::vector<vk::ImageMemoryBarrier2> m_ImageMemoryBarriers;
 
-        eastl::vector<eastl::pair<RHIFence*, uint64_t>> mPendingWaits;
-        eastl::vector<eastl::pair<RHIFence*, uint64_t>> mPendingSignals;
-        eastl::vector<RHISwapchain*> mPendingSwapchain;
+        eastl::vector<eastl::pair<RHIFence*, uint64_t>> m_PendingWaits;
+        eastl::vector<eastl::pair<RHIFence*, uint64_t>> m_PendingSignals;
+        eastl::vector<RHISwapchain*> m_PendingSwapchain;
 
         struct ConstantData
         {
@@ -99,7 +99,7 @@ namespace RHI
             bool dirty = false;                     // 标志位，避免ConstantsBuffer的重复绑定
         };
 
-        ConstantData mGraphicsConstants;
-        ConstantData mComputeConstants;
+        ConstantData m_GraphicsConstants;
+        ConstantData m_ComputeConstants;
     };
 }

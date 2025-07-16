@@ -32,18 +32,18 @@ namespace RHI
     class RenderEvent
     {
     public:
-        RenderEvent(RHICommandList* cmdList, const eastl::string& eventName) : mpCmdList(cmdList)
+        RenderEvent(RHICommandList* cmdList, const eastl::string& eventName) : m_pCmdList(cmdList)
         {
-            mpCmdList->BeginEvent(eventName);
+            m_pCmdList->BeginEvent(eventName);
         }
 
         ~RenderEvent()
         {
-            mpCmdList->EndEvent();
+            m_pCmdList->EndEvent();
         }
     
     private:
-        RHICommandList* mpCmdList = nullptr;
+        RHICommandList* m_pCmdList = nullptr;
     };
 }
 

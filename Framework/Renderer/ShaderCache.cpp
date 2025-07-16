@@ -59,7 +59,7 @@ namespace Renderer
 
     ShaderCache::ShaderCache(RendererBase *renderer)
     {
-        mpRenderer = renderer;
+        m_pRenderer = renderer;
     }
 
     RHI::RHIShader *ShaderCache::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
@@ -74,8 +74,8 @@ namespace Renderer
         desc.Defines = defines;
         desc.CompileFlags = flags;
 
-        auto iter = mCachedShaders.find(desc);
-        if (iter != mCachedShaders.end())
+        auto iter = m_CachedShaders.find(desc);
+        if (iter != m_CachedShaders.end())
         {
             return iter->second.get();
         }
@@ -83,28 +83,28 @@ namespace Renderer
         RHI::RHIShader* shader = CreateShader(absolutePath, entryPoint, type, defines, flags);
         if (shader != nullptr)
         {
-            mCachedShaders.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIShader>(shader)));
+            m_CachedShaders.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIShader>(shader)));
         }
         return shader;
     }
 
     eastl::string ShaderCache::GetCachedFileContent(const eastl::string &file)
     {
-        auto iter = mCachedFile.find(file);
-        if (iter != mCachedFile.end())
+        auto iter = m_CachedFile.find(file);
+        if (iter != m_CachedFile.end())
         {
             return iter->second;
         }
 
         eastl::string source = LoadFile(file);
-        mCachedFile.insert(eastl::make_pair(file, source));
+        m_CachedFile.insert(eastl::make_pair(file, source));
 
         return source;
     }
 
     void ShaderCache::ReloadShaders()
     {
-        for (auto iter = mCachedFile.begin(); iter != mCachedFile.end(); iter++)
+        for (auto iter = m_CachedFile.begin(); iter != m_CachedFile.end(); iter++)
         {
             const eastl::string& path = iter->first;
             const eastl::string& source = iter->second;
@@ -113,7 +113,7 @@ namespace Renderer
 
             if (source != newSource)
             {
-                mCachedFile[path] = newSource;
+                m_CachedFile[path] = newSource;
 
                 eastl::vector<RHI::RHIShader*> changedShaders = GetShaderList(path);
                 for (size_t i = 0; i < changedShaders.size(); i++)
@@ -129,7 +129,7 @@ namespace Renderer
         eastl::string source = GetCachedFileContent(file);
 
         eastl::vector<uint8_t> shaderBlob;
-        if (!mpRenderer->GetShaderCompiler()->Compile(source, file, entryPoint, type, defines, flags, shaderBlob))
+        if (!m_pRenderer->GetShaderCompiler()->Compile(source, file, entryPoint, type, defines, flags, shaderBlob))
         {
             return nullptr;
         }
@@ -140,7 +140,7 @@ namespace Renderer
         desc.Defines = defines;
 
         eastl::string name = file + " : " + entryPoint;
-        RHI::RHIShader* shader = mpRenderer->GetDevice()->CreateShader(desc, shaderBlob, name);
+        RHI::RHIShader* shader = m_pRenderer->GetDevice()->CreateShader(desc, shaderBlob, name);
         return shader;
     }
 
@@ -152,14 +152,14 @@ namespace Renderer
         eastl::string source = GetCachedFileContent(desc.File);
 
         eastl::vector<uint8_t> shaderBlob;
-        if (!mpRenderer->GetShaderCompiler()->Compile(source, desc.File, desc.EntryPoint, desc.Type, desc.Defines, desc.CompileFlags, shaderBlob))
+        if (!m_pRenderer->GetShaderCompiler()->Compile(source, desc.File, desc.EntryPoint, desc.Type, desc.Defines, desc.CompileFlags, shaderBlob))
         {
             return;
         }
 
         shader->Create(shaderBlob);
 
-        PipelineStateCache* psoCache = mpRenderer->GetPipelineStateCache();
+        PipelineStateCache* psoCache = m_pRenderer->GetPipelineStateCache();
         psoCache->RecreatePSO(shader);
     }
 
@@ -167,7 +167,7 @@ namespace Renderer
     {
         eastl::vector<RHI::RHIShader*> shaders;
 
-        for (auto iter = mCachedShaders.begin(); iter != mCachedShaders.end(); iter++)
+        for (auto iter = m_CachedShaders.begin(); iter != m_CachedShaders.end(); iter++)
         {
             if (IsFileIncluded(iter->second.get(), file))
             {

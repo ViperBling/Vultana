@@ -8,22 +8,22 @@ namespace Scene
 {
     StaticMesh::StaticMesh(const eastl::string &name)
     {
-        mName = name;
+        m_Name = name;
     }
 
     StaticMesh::~StaticMesh()
     {
         auto resourceCache = Assets::ResourceCache::GetInstance();
-        resourceCache->ReleaseSceneBuffer(mPositionBuffer);
-        resourceCache->ReleaseSceneBuffer(mTexCoordBuffer);
-        resourceCache->ReleaseSceneBuffer(mNormalBuffer);
-        resourceCache->ReleaseSceneBuffer(mTangentBuffer);
+        resourceCache->ReleaseSceneBuffer(m_PositionBuffer);
+        resourceCache->ReleaseSceneBuffer(m_TexCoordBuffer);
+        resourceCache->ReleaseSceneBuffer(m_NormalBuffer);
+        resourceCache->ReleaseSceneBuffer(m_TangentBuffer);
 
-        resourceCache->ReleaseSceneBuffer(mMeshletBuffer);
-        resourceCache->ReleaseSceneBuffer(mMeshletVertexBuffer);
-        resourceCache->ReleaseSceneBuffer(mMeshletIndicesBuffer);
+        resourceCache->ReleaseSceneBuffer(m_MeshletBuffer);
+        resourceCache->ReleaseSceneBuffer(m_MeshletVertexBuffer);
+        resourceCache->ReleaseSceneBuffer(m_MeshletIndicesBuffer);
 
-        resourceCache->ReleaseSceneBuffer(mIndexBuffer);
+        resourceCache->ReleaseSceneBuffer(m_IndexBuffer);
     }
 
     bool StaticMesh::Create()
@@ -34,25 +34,25 @@ namespace Scene
     void StaticMesh::Tick(float deltaTime)
     {
         UpdateConstants();
-        mInstanceIndex = mpRenderer->AddInstance(mInstanceData);
+        m_InstanceIndex = m_pRenderer->AddInstance(m_InstanceData);
     }
 
     void StaticMesh::Render(Renderer::RendererBase *pRenderer)
     {
         Renderer::RenderBatch& batch = pRenderer->AddBasePassBatch();
 
-        Draw(batch, mpMaterial->GetPSO());
+        Draw(batch, m_pMaterial->GetPSO());
 
-        if (mpRenderer->IsEnableMouseHitTest())
+        if (m_pRenderer->IsEnableMouseHitTest())
         {
-            Renderer::RenderBatch& idBatch = mpRenderer->AddObjectIDPassBatch();
-            Draw(idBatch, mpMaterial->GetIDPSO());
+            Renderer::RenderBatch& idBatch = m_pRenderer->AddObjectIDPassBatch();
+            Draw(idBatch, m_pMaterial->GetIDPSO());
         }
 
-        if (mID == mpRenderer->GetMouseHitObjectID())
+        if (m_ID == m_pRenderer->GetMouseHitObjectID())
         {
-            Renderer::RenderBatch& outlineBatch = mpRenderer->AddOutlinePassBatch();
-            Draw(outlineBatch, mpMaterial->GetOutlinePSO());
+            Renderer::RenderBatch& outlineBatch = m_pRenderer->AddOutlinePassBatch();
+            Draw(outlineBatch, m_pMaterial->GetOutlinePSO());
         }
     }
 
@@ -60,12 +60,12 @@ namespace Scene
     {
         IVisibleObject::OnGUI();
 
-        mpMaterial->OnGUI();
+        m_pMaterial->OnGUI();
     }
 
     bool StaticMesh::FrustumCull(const float4 *plane, uint32_t planeCount) const
     {
-        return ::FrustumCull(plane, planeCount, mInstanceData.Center, mInstanceData.Radius);
+        return ::FrustumCull(plane, planeCount, m_InstanceData.Center, m_InstanceData.Radius);
     }
 
     // void StaticMesh::SetPosition(const float3 &position)
@@ -85,47 +85,47 @@ namespace Scene
 
     void StaticMesh::UpdateConstants()
     {
-        mpMaterial->UpdateConstants();
+        m_pMaterial->UpdateConstants();
 
-        mInstanceData.IndexBufferAddress = mIndexBuffer.offset;
-        mInstanceData.IndexStride = mIndexBufferFormat == RHI::ERHIFormat::R16UI ? 2 : 4;
-        mInstanceData.TriangleCount = mIndexCount / 3;
+        m_InstanceData.IndexBufferAddress = m_IndexBuffer.offset;
+        m_InstanceData.IndexStride = m_IndexBufferFormat == RHI::ERHIFormat::R16UI ? 2 : 4;
+        m_InstanceData.TriangleCount = m_IndexCount / 3;
 
-        mInstanceData.MeshletCount = mMeshletCount;
-        mInstanceData.MeshletBufferAddress = mMeshletBuffer.offset;
-        mInstanceData.MeshletVertexBufferAddress = mMeshletVertexBuffer.offset;
-        mInstanceData.MeshletIndexBufferAddress = mMeshletIndicesBuffer.offset;
+        m_InstanceData.MeshletCount = m_MeshletCount;
+        m_InstanceData.MeshletBufferAddress = m_MeshletBuffer.offset;
+        m_InstanceData.MeshletVertexBufferAddress = m_MeshletVertexBuffer.offset;
+        m_InstanceData.MeshletIndexBufferAddress = m_MeshletIndicesBuffer.offset;
 
-        mInstanceData.PositionBufferAddress = mPositionBuffer.offset;
-        mInstanceData.TexCoordBufferAddress = mTexCoordBuffer.offset;
-        mInstanceData.NormalBufferAddress = mNormalBuffer.offset;
-        mInstanceData.TangentBufferAddress = mTangentBuffer.offset;
+        m_InstanceData.PositionBufferAddress = m_PositionBuffer.offset;
+        m_InstanceData.TexCoordBufferAddress = m_TexCoordBuffer.offset;
+        m_InstanceData.NormalBufferAddress = m_NormalBuffer.offset;
+        m_InstanceData.TangentBufferAddress = m_TangentBuffer.offset;
 
-        mInstanceData.bVertexAnimation = false;
-        mInstanceData.MaterialDataAddress = mpRenderer->AllocateSceneConstantBuffer((void*)mpMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
-        mInstanceData.ObjectID = mID;
-        mInstanceData.Scale = eastl::max(eastl::max(abs(mScale.x), abs(mScale.y)), abs(mScale.z));
+        m_InstanceData.bVertexAnimation = false;
+        m_InstanceData.MaterialDataAddress = m_pRenderer->AllocateSceneConstantBuffer((void*)m_pMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
+        m_InstanceData.ObjectID = m_ID;
+        m_InstanceData.Scale = eastl::max(eastl::max(abs(m_Scale.x), abs(m_Scale.y)), abs(m_Scale.z));
 
-        float4x4 T = translation_matrix(mPosition);
-        float4x4 R = rotation_matrix(mRotation);
-        float4x4 S = scaling_matrix(mScale);
+        float4x4 T = translation_matrix(m_Position);
+        float4x4 R = rotation_matrix(m_Rotation);
+        float4x4 S = scaling_matrix(m_Scale);
         float4x4 mtxWorld = mul(T, mul(R, S));
 
-        mInstanceData.Center = mul(mtxWorld, float4(mCenter, 1.0f)).xyz();
-        mInstanceData.Radius = mRadius * mInstanceData.Scale;
+        m_InstanceData.Center = mul(mtxWorld, float4(m_Center, 1.0f)).xyz();
+        m_InstanceData.Radius = m_Radius * m_InstanceData.Scale;
 
-        mInstanceData.MtxWorld = mtxWorld;
-        mInstanceData.MtxWorldInverseTranspose = transpose(inverse(mtxWorld));
+        m_InstanceData.MtxWorld = mtxWorld;
+        m_InstanceData.MtxWorldInverseTranspose = transpose(inverse(mtxWorld));
     }
 
     void StaticMesh::Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState *pPSO)
     {
-        uint32_t rootConsts[1] = { mInstanceIndex };
+        uint32_t rootConsts[1] = { m_InstanceIndex };
 
-        batch.Label = mName.c_str();
+        batch.Label = m_Name.c_str();
         batch.SetPipelineState(pPSO);
         batch.SetConstantBuffer(0, rootConsts, sizeof(rootConsts));
-        batch.SetIndexBuffer(mpRenderer->GetSceneStaticBuffer(), mIndexBuffer.offset, mIndexBufferFormat);
-        batch.DrawIndexed(mIndexCount);
+        batch.SetIndexBuffer(m_pRenderer->GetSceneStaticBuffer(), m_IndexBuffer.offset, m_IndexBufferFormat);
+        batch.DrawIndexed(m_IndexCount);
     }
 }

@@ -28,17 +28,17 @@ namespace Core
         void Shutdown();
         void Tick();
 
-        Scene::World* GetWorld() const { return mpWorld.get(); }
-        Renderer::RendererBase* GetRenderer() const { return mpRenderer.get(); }
-        Editor::VultanaEditor* GetEditor() const { return mpEditor.get(); }
-        enki::TaskScheduler* GetTaskScheduler() const { return mpTaskScheduler.get(); }
+        Scene::World* GetWorld() const { return m_pWorld.get(); }
+        Renderer::RendererBase* GetRenderer() const { return m_pRenderer.get(); }
+        Editor::VultanaEditor* GetEditor() const { return m_pEditor.get(); }
+        enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
 
-        void* GetWindowHandle() const { return mWndHandle; }
-        float GetDeltaTime() const { return mFrameTime; }
+        void* GetWindowHandle() const { return m_WndHandle; }
+        float GetDeltaTime() const { return m_FrameTime; }
 
-        const eastl::string& GetWorkingPath() const { return mWorkingPath; }
-        const eastl::string& GetAssetsPath() const { return mAssetsPath; }
-        const eastl::string& GetShaderPath() const { return mShaderPath; }
+        const eastl::string& GetWorkingPath() const { return m_WorkingPath; }
+        const eastl::string& GetAssetsPath() const { return m_AssetsPath; }
+        const eastl::string& GetShaderPath() const { return m_ShaderPath; }
 
     private:
         ~VultanaEngine();
@@ -47,20 +47,20 @@ namespace Core
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
 
     private:
-        eastl::unique_ptr<Scene::World> mpWorld;
-        eastl::unique_ptr<Renderer::RendererBase> mpRenderer;
-        eastl::unique_ptr<Editor::VultanaEditor> mpEditor;
+        eastl::unique_ptr<Scene::World> m_pWorld;
+        eastl::unique_ptr<Renderer::RendererBase> m_pRenderer;
+        eastl::unique_ptr<Editor::VultanaEditor> m_pEditor;
 
-        eastl::unique_ptr<class enki::TaskScheduler> mpTaskScheduler;
+        eastl::unique_ptr<class enki::TaskScheduler> m_pTaskScheduler;
 
-        void* mWndHandle = nullptr;
+        void* m_WndHandle = nullptr;
 
-        uint64_t mLastFrameTime = 0;
-        float mFrameTime = 0.0f;
+        uint64_t m_LastFrameTime = 0;
+        float m_FrameTime = 0.0f;
 
-        eastl::string mWorkingPath;
-        eastl::string mAssetsPath;
-        eastl::string mShaderPath;
+        eastl::string m_WorkingPath;
+        eastl::string m_AssetsPath;
+        eastl::string m_ShaderPath;
     };
 } // namespace Vultana
 
