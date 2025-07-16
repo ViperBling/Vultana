@@ -6,6 +6,7 @@ target_sources(tinyxml2 PRIVATE
     tinyxml2/tinyxml2.h
     tinyxml2/tinyxml2.cpp)
 target_include_directories(tinyxml2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tinyxml2)
+set_target_properties(tinyxml2 PROPERTIES FOLDER External CXX_STANDARD 20)
 
 file (GLOB_RECURSE ImGUI_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGui/*.h)
 file (GLOB_RECURSE ImGUI_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGui/*.cpp)
@@ -13,6 +14,7 @@ file (GLOB_RECURSE ImGUI_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGui/*.cpp)
 add_library(ImGui STATIC)
 target_sources(ImGui PRIVATE ${ImGUI_Head} ${ImGUI_Src})
 target_include_directories(ImGui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ImGui)
+set_target_properties(ImGui PROPERTIES FOLDER External CXX_STANDARD 20)
 
 add_library(OffsetAllocator STATIC)
 target_sources(OffsetAllocator PRIVATE 
@@ -27,6 +29,7 @@ file (GLOB_RECURSE RPMalloc_Src ${CMAKE_CURRENT_SOURCE_DIR}/rpmalloc/*.c)
 add_library(RPMalloc STATIC)
 target_sources(RPMalloc PRIVATE ${RPMalloc_Head} ${RPMalloc_Src})
 target_include_directories(RPMalloc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rpmalloc)
+set_target_properties(RPMalloc PROPERTIES FOLDER External CXX_STANDARD 20)
 
 add_library(ImFileDialog STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ImFileDialog/ImFileDialog.cpp)
 target_include_directories(ImFileDialog PUBLIC
@@ -35,6 +38,7 @@ target_include_directories(ImFileDialog PUBLIC
     ${Stb_INCLUDE_DIR}
 )
 target_link_libraries(ImFileDialog PUBLIC ImGui)
+set_target_properties(ImFileDialog PROPERTIES FOLDER External CXX_STANDARD 20)
 
 file (GLOB_RECURSE ImGuiZmo_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.h)
 file (GLOB_RECURSE ImGuiZmo_Src ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/*.cpp)
@@ -43,6 +47,7 @@ target_sources(ImGuizmo PRIVATE ${ImGuiZmo_Head} ${ImGuiZmo_Src})
 target_include_directories(ImGuizmo PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo 
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGui)
+set_target_properties(ImGuizmo PROPERTIES FOLDER External CXX_STANDARD 20)
 
 file (GLOB_RECURSE ImGuiNodeEditor_Head ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor/*.h)
 file (GLOB_RECURSE ImGuiNodeEditor_Inl ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor/*.inl)
@@ -52,3 +57,4 @@ target_sources(ImGuiNodeEditor PRIVATE ${ImGuiNodeEditor_Head} ${ImGuiNodeEditor
 target_include_directories(ImGuiNodeEditor PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiNodeEditor 
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGui)
+set_target_properties(ImGuiNodeEditor PROPERTIES FOLDER External CXX_STANDARD 20)
