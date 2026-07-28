@@ -72,6 +72,7 @@ namespace Scene
         float4x4 m_View;
         float4x4 m_Projection;
         float4x4 m_ViewProjMat;
+        float4x4 m_PrevViewProjMat;
 
         float m_AspectRatio = 1.0f;
         float m_Fov = 45.0f;

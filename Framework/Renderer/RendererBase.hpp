@@ -6,6 +6,7 @@
 #include "RenderResources/StructuredBuffer.hpp"
 #include "RenderResources/Texture2D.hpp"
 #include "RenderResources/TypedBuffer.hpp"
+#include "RenderModules/GPUDrivenStats.hpp"
 #include "GPUScene.hpp"
 #include "RenderBatch.hpp"
 #include "StagingBufferAllocator.hpp"
@@ -29,6 +30,8 @@ namespace Renderer
     class PipelineStateCache;
     class ShaderCompiler;
     class ShaderCache;
+    class HiZBuffer;
+    class GPUDrivenStats;
 
     class RendererBase
     {
@@ -96,6 +99,12 @@ namespace Renderer
         uint32_t GetMouseHitObjectID() const { return m_MouseHitObjectID; }
 
         class ForwardBasePass* GetForwardBasePass() { return m_pForwardBasePass.get(); }
+        class HiZBuffer* GetHiZBuffer() { return m_pHZB.get(); }
+        class GPUDrivenStats* GetGPUDrivenStats() { return m_pGPUDrivenStats.get(); }
+        RenderResources::TypedBuffer* GetSPDCounterBuffer() { return m_pSPDCounterBuffer.get(); }
+        RG::RGHandle GetPrevSceneDepthHandle() const { return m_PrevSceneDepthHandle; }
+        bool IsGPUDrivenStatsEnabled() const { return m_bGPUDrivenStatsEnabled; }
+        void SetGPUDrivenStatsEnabled(bool enabled) { m_bGPUDrivenStatsEnabled = enabled; }
 
     protected:
         virtual void CreateCommonResources();
@@ -207,6 +216,16 @@ namespace Renderer
         eastl::unique_ptr<class ForwardBasePass> m_pForwardBasePass;
 
         eastl::unique_ptr<class GPUDrivenDebugLine> m_pGPUDrivenDebugLine;
+        eastl::unique_ptr<class HiZBuffer> m_pHZB;
+        eastl::unique_ptr<class GPUDrivenStats> m_pGPUDrivenStats;
+        bool m_bGPUDrivenStatsEnabled = false;
+
+        // Per-frame transient handles, cached in BuildRenderGraph and resolved in SetupGlobalConstants
+        RG::RGHandle m_CullingHZB1stPhaseHandle;
+        RG::RGHandle m_CullingHZB2ndPhaseHandle;
+        RG::RGHandle m_SceneHZBHandle;
+        RG::RGHandle m_SecondPhaseMeshletListHandle;
+        RG::RGHandle m_SecondPhaseMeshletListCounterHandle;
 
         eastl::vector<ComputeBatch> m_AnimationBatches;
 

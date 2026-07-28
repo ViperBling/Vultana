@@ -230,7 +230,7 @@ inline bool FrustumCull(const float4* planes, uint32_t plane_count, float3 cente
     return true;
 }
 
-inline uint32_t DivideRoudingUp(uint32_t a, uint32_t b)
+inline uint32_t DivideRoundingUp(uint32_t a, uint32_t b)
 {
     return (a + b - 1) / b;
 }

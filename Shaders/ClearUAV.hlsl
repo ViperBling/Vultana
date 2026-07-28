@@ -49,7 +49,7 @@ void ClearUAV_Texture2D(uint2 dispatchThreadID : SV_DispatchThreadID)
 }
 
 [numthreads(8, 8, 1)]
-void ClearUAV_Texture2D_Array(uint3 dispatchThreadID : SV_DispatchThreadID)
+void ClearUAV_Texture2DArray(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     RWTexture2DArray<UAV_TYPE> uav = ResourceDescriptorHeap[cResourceUAV];
     uav[dispatchThreadID] = CLEAR_VALUE;    
@@ -63,14 +63,14 @@ void ClearUAV_Texture3D(uint3 dispatchThreadID : SV_DispatchThreadID)
 }
 
 [numthreads(64, 1, 1)]
-void ClearUAV_Typed_Buffer(uint dispatchThreadID : SV_DispatchThreadID)
+void ClearUAV_TypedBuffer(uint dispatchThreadID : SV_DispatchThreadID)
 {
     RWBuffer<UAV_TYPE> uav = ResourceDescriptorHeap[cResourceUAV];
     uav[dispatchThreadID] = CLEAR_VALUE;
 }
 
 [numthreads(64, 1, 1)]
-void ClearUAV_Raw_Buffer(uint dispatchThreadID : SV_DispatchThreadID)
+void ClearUAV_RawBuffer(uint dispatchThreadID : SV_DispatchThreadID)
 {
     RWByteAddressBuffer uav = ResourceDescriptorHeap[cResourceUAV];
     uav.Store<UAV_TYPE>(sizeof(UAV_TYPE) * dispatchThreadID, CLEAR_VALUE);

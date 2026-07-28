@@ -43,6 +43,7 @@ namespace Editor
         bool m_bShowSettings = false;
         bool m_bShowRenderer = false;
         bool m_bShowWorldOutliner = false;
+        bool m_bShowGPUDrivenStats = false;
 
         unsigned int m_DockSpace = 0;
 

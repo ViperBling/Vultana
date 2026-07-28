@@ -25,8 +25,8 @@ namespace Renderer
     private:
         void CalcHZBSize();
 
-        void ReprojectDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectionDepthTexture);
-        void DilationDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectionDepthSRV, RG::RGTexture* hzbMip0UAV);
+        void ReprojectDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectedDepthTexture);
+        void DilationDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectedDepthSRV, RG::RGTexture* hzbMip0UAV);
         void BuildHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* texture, bool minMax = false);
         void InitHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* inputDepthSRV, RG::RGTexture* hzbMip0UAV, bool minMax = false);
 
