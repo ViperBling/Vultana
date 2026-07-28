@@ -26,8 +26,11 @@ struct FVertexOutput
     float3 BiTangentWS : BITANGENT;
     float3 PositionWS : WORLD_POSITION;
 
-    // nointerpolation uint MeshletIndex : COLOR0;
-    // nointerpolation uint InstanceIndex : COLOR1;
+    nointerpolation uint MeshletIndex : COLOR0;
+    nointerpolation uint InstanceIndex : COLOR1;
+
+    float4 ClipPos : TEXCOORD1;
+    float4 PrevClipPos : TEXCOORD2;
 };
 
 FVertexAttributes GetVertexAttributes(uint instanceID, uint vertexID)
@@ -65,13 +68,10 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
     vsOut.TexCoord = vtx.TexCoord;
     vsOut.NormalWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Normal, 0.0f)).xyz);
     vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Tangent.xyz, 0.0f)).xyz);
-    vsOut.BiTangentWS = cross(vsOut.NormalWS, vsOut.TangentWS) * vtx.Tangent.w;
+    vsOut.BiTangentWS = normalize(cross(vsOut.NormalWS, vsOut.TangentWS)) * vtx.Tangent.w;
 
-    // GPUDebug::DrawLine(vsOut.PositionWS.xyz, vsOut.PositionWS.xyz + vsOut.NormalWS * 1.0f, float3(0.0f, 0.0f, 1.0f));
-    // if (vertexID == 0)
-    // {
-    //     GPUDebug::DrawSphere(instanceData.Center, instanceData.Radius, float3(1.0f, 0.0f, 0.0f));
-    // }
+    vsOut.ClipPos = mul(GetCameraConstants().MtxViewProjection, positionWS);
+    vsOut.PrevClipPos = mul(GetCameraConstants().MtxPrevViewProjection, positionWS);
 
     return vsOut;
 }

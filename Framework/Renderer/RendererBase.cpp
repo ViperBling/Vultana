@@ -11,6 +11,8 @@
 #include "AssetManager/TextureLoader.hpp"
 #include "ForwardPath/ForwardBasePass.hpp"
 #include "RenderModules/GPUDrivenDebugLine.hpp"
+#include "RenderModules/HiZBuffer.hpp"
+#include "RenderModules/GPUDrivenStats.hpp"
 #include "Common/GlobalConstants.hlsli"
 
 #include <optional>
@@ -91,7 +93,10 @@ namespace Renderer
         m_pGPUScene = eastl::make_unique<GPUScene>(this);
         m_pForwardBasePass = eastl::make_unique<ForwardBasePass>(this);
         m_pGPUDrivenDebugLine = eastl::make_unique<GPUDrivenDebugLine>(this);
-        
+
+        m_pHZB = eastl::make_unique<HiZBuffer>(this);
+        m_pGPUDrivenStats = eastl::make_unique<GPUDrivenStats>(this);
+
         return true;
     }
 
@@ -387,6 +392,38 @@ namespace Renderer
         sceneConstants.DebugLineDrawCommandUAV = m_pGPUDrivenDebugLine->GetDrawArgsBufferUAV()->GetHeapIndex();
         sceneConstants.DebugLineVertexBufferUAV = m_pGPUDrivenDebugLine->GetVertexBufferUAV()->GetHeapIndex();
 
+        // HZB (transient; handles cached in BuildRenderGraph, resolved after Compile)
+        sceneConstants.HZBWidth = m_pHZB->GetHZBWidth();
+        sceneConstants.HZBHeight = m_pHZB->GetHZBHeight();
+        if (m_CullingHZB1stPhaseHandle.IsValid())
+        {
+            sceneConstants.CullingHZB1stPhaseSRV = m_pRenderGraph->GetTexture(m_CullingHZB1stPhaseHandle)->GetSRV()->GetHeapIndex();
+        }
+        if (m_CullingHZB2ndPhaseHandle.IsValid())
+        {
+            sceneConstants.CullingHZB2ndPhaseSRV = m_pRenderGraph->GetTexture(m_CullingHZB2ndPhaseHandle)->GetSRV()->GetHeapIndex();
+        }
+        if (m_SceneHZBHandle.IsValid())
+        {
+            sceneConstants.SceneHZBSRV = m_pRenderGraph->GetTexture(m_SceneHZBHandle)->GetSRV()->GetHeapIndex();
+        }
+
+        // GPU Driven Meshlet: 2nd phase meshlet list (filled by 1st phase base pass)
+        if (m_SecondPhaseMeshletListHandle.IsValid())
+        {
+            sceneConstants.SecondPhaseMeshletsListUAV = m_pRenderGraph->GetBuffer(m_SecondPhaseMeshletListHandle)->GetUAV()->GetHeapIndex();
+        }
+        if (m_SecondPhaseMeshletListCounterHandle.IsValid())
+        {
+            sceneConstants.SecondPhaseMeshletsCounterUAV = m_pRenderGraph->GetBuffer(m_SecondPhaseMeshletListCounterHandle)->GetUAV()->GetHeapIndex();
+        }
+
+        // GPU Driven Stats
+        sceneConstants.bEnableStats = m_bGPUDrivenStatsEnabled ? 1u : 0u;
+        sceneConstants.StatsBufferUAV = m_pGPUDrivenStats->GetStatsBufferUAV()->GetHeapIndex();
+
+        sceneConstants.bShowMeshlets = 0;
+
         sceneConstants.PointRepeatSampler = m_pPointRepeatSampler->GetHeapIndex();
         sceneConstants.PointClampSampler = m_pPointClampSampler->GetHeapIndex();
         sceneConstants.BilinearRepeatSampler = m_pBilinearRepeatSampler->GetHeapIndex();
@@ -570,12 +607,15 @@ namespace Renderer
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", m_pDevice->GetFrameID()).c_str());
 
         m_pGPUDrivenDebugLine->Clear(pCmdList);
+        m_pGPUDrivenStats->Clear(pCmdList);
 
         SetupGlobalConstants(pCmdList);
         FlushComputePass(pCmdList);
 
         m_pRenderGraph->Execute(this, pCmdList, pComputeCmdList);
-        
+
+        m_pGPUDrivenStats->Readback(pCmdList);
+
         RenderBackBufferPass(pCmdList);
     }
 

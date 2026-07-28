@@ -47,17 +47,22 @@ namespace RHI
         }
         if (m_Desc.Usage & RHIBufferUsageTypedBuffer)
         {
-            if (m_Desc.Usage & RHIBufferUsageUnorderedAccess)
-            {
-                bufferCI.usage |= vk::BufferUsageFlagBits::eStorageTexelBuffer;
-            }
-            else
-            {
-                bufferCI.usage |= vk::BufferUsageFlagBits::eUniformTexelBuffer;
-            }
+            // if (m_Desc.Usage & RHIBufferUsageUnorderedAccess)
+            // {
+            //     bufferCI.usage |= vk::BufferUsageFlagBits::eStorageTexelBuffer;
+            // }
+            // else
+            // {
+            //     bufferCI.usage |= vk::BufferUsageFlagBits::eUniformTexelBuffer;
+            // }
+            bufferCI.usage |= vk::BufferUsageFlagBits::eUniformTexelBuffer;
+        }
+        if (m_Desc.Usage & RHIBufferUsageUnorderedAccess)
+        {
+            bufferCI.usage |= vk::BufferUsageFlagBits::eStorageTexelBuffer;
         }
 
-        vk::Result result;
+            vk::Result result;
         if (m_Desc.Heap != nullptr)
         {
             assert(m_Desc.AllocationType == ERHIAllocationType::Placed);

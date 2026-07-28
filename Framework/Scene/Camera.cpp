@@ -78,6 +78,8 @@ namespace Scene
 
         m_bMoved = false;
 
+        m_PrevViewProjMat = m_ViewProjMat;
+
         UpdateCameraPosition(deltaTime);
         UpdateCameraRotation(deltaTime);
 
@@ -102,6 +104,7 @@ namespace Scene
         cameraCB.MtxProjectionInverse = Inverse(m_Projection);
         cameraCB.MtxViewProjection = m_ViewProjMat;
         cameraCB.MtxViewProjectionInverse = Inverse(m_ViewProjMat);
+        cameraCB.MtxPrevViewProjection = m_PrevViewProjMat;
     }
 
     void Camera::DrawViewFrustum(RHI::RHICommandList *pCmdList)

@@ -82,6 +82,10 @@ namespace Editor
             pWorld->OnGUI();
             ImGui::End();
         }
+        if (m_bShowGPUDrivenStats)
+        {
+            m_pRenderer->GetGPUDrivenStats()->OnGui();
+        }
     }
 
     void VultanaEditor::Render(RHI::RHICommandList *pCmdList)
@@ -174,6 +178,11 @@ namespace Editor
             }
             if (ImGui::BeginMenu("Debug"))
             {
+                if (ImGui::MenuItem("GPU Driven Stats", "", &m_bShowGPUDrivenStats))
+                {
+                    m_pRenderer->SetGPUDrivenStatsEnabled(m_bShowGPUDrivenStats);
+                }
+
                 if (ImGui::MenuItem("VSync", "", &m_bVSync))
                 {
                     m_pRenderer->GetSwapchain()->SetVSyncEnabled(m_bVSync);

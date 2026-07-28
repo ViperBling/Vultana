@@ -90,28 +90,28 @@ namespace Renderer
         case RHI::ERHIUnorderedAccessViewType::Texture2D:
         {
             const RHI::RHITextureDesc& textureDesc = static_cast<RHI::RHITexture*>(resource)->GetDesc();
-            return uint3(DivideRoudingUp(textureDesc.Width, 8), DivideRoudingUp(textureDesc.Height, 8), 1);
+            return uint3(DivideRoundingUp(textureDesc.Width, 8), DivideRoundingUp(textureDesc.Height, 8), 1);
         }
         case RHI::ERHIUnorderedAccessViewType::Texture2DArray:
         {
             const RHI::RHITextureDesc& textureDesc = static_cast<RHI::RHITexture*>(resource)->GetDesc();
-            return uint3(DivideRoudingUp(textureDesc.Width, 8), DivideRoudingUp(textureDesc.Height, 8), textureDesc.ArraySize);
+            return uint3(DivideRoundingUp(textureDesc.Width, 8), DivideRoundingUp(textureDesc.Height, 8), textureDesc.ArraySize);
         }
         case RHI::ERHIUnorderedAccessViewType::Texture3D:
         {
             const RHI::RHITextureDesc& textureDesc = static_cast<RHI::RHITexture*>(resource)->GetDesc();
-            return uint3(DivideRoudingUp(textureDesc.Width, 8), DivideRoudingUp(textureDesc.Height, 8), DivideRoudingUp(textureDesc.Depth, 8));
+            return uint3(DivideRoundingUp(textureDesc.Width, 8), DivideRoundingUp(textureDesc.Height, 8), DivideRoundingUp(textureDesc.Depth, 8));
         }
         case RHI::ERHIUnorderedAccessViewType::TypedBuffer:
         {
             const RHI::RHIBufferDesc& bufferDesc = static_cast<RHI::RHIBuffer*>(resource)->GetDesc();
             uint32_t elementCount = uavDesc.Buffer.Size / bufferDesc.Stride;
-            return uint3(DivideRoudingUp(elementCount, 64), 1, 1);
+            return uint3(DivideRoundingUp(elementCount, 64), 1, 1);
         }
         case RHI::ERHIUnorderedAccessViewType::RawBuffer:
         {
             uint32_t elementCount = uavDesc.Buffer.Size / 16;
-            return uint3(DivideRoudingUp(elementCount, 64), 1, 1);
+            return uint3(DivideRoundingUp(elementCount, 64), 1, 1);
         }
         default:
             assert(false);

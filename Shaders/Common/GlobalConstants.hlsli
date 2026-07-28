@@ -20,6 +20,8 @@ struct FCameraConstants
     float4x4 MtxViewProjection;
     float4x4 MtxViewProjectionInverse;
 
+    float4x4 MtxPrevViewProjection;         // Previous frame's view-projection (no jitter), for velocity
+
     FCullingData CullingData;
 };
 
@@ -56,7 +58,12 @@ struct FSceneConstants
 
     uint DebugLineDrawCommandUAV;
     uint DebugLineVertexBufferUAV;
-    uint2 _Padding00;
+
+    uint SecondPhaseMeshletsListUAV;
+    uint SecondPhaseMeshletsCounterUAV;
+
+    uint bEnableStats;
+    uint StatsBufferUAV;
 
     uint PointRepeatSampler;
     uint PointClampSampler;
@@ -72,6 +79,9 @@ struct FSceneConstants
     uint Aniso4xSampler;
     uint Aniso8xSampler;
     uint Aniso16xSampler;
+
+    uint bShowMeshlets;
+    uint3 _Padding00;
 };
 
 #ifndef __cplusplus

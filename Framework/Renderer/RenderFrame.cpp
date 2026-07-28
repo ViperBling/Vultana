@@ -1,6 +1,7 @@
 #include "RendererBase.hpp"
 #include "ForwardPath/ForwardBasePass.hpp"
 #include "Core/VultanaEngine.hpp"
+#include "RenderModules/HiZBuffer.hpp"
 
 namespace Renderer
 {
@@ -10,10 +11,30 @@ namespace Renderer
 
         ImportPrevFrameTextures();
 
-        m_pForwardBasePass->Render(m_pRenderGraph.get());
+        // 1st Phase Culling HZB from Previous Frame Depth
+        m_pHZB->GenerateCullingHZB1stPhase(m_pRenderGraph.get());
 
-        RG::RGHandle sceneColorRT = m_pForwardBasePass->GetBasePassColorRT();
-        RG::RGHandle sceneDepthRT = m_pForwardBasePass->GetBasePassDepthRT();
+        // Base Pass 1st Phase (GPU-Driven, writes GBuffer; Occluded meshlets queued for 2nd phase)
+        m_pForwardBasePass->Render1stPhase(m_pRenderGraph.get());
+
+        // 2nd Phase Culling HZB from Current Frame Depth
+        m_pHZB->GenerateCullingHZB2ndPhase(m_pRenderGraph.get(), m_pForwardBasePass->GetDepthRT());
+
+        // Base Pass 2nd Phase (Draw previously-occluded meshlets)
+        m_pForwardBasePass->Render2ndPhase(m_pRenderGraph.get());
+
+        // Scene HZB for downstream passes / next-frame reprojection
+        m_pHZB->GenerateSceneHZB(m_pRenderGraph.get(), m_pForwardBasePass->GetDepthRT());
+
+        // Cache transient handles so SetupGlobalConstants can put their heap indices into SceneCB
+        m_CullingHZB1stPhaseHandle = m_pHZB->GetCullingHZBMip1stPhase(0);
+        m_CullingHZB2ndPhaseHandle = m_pHZB->GetCullingHZBMip2ndPhase(0);
+        m_SceneHZBHandle = m_pHZB->GetSceneHZBMip(0);
+        m_SecondPhaseMeshletListHandle = m_pForwardBasePass->GetSecondPhaseMeshletListBuffer();
+        m_SecondPhaseMeshletListCounterHandle = m_pForwardBasePass->GetSecondPhaseMeshletListCounterBuffer();
+
+        RG::RGHandle sceneColorRT = m_pForwardBasePass->GetDiffuseRT();
+        RG::RGHandle sceneDepthRT = m_pForwardBasePass->GetDepthRT();
 
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
@@ -137,7 +158,7 @@ namespace Renderer
 
             pCmdList->SetPipelineState(m_pCopyDepthPSO);
             pCmdList->SetComputeConstants(0, cb, sizeof(cb));
-            pCmdList->Dispatch(DivideRoudingUp(m_RenderWidth, 8), DivideRoudingUp(m_RenderHeight, 8), 1);
+            pCmdList->Dispatch(DivideRoundingUp(m_RenderWidth, 8), DivideRoundingUp(m_RenderHeight, 8), 1);
         });
 
         struct FCopyPassData
