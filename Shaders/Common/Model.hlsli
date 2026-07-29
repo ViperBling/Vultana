@@ -73,6 +73,8 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
     vsOut.ClipPos = mul(GetCameraConstants().MtxViewProjection, positionWS);
     vsOut.PrevClipPos = mul(GetCameraConstants().MtxPrevViewProjection, positionWS);
 
+    vsOut.InstanceIndex = instanceID;
+
     return vsOut;
 }
 
