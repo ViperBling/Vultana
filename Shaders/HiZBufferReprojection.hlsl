@@ -21,7 +21,7 @@ void DepthReprojectionCS(uint3 dispatchThreadID : SV_DispatchThreadID)
     float prevNdcDepth = min(min(prevNdcDepth4.x, prevNdcDepth4.y), min(prevNdcDepth4.z, prevNdcDepth4.w));
 
     float4 clipPos = float4((uv * 2.0 - 1.0) * float2(1.0, -1.0), prevNdcDepth, 1.0);
-    float4 worldPos = mul(GetCameraConstants().MtxViewProjectionInverse, clipPos);
+    float4 worldPos = mul(GetCameraConstants().MtxPrevViewProjectionInverse, clipPos);
     worldPos /= worldPos.w;
 
     float4 reprojectedPosition = mul(GetCameraConstants().MtxViewProjection, worldPos);

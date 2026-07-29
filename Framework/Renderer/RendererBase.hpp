@@ -98,7 +98,7 @@ namespace Renderer
         bool IsEnableMouseHitTest() const { return m_bEnableObjectIDRendering; }
         uint32_t GetMouseHitObjectID() const { return m_MouseHitObjectID; }
 
-        class ForwardBasePass* GetForwardBasePass() { return m_pForwardBasePass.get(); }
+        class DeferredBasePass* GetDeferredBasePass() { return m_pDeferredBasePass.get(); }
         class HiZBuffer* GetHiZBuffer() { return m_pHZB.get(); }
         class GPUDrivenStats* GetGPUDrivenStats() { return m_pGPUDrivenStats.get(); }
         RenderResources::TypedBuffer* GetSPDCounterBuffer() { return m_pSPDCounterBuffer.get(); }
@@ -215,7 +215,7 @@ namespace Renderer
         RHI::RHIPipelineState* m_pCopyDepthPSO = nullptr;
         RHI::RHIPipelineState* m_pCopyColorDepthPSO = nullptr;
 
-        eastl::unique_ptr<class ForwardBasePass> m_pForwardBasePass;
+        eastl::unique_ptr<class DeferredBasePass> m_pDeferredBasePass;
 
         eastl::unique_ptr<class GPUDrivenDebugLine> m_pGPUDrivenDebugLine;
         eastl::unique_ptr<class HiZBuffer> m_pHZB;

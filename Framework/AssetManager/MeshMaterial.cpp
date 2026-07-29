@@ -121,7 +121,7 @@ namespace Assets
             psoDesc.RasterizerState.bFrontCCW = m_bFrontFaceCCW;
             psoDesc.DepthStencilState.bDepthTest = true;
             psoDesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::GreaterEqual;
-            // Simplified GBuffer MRT (must match ForwardBasePass RT order + Model.hlsl PSMain SV_Target)
+            // Simplified GBuffer MRT (must match DeferredBasePass RT order + Model.hlsl PSMain SV_Target)
             psoDesc.RTFormats[0] = RHI::ERHIFormat::RGBA16F;               // Diffuse RT   (SV_Target0)
             psoDesc.RTFormats[1] = RHI::ERHIFormat::RGBA8UNORM;            // Normal RT    (SV_Target1)
             psoDesc.RTFormats[2] = RHI::ERHIFormat::RG16F;                 // Velocity RT  (SV_Target2)
