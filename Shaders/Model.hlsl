@@ -17,11 +17,7 @@ FVertexOutput VSMain(uint vertexID : SV_VertexID)
 
 FGBufferOutput PSMain(FVertexOutput psIn)
 {
-#if UNIFORM_RESOURCE
-    uint instanceIndex = cInstanceIndex;
-#else
     uint instanceIndex = psIn.InstanceIndex;
-#endif
 
     FModelMaterialConstants material = GetMaterialConstants(instanceIndex);
 
