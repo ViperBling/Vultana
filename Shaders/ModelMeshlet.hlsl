@@ -8,7 +8,7 @@ void MSMain(
     uint groupID : SV_GroupID,
     in payload FMeshletPayload payload,
     out indices uint3 indices[124],
-    out vertices FVertexOutput vertices[64],
+    out vertices FVertexOutput vertices[64]
 )
 {
     uint instanceIndex = payload.InstanceIndices[groupID];

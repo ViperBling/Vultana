@@ -105,6 +105,8 @@ namespace Renderer
         RG::RGHandle GetPrevSceneDepthHandle() const { return m_PrevSceneDepthHandle; }
         bool IsGPUDrivenStatsEnabled() const { return m_bGPUDrivenStatsEnabled; }
         void SetGPUDrivenStatsEnabled(bool enabled) { m_bGPUDrivenStatsEnabled = enabled; }
+        bool IsShowMeshletsEnabled() const { return m_bShowMeshlets; }
+        void SetShowMeshletsEnabled(bool enabled) { m_bShowMeshlets = enabled; }
 
     protected:
         virtual void CreateCommonResources();
@@ -219,6 +221,7 @@ namespace Renderer
         eastl::unique_ptr<class HiZBuffer> m_pHZB;
         eastl::unique_ptr<class GPUDrivenStats> m_pGPUDrivenStats;
         bool m_bGPUDrivenStatsEnabled = false;
+        bool m_bShowMeshlets = false;
 
         // Per-frame transient handles, cached in BuildRenderGraph and resolved in SetupGlobalConstants
         RG::RGHandle m_CullingHZB1stPhaseHandle;

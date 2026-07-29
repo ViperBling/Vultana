@@ -46,7 +46,10 @@ namespace RHI
         waitInfo.pValues = &value;
         
         auto device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        assert(device.waitSemaphores(waitInfo, UINT64_MAX) == vk::Result::eSuccess);
+        // assert(device.waitSemaphores(waitInfo, UINT64_MAX) == vk::Result::eSuccess);
+        const vk::Result result = device.waitSemaphores(waitInfo, UINT64_MAX);
+        assert(result == vk::Result::eSuccess);
+        (void)result;
     }
 
     void RHIFenceVK::Signal(uint64_t value)

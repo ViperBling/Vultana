@@ -17,9 +17,15 @@ FVertexOutput VSMain(uint vertexID : SV_VertexID)
 
 FGBufferOutput PSMain(FVertexOutput psIn)
 {
-    FModelMaterialConstants material = GetMaterialConstants(cInstanceIndex);
+#if UNIFORM_RESOURCE
+    uint instanceIndex = cInstanceIndex;
+#else
+    uint instanceIndex = psIn.InstanceIndex;
+#endif
 
-    AlphaTest(cInstanceIndex, psIn.TexCoord);
+    FModelMaterialConstants material = GetMaterialConstants(instanceIndex);
+
+    AlphaTest(instanceIndex, psIn.TexCoord);
 
 #if ALBEDO_TEXTURE
     float4 mainTexVal = SampleMaterialTexture(material.AlbedoTexture, psIn.TexCoord, 0);
@@ -38,9 +44,11 @@ FGBufferOutput PSMain(FVertexOutput psIn)
     float3 albedo = material.Albedo;
     float3 finalColor = mainTexVal.rgb * albedo;
 
-    FGBufferOutput output = (FGBufferOutput)0;
-    output.Diffuse = float4(finalColor * ao, 1.0f);
-    output.Normal = float4(normalize(psIn.NormalWS) * 0.5f + 0.5f, 0.0f);
+    if (SceneCB.bShowMeshlets)
+    {
+        uint hash = WangHash(psIn.MeshletIndex);
+        finalColor = float3(float(hash & 255), float((hash >> 8) & 255), float((hash >> 16) & 255)) / 255.0f;
+    }
 
     float3 ndc = psIn.ClipPos.xyz / max(psIn.ClipPos.w, 0.0000001f);
     float3 prevNdc = psIn.PrevClipPos.xyz / max(psIn.PrevClipPos.w, 0.0000001f);
@@ -51,6 +59,9 @@ FGBufferOutput PSMain(FVertexOutput psIn)
         velocity = float2(0.0f, 0.0f);
     }
 
+    FGBufferOutput output = (FGBufferOutput)0;
+    output.Diffuse = float4(finalColor * ao, 1.0f);
+    output.Normal = float4(normalize(psIn.NormalWS) * 0.5f + 0.5f, 0.0f);
     output.Velocity = velocity;
     return output;
 }

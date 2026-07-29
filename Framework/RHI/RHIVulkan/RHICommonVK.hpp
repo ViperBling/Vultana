@@ -252,7 +252,7 @@ namespace RHI
         if (flags & RHIAccessPresent)         stage |= vk::PipelineStageFlagBits2::eTopOfPipe;
         if (flags & RHIAccessRTV)             stage |= vk::PipelineStageFlagBits2::eColorAttachmentOutput;
         if (flags & RHIAccessMaskDSV)         stage |= vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests;
-        if (flags & RHIAccessMaskVS)          stage |= /* vk::PipelineStageFlagBits2::eTaskShaderEXT | vk::PipelineStageFlagBits2::eMeshShaderEXT | */ vk::PipelineStageFlagBits2::eVertexShader;
+        if (flags & RHIAccessMaskVS)          stage |= vk::PipelineStageFlagBits2::eTaskShaderEXT | vk::PipelineStageFlagBits2::eMeshShaderEXT | vk::PipelineStageFlagBits2::eVertexShader;
         if (flags & RHIAccessMaskPS)          stage |= vk::PipelineStageFlagBits2::eFragmentShader;
         if (flags & RHIAccessMaskCS)          stage |= vk::PipelineStageFlagBits2::eComputeShader;
         if (flags & RHIAccessMaskCopy)        stage |= vk::PipelineStageFlagBits2::eCopy;
@@ -298,7 +298,7 @@ namespace RHI
         if (flags & RHIAccessRTV)             return vk::ImageLayout::eColorAttachmentOptimal;
         if (flags & RHIAccessDSV)             return vk::ImageLayout::eDepthStencilAttachmentOptimal;
         if (flags & RHIAccessDSVReadOnly)     return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-        if (flags & RHIAccessMaskSRV)         return vk::ImageLayout::eShaderReadOnlyOptimal;
+        if (flags & RHIAccessMaskSRV)         return vk::ImageLayout::eGeneral;
         if (flags & RHIAccessMaskUAV)         return vk::ImageLayout::eGeneral;
         if (flags & RHIAccessClearUAV)        return vk::ImageLayout::eGeneral;
         if (flags & RHIAccessCopyDst)         return vk::ImageLayout::eTransferDstOptimal;

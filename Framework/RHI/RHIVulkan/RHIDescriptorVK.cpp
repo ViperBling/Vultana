@@ -32,7 +32,7 @@ namespace RHI
         vk::DescriptorGetInfoEXT descGetInfo {};
         vk::DescriptorAddressInfoEXT descBufferInfo {};
         vk::DescriptorImageInfo descImageInfo {};
-        descImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        descImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 
         vk::ImageViewUsageCreateInfo imageViewUsageCI {};
         imageViewUsageCI.setUsage(vk::ImageUsageFlagBits::eSampled);

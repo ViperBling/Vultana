@@ -405,7 +405,8 @@ namespace Renderer
         }
         if (m_SceneHZBHandle.IsValid())
         {
-            sceneConstants.SceneHZBSRV = m_pRenderGraph->GetTexture(m_SceneHZBHandle)->GetSRV()->GetHeapIndex();
+            RG::RGTexture *pSceneHZB = m_pRenderGraph->GetTexture(m_SceneHZBHandle);
+            sceneConstants.SceneHZBSRV = pSceneHZB->IsUsed() ? pSceneHZB->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
         }
 
         // GPU Driven Meshlet: 2nd phase meshlet list (filled by 1st phase base pass)
@@ -422,7 +423,7 @@ namespace Renderer
         sceneConstants.bEnableStats = m_bGPUDrivenStatsEnabled ? 1u : 0u;
         sceneConstants.StatsBufferUAV = m_pGPUDrivenStats->GetStatsBufferUAV()->GetHeapIndex();
 
-        sceneConstants.bShowMeshlets = 0;
+        sceneConstants.bShowMeshlets = m_bShowMeshlets ? 1u : 0u;
 
         sceneConstants.PointRepeatSampler = m_pPointRepeatSampler->GetHeapIndex();
         sceneConstants.PointClampSampler = m_pPointClampSampler->GetHeapIndex();
@@ -503,6 +504,10 @@ namespace Renderer
 
         samplerDesc.MaxAnisotropy = 16.0f;
         m_pAniso16xSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::Aniso16xSampler"));
+
+        m_pSPDCounterBuffer = eastl::make_unique<RenderResources::TypedBuffer>("RendererBase::SPDCounterBuffer");
+        const bool spdCounterCreated = m_pSPDCounterBuffer->Create(RHI::ERHIFormat::R32UI, 1, RHI::ERHIMemoryType::GPUOnly, true);
+        assert(spdCounterCreated && "Failed to create SPD counter buffer");
 
         RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
@@ -606,6 +611,13 @@ namespace Renderer
 
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", m_pDevice->GetFrameID()).c_str());
 
+        if (m_pDevice->GetFrameID() == 0)
+        {
+            pCmdList->BufferBarrier(m_pSPDCounterBuffer->GetBuffer(), RHI::RHIAccessComputeUAV, RHI::RHIAccessCopyDst);
+            pCmdList->WriteBuffer(m_pSPDCounterBuffer->GetBuffer(), 0, 0);
+            pCmdList->BufferBarrier(m_pSPDCounterBuffer->GetBuffer(), RHI::RHIAccessCopyDst, RHI::RHIAccessComputeUAV);
+        }
+
         m_pGPUDrivenDebugLine->Clear(pCmdList);
         m_pGPUDrivenStats->Clear(pCmdList);
 
@@ -682,6 +694,7 @@ namespace Renderer
             renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
             renderPassDesc.Depth.StencilStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
             renderPassDesc.Depth.bReadOnly = true;
+            pCmdList->TextureBarrier(pDepthRT->GetTexture(), 0, RHI::RHIAccessDSV, RHI::RHIAccessDSVReadOnly);
             pCmdList->BeginRenderPass(renderPassDesc);
 
             uint32_t constants[3] = 
@@ -703,6 +716,7 @@ namespace Renderer
             Core::VultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
 
             pCmdList->EndRenderPass();
+            pCmdList->TextureBarrier(pDepthRT->GetTexture(), 0, RHI::RHIAccessDSVReadOnly, RHI::RHIAccessDSV);
         }
         pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }

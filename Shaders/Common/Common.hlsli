@@ -99,3 +99,15 @@ bool OcclusionCull(Texture2D<float> hzbTexture, uint2 hzbSize, float3 center, fl
     
     return visible;
 }
+
+// https://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
+// Ported from RE shaders/random.hlsli:36-44 (used by meshlet debug coloring).
+uint WangHash(uint x)
+{
+    x = (x ^ 61) ^ (x >> 16);
+    x *= 9;
+    x = x ^ (x >> 4);
+    x *= 0x27d4eb2d;
+    x = x ^ (x >> 15);
+    return x;
+}

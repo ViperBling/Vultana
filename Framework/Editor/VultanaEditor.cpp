@@ -183,6 +183,11 @@ namespace Editor
                     m_pRenderer->SetGPUDrivenStatsEnabled(m_bShowGPUDrivenStats);
                 }
 
+                if (ImGui::MenuItem("Show Meshlets", "", &m_bShowMeshlets))
+                {
+                    m_pRenderer->SetShowMeshletsEnabled(m_bShowMeshlets);
+                }
+
                 if (ImGui::MenuItem("VSync", "", &m_bVSync))
                 {
                     m_pRenderer->GetSwapchain()->SetVSyncEnabled(m_bVSync);

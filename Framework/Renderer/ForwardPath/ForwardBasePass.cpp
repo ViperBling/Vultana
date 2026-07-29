@@ -199,7 +199,7 @@ namespace Renderer
                 textureDesc.Width = m_pRenderer->GetRenderWidth();
                 textureDesc.Height = m_pRenderer->GetRenderHeight();
 
-                textureDesc.Format = RHI::ERHIFormat::RGBA8SRGB;
+                textureDesc.Format = RHI::ERHIFormat::RGBA16F;
                 data.OutDiffuseRT = builder.Create<RG::RGTexture>(textureDesc, "BasePass_DiffuseRT");
 
                 textureDesc.Format = RHI::ERHIFormat::RGBA8UNORM;
@@ -288,7 +288,7 @@ namespace Renderer
 
                 pCmdList->SetPipelineState(m_BuildInstanceCullingCmdPSO);
 
-                uint32_t consts[2] = {commandBuffer->GetUAV()->GetHeapIndex(), objectListCounterBuffer->GetUAV()->GetHeapIndex()};
+                uint32_t consts[2] = {commandBuffer->GetUAV()->GetHeapIndex(), objectListCounterBuffer->GetSRV()->GetHeapIndex()};
                 pCmdList->SetComputeConstants(0, consts, sizeof(consts));
                 pCmdList->Dispatch(1, 1, 1);
             });
