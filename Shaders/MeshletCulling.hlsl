@@ -1,3 +1,4 @@
+#include "Common/Common.hlsli"
 #include "Common/GPUScene.hlsli"
 #include "Common/Meshlet.hlsli"
 #include "Common/Stats.hlsli"
@@ -86,7 +87,7 @@ void ASMain(uint3 dispatchThreadID : SV_DispatchThreadID)
     if (dispatchThreadID.x < totalMeshletCount)
     {
         StructuredBuffer<uint2> meshletsListBuffer = ResourceDescriptorHeap[cMeshletListBufferSRV];
-        uint2 dataPerMeshlet = meshletsListBuffer[cMeshletListBufferOffset +dispatchThreadID.x];
+        uint2 dataPerMeshlet = meshletsListBuffer[cMeshletListBufferOffset + dispatchThreadID.x];
         uint instanceIndex = dataPerMeshlet.x;
         uint meshletIndex = dataPerMeshlet.y;
 

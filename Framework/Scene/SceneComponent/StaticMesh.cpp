@@ -41,7 +41,8 @@ namespace Scene
     {
         Renderer::RenderBatch& batch = pRenderer->AddBasePassBatch();
 
-        Draw(batch, m_pMaterial->GetPSO());
+        // Draw(batch, m_pMaterial->GetPSO());
+        Dispatch(batch, m_pMaterial->GetMeshletPSO());
 
         if (m_pRenderer->IsEnableMouseHitTest())
         {
@@ -127,5 +128,15 @@ namespace Scene
         batch.SetConstantBuffer(0, rootConsts, sizeof(rootConsts));
         batch.SetIndexBuffer(m_pRenderer->GetSceneStaticBuffer(), m_IndexBuffer.offset, m_IndexBufferFormat);
         batch.DrawIndexed(m_IndexCount);
+    }
+
+    void StaticMesh::Dispatch(Renderer::RenderBatch &batch, RHI::RHIPipelineState *pPSO)
+    {
+        batch.Label = m_Name.c_str();
+        batch.SetPipelineState(pPSO);
+        batch.Center = m_InstanceData.Center;
+        batch.Radius = m_InstanceData.Radius;
+        batch.MeshletCount = m_MeshletCount;
+        batch.InstanceIndex = m_InstanceIndex;
     }
 }

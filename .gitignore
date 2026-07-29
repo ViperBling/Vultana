@@ -32,7 +32,8 @@
 *.app
 build
 .vscode
-Generated
+AIOut
 Binary
 CMakeBuild
+Generated
 /Tools/GraphViz/RenderGraph.html

@@ -37,7 +37,8 @@ namespace Scene
     private:
         void UpdateConstants();
         void Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState* pPSO);
-    
+        void Dispatch(Renderer::RenderBatch &batch, RHI::RHIPipelineState *pPSO);
+
     private:
         Renderer::RendererBase* m_pRenderer = nullptr;
         eastl::unique_ptr<Assets::MeshMaterial> m_pMaterial = nullptr;

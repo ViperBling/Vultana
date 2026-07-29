@@ -8,7 +8,7 @@ cbuffer FloatValueCB : register(b1)
     float4 cClearValueFloat;
 };
 
-cbuffer UintValueCB : register(b2)
+cbuffer UintValueCB : register(b1)
 {
     uint4 cClearValueUint;
 };

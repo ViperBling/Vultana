@@ -723,7 +723,7 @@ namespace RHI
 
     void RHICommandListVK::UpdateComputeDescriptorBuffer()
     {
-        if (!m_GraphicsConstants.dirty) return;
+        if (!m_ComputeConstants.dirty) return;
 
         auto device = (RHIDeviceVK*)m_pDevice;
         vk::DeviceSize cbvDescOffset = device->AllocateConstantBufferDescriptor(m_ComputeConstants.cb0, m_ComputeConstants.cbv1, m_ComputeConstants.cbv2);

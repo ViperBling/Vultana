@@ -49,8 +49,19 @@ namespace Renderer
     {
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenStats::Readback");
 
-        uint32_t frameIndex = m_pRenderer->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        const uint64_t frameID = m_pRenderer->GetFrameID();
+        const uint32_t frameIndex = frameID % RHI::RHI_MAX_INFLIGHT_FRAMES;
+
         RHI::RHIBuffer *pReadback = m_pReadbackBuffers[frameIndex].get();
+
+        if (frameID >= RHI::RHI_MAX_INFLIGHT_FRAMES)
+        {
+            const uint32_t *pData = static_cast<const uint32_t *>(pReadback->GetCPUAddress());
+            if (pData)
+            {
+                memcpy(m_ReadbackValues, pData, sizeof(m_ReadbackValues));
+            }
+        }
 
         // Transition stats buffer UAV → CopySrc
         pCmdList->BufferBarrier(m_pStatsBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessCopySrc);
@@ -66,14 +77,14 @@ namespace Renderer
         // Restore stats buffer for next frame's UAV writes
         pCmdList->BufferBarrier(m_pStatsBuffer->GetBuffer(), RHI::RHIAccessCopySrc, RHI::RHIAccessMaskUAV);
 
-        // Read CPU data from a completed readback buffer (2 frames behind is safe)
-        uint32_t readFrameIndex = (frameIndex + RHI::RHI_MAX_INFLIGHT_FRAMES - 2) % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHIBuffer *pReadable = m_pReadbackBuffers[readFrameIndex].get();
-        const uint32_t *pData = static_cast<const uint32_t *>(pReadable->GetCPUAddress());
-        if (pData)
-        {
-            memcpy(m_ReadbackValues, pData, sizeof(uint32_t) * 16);
-        }
+        // // Read CPU data from a completed readback buffer (2 frames behind is safe)
+        // uint32_t readFrameIndex = (frameIndex + RHI::RHI_MAX_INFLIGHT_FRAMES - 2) % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        // RHI::RHIBuffer *pReadable = m_pReadbackBuffers[readFrameIndex].get();
+        // const uint32_t *pData = static_cast<const uint32_t *>(pReadable->GetCPUAddress());
+        // if (pData)
+        // {
+        //     memcpy(m_ReadbackValues, pData, sizeof(uint32_t) * 16);
+        // }
     }
 
     void GPUDrivenStats::OnGui()
