@@ -21,6 +21,7 @@ struct FCameraConstants
     float4x4 MtxViewProjectionInverse;
 
     float4x4 MtxPrevViewProjection;         // Previous frame's view-projection (no jitter), for velocity
+    float4x4 MtxPrevViewProjectionInverse;  // Inverse of previous frame's VP, for HZB reprojection
 
     FCullingData CullingData;
 };

@@ -9,7 +9,7 @@
 #include "Utilities/Log.hpp"
 #include "Window/GLFWindow.hpp"
 #include "AssetManager/TextureLoader.hpp"
-#include "ForwardPath/ForwardBasePass.hpp"
+#include "DeferredPath/DeferredBasePass.hpp"
 #include "RenderModules/GPUDrivenDebugLine.hpp"
 #include "RenderModules/HiZBuffer.hpp"
 #include "RenderModules/GPUDrivenStats.hpp"
@@ -91,7 +91,7 @@ namespace Renderer
 
         m_pRenderGraph = eastl::make_unique<RG::RenderGraph>(this);
         m_pGPUScene = eastl::make_unique<GPUScene>(this);
-        m_pForwardBasePass = eastl::make_unique<ForwardBasePass>(this);
+        m_pDeferredBasePass = eastl::make_unique<DeferredBasePass>(this);
         m_pGPUDrivenDebugLine = eastl::make_unique<GPUDrivenDebugLine>(this);
 
         m_pHZB = eastl::make_unique<HiZBuffer>(this);
@@ -449,7 +449,7 @@ namespace Renderer
 
     RenderBatch &RendererBase::AddBasePassBatch()
     {
-        return m_pForwardBasePass->AddBatch();
+        return m_pDeferredBasePass->AddBatch();
     }
 
     void RendererBase::RequestMouseHitTest(uint32_t x, uint32_t y)

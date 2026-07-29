@@ -11,33 +11,32 @@ namespace Renderer
     {
     public:
         DeferredBasePass(RendererBase* pRenderer);
-
+        
         RenderBatch& AddBatch();
-        void Render1stPhase(RG::RenderGraph* pRG);
-        void Render2ndPhase(RG::RenderGraph* pRG);
+
+        void Render1stPhase(RG::RenderGraph* pRenderGraph);
+        void Render2ndPhase(RG::RenderGraph* pRenderGraph);
 
         RG::RGHandle GetDiffuseRT() const { return m_DiffuseRT; }
-        RG::RGHandle GetSpecularRT() const { return m_SpecularRT; }
         RG::RGHandle GetNormalRT() const { return m_NormalRT; }
-        RG::RGHandle GetEmissiveRT() const { return m_EmissiveRT; }
-        RG::RGHandle GetCustomDataRT() const { return m_CustomDataRT; }
+        RG::RGHandle GetVelocityRT() const { return m_VelocityRT; }
         RG::RGHandle GetDepthRT() const { return m_DepthRT; }
 
-        RG::RGHandle GetMeshletListBuffer2ndPhase() const { return m_MeshletListBuffer2ndPhase; }
-        RG::RGHandle GetMeshletListCounterBuffer2ndPhase() const { return m_MeshletListCounterBuffer2ndPhase; }
+        RG::RGHandle GetSecondPhaseMeshletListBuffer() const { return m_2ndPhaseMeshletListBuffer; }
+        RG::RGHandle GetSecondPhaseMeshletListCounterBuffer() const { return m_2ndPhaseMeshletListCounterBuffer; }
 
     private:
         void MergeBatches();
-        void ResetCounter(RHI::RHICommandList* pCmdList, RG::RGBuffer* meshletCounter1stPhase, RG::RGBuffer* objectCounter2ndPhase, RG::RGBuffer* meshletCounter2ndPhase);
 
-        void InstanceCulling1stPhase(RHI::RHICommandList* pCmdList, RG::RGBuffer* cullingResultUAV, RG::RGBuffer* ObjectListUAV2ndPhase, RG::RGBuffer* ObjectListCounterUAV2ndPhase);
-        void InstanceCulling2ndPhase(RHI::RHICommandList* pCmdList, RG::RGBuffer* pIndirectCmdBuffer, RG::RGBuffer* cullingResultUAV, RG::RGBuffer* objectListBufferSRV, RG::RGBuffer* objectListCounterBufferSRV);
+        void ResetCounter(RHI::RHICommandList *pCmdList, RG::RGBuffer *firstPhaseMeshletCounter, RG::RGBuffer *secondPhaseObjectCounter, RG::RGBuffer *secondPhaseMeshletCounter);
+        void InstanceCulling1stPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *cullingResultUAV, RG::RGBuffer *secondPhaseObjectListUAV, RG::RGBuffer *secondPhaseObjectListCounterUAV);
+        void InstanceCulling2ndPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *cullingResultUAV, RG::RGBuffer *objectListBufferSRV, RG::RGBuffer *objectListCounterBufferSRV);
 
-        void FlushBatches1stPhase(RHI::RHICommandList* pCmdList, RG::RGBuffer* pIndirectCmdBuffer, RG::RGBuffer* pMeshletListSRV, RG::RGBuffer* pMeshletListCounterSRV);
-        void FlushBatches2ndPhase(RHI::RHICommandList* pCmdList, RG::RGBuffer* pIndirectCmdBuffer, RG::RGBuffer* pMeshletListSRV, RG::RGBuffer* pMeshletListCounterSRV);
+        void FlushBatches1stPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *pMeshletListSRV, RG::RGBuffer *pMeshletListCounterSRV);
+        void FlushBatches2ndPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *pMeshletListSRV, RG::RGBuffer *pMeshletListCounterSRV);
 
-        void BuildMeshletList(RHI::RHICommandList* pCmdList, RG::RGBuffer* cullingResultSRV, RG::RGBuffer* meshletListBufferUAV, RG::RGBuffer* meshletListCounterBufferUAV);
-        void BuildIndirectCommand(RHI::RHICommandList* pCmdList, RG::RGBuffer* pCounterBufferSRV, RG::RGBuffer* pIndirectCmdBufferUAV);
+        void BuildMeshletList(RHI::RHICommandList *pCmdList, RG::RGBuffer *cullingResultSRV, RG::RGBuffer *meshletListBufferUAV, RG::RGBuffer *meshletListCounterBufferUAV);
+        void BuildIndirectCommand(RHI::RHICommandList *pCmdList, RG::RGBuffer *pCounterBufferSRV, RG::RGBuffer *pCommandBufferUAV);
 
     private:
         RendererBase* m_pRenderer;
@@ -63,20 +62,17 @@ namespace Renderer
 
         uint32_t m_TotalInstanceCount = 0;
         uint32_t m_TotalMeshletCount = 0;
-
-        uint32_t m_InstnaceIndexAddress = 0;
+        uint32_t m_InstanceIndexAddress = 0;
 
         RG::RGHandle m_DiffuseRT;
-        RG::RGHandle m_SpecularRT;
         RG::RGHandle m_NormalRT;
-        RG::RGHandle m_EmissiveRT;
-        RG::RGHandle m_CustomDataRT;
+        RG::RGHandle m_VelocityRT;
         RG::RGHandle m_DepthRT;
+        
+        RG::RGHandle m_2ndPhaseObjectListBuffer;
+        RG::RGHandle m_2ndPhaseObjectListCounterBuffer;
 
-        RG::RGHandle m_ObjectListBuffer2ndPhase;
-        RG::RGHandle m_ObjectListCounterBuffer2ndPhase;
-
-        RG::RGHandle m_MeshletListBuffer2ndPhase;
-        RG::RGHandle m_MeshletListCounterBuffer2ndPhase;
+        RG::RGHandle m_2ndPhaseMeshletListBuffer;
+        RG::RGHandle m_2ndPhaseMeshletListCounterBuffer;
     };
 }

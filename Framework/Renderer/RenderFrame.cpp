@@ -1,5 +1,5 @@
 #include "RendererBase.hpp"
-#include "ForwardPath/ForwardBasePass.hpp"
+#include "DeferredPath/DeferredBasePass.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "RenderModules/HiZBuffer.hpp"
 
@@ -15,26 +15,26 @@ namespace Renderer
         m_pHZB->GenerateCullingHZB1stPhase(m_pRenderGraph.get());
 
         // Base Pass 1st Phase (GPU-Driven, writes GBuffer; Occluded meshlets queued for 2nd phase)
-        m_pForwardBasePass->Render1stPhase(m_pRenderGraph.get());
+        m_pDeferredBasePass->Render1stPhase(m_pRenderGraph.get());
 
         // 2nd Phase Culling HZB from Current Frame Depth
-        m_pHZB->GenerateCullingHZB2ndPhase(m_pRenderGraph.get(), m_pForwardBasePass->GetDepthRT());
+        m_pHZB->GenerateCullingHZB2ndPhase(m_pRenderGraph.get(), m_pDeferredBasePass->GetDepthRT());
 
         // Base Pass 2nd Phase (Draw previously-occluded meshlets)
-        m_pForwardBasePass->Render2ndPhase(m_pRenderGraph.get());
+        m_pDeferredBasePass->Render2ndPhase(m_pRenderGraph.get());
 
         // Scene HZB for downstream passes / next-frame reprojection
-        m_pHZB->GenerateSceneHZB(m_pRenderGraph.get(), m_pForwardBasePass->GetDepthRT());
+        m_pHZB->GenerateSceneHZB(m_pRenderGraph.get(), m_pDeferredBasePass->GetDepthRT());
 
         // Cache transient handles so SetupGlobalConstants can put their heap indices into SceneCB
         m_CullingHZB1stPhaseHandle = m_pHZB->GetCullingHZBMip1stPhase(0);
         m_CullingHZB2ndPhaseHandle = m_pHZB->GetCullingHZBMip2ndPhase(0);
         m_SceneHZBHandle = m_pHZB->GetSceneHZBMip(0);
-        m_SecondPhaseMeshletListHandle = m_pForwardBasePass->GetSecondPhaseMeshletListBuffer();
-        m_SecondPhaseMeshletListCounterHandle = m_pForwardBasePass->GetSecondPhaseMeshletListCounterBuffer();
+        m_SecondPhaseMeshletListHandle = m_pDeferredBasePass->GetSecondPhaseMeshletListBuffer();
+        m_SecondPhaseMeshletListCounterHandle = m_pDeferredBasePass->GetSecondPhaseMeshletListCounterBuffer();
 
-        RG::RGHandle sceneColorRT = m_pForwardBasePass->GetDiffuseRT();
-        RG::RGHandle sceneDepthRT = m_pForwardBasePass->GetDepthRT();
+        RG::RGHandle sceneColorRT = m_pDeferredBasePass->GetDiffuseRT();
+        RG::RGHandle sceneDepthRT = m_pDeferredBasePass->GetDepthRT();
 
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
