@@ -53,9 +53,14 @@ if(CMAKE_GENERATOR STREQUAL "Ninja" AND
     find_program(VULTANA_NINJA_EXECUTABLE NAMES ninja ninja.exe)
 
     if(NOT VULTANA_NINJA_EXECUTABLE)
+        # "$ENV{ProgramFiles(x86)}" cannot be spelled directly: CMP0053 rejects
+        # '(' in a variable name, which makes the whole file a syntax error.
+        # Look the environment variable up through its name instead.
+        set(VULTANA_PROGRAM_FILES_X86_VAR "ProgramFiles(x86)")
+
         find_program(VULTANA_VSWHERE_EXECUTABLE NAMES vswhere vswhere.exe
             HINTS
-                "$ENV{ProgramFiles(x86)}/Microsoft Visual Studio/Installer"
+                "$ENV{${VULTANA_PROGRAM_FILES_X86_VAR}}/Microsoft Visual Studio/Installer"
                 "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer")
 
         if(VULTANA_VSWHERE_EXECUTABLE)

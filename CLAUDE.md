@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Full agent guidelines live in `AGENTS.md`** — this file is the distilled operating guide and is kept accurate to the current code. If a detail is missing here, check `AGENTS.md` first. Note `AGENTS.md` can lag the code (e.g. it still says `ForwardPath/ForwardBasePass`; that pass was renamed to `DeferredPath/DeferredBasePass`).
+> **Full agent guidelines live in `AGENTS.md`** — this file is the distilled operating guide and is kept accurate to the current code. If a detail is missing here, check `AGENTS.md` first. Two places where `AGENTS.md` currently lags the code: it says `ForwardPath/ForwardBasePass` (renamed to `DeferredPath/DeferredBasePass` in `cc969fa`) and it says vcpkg **classic** mode (the project moved to **manifest** mode in `4b7199f`). Trust this file over `AGENTS.md` on both.
 
 ## Project Overview
 
@@ -12,35 +12,46 @@ The D3D12 backend (`Framework/RHI/RHID3D/`) is a header-only stub — not functi
 
 ## Build & Run
 
-### Configure + Build (Windows, Ninja, vcpkg classic mode)
+### Configure + Build (Windows, Ninja, vcpkg manifest mode)
 
-```powershell
-# Configure (from project root)
-cmake -G Ninja `
-  -DCMAKE_TOOLCHAIN_FILE="D:/Softwares/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-  -DCMAKE_BUILD_TYPE=Debug `
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE `
-  -B "CMakeBuild/Ninja/Visual Studio Community 2026 Release - amd64/Debug" `
-  -S .
+Use the presets in `CMakePresets.json`. `CMake/VultanaVcpkg.cmake` runs *before* `project()` and locates vcpkg itself (via `CMAKE_TOOLCHAIN_FILE`, else `VCPKG_ROOT`, else `vcpkg` on `PATH`, else the `VULTANA_VCPKG_ROOT` cache var). It hard-forces `VCPKG_INSTALLED_DIR` to `<repo>/.vcpkg_installed` — dependencies from `vcpkg.json` install there, never into vcpkg's global `installed/`.
 
-# Build
-cmake --build "CMakeBuild/Ninja/Visual Studio Community 2026 Release - amd64/Debug"
+**Configure requires a shell where `cl.exe` is on `PATH`** — the presets pin `CMAKE_C/CXX_COMPILER` to `cl.exe`, so a plain shell fails with "compiler not found". Ninja does *not* need to be on `PATH`: `VultanaVcpkg.cmake` falls back to `vswhere` → the VS-bundled `ninja.exe`.
 
-# Output: Binary/VultanaEngine.exe
+```bash
+# Configure (from project root, in an environment that has cl.exe + ninja on PATH)
+cmake --preset x64-windows-debug        # → CMakeBuild/Ninja/Debug
+cmake --preset x64-windows-release      # → CMakeBuild/Ninja/Release
+
+# Build — works from any shell once the tree is configured (verified)
+cmake --build --preset x64-windows-debug
+
+# Output: Binary/VultanaEngine.exe  (single target: VultanaEngine → FrameworkLib)
 ```
+
+`CMakeBuild/Ninja/Visual Studio Community 2026 Release - amd64/` is a stale pre-preset build tree that still exists on disk; prefer the preset paths above. `compile_commands.json` lands in the preset binary dir.
+
+Shaders are **not** compiled at build time — `Shaders/Shaders.cmake` globs them as `HEADER_FILE_ONLY` purely for IDE grouping. Editing a `.hlsl`/`.hlsli` needs no rebuild; just restart the engine (DXC compiles on load). Adding/removing a `.cpp` in `Framework/` **does** need a reconfigure — `Framework/CMakeLists.txt` uses `file(GLOB_RECURSE)`.
 
 ### Run
 
-```powershell
+```bash
 cd Binary/
 ./VultanaEngine.exe
 ```
 
 **Working directory MUST be `Binary/`.** The engine hardcodes `m_WorkingPath = "../"` and resolves `../Config/VultanaEngine.ini`, `../Assets/`, `../Shaders/` against it. Required runtime DLLs (`dxcompiler.dll`, `vulkan-1.dll`, `meshoptimizer.dll`, `spdlogd.dll`, `fmtd.dll`, `enkiTS.dll`) are copied into `Binary/` by vcpkg's `applocal.ps1` POST_BUILD step. If the ini fails to load, the engine logs an error and continues with empty asset/shader paths.
 
+Startup scene comes from `[World] SceneFile` in `Config/VultanaEngine.ini`. Two exist: `Scene_Sponza.xml` (default) and `Scene_SingleModelTest.xml` — switch to the latter for a much faster load when iterating on rendering code.
+
 ### Tests
 
-Test targets are **commented out** in `Tests/CMakeLists.txt` (GoogleTest). There is no lint or CI. To re-enable: uncomment `find_package(GTest CONFIG REQUIRED)` and the `EngineTest` block (GTest must be installed via vcpkg), then run `EngineTest.exe` from `Binary/`. `Tests/EngineTest.cpp` is a full-lifecycle smoke test (GLFWindow + Init/Tick/Shutdown, pass = no crash).
+There is **no working test target, no lint, and no CI.** Everything in `Tests/CMakeLists.txt` except the `VultanaEngine` executable is commented out (GoogleTest), and `enable_testing()`/`add_test()` are never called, so there is no ctest.
+
+- `Tests/EngineTest.cpp` — the one real test: a single `TEST(EngineTest, Init)` full-lifecycle smoke test (GLFWindow + Init/Tick/Shutdown, pass = no crash). `Tests/MainTest.cpp` is the gtest main.
+- `ShaderTest` / `RenderGraphTest` appear in the commented CMake but **have no source files** — those blocks cannot be uncommented as-is.
+- To re-enable the real one: uncomment `find_package(GTest CONFIG REQUIRED)`, the `set(GTestLib ...)`/`set(MainFile ...)` lines, and the `EngineTest` block (add `gtest` to `vcpkg.json` first), then run `EngineTest.exe` from `Binary/`. Commented `add_custom_target(RunEngineTest COMMAND EngineTest)` provides a build-system entry point.
+
 
 ## Architecture
 
@@ -128,7 +139,9 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 
 ### Shader Conventions
 
-- HLSL SM 6.6, compiled at runtime by DXC: `-spirv -fspv-target-env=vulkan1.3 -fvk-use-dx-layout -HV 2021 -enable-16bit-types`; bindless heaps `-fvk-bind-resource-heap 0 1`, `-fvk-bind-sampler-heap 0 2`; `-O0`/`-Zi` Debug, `-O3` Release; `RHI_BACKEND_VULKAN=1` always defined.
+- HLSL SM 6.6, compiled at runtime by DXC (`ShaderCompiler.cpp`): `-spirv -fspv-target-env=vulkan1.3 -fvk-use-dx-layout -HV 2021 -enable-16bit-types`; bindless heaps `-fvk-bind-counter-heap 0 0`, `-fvk-bind-resource-heap 0 1`, `-fvk-bind-sampler-heap 0 2`; `-O0`/`-Zi -Qembed_debug` Debug, `-O3` Release; `RHI_BACKEND_VULKAN=1` always defined.
+- **Hot reload**: editor menu **Debug → Reload Shaders** (`RendererBase::ReloadShaders` → `ShaderCache::ReloadShaders` → `RecompileShader` → `PipelineStateCache::RecreatePSO`) recompiles changed `.hlsl` files *and* every shader that `#include`s a changed `.hlsli` (`ShaderCache::IsFileIncluded` walks the include tree). No engine restart needed for shader edits.
+- On a compile error, `ShaderCompiler::Compile` logs DXC's diagnostics via `VTNA_LOG_ERROR` and returns false; `ShaderCache::GetShader` then returns `nullptr` and `RecompileShader` keeps the old blob. Check the log first when a draw disappears.
 - **Register convention**: `b0` = root/per-pass constants, `b1` = secondary (ImGui projection, SPD constants), `b2` = `SceneCB` (global `FSceneConstants`).
 - Shared CPU/GPU structs in `Shaders/Common/*.hlsli` behind `#ifndef __cplusplus` guards; CPU code includes the same headers.
 
@@ -153,6 +166,9 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 | `Shaders/Common/GlobalConstants.hlsli` | `FSceneConstants`, `SceneCB : register(b2)` |
 | `Shaders/Common/GPUScene.hlsli` | `FInstanceData`, templated bindless buffer accessors |
 | `Config/VultanaEngine.ini` | `[Vultana] AssetsPath/ShaderPath`, `[World] SceneFile` |
+| `CMakePresets.json` / `CMake/VultanaVcpkg.cmake` | Ninja+manifest presets / pre-`project()` vcpkg + Ninja auto-discovery |
+| `Tools/GraphViz/RenderGraph.html` | Viz.js viewer for the DOT dumped by editor **Tools → RenderGraph** |
+| `docs/superpowers/specs/`, `AIOut/` | Design specs (roadmap) and scratch AI-generated notes (`ECSDesign.md`, `OutDiff.md`) — not authoritative code docs |
 
 ## Roadmap Context
 
@@ -160,6 +176,16 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 
 ## Known Inconsistencies
 
+Do not "fix" these incidentally — they are load-bearing or harmless, and several are traps that look like bugs:
+
 - Namespace closing comments are stale in places (`Core/VultanaEngine.hpp` closes `} // namespace Vultana`, `RendererBase.cpp` closes `} // namespace Vultana::Renderer`) — residue of a namespace rename; actual namespaces are the short forms (`Core`, `Renderer`, `RG`, …).
 - `Assets/Textures/EnvirnomentTex/` — directory name typo exists on disk; use as-is.
-- `AGENTS.md` references `ForwardPath/ForwardBasePass`, which was renamed to `DeferredPath/DeferredBasePass` (see commit `cc969fa`); treat `AGENTS.md`'s description of the forward pass as describing the renamed deferred base pass.
+- `AGENTS.md` references `ForwardPath/ForwardBasePass` (renamed to `DeferredPath/DeferredBasePass`, commit `cc969fa`) and vcpkg classic mode (now manifest, commit `4b7199f`).
+- `Framework/Renderer/ForwardPath/` is an **empty directory** left by that rename. `Framework/CMakeLists.txt` also globs a `Framework/Common/` that does not exist (empty glob, harmless).
+- `ShaderCompiler.cpp:185` — the `-O2` branch is `else if (flags & RHIShaderCompileFlagO3)`, a duplicate of the `-O3` condition above it, so `-O2` is unreachable dead code.
+- **Never write `$ENV{ProgramFiles(x86)}` in CMake** — policy `CMP0053` (NEW for any project declaring `cmake_minimum_required(VERSION 3.1+)`, so always active here) rejects `(` in a variable name and turns the whole file into a syntax error. `CMake/VultanaVcpkg.cmake` looks the name up indirectly via `VULTANA_PROGRAM_FILES_X86_VAR`; keep it that way.
+- **Configure trap** — a configure that aborts partway **deletes `<build-dir>/CMakeFiles/rules.ninja`** before failing, which leaves a previously-working tree broken (`cmake --build` then fails with `loading 'CMakeFiles\rules.ninja'`). Recovery is one successful reconfigure. Don't run speculative `cmake --preset` against a build tree you care about.
+- `Framework/CMakeLists.txt:68` sets `CMAKE_MSVC_RUNTIME_LIBRARY` *after* `add_library(FrameworkLib)`, so it never applies — the build is effectively `/MDd`, which is why the runtime DLLs in `Binary/` are required.
+- `vcpkg.json` lists `entt` and `glfw3`, but there is **no ECS in the engine** (no `entt` include anywhere; `AIOut/ECSDesign.md` is an unimplemented design sketch) and GLFW is only used by the commented-out test window.
+- `Framework/RHI/RHID3D/` is 13 headers with no `.cpp` — a stub. Don't extend it; Vulkan is the only backend.
+
