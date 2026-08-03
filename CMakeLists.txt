@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+# This must run before project() so the vcpkg toolchain can install the
+# manifest dependencies during the first configure on a new machine.
+include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/VultanaVcpkg.cmake)
+
 project(Vultana C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
