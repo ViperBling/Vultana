@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+/.vcpkg_installed/
 
 # Compiled Object files
 *.slo
@@ -32,8 +33,11 @@
 *.app
 build
 .vscode
-AIOut
 Binary
 CMakeBuild
 Generated
 /Tools/GraphViz/RenderGraph.html
+
+# AIOut
+AIOut
+/docs

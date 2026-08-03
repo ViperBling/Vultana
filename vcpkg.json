@@ -1,0 +1,23 @@
+{
+    "name": "vultana",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "cityhash",
+        "directx-dxc",
+        "eastl",
+        "enkits",
+        "entt",
+        "fmt",
+        "glfw3",
+        "linalg",
+        "meshoptimizer",
+        "sigslot",
+        "simpleini",
+        "spdlog",
+        "stb",
+        "tcb-span",
+        "vulkan",
+        "vulkan-headers",
+        "vulkan-memory-allocator"
+    ]
+}
