@@ -8,6 +8,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
 find_package(enkiTS CONFIG REQUIRED)
+find_package(EnTT CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(directx-dxc CONFIG REQUIRED)
 find_package(meshoptimizer CONFIG REQUIRED)
@@ -84,6 +85,7 @@ target_link_libraries(FrameworkLib PRIVATE
     cityhash
     EASTL
     enkiTS::enkiTS
+    EnTT::EnTT
     Microsoft::DirectXShaderCompiler
     fmt::fmt-header-only
     ImFileDialog
