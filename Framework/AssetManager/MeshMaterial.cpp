@@ -4,9 +4,9 @@
 
 namespace Assets
 {
-    MeshMaterial::~MeshMaterial()
+    FMeshMaterial::~FMeshMaterial()
     {
-        auto resourceCache = ResourceCache::GetInstance();
+        auto resourceCache = FResourceCache::GetInstance();
         resourceCache->ReleaseTexture2D(m_pDiffuseTexture);
         resourceCache->ReleaseTexture2D(m_pSpecularGlossinessTexture);
         resourceCache->ReleaseTexture2D(m_pAlbedoTexture);
@@ -16,11 +16,11 @@ namespace Assets
         resourceCache->ReleaseTexture2D(m_pAOTexture);
     }
 
-    RHI::RHIPipelineState *MeshMaterial::GetPSO()
+    RHI::FRHIPipelineState *FMeshMaterial::GetPSO()
     {
         if (m_pPSO == nullptr)
         {
-            Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            Renderer::FRendererBase* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
             eastl::vector<eastl::string> defines;
             AddMaterialDefines(defines);
@@ -30,7 +30,7 @@ namespace Assets
             if (m_pDiffuseTexture) defines.push_back("DIFFUSE_TEXTURE=1");
             if (m_bAlphaTest) defines.push_back("ALPHA_TEST=1");
 
-            RHI::RHIGraphicsPipelineStateDesc psoDesc {};
+            RHI::FRHIGraphicsPipelineStateDesc psoDesc {};
             psoDesc.VS = pRenderer->GetShader("Model.hlsl", "VSMain", RHI::ERHIShaderType::VS, defines);
             psoDesc.PS = pRenderer->GetShader("Model.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
             psoDesc.RasterizerState.CullMode = m_bDoubleSided ? RHI::ERHICullMode::None : RHI::ERHICullMode::Back;
@@ -48,11 +48,11 @@ namespace Assets
         return m_pPSO;
     }
 
-    RHI::RHIPipelineState *MeshMaterial::GetIDPSO()
+    RHI::FRHIPipelineState *FMeshMaterial::GetIDPSO()
     {
         if (m_pIDPSO == nullptr)
         {
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
             eastl::vector<eastl::string> defines;
             defines.push_back("UNIFORM_RESOURCE=1");
@@ -61,7 +61,7 @@ namespace Assets
             if (m_pDiffuseTexture) defines.push_back("DIFFUSE_TEXTURE=1");
             if (m_bAlphaTest) defines.push_back("ALPHA_TEST=1");
 
-            RHI::RHIGraphicsPipelineStateDesc psoDesc {};
+            RHI::FRHIGraphicsPipelineStateDesc psoDesc {};
             psoDesc.VS = pRenderer->GetShader("ModelID.hlsl", "VSMain", RHI::ERHIShaderType::VS, defines);
             psoDesc.PS = pRenderer->GetShader("ModelID.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
             psoDesc.RasterizerState.CullMode = m_bDoubleSided ? RHI::ERHICullMode::None : RHI::ERHICullMode::Back;
@@ -77,18 +77,18 @@ namespace Assets
         return m_pIDPSO;
     }
 
-    RHI::RHIPipelineState *MeshMaterial::GetOutlinePSO()
+    RHI::FRHIPipelineState *FMeshMaterial::GetOutlinePSO()
     {
         if (m_pOutlinePSO == nullptr)
         {
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
             eastl::vector<eastl::string> defines;
             defines.push_back("UNIFORM_RESOURCE=1");
             
             if (m_bAlphaTest) defines.push_back("ALPHA_TEST=1");
 
-            RHI::RHIGraphicsPipelineStateDesc psoDesc {};
+            RHI::FRHIGraphicsPipelineStateDesc psoDesc {};
             psoDesc.VS = pRenderer->GetShader("ModelOutline.hlsl", "VSMain", RHI::ERHIShaderType::VS, defines);
             psoDesc.PS = pRenderer->GetShader("ModelOutline.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
             psoDesc.RasterizerState.CullMode = RHI::ERHICullMode::Front;
@@ -104,16 +104,16 @@ namespace Assets
         return m_pOutlinePSO;
     }
 
-    RHI::RHIPipelineState *MeshMaterial::GetMeshletPSO()
+    RHI::FRHIPipelineState *FMeshMaterial::GetMeshletPSO()
     {
         if (m_pMeshletPSO == nullptr)
         {
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
             eastl::vector<eastl::string> defines;
             AddMaterialDefines(defines);
 
-            RHI::RHIMeshShadingPipelineStateDesc psoDesc {};
+            RHI::FRHIMeshShadingPipelineStateDesc psoDesc {};
             psoDesc.AS = pRenderer->GetShader("MeshletCulling.hlsl", "ASMain", RHI::ERHIShaderType::AS, defines);
             psoDesc.MS = pRenderer->GetShader("ModelMeshlet.hlsl", "MSMain", RHI::ERHIShaderType::MS, defines);
             psoDesc.PS = pRenderer->GetShader("Model.hlsl", "PSMain", RHI::ERHIShaderType::PS, defines);
@@ -133,20 +133,20 @@ namespace Assets
         // return nullptr;
     }
 
-    RHI::RHIPipelineState *MeshMaterial::GetVertexSkinningPSO()
+    RHI::FRHIPipelineState *FMeshMaterial::GetVertexSkinningPSO()
     {
         if (m_pVertexSkinningPSO == nullptr)
         {
-            auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
-            RHI::RHIComputePipelineStateDesc desc {};
+            RHI::FRHIComputePipelineStateDesc desc {};
             desc.CS = pRenderer->GetShader("VertexSkinning.hlsl", "CSMain", RHI::ERHIShaderType::CS);
             m_pVertexSkinningPSO = pRenderer->GetPipelineState(desc, m_Name + "_VertexSkinningPSO");
         }
         return m_pVertexSkinningPSO;
     }
 
-    void MeshMaterial::UpdateConstants()
+    void FMeshMaterial::UpdateConstants()
     {
         m_MaterialCB.ShadingModel = (uint)m_ShadingModel;
         m_MaterialCB.Albedo = m_AlbedoColor;
@@ -164,11 +164,11 @@ namespace Assets
         m_MaterialCB.bDoubleSided = m_bDoubleSided;
     }
 
-    void MeshMaterial::OnGUI()
+    void FMeshMaterial::OnGUI()
     {
     }
 
-    void MeshMaterial::AddMaterialDefines(eastl::vector<eastl::string> &defines)
+    void FMeshMaterial::AddMaterialDefines(eastl::vector<eastl::string> &defines)
     {
         switch (m_ShadingModel)
         {

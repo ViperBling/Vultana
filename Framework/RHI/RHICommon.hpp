@@ -6,10 +6,10 @@
 
 namespace RHI
 {
-    class RHIBuffer;
-    class RHIHeap;
-    class RHITexture;
-    class RHIShader;
+    class FRHIBuffer;
+    class FRHIHeap;
+    class FRHITexture;
+    class FRHIShader;
 
     static const uint32_t RHI_MAX_INFLIGHT_FRAMES = 3;
     static const uint32_t RHI_MAX_ROOT_CONSTANTS = 8;
@@ -206,7 +206,7 @@ namespace RHI
 
     enum class ERHIShaderResourceViewType
     {
-        Textue2D,
+        Texture2D,
         Texture2DArray,
         Texture3D,
         TextureCube,
@@ -231,12 +231,12 @@ namespace RHI
     static const uint32_t RHI_ALL_SUB_RESOURCE = 0xFFFFFFFF;
     static const uint32_t RHI_INVALID_RESOURCE = 0xFFFFFFFF;
 
-    struct RHIDeviceDesc
+    struct FRHIDeviceDesc
     {
         ERHIRenderBackend RenderBackend = ERHIRenderBackend::Vulkan;
     };
 
-    struct RHISwapchainDesc
+    struct FRHISwapchainDesc
     {
         void* WindowHandle = nullptr;
         uint32_t Width = 1;
@@ -245,13 +245,13 @@ namespace RHI
         ERHIFormat ColorFormat = ERHIFormat::RGBA8SRGB;
     };
 
-    struct RHIHeapDesc
+    struct FRHIHeapDesc
     {
         uint32_t Size = 1;
         ERHIMemoryType MemoryType = ERHIMemoryType::GPUOnly;
     };
 
-    struct RHIBufferDesc
+    struct FRHIBufferDesc
     {
         uint32_t Stride = 1;
         uint32_t Size = 1;
@@ -259,10 +259,10 @@ namespace RHI
         ERHIMemoryType MemoryType = ERHIMemoryType::GPUOnly;
         ERHIAllocationType AllocationType = ERHIAllocationType::Placed;
         ERHIBufferUsageFlags Usage = 0;
-        RHIHeap* Heap = nullptr;
+        FRHIHeap* Heap = nullptr;
         uint32_t HeapOffset = 0;
     };
-    inline bool operator==(const RHIBufferDesc& lhs, const RHIBufferDesc& rhs)
+    inline bool operator==(const FRHIBufferDesc& lhs, const FRHIBufferDesc& rhs)
     {
         return lhs.Stride == rhs.Stride &&
             lhs.Size == rhs.Size &&
@@ -272,7 +272,7 @@ namespace RHI
             lhs.Usage == rhs.Usage;
     }
 
-    struct RHITextureDesc
+    struct FRHITextureDesc
     {
         uint32_t Width = 1;
         uint32_t Height = 1;
@@ -284,10 +284,10 @@ namespace RHI
         ERHIMemoryType MemoryType = ERHIMemoryType::GPUOnly;
         ERHIAllocationType AllocationType = ERHIAllocationType::Placed;
         ERHITextureUsageFlags Usage = 0;
-        RHIHeap* Heap = nullptr;
+        FRHIHeap* Heap = nullptr;
         uint32_t HeapOffset = 0;
     };
-    inline bool operator==(const RHITextureDesc& lhs, const RHITextureDesc& rhs)
+    inline bool operator==(const FRHITextureDesc& lhs, const FRHITextureDesc& rhs)
     {
         return lhs.Width == rhs.Width &&
             lhs.Height == rhs.Height &&
@@ -301,15 +301,15 @@ namespace RHI
             lhs.Usage == rhs.Usage;
     }
 
-    struct RHIConstantBufferViewDesc
+    struct FRHIConstantBufferViewDesc
     {
         uint32_t Size = 0;
         uint32_t Offset = 0;
     };
 
-    struct RHIShaderResourceViewDesc
+    struct FRHIShaderResourceViewDesc
     {
-        ERHIShaderResourceViewType Type = ERHIShaderResourceViewType::Textue2D;
+        ERHIShaderResourceViewType Type = ERHIShaderResourceViewType::Texture2D;
         ERHIFormat Format = ERHIFormat::Unknown;
 
         union
@@ -329,9 +329,9 @@ namespace RHI
                 uint32_t Offset = 0;
             } Buffer;
         };
-        RHIShaderResourceViewDesc() : Texture() {}
+        FRHIShaderResourceViewDesc() : Texture() {}
     };
-    inline bool operator==(const RHIShaderResourceViewDesc& lhs, const RHIShaderResourceViewDesc& rhs)
+    inline bool operator==(const FRHIShaderResourceViewDesc& lhs, const FRHIShaderResourceViewDesc& rhs)
     {
         return lhs.Type == rhs.Type &&
             lhs.Texture.MipSlice == rhs.Texture.MipSlice &&
@@ -341,7 +341,7 @@ namespace RHI
             lhs.Texture.PlaneSlice == rhs.Texture.PlaneSlice;
     }
 
-    struct RHIUnorderedAccessViewDesc
+    struct FRHIUnorderedAccessViewDesc
     {
         ERHIUnorderedAccessViewType Type = ERHIUnorderedAccessViewType::Texture2D;
         ERHIFormat Format = ERHIFormat::Unknown;
@@ -361,9 +361,9 @@ namespace RHI
                 uint32_t Offset = 0;
             } Buffer;
         };
-        RHIUnorderedAccessViewDesc() : Texture() {}
+        FRHIUnorderedAccessViewDesc() : Texture() {}
     };
-    inline bool operator==(const RHIUnorderedAccessViewDesc& lhs, const RHIUnorderedAccessViewDesc& rhs)
+    inline bool operator==(const FRHIUnorderedAccessViewDesc& lhs, const FRHIUnorderedAccessViewDesc& rhs)
     {
         return lhs.Type == rhs.Type &&
             lhs.Texture.MipSlice == rhs.Texture.MipSlice &&
@@ -372,9 +372,9 @@ namespace RHI
             lhs.Texture.PlaneSlice == rhs.Texture.PlaneSlice;
     }
 
-    struct RHIRenderPassColorAttachment
+    struct FRHIRenderPassColorAttachment
     {
-        RHITexture* Texture = nullptr;
+        FRHITexture* Texture = nullptr;
         uint32_t MipSlice = 0;
         uint32_t ArraySlice = 0;
         ERHIRenderPassLoadOp LoadOp = ERHIRenderPassLoadOp::Load;
@@ -382,9 +382,9 @@ namespace RHI
         float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     };
 
-    struct RHIRenderPassDepthAttachment
+    struct FRHIRenderPassDepthAttachment
     {
-        RHITexture* Texture = nullptr;
+        FRHITexture* Texture = nullptr;
         uint32_t MipSlice = 0;
         uint32_t ArraySlice = 0;
         ERHIRenderPassLoadOp DepthLoadOp = ERHIRenderPassLoadOp::Load;
@@ -396,10 +396,10 @@ namespace RHI
         bool bReadOnly = false;
     };
 
-    struct RHIRenderPassDesc
+    struct FRHIRenderPassDesc
     {
-        RHIRenderPassColorAttachment Color[RHI_MAX_COLOR_ATTACHMENT_COUNT];
-        RHIRenderPassDepthAttachment Depth;
+        FRHIRenderPassColorAttachment Color[RHI_MAX_COLOR_ATTACHMENT_COUNT];
+        FRHIRenderPassDepthAttachment Depth;
     };
 
     enum class ERHIShaderType
@@ -421,7 +421,7 @@ namespace RHI
     };
     using ERHIShaderCompileFlags = uint32_t;
 
-    struct RHIShaderDesc
+    struct FRHIShaderDesc
     {
         ERHIShaderType Type;
         eastl::string File;
@@ -522,7 +522,7 @@ namespace RHI
     };
 
     #pragma pack(push, 1)
-    struct RHIRasterizerState
+    struct FRHIRasterizerState
     {
         ERHICullMode CullMode = ERHICullMode::None;
         float DepthBias = 0.0f;
@@ -534,7 +534,7 @@ namespace RHI
         bool bDepthClip = true;
     };
 
-    struct RHIDepthStencilOp
+    struct FRHIDepthStencilOp
     {
         ERHIStencilOp StencilFailOp = ERHIStencilOp::Keep;
         ERHIStencilOp DepthFailOp = ERHIStencilOp::Keep;
@@ -542,19 +542,19 @@ namespace RHI
         RHICompareFunc StencilFunc = RHICompareFunc::Always;
     };
 
-    struct RHIDepthStencilState
+    struct FRHIDepthStencilState
     {
         RHICompareFunc DepthFunc = RHICompareFunc::Always;
         bool bDepthTest = false;
         bool bDepthWrite = true;
-        RHIDepthStencilOp FrontFace;
-        RHIDepthStencilOp BackFace;
+        FRHIDepthStencilOp FrontFace;
+        FRHIDepthStencilOp BackFace;
         bool bStencilEnable = false;
         uint8_t StencilReadMask = 0xFF;
         uint8_t StencilWriteMask = 0xFF;
     };
 
-    struct RHIBlendState
+    struct FRHIBlendState
     {
         bool bBlendEnable = false;
         ERHIBlendFactor ColorSrc = ERHIBlendFactor::One;
@@ -566,33 +566,33 @@ namespace RHI
         ERHIColorWriteMask WriteMask = RHIColorWriteMaskAll;
     };
     
-    struct RHIGraphicsPipelineStateDesc
+    struct FRHIGraphicsPipelineStateDesc
     {
-        RHIShader* VS = nullptr;
-        RHIShader* PS = nullptr;
-        RHIRasterizerState RasterizerState;
-        RHIDepthStencilState DepthStencilState;
-        RHIBlendState BlendState[RHI_MAX_COLOR_ATTACHMENT_COUNT];
+        FRHIShader* VS = nullptr;
+        FRHIShader* PS = nullptr;
+        FRHIRasterizerState RasterizerState;
+        FRHIDepthStencilState DepthStencilState;
+        FRHIBlendState BlendState[RHI_MAX_COLOR_ATTACHMENT_COUNT];
         ERHIFormat RTFormats[RHI_MAX_COLOR_ATTACHMENT_COUNT] = { ERHIFormat::Unknown };
         ERHIFormat DepthStencilFormat = ERHIFormat::Unknown;
         ERHIPrimitiveType PrimitiveType = ERHIPrimitiveType::TriangleList;
     };
 
-    struct RHIMeshShadingPipelineStateDesc
+    struct FRHIMeshShadingPipelineStateDesc
     {
-        RHIShader* AS = nullptr;
-        RHIShader* MS = nullptr;
-        RHIShader* PS = nullptr;
-        RHIRasterizerState RasterizerState;
-        RHIDepthStencilState DepthStencilState;
-        RHIBlendState BlendState[RHI_MAX_COLOR_ATTACHMENT_COUNT];
+        FRHIShader* AS = nullptr;
+        FRHIShader* MS = nullptr;
+        FRHIShader* PS = nullptr;
+        FRHIRasterizerState RasterizerState;
+        FRHIDepthStencilState DepthStencilState;
+        FRHIBlendState BlendState[RHI_MAX_COLOR_ATTACHMENT_COUNT];
         ERHIFormat RTFormats[RHI_MAX_COLOR_ATTACHMENT_COUNT] = { ERHIFormat::Unknown };
         ERHIFormat DepthStencilFormat = ERHIFormat::Unknown;
     };
 
-    struct RHIComputePipelineStateDesc
+    struct FRHIComputePipelineStateDesc
     {
-        RHIShader* CS = nullptr;
+        FRHIShader* CS = nullptr;
     };
     #pragma pack(pop)
 
@@ -618,7 +618,7 @@ namespace RHI
         Max,
     };
 
-    struct RHISamplerDesc
+    struct FRHISamplerDesc
     {
         ERHIFilter MinFilter = ERHIFilter::Point;
         ERHIFilter MagFilter = ERHIFilter::Point;
@@ -636,7 +636,7 @@ namespace RHI
         float BorderColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     };
 
-    struct RHIDrawCommand
+    struct FRHIDrawCommand
     {
         uint32_t VertexCount = 0;
         uint32_t InstanceCount = 0;
@@ -644,7 +644,7 @@ namespace RHI
         uint32_t FirstInstance = 0;
     };
 
-    struct RHIDrawIndexedCommand
+    struct FRHIDrawIndexedCommand
     {
         uint32_t IndexCount = 0;
         uint32_t InstanceCount = 0;
@@ -653,7 +653,7 @@ namespace RHI
         uint32_t FirstInstance = 0;
     };
 
-    struct RHIDispatchCommand
+    struct FRHIDispatchCommand
     {
         uint32_t GroupCountX = 0;
         uint32_t GroupCountY = 0;

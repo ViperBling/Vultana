@@ -6,27 +6,27 @@
 
 namespace RG
 {
-    RenderGraphPassBase::RenderGraphPassBase(const eastl::string &name, RenderPassType type, DirectedAcyclicGraph &graph)
-        : DAGNode(graph)
+    FRenderGraphPassBase::FRenderGraphPassBase(const eastl::string &name, RenderPassType type, FDirectedAcyclicGraph &graph)
+        : FDAGNode(graph)
     {
         m_Name = name;
         m_Type = type;
     }
 
-    void RenderGraphPassBase::ResolveBarriers(const DirectedAcyclicGraph &graph)
+    void FRenderGraphPassBase::ResolveBarriers(const FDirectedAcyclicGraph &graph)
     {
-        eastl::vector<DAGEdge*> edges;
-        eastl::vector<DAGEdge*> resIncoming;
-        eastl::vector<DAGEdge*> resOutgoing;
+        eastl::vector<FDAGEdge*> edges;
+        eastl::vector<FDAGEdge*> resIncoming;
+        eastl::vector<FDAGEdge*> resOutgoing;
 
         graph.GetIncomingEdges(this, edges);
         for (size_t i = 0; i < edges.size(); i++)
         {
-            RenderGraphEdge *edge = static_cast<RenderGraphEdge *>(edges[i]);
+            FRenderGraphEdge *edge = static_cast<FRenderGraphEdge *>(edges[i]);
             assert(edge->GetToNode() == this->GetID());
 
-            RenderGraphResourceNode* resourceNode = static_cast<RenderGraphResourceNode*>(graph.GetNode(edge->GetFromNode()));
-            RenderGraphResource* resource = resourceNode->GetResource();
+            FRenderGraphResourceNode* resourceNode = static_cast<FRenderGraphResourceNode*>(graph.GetNode(edge->GetFromNode()));
+            FRenderGraphResource* resource = resourceNode->GetResource();
 
             graph.GetIncomingEdges(resourceNode, resIncoming);
             graph.GetOutgoingEdges(resourceNode, resOutgoing);
@@ -40,11 +40,11 @@ namespace RG
             {
                 for (int i = (int)resOutgoing.size() - 1; i >= 0; --i)
                 {
-                    uint32_t subresource = ((RenderGraphEdge*)resOutgoing[i])->GetSubresource();
+                    uint32_t subresource = ((FRenderGraphEdge*)resOutgoing[i])->GetSubresource();
                     DAGNodeID passID = resOutgoing[i]->GetToNode();
                     if (subresource == edge->GetSubresource() && passID < this->GetID() && !graph.GetNode(passID)->IsCulled())
                     {
-                        oldState = ((RenderGraphEdge*)resOutgoing[i])->GetUsage();
+                        oldState = ((FRenderGraphEdge*)resOutgoing[i])->GetUsage();
                         break;
                     }
                 }
@@ -59,7 +59,7 @@ namespace RG
                 }
                 else
                 {
-                    oldState = ((RenderGraphEdge*)resIncoming[0])->GetUsage();
+                    oldState = ((FRenderGraphEdge*)resIncoming[0])->GetUsage();
                 }
             }
             
@@ -68,7 +68,7 @@ namespace RG
 
             if (resource->IsOverlapping() && resource->GetFirstPassID() == this->GetID())
             {
-                RHI::RHIResource* aliasedRes = resource->GetAliasedPrevResource(aliasState);
+                RHI::FRHIResource* aliasedRes = resource->GetAliasedPrevResource(aliasState);
                 if (aliasedRes)
                 {
                     m_AliasDiscardBarriers.push_back({ aliasedRes, aliasState, newState | RHI::RHIAccessDiscard });
@@ -77,7 +77,7 @@ namespace RG
             }
             if (oldState != newState || isAliased)
             {
-                ResourceBarrier barrier;
+                FResourceBarrier barrier;
                 barrier.Resource = resource;
                 barrier.Subresource = edge->GetSubresource();
                 barrier.OldState = oldState;
@@ -94,47 +94,47 @@ namespace RG
         graph.GetOutgoingEdges(this, edges);
         for (size_t i = 0; i < edges.size(); i++)
         {
-            RenderGraphEdge* edge = static_cast<RenderGraphEdge*>(edges[i]);
+            FRenderGraphEdge* edge = static_cast<FRenderGraphEdge*>(edges[i]);
             assert(edge->GetFromNode() == this->GetID());
 
             RHI::ERHIAccessFlags newState = edge->GetUsage();
 
             if (newState == RHI::RHIAccessRTV)
             {
-                assert(dynamic_cast<RGEdgeColorAttachment*>(edge) != nullptr);
-                RGEdgeColorAttachment* colorRT = static_cast<RGEdgeColorAttachment*>(edge);
+                assert(dynamic_cast<FRGEdgeColorAttachment*>(edge) != nullptr);
+                FRGEdgeColorAttachment* colorRT = static_cast<FRGEdgeColorAttachment*>(edge);
                 m_pColorRT[colorRT->GetColorIndex()] = colorRT;
             }
             else if (newState == RHI::RHIAccessDSV || newState == RHI::RHIAccessDSVReadOnly)
             {
-                assert(dynamic_cast<RGEdgeDepthAttachment*>(edge) != nullptr);
-                m_pDepthRT = static_cast<RGEdgeDepthAttachment*>(edge);
+                assert(dynamic_cast<FRGEdgeDepthAttachment*>(edge) != nullptr);
+                m_pDepthRT = static_cast<FRGEdgeDepthAttachment*>(edge);
             }
         }
     }
 
-    void RenderGraphPassBase::ResolveAsyncComputeBarrier(const DirectedAcyclicGraph &graph, RenderGraphAsyncResolveContext &context)
+    void FRenderGraphPassBase::ResolveAsyncComputeBarrier(const FDirectedAcyclicGraph &graph, FRenderGraphAsyncResolveContext &context)
     {
         if (m_Type == RenderPassType::AsyncCompute)
         {
-            eastl::vector<DAGEdge*> edges;
-            eastl::vector<DAGEdge*> resIncoming;
-            eastl::vector<DAGEdge*> resOutgoing;
+            eastl::vector<FDAGEdge*> edges;
+            eastl::vector<FDAGEdge*> resIncoming;
+            eastl::vector<FDAGEdge*> resOutgoing;
 
             graph.GetIncomingEdges(this, edges);
             for (size_t i = 0; i < edges.size(); i++)
             {
-                RenderGraphEdge* edge = static_cast<RenderGraphEdge*>(edges[i]);
+                FRenderGraphEdge* edge = static_cast<FRenderGraphEdge*>(edges[i]);
                 assert(edge->GetToNode() == this->GetID());
 
-                RenderGraphResourceNode* resourceNode = static_cast<RenderGraphResourceNode*>(graph.GetNode(edge->GetFromNode()));
+                FRenderGraphResourceNode* resourceNode = static_cast<FRenderGraphResourceNode*>(graph.GetNode(edge->GetFromNode()));
 
                 graph.GetIncomingEdges(resourceNode, resIncoming);
                 assert(resIncoming.size() <= 1);
 
                 if (!resIncoming.empty())
                 {
-                    RenderGraphPassBase* prePass = static_cast<RenderGraphPassBase*>(graph.GetNode(resIncoming[0]->GetFromNode()));
+                    FRenderGraphPassBase* prePass = static_cast<FRenderGraphPassBase*>(graph.GetNode(resIncoming[0]->GetFromNode()));
                     if (!prePass->IsCulled() && prePass->GetType() != RenderPassType::AsyncCompute)
                     {
                         context.PreGraphicsQueuePasses.push_back(prePass->GetID());
@@ -145,16 +145,16 @@ namespace RG
             graph.GetOutgoingEdges(this, edges);
             for (size_t i = 0; i < edges.size(); i++)
             {
-                RenderGraphEdge* edge = static_cast<RenderGraphEdge*>(edges[i]);
+                FRenderGraphEdge* edge = static_cast<FRenderGraphEdge*>(edges[i]);
                 assert(edge->GetFromNode() == this->GetID());
 
-                RenderGraphResourceNode* resourceNode = static_cast<RenderGraphResourceNode*>(graph.GetNode(edge->GetToNode()));
+                FRenderGraphResourceNode* resourceNode = static_cast<FRenderGraphResourceNode*>(graph.GetNode(edge->GetToNode()));
 
                 graph.GetOutgoingEdges(resourceNode, resOutgoing);
 
                 for (size_t j = 0; j < resOutgoing.size(); j++)
                 {
-                    RenderGraphPassBase* postPass = static_cast<RenderGraphPassBase*>(graph.GetNode(resOutgoing[j]->GetToNode()));
+                    FRenderGraphPassBase* postPass = static_cast<FRenderGraphPassBase*>(graph.GetNode(resOutgoing[j]->GetToNode()));
                     if (!postPass->IsCulled() && postPass->GetType() != RenderPassType::AsyncCompute)
                     {
                         context.PostGraphicsQueuePasses.push_back(postPass->GetID());
@@ -170,18 +170,18 @@ namespace RG
                 {
                     DAGNodeID graphicsPassToWaitID = *eastl::max_element(context.PreGraphicsQueuePasses.begin(), context.PreGraphicsQueuePasses.end());
 
-                    RenderGraphPassBase* graphicsPassToWait = static_cast<RenderGraphPassBase*>(graph.GetNode(graphicsPassToWaitID));
+                    FRenderGraphPassBase* graphicsPassToWait = static_cast<FRenderGraphPassBase*>(graph.GetNode(graphicsPassToWaitID));
                     if (graphicsPassToWait->m_SignalValue == -1)
                     {
                         graphicsPassToWait->m_SignalValue = ++context.GraphicsFence;
                     }
 
-                    RenderGraphPassBase* computePass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[0]));
+                    FRenderGraphPassBase* computePass = static_cast<FRenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[0]));
                     computePass->m_WaitValue = graphicsPassToWait->m_SignalValue;
 
                     for (size_t i = 0; i < context.ComputeQueuePasses.size(); i++)
                     {
-                        RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[i]));
+                        FRenderGraphPassBase* pass = static_cast<FRenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[i]));
                         pass->m_WaitGraphicsPass = graphicsPassToWaitID;
                     }
                 }
@@ -190,18 +190,18 @@ namespace RG
                 {
                     DAGNodeID graphicsPassToSignalID = *eastl::min_element(context.PostGraphicsQueuePasses.begin(), context.PostGraphicsQueuePasses.end());
 
-                    RenderGraphPassBase* computePass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses.back()));
+                    FRenderGraphPassBase* computePass = static_cast<FRenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses.back()));
                     if (computePass->m_SignalValue == -1)
                     {
                         computePass->m_SignalValue = ++context.ComputeFence;
                     }
 
-                    RenderGraphPassBase* graphicsPassToSignal = static_cast<RenderGraphPassBase*>(graph.GetNode(graphicsPassToSignalID));
+                    FRenderGraphPassBase* graphicsPassToSignal = static_cast<FRenderGraphPassBase*>(graph.GetNode(graphicsPassToSignalID));
                     graphicsPassToSignal->m_WaitValue = computePass->m_SignalValue;
 
                     for (size_t i = 0; i < context.ComputeQueuePasses.size(); i++)
                     {
-                        RenderGraphPassBase* pass = static_cast<RenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[i]));
+                        FRenderGraphPassBase* pass = static_cast<FRenderGraphPassBase*>(graph.GetNode(context.ComputeQueuePasses[i]));
                         pass->m_SignalGraphicsPass = graphicsPassToSignalID;
                     }
                 }
@@ -213,9 +213,9 @@ namespace RG
         }
     }
 
-    void RenderGraphPassBase::Execute(const RenderGraph &graph, RenderGraphPassExecuteContext &context)
+    void FRenderGraphPassBase::Execute(const FRenderGraph &graph, FRenderGraphPassExecuteContext &context)
     {
-        RHI::RHICommandList* pCmdList = m_Type == RenderPassType::AsyncCompute ? context.ComputeCmdList : context.GraphicsCmdList;
+        RHI::FRHICommandList* pCmdList = m_Type == RenderPassType::AsyncCompute ? context.ComputeCmdList : context.GraphicsCmdList;
 
         if (m_WaitValue != -1)
         {
@@ -275,38 +275,38 @@ namespace RG
         }
     }
 
-    void RenderGraphPassBase::Begin(const RenderGraph &graph, RHI::RHICommandList *pCmdList)
+    void FRenderGraphPassBase::Begin(const FRenderGraph &graph, RHI::FRHICommandList *pCmdList)
     {
         for (size_t i = 0; i < m_AliasDiscardBarriers.size(); i++)
         {
-            const AliasDiscardBarrier& barrier = m_AliasDiscardBarriers[i];
+            const FAliasDiscardBarrier& barrier = m_AliasDiscardBarriers[i];
 
             if (barrier.Resource->IsTexture())
             {
-                pCmdList->TextureBarrier((RHI::RHITexture*)barrier.Resource, RHI::RHI_ALL_SUB_RESOURCE, barrier.AccessBefore, barrier.AccessAfter);
+                pCmdList->TextureBarrier((RHI::FRHITexture*)barrier.Resource, RHI::RHI_ALL_SUB_RESOURCE, barrier.AccessBefore, barrier.AccessAfter);
             }
             else
             {
-                pCmdList->BufferBarrier((RHI::RHIBuffer*)barrier.Resource, barrier.AccessBefore, barrier.AccessAfter);
+                pCmdList->BufferBarrier((RHI::FRHIBuffer*)barrier.Resource, barrier.AccessBefore, barrier.AccessAfter);
             }
         }
 
         for (size_t i = 0; i < m_ResourceBarriers.size(); i++)
         {
-            const ResourceBarrier& barrier = m_ResourceBarriers[i];
+            const FResourceBarrier& barrier = m_ResourceBarriers[i];
             barrier.Resource->Barrier(pCmdList, barrier.Subresource, barrier.OldState, barrier.NewState);
         }
 
         if (HasRHIRenderPass())
         {
-            RHI::RHIRenderPassDesc rpDesc;
+            RHI::FRHIRenderPassDesc rpDesc;
 
             for (int i = 0; i < RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
             {
                 if (m_pColorRT[i] != nullptr)
                 {
-                    RenderGraphResourceNode* node = static_cast<RenderGraphResourceNode*>(graph.GetDAG().GetNode(m_pColorRT[i]->GetToNode()));
-                    RHI::RHITexture* texture = static_cast<RGTexture*>(node->GetResource())->GetTexture();
+                    FRenderGraphResourceNode* node = static_cast<FRenderGraphResourceNode*>(graph.GetDAG().GetNode(m_pColorRT[i]->GetToNode()));
+                    RHI::FRHITexture* texture = static_cast<FRGTexture*>(node->GetResource())->GetTexture();
 
                     uint32_t mip, slice;
                     RHI::DecomposeSubresource(texture->GetDesc(), m_pColorRT[i]->GetSubresource(), mip, slice);
@@ -322,13 +322,13 @@ namespace RG
 
             if (m_pDepthRT != nullptr)
             {
-                RenderGraphResourceNode* node = static_cast<RenderGraphResourceNode*>(graph.GetDAG().GetNode(m_pDepthRT->GetToNode()));
-                RHI::RHITexture* texture = static_cast<RGTexture*>(node->GetResource())->GetTexture();
+                FRenderGraphResourceNode* node = static_cast<FRenderGraphResourceNode*>(graph.GetDAG().GetNode(m_pDepthRT->GetToNode()));
+                RHI::FRHITexture* texture = static_cast<FRGTexture*>(node->GetResource())->GetTexture();
 
                 uint32_t mip, slice;
                 RHI::DecomposeSubresource(texture->GetDesc(), m_pDepthRT->GetSubresource(), mip, slice);
 
-                rpDesc.Depth.Texture = static_cast<RGTexture*>(node->GetResource())->GetTexture();
+                rpDesc.Depth.Texture = static_cast<FRGTexture*>(node->GetResource())->GetTexture();
                 rpDesc.Depth.DepthLoadOp = m_pDepthRT->GetDepthLoadOp();
                 rpDesc.Depth.StencilLoadOp = m_pDepthRT->GetStencilLoadOp();
                 rpDesc.Depth.DepthStoreOp = node->IsCulled() ? RHI::ERHIRenderPassStoreOp::DontCare : RHI::ERHIRenderPassStoreOp::Store;
@@ -343,7 +343,7 @@ namespace RG
         }
     }
 
-    void RenderGraphPassBase::End(RHI::RHICommandList *pCmdList)
+    void FRenderGraphPassBase::End(RHI::FRHICommandList *pCmdList)
     {
         if (HasRHIRenderPass())
         {
@@ -351,7 +351,7 @@ namespace RG
         }
     }
 
-    bool RenderGraphPassBase::HasRHIRenderPass() const
+    bool FRenderGraphPassBase::HasRHIRenderPass() const
     {
         for (int i = 0; i < RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
         {

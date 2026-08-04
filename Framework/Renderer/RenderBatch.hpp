@@ -10,15 +10,15 @@
 
 namespace Renderer
 {
-    struct RenderBatch
+    struct FRenderBatch
     {
-        RenderBatch(LinearAllocator& cbAllocator) : m_CBAllocator(cbAllocator)
+        FRenderBatch(FLinearAllocator& cbAllocator) : m_CBAllocator(cbAllocator)
         {
             IndexBuffer = nullptr;
         }
 
         const char* Label = "";
-        RHI::RHIPipelineState* PSO = nullptr;
+        RHI::FRHIPipelineState* PSO = nullptr;
 
         struct
         {
@@ -30,7 +30,7 @@ namespace Renderer
         {
             struct
             {
-                RHI::RHIBuffer* IndexBuffer;
+                RHI::FRHIBuffer* IndexBuffer;
                 RHI::ERHIFormat IndexFormat;
                 uint32_t IndexOffset;
                 uint32_t IndexCount;
@@ -48,7 +48,7 @@ namespace Renderer
         uint32_t InstanceIndex = 0;
         uint32_t VertexCount = 0;
 
-        void SetPipelineState(RHI::RHIPipelineState* pso)
+        void SetPipelineState(RHI::FRHIPipelineState* pso)
         {
             PSO = pso;
         }
@@ -65,7 +65,7 @@ namespace Renderer
             memcpy(Cb[slot].Data, data, size);
         }
 
-        void SetIndexBuffer(RHI::RHIBuffer* buffer, uint32_t offset, RHI::ERHIFormat format)
+        void SetIndexBuffer(RHI::FRHIBuffer* buffer, uint32_t offset, RHI::ERHIFormat format)
         {
             IndexBuffer = buffer;
             IndexOffset = offset;
@@ -90,10 +90,10 @@ namespace Renderer
         }
 
     private:
-        LinearAllocator& m_CBAllocator;
+        FLinearAllocator& m_CBAllocator;
     };
 
-    inline void DrawBatch(RHI::RHICommandList* pCmdList, const RenderBatch& batch)
+    inline void DrawBatch(RHI::FRHICommandList* pCmdList, const FRenderBatch& batch)
     {
         GPU_EVENT_DEBUG(pCmdList, batch.Label);
 
@@ -122,14 +122,14 @@ namespace Renderer
         }
     }
 
-    struct ComputeBatch
+    struct FComputeBatch
     {
-        ComputeBatch(LinearAllocator& cbAllocator) : m_CBAllocator(cbAllocator)
+        FComputeBatch(FLinearAllocator& cbAllocator) : m_CBAllocator(cbAllocator)
         {
         }
 
         const char* Label = "";
-        RHI::RHIPipelineState* PSO = nullptr;
+        RHI::FRHIPipelineState* PSO = nullptr;
 
         struct
         {
@@ -141,7 +141,7 @@ namespace Renderer
         uint32_t DispatchY = 0;
         uint32_t DispatchZ = 0;
 
-        void SetPipelineState(RHI::RHIPipelineState* pso)
+        void SetPipelineState(RHI::FRHIPipelineState* pso)
         {
             PSO = pso;
         }
@@ -166,10 +166,10 @@ namespace Renderer
         }
     
     private:
-        LinearAllocator& m_CBAllocator;
+        FLinearAllocator& m_CBAllocator;
     };
 
-    inline void DispatchComputeBatch(RHI::RHICommandList* pCmdList, const ComputeBatch& batch)
+    inline void DispatchComputeBatch(RHI::FRHICommandList* pCmdList, const FComputeBatch& batch)
     {
         GPU_EVENT_DEBUG(pCmdList, batch.Label);
 

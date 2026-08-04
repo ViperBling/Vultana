@@ -8,7 +8,7 @@
 
 namespace Editor
 {
-    ImGuiImplement::ImGuiImplement(Renderer::RendererBase* pRenderer) : m_pRenderer(pRenderer)
+    FImGuiImplement::FImGuiImplement(Renderer::FRendererBase* pRenderer) : m_pRenderer(pRenderer)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -25,24 +25,24 @@ namespace Editor
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplWin32_Init(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
+        ImGui_ImplWin32_Init(Core::FVultanaEngine::GetEngineInstance()->GetWindowHandle());
     }
 
-    ImGuiImplement::~ImGuiImplement()
+    FImGuiImplement::~FImGuiImplement()
     {
         ImGui_ImplWin32_Shutdown();
 
         ImGui::DestroyContext();
     }
 
-    bool ImGuiImplement::Init()
+    bool FImGuiImplement::Init()
     {
         auto pDevice = m_pRenderer->GetDevice();
 
-        eastl::string iniPath = Core::VultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
+        eastl::string iniPath = Core::FVultanaEngine::GetEngineInstance()->GetWorkingPath() + "Config/ImGui.ini";
         ImGui::LoadIniSettingsFromDisk(iniPath.c_str());
 
-        float scaling = ImGui_ImplWin32_GetDpiScaleForHwnd(Core::VultanaEngine::GetEngineInstance()->GetWindowHandle());
+        float scaling = ImGui_ImplWin32_GetDpiScaleForHwnd(Core::FVultanaEngine::GetEngineInstance()->GetWindowHandle());
         ImGui::GetStyle().ScaleAllSizes(scaling);
 
         ImGuiIO& io = ImGui::GetIO();
@@ -51,7 +51,7 @@ namespace Editor
         ImFontConfig fontConfig;
         fontConfig.OversampleH = fontConfig.OversampleV = 3;
 
-        eastl::string fontFile = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + "Fonts/DroidSans.ttf";
+        eastl::string fontFile = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + "Fonts/DroidSans.ttf";
         io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 13.0f, &fontConfig);
 
         unsigned char* pixels;
@@ -63,7 +63,7 @@ namespace Editor
 
         io.Fonts->TexID = (ImTextureID)m_pFontTexture->GetSRV();
 
-        RHI::RHIGraphicsPipelineStateDesc psoDesc;
+        RHI::FRHIGraphicsPipelineStateDesc psoDesc;
         psoDesc.VS = m_pRenderer->GetShader("ImGui.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         psoDesc.PS = m_pRenderer->GetShader("ImGui.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthWrite = false;
@@ -80,7 +80,7 @@ namespace Editor
         return true;
     }
 
-    void ImGuiImplement::NewFrame()
+    void FImGuiImplement::NewFrame()
     {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -91,7 +91,7 @@ namespace Editor
         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
     }
 
-    void ImGuiImplement::Render(RHI::RHICommandList *pCmdList)
+    void FImGuiImplement::Render(RHI::FRHICommandList *pCmdList)
     {
         GPU_EVENT_DEBUG(pCmdList, "ImGUI::Render");
         
@@ -173,7 +173,7 @@ namespace Editor
                     {
                         m_pVertexBuffer[frameIndex]->GetSRV()->GetHeapIndex(),
                         pCmd->VtxOffset + globalVtxOffset,
-                        ((RHI::RHIDescriptor*)pCmd->TextureId)->GetHeapIndex(),
+                        ((RHI::FRHIDescriptor*)pCmd->TextureId)->GetHeapIndex(),
                         m_pRenderer->GetLinearSampler()->GetHeapIndex()
                     };
                     pCmdList->SetGraphicsConstants(0, resourceIds, sizeof(resourceIds));
@@ -185,7 +185,7 @@ namespace Editor
         }
     }
 
-    void ImGuiImplement::SetupRenderStates(RHI::RHICommandList *pCmdList, uint32_t frameIdx)
+    void FImGuiImplement::SetupRenderStates(RHI::FRHICommandList *pCmdList, uint32_t frameIdx)
     {
         ImDrawData* drawData = ImGui::GetDrawData();
 

@@ -5,11 +5,11 @@
 
 namespace RG
 {
-    class RenderGraphEdge : public DAGEdge
+    class FRenderGraphEdge : public FDAGEdge
     {
     public:
-        RenderGraphEdge(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource)
-            : DAGEdge(graph, from, to)
+        FRenderGraphEdge(FDirectedAcyclicGraph& graph, FDAGNode* from, FDAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource)
+            : FDAGEdge(graph, from, to)
         {
             m_Usage = usage;
             m_Subresource = subresource;
@@ -23,18 +23,18 @@ namespace RG
         uint32_t m_Subresource;
     };
 
-    class RenderGraphResourceNode : public DAGNode
+    class FRenderGraphResourceNode : public FDAGNode
     {
     public:
-        RenderGraphResourceNode(DirectedAcyclicGraph& graph, RenderGraphResource* resource, uint32_t version)
-            : DAGNode(graph)
+        FRenderGraphResourceNode(FDirectedAcyclicGraph& graph, FRenderGraphResource* resource, uint32_t version)
+            : FDAGNode(graph)
             , m_Graph(graph)
         {
             m_pResource = resource;
             m_Version = version;
         }
     
-        RenderGraphResource* GetResource() const { return m_pResource; }
+        FRenderGraphResource* GetResource() const { return m_pResource; }
         uint32_t GetVersion() const { return m_Version; }
 
         virtual eastl::string GetGraphVizName() const override 
@@ -44,10 +44,10 @@ namespace RG
             str.append(eastl::to_string(m_Version));
             if (m_Version > 0)
             {
-                eastl::vector<DAGEdge*> incomingEdges;
+                eastl::vector<FDAGEdge*> incomingEdges;
                 m_Graph.GetIncomingEdges(this, incomingEdges);
                 assert(incomingEdges.size() == 1);
-                uint32_t subresource = ((RenderGraphEdge*)incomingEdges[0])->GetSubresource();
+                uint32_t subresource = ((FRenderGraphEdge*)incomingEdges[0])->GetSubresource();
                 str.append("\nsubresource:");
                 str.append(eastl::to_string(subresource));
             }
@@ -57,16 +57,16 @@ namespace RG
         virtual const char* GetGraphVizShape() const override { return "ellipse"; }
     
     private:
-        RenderGraphResource* m_pResource = nullptr;
+        FRenderGraphResource* m_pResource = nullptr;
         uint32_t m_Version;
-        DirectedAcyclicGraph& m_Graph;
+        FDirectedAcyclicGraph& m_Graph;
     };
 
-    class RGEdgeColorAttachment : public RenderGraphEdge
+    class FRGEdgeColorAttachment : public FRenderGraphEdge
     {
     public:
-        RGEdgeColorAttachment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource, uint32_t colorIndex, RHI::ERHIRenderPassLoadOp loadOp, const float4& clearColor)
-            : RenderGraphEdge(graph, from, to, usage, subresource)
+        FRGEdgeColorAttachment(FDirectedAcyclicGraph& graph, FDAGNode* from, FDAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource, uint32_t colorIndex, RHI::ERHIRenderPassLoadOp loadOp, const float4& clearColor)
+            : FRenderGraphEdge(graph, from, to, usage, subresource)
         {
             m_ColorIndex = colorIndex;
             m_LoadOp = loadOp;
@@ -86,11 +86,11 @@ namespace RG
         float m_ClearColor[4] = {};
     };
 
-    class RGEdgeDepthAttachment : public RenderGraphEdge
+    class FRGEdgeDepthAttachment : public FRenderGraphEdge
     {
     public:
-        RGEdgeDepthAttachment(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource, RHI::ERHIRenderPassLoadOp depthLoadOp, RHI::ERHIRenderPassLoadOp stencilLoadOp, float clearDepth, uint32_t clearStencil)
-            : RenderGraphEdge(graph, from, to, usage, subresource)
+        FRGEdgeDepthAttachment(FDirectedAcyclicGraph& graph, FDAGNode* from, FDAGNode* to, RHI::ERHIAccessFlags usage, uint32_t subresource, RHI::ERHIRenderPassLoadOp depthLoadOp, RHI::ERHIRenderPassLoadOp stencilLoadOp, float clearDepth, uint32_t clearStencil)
+            : FRenderGraphEdge(graph, from, to, usage, subresource)
         {
             m_DepthLoadOp = depthLoadOp;
             m_StencilLoadOp = stencilLoadOp;
@@ -120,16 +120,16 @@ namespace RG
     }
 
     template <typename Data, typename Setup, typename Execution>
-    inline RenderGraphPass<Data> &RenderGraph::AddPass(const eastl::string &name, RenderPassType type, const Setup &setup, const Execution &execution)
+    inline TRenderGraphPass<Data> &FRenderGraph::AddPass(const eastl::string &name, RenderPassType type, const Setup &setup, const Execution &execution)
     {
-        auto pass = Allocate<RenderGraphPass<Data>>(name, type, m_Graph, execution);
+        auto pass = Allocate<TRenderGraphPass<Data>>(name, type, m_Graph, execution);
         for (size_t i = 0; i < m_EventNames.size(); i++)
         {
             pass->BeginEvent(m_EventNames[i]);
         }
         m_EventNames.clear();
 
-        RGBuilder builder(this, pass);
+        FRGBuilder builder(this, pass);
         setup(pass->GetData(), builder);
 
         m_Passes.push_back(pass);
@@ -138,12 +138,12 @@ namespace RG
     }
 
     template <typename T, typename... ArgsT>
-    inline T *RenderGraph::Allocate(ArgsT &&...args)
+    inline T *FRenderGraph::Allocate(ArgsT &&...args)
     {
         T* p = (T*)m_Allocator.Allocate(sizeof(T));
         new (p) T(args...);
 
-        ObjFinalizer finalizer;
+        FObjFinalizer finalizer;
         finalizer.Object = p;
         finalizer.Finalizer = &ClassFinalizer<T>;
         m_ObjFinalizers.push_back(finalizer);
@@ -151,7 +151,7 @@ namespace RG
     }
 
     template<typename T, typename... ArgsT>
-    inline T* RenderGraph::AllocatePOD(ArgsT&&... args)
+    inline T* FRenderGraph::AllocatePOD(ArgsT&&... args)
     {
         T* p = (T*)m_Allocator.Allocate(sizeof(T));
         new (p) T(args...);
@@ -159,12 +159,12 @@ namespace RG
     }
 
     template <typename Resource>
-    inline RGHandle RenderGraph::Create(const typename Resource::Desc &desc, const eastl::string &name)
+    inline FRGHandle FRenderGraph::Create(const typename Resource::Desc &desc, const eastl::string &name)
     {
         auto resource = Allocate<Resource>(m_ResourceAllocator, name, desc);
-        auto node = AllocatePOD<RenderGraphResourceNode>(m_Graph, resource, 0);
+        auto node = AllocatePOD<FRenderGraphResourceNode>(m_Graph, resource, 0);
 
-        RGHandle handle;
+        FRGHandle handle;
         handle.Index = (uint16_t)m_Resources.size();
         handle.Node = (uint16_t)m_ResourceNodes.size();
 

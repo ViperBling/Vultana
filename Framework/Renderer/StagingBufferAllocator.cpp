@@ -5,12 +5,12 @@
 
 namespace Renderer
 {
-    StagingBufferAllocator::StagingBufferAllocator(RendererBase *renderer)
+    FStagingBufferAllocator::FStagingBufferAllocator(FRendererBase *renderer)
     {
         m_pRenderer = renderer;
     }
 
-    StagingBuffer StagingBufferAllocator::Allocate(uint32_t size)
+    FStagingBuffer FStagingBufferAllocator::Allocate(uint32_t size)
     {
         assert(size <= RHI::RHI_MAX_BUFFER_SIZE);
 
@@ -26,7 +26,7 @@ namespace Renderer
             m_AllocatedSize = 0;
         }
 
-        StagingBuffer buffer;
+        FStagingBuffer buffer;
         buffer.Buffer = m_Buffers[m_CurrentBuffer].get();
         buffer.Size = size;
         buffer.Offset = m_AllocatedSize;
@@ -37,7 +37,7 @@ namespace Renderer
         return buffer;
     }
 
-    void StagingBufferAllocator::Reset()
+    void FStagingBufferAllocator::Reset()
     {
         m_CurrentBuffer = 0;
         m_AllocatedSize = 0;
@@ -52,13 +52,13 @@ namespace Renderer
         }
     }
 
-    void StagingBufferAllocator::CreateNewBuffer()
+    void FStagingBufferAllocator::CreateNewBuffer()
     {
-        RHI::RHIBufferDesc desc;
+        RHI::FRHIBufferDesc desc;
         desc.Size = RHI::RHI_MAX_BUFFER_SIZE;
         desc.MemoryType = RHI::ERHIMemoryType::CPUOnly;
 
-        RHI::RHIBuffer* buffer = m_pRenderer->GetDevice()->CreateBuffer(desc, "StagingBufferAllocator:m_pBuffer");
-        m_Buffers.push_back(eastl::unique_ptr<RHI::RHIBuffer>(buffer));
+        RHI::FRHIBuffer* buffer = m_pRenderer->GetDevice()->CreateBuffer(desc, "StagingBufferAllocator:m_pBuffer");
+        m_Buffers.push_back(eastl::unique_ptr<RHI::FRHIBuffer>(buffer));
     }
 }

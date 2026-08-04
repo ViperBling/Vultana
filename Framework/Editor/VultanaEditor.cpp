@@ -13,9 +13,9 @@
 
 namespace Editor
 {
-    VultanaEditor::VultanaEditor(Renderer::RendererBase* pRenderer) : m_pRenderer(pRenderer)
+    FVultanaEditor::FVultanaEditor(Renderer::FRendererBase* pRenderer) : m_pRenderer(pRenderer)
     {
-        m_pGUI = eastl::make_unique<ImGuiImplement>(pRenderer);
+        m_pGUI = eastl::make_unique<FImGuiImplement>(pRenderer);
         m_pGUI->Init();
 
         ifd::FileDialog::Instance().CreateTexture = [this, pRenderer](uint8_t* data, int w, int h, char fmt) -> void*
@@ -29,16 +29,16 @@ namespace Editor
         };
         ifd::FileDialog::Instance().DeleteTexture = [this](void* tex)
         {
-            m_PendingDeletions.push_back(static_cast<RHI::RHIDescriptor*>(tex));
+            m_PendingDeletions.push_back(static_cast<RHI::FRHIDescriptor*>(tex));
         };
 
-        eastl::string assetPath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath();
+        eastl::string assetPath = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath();
         m_pTranslateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/TranslateIcon.png", true));
         m_pRotateIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/RotateIcon.png", true));
         m_pScaleIcon.reset(pRenderer->CreateTexture2D(assetPath + "UITexture/ScaleIcon.png", true));
     }
 
-    VultanaEditor::~VultanaEditor()
+    FVultanaEditor::~FVultanaEditor()
     {
         for (auto iter = m_FileDialogIcons.begin(); iter != m_FileDialogIcons.end(); iter++)
         {
@@ -47,12 +47,12 @@ namespace Editor
         }
     }
 
-    void VultanaEditor::NewFrame()
+    void FVultanaEditor::NewFrame()
     {
         m_pGUI->NewFrame();
     }
 
-    void VultanaEditor::Tick()
+    void FVultanaEditor::Tick()
     {
         FlushPendingTextureDeletions();
 
@@ -78,7 +78,7 @@ namespace Editor
         if (m_bShowWorldOutliner)
         {
             ImGui::Begin("WorldOutliner", &m_bShowWorldOutliner);
-            auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
+            auto pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
             pWorld->OnGUI();
             ImGui::End();
         }
@@ -88,7 +88,7 @@ namespace Editor
         }
     }
 
-    void VultanaEditor::Render(RHI::RHICommandList *pCmdList)
+    void FVultanaEditor::Render(RHI::FRHICommandList *pCmdList)
     {
         if (m_bShowInspector)
         {
@@ -102,12 +102,12 @@ namespace Editor
         m_Commands.clear();
     }
 
-    void VultanaEditor::AddGUICommand(const eastl::string &window, const eastl::string &section, const eastl::function<void()> &command)
+    void FVultanaEditor::AddGUICommand(const eastl::string &window, const eastl::string &section, const eastl::function<void()> &command)
     {
         m_Commands[window].push_back({ section, command });
     }
 
-    void VultanaEditor::BuildDockLayout()
+    void FVultanaEditor::BuildDockLayout()
     {
         m_DockSpace = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
@@ -128,7 +128,7 @@ namespace Editor
         }
     }
 
-    void VultanaEditor::DrawToolBar()
+    void FVultanaEditor::DrawToolBar()
     {
         ImGui::SetNextWindowPos(ImVec2(200, 20));
         ImGui::SetNextWindowSize(ImVec2(300, 30));
@@ -164,7 +164,7 @@ namespace Editor
         ImGui::End();
     }
 
-    void VultanaEditor::DrawMenu()
+    void FVultanaEditor::DrawMenu()
     {
         if (ImGui::BeginMainMenuBar())
         {
@@ -226,7 +226,7 @@ namespace Editor
             if (ifd::FileDialog::Instance().HasResult())
             {
                 eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
-                Core::VultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
+                Core::FVultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
             }
             ifd::FileDialog::Instance().Close();
         }
@@ -237,9 +237,9 @@ namespace Editor
         }
     }
 
-    void VultanaEditor::DrawGizmo()
+    void FVultanaEditor::DrawGizmo()
     {
-        auto pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
+        auto pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
 
         auto pSelectedObject = pWorld->GetVisibleObject(m_pRenderer->GetMouseHitObjectID());
         if (pSelectedObject == nullptr) return;
@@ -269,7 +269,7 @@ namespace Editor
             break;
         }
 
-        Scene::Camera* pCamera = pWorld->GetCamera();
+        Scene::FCamera* pCamera = pWorld->GetCamera();
         float4x4 view = pCamera->GetViewMatrix();
         float4x4 proj = pCamera->GetProjectionMatrix();
 
@@ -285,7 +285,7 @@ namespace Editor
         pSelectedObject->OnGUI();
     }
 
-    void VultanaEditor::DrawFrameStats()
+    void FVultanaEditor::DrawFrameStats()
     {
         ImVec2 windowPos(ImGui::GetIO().DisplaySize.x - 200.0f, 50.0f);
         ImGuiDockNode* dockSpace = ImGui::DockBuilderGetNode(m_DockSpace);
@@ -304,9 +304,9 @@ namespace Editor
         ImGui::End();
     }
 
-    void VultanaEditor::ShowRenderGraph()
+    void FVultanaEditor::ShowRenderGraph()
     {
-        auto pEngine = Core::VultanaEngine::GetEngineInstance();
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
 
         eastl::string file = pEngine->GetWorkingPath() + "Tools/GraphViz/RenderGraph.html";
         eastl::string graph = m_pRenderer->GetRenderGraph()->Export();
@@ -344,11 +344,11 @@ namespace Editor
         system(command.c_str());
     }
 
-    void VultanaEditor::FlushPendingTextureDeletions()
+    void FVultanaEditor::FlushPendingTextureDeletions()
     {
         for (size_t i = 0; i < m_PendingDeletions.size(); i++)
         {
-            RHI::RHIDescriptor* srv = m_PendingDeletions[i];
+            RHI::FRHIDescriptor* srv = m_PendingDeletions[i];
             auto iter = m_FileDialogIcons.find(srv);
             assert(iter != m_FileDialogIcons.end());
             auto texture = iter->second;
@@ -358,7 +358,7 @@ namespace Editor
         m_PendingDeletions.clear();
     }
 
-    void VultanaEditor::DrawWindow(const eastl::string &window, bool *pOpen)
+    void FVultanaEditor::DrawWindow(const eastl::string &window, bool *pOpen)
     {
         ImGui::Begin(window.c_str(), pOpen);
 
@@ -367,7 +367,7 @@ namespace Editor
         {
             for (size_t i = 0; i < iter->second.size(); i++)
             {
-                const Command& cmd = iter->second[i];
+                const FCommand& cmd = iter->second[i];
                 if (ImGui::CollapsingHeader(cmd.Section.c_str()))
                 {
                     cmd.Function();

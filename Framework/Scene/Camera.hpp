@@ -5,21 +5,21 @@
 
 namespace RHI
 {
-    class RHICommandList;
+    class FRHICommandList;
 }
 
 namespace Window
 {
-    class GLFWindow;
+    class FGLFWindow;
 }
 
 namespace Scene
 {
-    class Camera
+    class FCamera
     {
     public:
-        Camera();
-        ~Camera();
+        FCamera();
+        ~FCamera();
 
         void SetPerspective(float aspectRatio, float yFov, float near);
         void SetPosition(const float3& position);
@@ -48,7 +48,7 @@ namespace Scene
         float3 GetDown() const { return -m_World[1].xyz(); }
 
         void SetupCameraCB(FCameraConstants& cameraCB);
-        void DrawViewFrustum(RHI::RHICommandList* pCmdList);
+        void DrawViewFrustum(RHI::FRHICommandList* pCmdList);
         void LockViewFrustum(bool value) { m_bFrustumLocked = value; }
         void SetFrustumViewPosition(const float3& pos) { m_FrustumViewPos = pos; }
         void UpdateFrustumPlanes(const float4x4& matrix);

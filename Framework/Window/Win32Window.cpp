@@ -19,7 +19,7 @@ static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
     {
         if (wParam != SIZE_MINIMIZED)
         {
-            Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal(hWnd, LOWORD(lParam), HIWORD(lParam));
+            Core::FVultanaEngine::GetEngineInstance()->OnWindowResizeSignal(hWnd, LOWORD(lParam), HIWORD(lParam));
         }
         return 0;
     }
@@ -34,17 +34,17 @@ static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 namespace Window
 {
-    Win32Window::Win32Window(const Win32WindowDesc &desc)
+    FWin32Window::FWin32Window(const FWin32WindowDesc &desc)
     {
         m_Desc = desc;
     }
 
-    Win32Window::~Win32Window()
+    FWin32Window::~FWin32Window()
     {
 
     }
 
-    void Win32Window::Create()
+    void FWin32Window::Create()
     {
         WNDCLASSEX wndClass = {0};
         wndClass.cbSize = sizeof(WNDCLASSEX);

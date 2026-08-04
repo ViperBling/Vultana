@@ -4,17 +4,17 @@
 
 namespace RHI
 {
-    RHIDeletionQueueVK::RHIDeletionQueueVK(RHIDeviceVK *device)
+    FVulkanDeletionQueue::FVulkanDeletionQueue(FVulkanDevice *device)
     {
         m_Device = device;
     }
 
-    RHIDeletionQueueVK::~RHIDeletionQueueVK()
+    FVulkanDeletionQueue::~FVulkanDeletionQueue()
     {
         Flush(true);
     }
 
-    void RHIDeletionQueueVK::Flush(bool forceDelete)
+    void FVulkanDeletionQueue::Flush(bool forceDelete)
     {
         uint64_t frameID = m_Device->GetFrameID();
         vk::Instance instance = m_Device->GetInstance();
@@ -85,78 +85,78 @@ namespace RHI
         }
     }
 
-    void RHIDeletionQueueVK::FreeResourceDescriptor(uint32_t index, uint64_t frameID)
+    void FVulkanDeletionQueue::FreeResourceDescriptor(uint32_t index, uint64_t frameID)
     {
         m_ResourceDescriptorQueue.push(eastl::make_pair(index, frameID));
     }
 
-    void RHIDeletionQueueVK::FreeSamplerDescriptor(uint32_t index, uint64_t frameID)
+    void FVulkanDeletionQueue::FreeSamplerDescriptor(uint32_t index, uint64_t frameID)
     {
         m_SamplerDescriptorQueue.push(eastl::make_pair(index, frameID));
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::Image object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::Image object, uint64_t frameID)
     {
         m_ImageQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::ImageView object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::ImageView object, uint64_t frameID)
     {
         m_ImageViewQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::Buffer object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::Buffer object, uint64_t frameID)
     {
         m_BufferQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(VmaAllocation object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(VmaAllocation object, uint64_t frameID)
     {
         m_AllocationQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::Sampler object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::Sampler object, uint64_t frameID)
     {
         m_SamplerQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::Pipeline object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::Pipeline object, uint64_t frameID)
     {
         m_PipelineQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::ShaderModule object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::ShaderModule object, uint64_t frameID)
     {
         m_ShaderQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::Semaphore object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::Semaphore object, uint64_t frameID)
     {
         m_SemaphoreQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::SwapchainKHR object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::SwapchainKHR object, uint64_t frameID)
     {
         m_SwapchainQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::SurfaceKHR object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::SurfaceKHR object, uint64_t frameID)
     {
         m_SurfaceQueue.push({ object, frameID });
     }
 
     template<>
-    void RHIDeletionQueueVK::Delete(vk::CommandPool object, uint64_t frameID)
+    void FVulkanDeletionQueue::Delete(vk::CommandPool object, uint64_t frameID)
     {
         m_CommandPoolQueue.push({ object, frameID });
     }

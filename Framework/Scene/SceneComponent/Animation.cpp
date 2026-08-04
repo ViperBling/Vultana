@@ -3,12 +3,12 @@
 
 namespace Scene
 {
-    Animation::Animation(const eastl::string &name)
+    FAnimation::FAnimation(const eastl::string &name)
     {
         m_Name = name;
     }
 
-    void Animation::Update(SkeletalMesh *mesh, float deltaTime)
+    void FAnimation::Update(FSkeletalMesh *mesh, float deltaTime)
     {
         m_CurrentAnimTime += deltaTime;
         if (m_CurrentAnimTime > m_TimeDuration)
@@ -22,7 +22,7 @@ namespace Scene
         }
     }
 
-    void Animation::UpdateChannel(SkeletalMesh *mesh, const FAnimationChannel &channel)
+    void FAnimation::UpdateChannel(FSkeletalMesh *mesh, const FAnimationChannel &channel)
     {
         eastl::pair<float, float4> lowerFrame;
         eastl::pair<float, float4> upperFrame;

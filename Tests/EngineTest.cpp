@@ -10,20 +10,20 @@
 
 TEST(EngineTest, Init)
 {
-    Window::WindowCreateInfo wndCI {};
+    Window::FWindowCreateInfo wndCI {};
     wndCI.Position = { 100, 100 };
     wndCI.Size = { 1280, 720 };
 
-    Window::GLFWindow window(wndCI);
+    Window::FGLFWindow window(wndCI);
 
-    Core::VultanaEngine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
+    Core::FVultanaEngine::GetEngineInstance()->Init(&window, wndCI.Size.x, wndCI.Size.y);
 
     while (!window.ShouldClose())
     {
         window.PollEvents();
 
-       Core::VultanaEngine::GetEngineInstance()->Tick();
+       Core::FVultanaEngine::GetEngineInstance()->Tick();
     }
 
-    Core::VultanaEngine::GetEngineInstance()->Shutdown();
+    Core::FVultanaEngine::GetEngineInstance()->Shutdown();
 }

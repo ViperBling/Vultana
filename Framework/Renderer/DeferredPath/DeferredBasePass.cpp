@@ -8,47 +8,47 @@ namespace Renderer
 {
     struct FClearCounterPassData
     {
-        RG::RGHandle FirstPhaseMeshletListCounterBuffer;
-        RG::RGHandle SecondPhaseObjectListCounterBuffer;
-        RG::RGHandle SecondPhaseMeshletListCounterBuffer;
+        RG::FRGHandle FirstPhaseMeshletListCounterBuffer;
+        RG::FRGHandle SecondPhaseObjectListCounterBuffer;
+        RG::FRGHandle SecondPhaseMeshletListCounterBuffer;
     };
 
     struct FInstanceCullingData
     {
-        RG::RGHandle HZBTexture;
-        RG::RGHandle IndirectCommandBuffer;
-        RG::RGHandle CullingResultBuffer;
-        RG::RGHandle SecondPhaseObjectListBuffer;
-        RG::RGHandle SecondPhaseObjectListCounterBuffer;
+        RG::FRGHandle HZBTexture;
+        RG::FRGHandle IndirectCommandBuffer;
+        RG::FRGHandle CullingResultBuffer;
+        RG::FRGHandle SecondPhaseObjectListBuffer;
+        RG::FRGHandle SecondPhaseObjectListCounterBuffer;
     };
 
     struct FBuildMeshletListData
     {
-        RG::RGHandle CullingResultBuffer;
-        RG::RGHandle MeshletListBuffer;
-        RG::RGHandle MeshletListCounterBuffer;
+        RG::FRGHandle CullingResultBuffer;
+        RG::FRGHandle MeshletListBuffer;
+        RG::FRGHandle MeshletListCounterBuffer;
     };
 
     struct FBuildIndirectCommandData
     {
-        RG::RGHandle MeshletListCounterBuffer;
-        RG::RGHandle IndirectCommandBuffer;
+        RG::FRGHandle MeshletListCounterBuffer;
+        RG::FRGHandle IndirectCommandBuffer;
     };
 
     struct FBasePassData
     {
-        RG::RGHandle IndirectCommandBuffer;
+        RG::FRGHandle IndirectCommandBuffer;
 
-        RG::RGHandle InHZBTexture;
-        RG::RGHandle MeshletListBuffer;
-        RG::RGHandle MeshletListCounterBuffer;
-        RG::RGHandle OcclusionCulledMeshletsBuffer;
-        RG::RGHandle OcclusionCulledMeshletsCounterBuffer;
+        RG::FRGHandle InHZBTexture;
+        RG::FRGHandle MeshletListBuffer;
+        RG::FRGHandle MeshletListCounterBuffer;
+        RG::FRGHandle OcclusionCulledMeshletsBuffer;
+        RG::FRGHandle OcclusionCulledMeshletsCounterBuffer;
 
-        RG::RGHandle OutDiffuseRT;      // SRGB : diffuse(rgb) + ao(a)
-        RG::RGHandle OutNormalRT;       // RGBA8UNORM : world normal(xyz)
-        RG::RGHandle OutVelocityRT;     // RG16F : screen-space velocity
-        RG::RGHandle OutDepthRT;
+        RG::FRGHandle OutDiffuseRT;      // SRGB : diffuse(rgb) + ao(a)
+        RG::FRGHandle OutNormalRT;       // RGBA8UNORM : world normal(xyz)
+        RG::FRGHandle OutVelocityRT;     // RG16F : screen-space velocity
+        RG::FRGHandle OutDepthRT;
     };
 
     static inline uint32_t RoundUpTo(uint32_t a, uint32_t b)
@@ -56,9 +56,9 @@ namespace Renderer
         return (a / b + 1) * b;
     }
 
-    DeferredBasePass::DeferredBasePass(RendererBase *pRenderer) : m_pRenderer(pRenderer)
+    FDeferredBasePass::FDeferredBasePass(FRendererBase *pRenderer) : m_pRenderer(pRenderer)
     {
-        RHI::RHIComputePipelineStateDesc computeDesc {};
+        RHI::FRHIComputePipelineStateDesc computeDesc {};
 
         computeDesc.CS = pRenderer->GetShader("InstanceCulling.hlsl", "InstanceCulling", RHI::ERHIShaderType::CS, {"FIRST_PHASE=1"});
         m_InstanceCulling1stPhasePSO = pRenderer->GetPipelineState(computeDesc, "1st Phase Instance Culling PSO");
@@ -76,13 +76,13 @@ namespace Renderer
         m_BuildIndirectCmdPSO = pRenderer->GetPipelineState(computeDesc, "Build Indirect Command PSO");
     }
 
-    RenderBatch &DeferredBasePass::AddBatch()
+    FRenderBatch &FDeferredBasePass::AddBatch()
     {
-        LinearAllocator* allocator = m_pRenderer->GetConstantAllocator();
+        FLinearAllocator* allocator = m_pRenderer->GetConstantAllocator();
         return m_Instance.emplace_back(*allocator);
     }
 
-    void DeferredBasePass::Render1stPhase(RG::RenderGraph *pRenderGraph)
+    void FDeferredBasePass::Render1stPhase(RG::FRenderGraph *pRenderGraph)
     {
         RENDER_GRAPH_EVENT(pRenderGraph, "BasePass: 1st Phase");
 
@@ -92,27 +92,27 @@ namespace Renderer
         uint32_t maxInstanceNum = RoundUpTo(m_pRenderer->GetInstanceCount(), 65536 / sizeof(uint8_t));
         uint32_t maxMeshletNum = RoundUpTo(m_TotalMeshletCount, 65536 / sizeof(uint2));
 
-        HiZBuffer *pHZB = m_pRenderer->GetHiZBuffer();
+        FHiZBuffer *pHZB = m_pRenderer->GetHiZBuffer();
 
         auto clearCounterPass = pRenderGraph->AddPass<FClearCounterPassData>("Clear Counter", RG::RenderPassType::Compute,
-            [&](FClearCounterPassData& data, RG::RGBuilder& builder)
+            [&](FClearCounterPassData& data, RG::FRGBuilder& builder)
             {
-                RHI::RHIBufferDesc bufferDesc {};
+                RHI::FRHIBufferDesc bufferDesc {};
                 bufferDesc.Stride = 4;
                 bufferDesc.Size = bufferDesc.Stride * maxDispatchNum;
                 bufferDesc.Format = RHI::ERHIFormat::R32UI;
                 bufferDesc.Usage = RHI::RHIBufferUsageTypedBuffer;
 
-                data.FirstPhaseMeshletListCounterBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "FirstPhaseMeshletCounterBuffer");
+                data.FirstPhaseMeshletListCounterBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "FirstPhaseMeshletCounterBuffer");
                 data.FirstPhaseMeshletListCounterBuffer = builder.Write(data.FirstPhaseMeshletListCounterBuffer);
 
-                data.SecondPhaseObjectListCounterBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "SecondPhaseObjectListCounterBuffer");
+                data.SecondPhaseObjectListCounterBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "SecondPhaseObjectListCounterBuffer");
                 data.SecondPhaseObjectListCounterBuffer = builder.Write(data.SecondPhaseObjectListCounterBuffer);
 
-                data.SecondPhaseMeshletListCounterBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "SecondPhaseMeshletListCounterBuffer");
+                data.SecondPhaseMeshletListCounterBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "SecondPhaseMeshletListCounterBuffer");
                 data.SecondPhaseMeshletListCounterBuffer = builder.Write(data.SecondPhaseMeshletListCounterBuffer);
             },
-            [=](const FClearCounterPassData& data, RHI::RHICommandList* pCmdList)
+            [=](const FClearCounterPassData& data, RHI::FRHICommandList* pCmdList)
             {
                 ResetCounter(pCmdList, 
                     pRenderGraph->GetBuffer(data.FirstPhaseMeshletListCounterBuffer), 
@@ -121,20 +121,20 @@ namespace Renderer
             });
 
         auto instanceCullingPass = pRenderGraph->AddPass<FInstanceCullingData>("Instance Culling", RG::RenderPassType::Compute, 
-            [&](FInstanceCullingData &data, RG::RGBuilder &builder)
+            [&](FInstanceCullingData &data, RG::FRGBuilder &builder)
             {
-                RHI::RHIBufferDesc bufferDesc;
+                RHI::FRHIBufferDesc bufferDesc;
                 bufferDesc.Stride = 1;
                 bufferDesc.Size = bufferDesc.Stride * maxInstanceNum;
                 bufferDesc.Format = RHI::ERHIFormat::R8UI;
                 bufferDesc.Usage = RHI::RHIBufferUsageTypedBuffer;
-                data.CullingResultBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "FirstPhaseCullingResultBuffer");
+                data.CullingResultBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "FirstPhaseCullingResultBuffer");
                 data.CullingResultBuffer = builder.Write(data.CullingResultBuffer);
 
                 bufferDesc.Stride = 4;
                 bufferDesc.Size = bufferDesc.Stride * maxInstanceNum;
                 bufferDesc.Format = RHI::ERHIFormat::R32UI;
-                data.SecondPhaseObjectListBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "SecondPhaseObjectListBuffer");
+                data.SecondPhaseObjectListBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "SecondPhaseObjectListBuffer");
                 data.SecondPhaseObjectListBuffer = builder.Write(data.SecondPhaseObjectListBuffer);
 
                 data.SecondPhaseObjectListCounterBuffer = builder.Write(clearCounterPass->SecondPhaseObjectListCounterBuffer);
@@ -144,7 +144,7 @@ namespace Renderer
                     data.HZBTexture = builder.Read(pHZB->GetCullingHZBMip1stPhase(i), i, RG::RGBuilderFlag::None);
                 }
             },
-            [=](const FInstanceCullingData &data, RHI::RHICommandList* pCmdList)
+            [=](const FInstanceCullingData &data, RHI::FRHICommandList* pCmdList)
             {
                 InstanceCulling1stPhase(pCmdList, 
                     pRenderGraph->GetBuffer(data.CullingResultBuffer), 
@@ -153,19 +153,19 @@ namespace Renderer
             });
         
         auto buildMeshletListPass = pRenderGraph->AddPass<FBuildMeshletListData>("Build Meshlet List", RG::RenderPassType::Compute,
-            [&](FBuildMeshletListData &data, RG::RGBuilder &builder)
+            [&](FBuildMeshletListData &data, RG::FRGBuilder &builder)
             {
-                RHI::RHIBufferDesc bufferDesc;
+                RHI::FRHIBufferDesc bufferDesc;
                 bufferDesc.Stride = sizeof(uint2);
                 bufferDesc.Size = bufferDesc.Stride * maxMeshletNum;
                 bufferDesc.Usage = RHI::RHIBufferUsageStructuredBuffer;
-                data.MeshletListBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "FirstPhaseMeshletListBuffer");
+                data.MeshletListBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "FirstPhaseMeshletListBuffer");
 
                 data.CullingResultBuffer = builder.Read(instanceCullingPass->CullingResultBuffer);
                 data.MeshletListBuffer = builder.Write(data.MeshletListBuffer);
                 data.MeshletListCounterBuffer = builder.Write(clearCounterPass->FirstPhaseMeshletListCounterBuffer);
             },
-            [=](const FBuildMeshletListData &data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildMeshletListData &data, RHI::FRHICommandList* pCmdList)
             {
                 BuildMeshletList(pCmdList, 
                     pRenderGraph->GetBuffer(data.CullingResultBuffer), 
@@ -174,18 +174,18 @@ namespace Renderer
             });
         
         auto buildIndirectCommandPass = pRenderGraph->AddPass<FBuildIndirectCommandData>("Build Indirect Command", RG::RenderPassType::Compute,
-            [&](FBuildIndirectCommandData &data, RG::RGBuilder &builder)
+            [&](FBuildIndirectCommandData &data, RG::FRGBuilder &builder)
             {
-                RHI::RHIBufferDesc bufferDesc;
+                RHI::FRHIBufferDesc bufferDesc;
                 bufferDesc.Stride = sizeof(uint3);
                 bufferDesc.Size = bufferDesc.Stride * maxDispatchNum;
                 bufferDesc.Usage = RHI::RHIBufferUsageStructuredBuffer;
-                data.IndirectCommandBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "FirstPhaseIndirectCommand");
+                data.IndirectCommandBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "FirstPhaseIndirectCommand");
                 data.IndirectCommandBuffer = builder.Write(data.IndirectCommandBuffer);
 
                 data.MeshletListCounterBuffer = builder.Read(buildMeshletListPass->MeshletListCounterBuffer);
             },
-            [=](const FBuildIndirectCommandData &data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildIndirectCommandData &data, RHI::FRHICommandList* pCmdList)
             {
                 BuildIndirectCommand(pCmdList, 
                     pRenderGraph->GetBuffer(data.MeshletListCounterBuffer), 
@@ -193,23 +193,23 @@ namespace Renderer
             });
 
         auto basePass = pRenderGraph->AddPass<FBasePassData>("Base Pass", RG::RenderPassType::Graphics,
-            [&](FBasePassData& data, RG::RGBuilder& builder)
+            [&](FBasePassData& data, RG::FRGBuilder& builder)
             {
-                RHI::RHITextureDesc textureDesc {};
+                RHI::FRHITextureDesc textureDesc {};
                 textureDesc.Width = m_pRenderer->GetRenderWidth();
                 textureDesc.Height = m_pRenderer->GetRenderHeight();
 
                 textureDesc.Format = RHI::ERHIFormat::RGBA16F;
-                data.OutDiffuseRT = builder.Create<RG::RGTexture>(textureDesc, "BasePass_DiffuseRT");
+                data.OutDiffuseRT = builder.Create<RG::FRGTexture>(textureDesc, "BasePass_DiffuseRT");
 
                 textureDesc.Format = RHI::ERHIFormat::RGBA8UNORM;
-                data.OutNormalRT = builder.Create<RG::RGTexture>(textureDesc, "BasePass_NormalRT");
+                data.OutNormalRT = builder.Create<RG::FRGTexture>(textureDesc, "BasePass_NormalRT");
 
                 textureDesc.Format = RHI::ERHIFormat::RG16F;
-                data.OutVelocityRT = builder.Create<RG::RGTexture>(textureDesc, "BasePass_VelocityRT");
+                data.OutVelocityRT = builder.Create<RG::FRGTexture>(textureDesc, "BasePass_VelocityRT");
 
                 textureDesc.Format = RHI::ERHIFormat::D32F;
-                data.OutDepthRT = builder.Create<RG::RGTexture>(textureDesc, "BasePass_DepthRT");
+                data.OutDepthRT = builder.Create<RG::FRGTexture>(textureDesc, "BasePass_DepthRT");
 
                 data.OutDiffuseRT = builder.WriteColor(0, data.OutDiffuseRT, 0, RHI::ERHIRenderPassLoadOp::Clear, float4(0.0f));
                 data.OutNormalRT = builder.WriteColor(1, data.OutNormalRT, 0, RHI::ERHIRenderPassLoadOp::Clear, float4(0.0f));
@@ -225,16 +225,16 @@ namespace Renderer
                 data.MeshletListBuffer = builder.Read(buildMeshletListPass->MeshletListBuffer, 0, RG::RGBuilderFlag::ShaderStageNonPS);
                 data.MeshletListCounterBuffer = builder.Read(buildMeshletListPass->MeshletListCounterBuffer, 0, RG::RGBuilderFlag::ShaderStageNonPS);
 
-                RHI::RHIBufferDesc bufferDesc;
+                RHI::FRHIBufferDesc bufferDesc;
                 bufferDesc.Stride = sizeof(uint2);
                 bufferDesc.Size = bufferDesc.Stride * maxMeshletNum;
                 bufferDesc.Usage = RHI::RHIBufferUsageStructuredBuffer;
-                data.OcclusionCulledMeshletsBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "SecondPhaseMeshletListBuffer");
+                data.OcclusionCulledMeshletsBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "SecondPhaseMeshletListBuffer");
                 data.OcclusionCulledMeshletsBuffer = builder.Write(data.OcclusionCulledMeshletsBuffer);
 
                 data.OcclusionCulledMeshletsCounterBuffer = builder.Write(clearCounterPass->SecondPhaseMeshletListCounterBuffer);
             },
-            [=](const FBasePassData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBasePassData& data, RHI::FRHICommandList* pCmdList)
             {
                 FlushBatches1stPhase(pCmdList, 
                     pRenderGraph->GetBuffer(data.IndirectCommandBuffer), 
@@ -254,37 +254,37 @@ namespace Renderer
         m_2ndPhaseMeshletListCounterBuffer = basePass->OcclusionCulledMeshletsCounterBuffer;
     }
 
-    void DeferredBasePass::Render2ndPhase(RG::RenderGraph *pRenderGraph)
+    void FDeferredBasePass::Render2ndPhase(RG::FRenderGraph *pRenderGraph)
     {
         RENDER_GRAPH_EVENT(pRenderGraph, "BasePass: 2nd Phase");
 
-        HiZBuffer *pHZB = m_pRenderer->GetHiZBuffer();
+        FHiZBuffer *pHZB = m_pRenderer->GetHiZBuffer();
 
         uint32_t maxDispatchNum = RoundUpTo((uint32_t)m_IndirectBatches.size(), 65536 / sizeof(uint32_t));
         uint32_t maxInstanceNum = RoundUpTo(m_pRenderer->GetInstanceCount(), 65536 / sizeof(uint8_t));
 
         struct FBuildCullingCommandData
         {
-            RG::RGHandle ObjectListCounterBuffer;
-            RG::RGHandle CommandBuffer;
+            RG::FRGHandle ObjectListCounterBuffer;
+            RG::FRGHandle CommandBuffer;
         };
 
         auto buildCullingCommandPass = pRenderGraph->AddPass<FBuildCullingCommandData>("Build Instance Culling Command", RG::RenderPassType::Compute,
-            [&](FBuildCullingCommandData& data, RG::RGBuilder& builder)
+            [&](FBuildCullingCommandData& data, RG::FRGBuilder& builder)
             {
-                RHI::RHIBufferDesc desc;
+                RHI::FRHIBufferDesc desc;
                 desc.Stride = sizeof(uint3);
                 desc.Size = desc.Stride;
                 desc.Usage = RHI::RHIBufferUsageStructuredBuffer;
-                data.CommandBuffer = builder.Create<RG::RGBuffer>(desc, "SecondPhaseInstanceCullingCommandBuffer");
+                data.CommandBuffer = builder.Create<RG::FRGBuffer>(desc, "SecondPhaseInstanceCullingCommandBuffer");
                 data.CommandBuffer = builder.Write(data.CommandBuffer);
 
                 data.ObjectListCounterBuffer = builder.Read(m_2ndPhaseObjectListCounterBuffer);
             },
-            [=](const FBuildCullingCommandData &data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildCullingCommandData &data, RHI::FRHICommandList* pCmdList)
             {
-                RG::RGBuffer* commandBuffer = pRenderGraph->GetBuffer(data.CommandBuffer);
-                RG::RGBuffer* objectListCounterBuffer = pRenderGraph->GetBuffer(data.ObjectListCounterBuffer);
+                RG::FRGBuffer* commandBuffer = pRenderGraph->GetBuffer(data.CommandBuffer);
+                RG::FRGBuffer* objectListCounterBuffer = pRenderGraph->GetBuffer(data.ObjectListCounterBuffer);
 
                 pCmdList->SetPipelineState(m_BuildInstanceCullingCmdPSO);
 
@@ -294,14 +294,14 @@ namespace Renderer
             });
         
         auto instanceCullingPass = pRenderGraph->AddPass<FInstanceCullingData>("Instance Culling", RG::RenderPassType::Compute,
-            [&](FInstanceCullingData& data, RG::RGBuilder& builder)
+            [&](FInstanceCullingData& data, RG::FRGBuilder& builder)
             {
-                RHI::RHIBufferDesc bufferDesc;
+                RHI::FRHIBufferDesc bufferDesc;
                 bufferDesc.Stride = 1;
                 bufferDesc.Size = bufferDesc.Stride * maxInstanceNum;
                 bufferDesc.Format = RHI::ERHIFormat::R8UI;
                 bufferDesc.Usage = RHI::RHIBufferUsageTypedBuffer;
-                data.CullingResultBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "SecondPhaseCullingResultBuffer");
+                data.CullingResultBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "SecondPhaseCullingResultBuffer");
                 data.CullingResultBuffer = builder.Write(data.CullingResultBuffer);
 
                 data.IndirectCommandBuffer = builder.ReadIndirectArg(buildCullingCommandPass->CommandBuffer);
@@ -313,7 +313,7 @@ namespace Renderer
                     data.HZBTexture = builder.Read(pHZB->GetCullingHZBMip2ndPhase(i), i, RG::RGBuilderFlag::None);
                 }
             },
-            [=](const FInstanceCullingData& data, RHI::RHICommandList* pCmdList)
+            [=](const FInstanceCullingData& data, RHI::FRHICommandList* pCmdList)
             {
                 InstanceCulling2ndPhase(pCmdList, 
                     pRenderGraph->GetBuffer(data.IndirectCommandBuffer), 
@@ -323,13 +323,13 @@ namespace Renderer
             });
         
         auto buildMeshletListPass = pRenderGraph->AddPass<FBuildMeshletListData>("Build Meshlet List", RG::RenderPassType::Compute,
-            [&](FBuildMeshletListData& data, RG::RGBuilder& builder)
+            [&](FBuildMeshletListData& data, RG::FRGBuilder& builder)
             {
                 data.CullingResultBuffer = builder.Read(instanceCullingPass->CullingResultBuffer);
                 data.MeshletListBuffer = builder.Write(m_2ndPhaseMeshletListBuffer);
                 data.MeshletListCounterBuffer = builder.Write(m_2ndPhaseMeshletListCounterBuffer);
             },
-            [=](const FBuildMeshletListData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildMeshletListData& data, RHI::FRHICommandList* pCmdList)
             {
                 BuildMeshletList(pCmdList, 
                     pRenderGraph->GetBuffer(data.CullingResultBuffer), 
@@ -338,18 +338,18 @@ namespace Renderer
             });
 
         auto buildIndirectCommandPass = pRenderGraph->AddPass<FBuildIndirectCommandData>("Build Indirect Command", RG::RenderPassType::Compute,
-            [&](FBuildIndirectCommandData& data, RG::RGBuilder& builder)
+            [&](FBuildIndirectCommandData& data, RG::FRGBuilder& builder)
             {
-                RHI::RHIBufferDesc bufferDesc;
+                RHI::FRHIBufferDesc bufferDesc;
                 bufferDesc.Stride = sizeof(uint3);
                 bufferDesc.Size = bufferDesc.Stride * maxDispatchNum;
                 bufferDesc.Usage = RHI::RHIBufferUsageStructuredBuffer;
-                data.IndirectCommandBuffer = builder.Create<RG::RGBuffer>(bufferDesc, "SecondPhaseIndirectCommand");
+                data.IndirectCommandBuffer = builder.Create<RG::FRGBuffer>(bufferDesc, "SecondPhaseIndirectCommand");
                 data.IndirectCommandBuffer = builder.Write(data.IndirectCommandBuffer);
 
                 data.MeshletListCounterBuffer = builder.Read(buildMeshletListPass->MeshletListCounterBuffer);
             },
-            [=](const FBuildIndirectCommandData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildIndirectCommandData& data, RHI::FRHICommandList* pCmdList)
             {
                 BuildIndirectCommand(pCmdList, 
                     pRenderGraph->GetBuffer(data.MeshletListCounterBuffer), 
@@ -357,7 +357,7 @@ namespace Renderer
             });
         
         auto basePass = pRenderGraph->AddPass<FBasePassData>("Base Pass", RG::RenderPassType::Graphics,
-            [&](FBasePassData& data, RG::RGBuilder& builder)
+            [&](FBasePassData& data, RG::FRGBuilder& builder)
             {
                 data.OutDiffuseRT = builder.WriteColor(0, m_DiffuseRT, 0, RHI::ERHIRenderPassLoadOp::Load);
                 data.OutNormalRT = builder.WriteColor(1, m_NormalRT, 0, RHI::ERHIRenderPassLoadOp::Load);
@@ -373,7 +373,7 @@ namespace Renderer
                 data.MeshletListCounterBuffer = builder.Read(buildMeshletListPass->MeshletListCounterBuffer, 0, RG::RGBuilderFlag::ShaderStageNonPS);
                 data.IndirectCommandBuffer = builder.ReadIndirectArg(buildIndirectCommandPass->IndirectCommandBuffer);
             },
-            [=](const FBasePassData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBasePassData& data, RHI::FRHICommandList* pCmdList)
             {
                 FlushBatches2ndPhase(pCmdList, 
                     pRenderGraph->GetBuffer(data.IndirectCommandBuffer), 
@@ -387,7 +387,7 @@ namespace Renderer
         m_DepthRT = basePass->OutDepthRT;
     }
 
-    void DeferredBasePass::MergeBatches()
+    void FDeferredBasePass::MergeBatches()
     {
         m_TotalInstanceCount = (uint32_t)m_Instance.size();
 
@@ -404,14 +404,14 @@ namespace Renderer
 
         struct FMergedBatch
         {
-            eastl::vector<RenderBatch*> Batches;
+            eastl::vector<FRenderBatch*> Batches;
             uint32_t MeshletCount;
         };
-        eastl::map<RHI::RHIPipelineState*, FMergedBatch> mergedBatches;
+        eastl::map<RHI::FRHIPipelineState*, FMergedBatch> mergedBatches;
 
         for (size_t i = 0; i < m_Instance.size(); ++i)
         {
-            const RenderBatch& batch = m_Instance[i];
+            const FRenderBatch& batch = m_Instance[i];
             if (batch.PSO->GetType() == RHI::ERHIPipelineType::MeshShading)
             {
                 m_TotalMeshletCount += batch.MeshletCount;
@@ -459,7 +459,7 @@ namespace Renderer
         m_Instance.clear();
     }
 
-    void DeferredBasePass::ResetCounter(RHI::RHICommandList* pCmdList, RG::RGBuffer* firstPhaseMeshletCounter, RG::RGBuffer* secondPhaseObjectCounter, RG::RGBuffer* secondPhaseMeshletCounter)
+    void FDeferredBasePass::ResetCounter(RHI::FRHICommandList* pCmdList, RG::FRGBuffer* firstPhaseMeshletCounter, RG::FRGBuffer* secondPhaseObjectCounter, RG::FRGBuffer* secondPhaseMeshletCounter)
     {
         uint32_t clearValue[4] = {0, 0, 0, 0};
         pCmdList->ClearUAV(firstPhaseMeshletCounter->GetBuffer(), firstPhaseMeshletCounter->GetUAV(), clearValue);
@@ -471,7 +471,7 @@ namespace Renderer
         pCmdList->BufferBarrier(secondPhaseMeshletCounter->GetBuffer(), RHI::RHIAccessClearUAV, RHI::RHIAccessComputeUAV);
     }
 
-    void DeferredBasePass::InstanceCulling1stPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *cullingResultUAV, RG::RGBuffer *secondPhaseObjectListUAV, RG::RGBuffer *secondPhaseObjectListCounterUAV)
+    void FDeferredBasePass::InstanceCulling1stPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *cullingResultUAV, RG::FRGBuffer *secondPhaseObjectListUAV, RG::FRGBuffer *secondPhaseObjectListCounterUAV)
     {
         uint32_t clearValue[4] = {0, 0, 0, 0};
         pCmdList->ClearUAV(cullingResultUAV->GetBuffer(), cullingResultUAV->GetUAV(), clearValue);
@@ -493,7 +493,7 @@ namespace Renderer
         pCmdList->Dispatch(groupCount, 1, 1);
     }
 
-    void DeferredBasePass::InstanceCulling2ndPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *cullingResultUAV, RG::RGBuffer *objectListBufferSRV, RG::RGBuffer *objectListCounterBufferSRV)
+    void FDeferredBasePass::InstanceCulling2ndPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pIndirectCommandBuffer, RG::FRGBuffer *cullingResultUAV, RG::FRGBuffer *objectListBufferSRV, RG::FRGBuffer *objectListCounterBufferSRV)
     {
         uint32_t clearValue[4] = {0, 0, 0, 0};
         pCmdList->ClearUAV(cullingResultUAV->GetBuffer(), cullingResultUAV->GetUAV(), clearValue);
@@ -507,11 +507,11 @@ namespace Renderer
         pCmdList->DispatchIndirect(pIndirectCommandBuffer->GetBuffer(), 0);
     }
 
-    void DeferredBasePass::FlushBatches1stPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *pMeshletListSRV, RG::RGBuffer *pMeshletListCounterSRV)
+    void FDeferredBasePass::FlushBatches1stPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pIndirectCommandBuffer, RG::FRGBuffer *pMeshletListSRV, RG::FRGBuffer *pMeshletListCounterSRV)
     {
         for (size_t i = 0; i < m_IndirectBatches.size(); ++i)
         {
-            const IndirectBatch &batch = m_IndirectBatches[i];
+            const FIndirectBatch &batch = m_IndirectBatches[i];
             pCmdList->SetPipelineState(batch.PSO);
 
             uint32_t rootConsts[5] = {pMeshletListSRV->GetSRV()->GetHeapIndex(), pMeshletListCounterSRV->GetSRV()->GetHeapIndex(), batch.MeshletListBufferOffset, (uint32_t)i, 1};
@@ -521,11 +521,11 @@ namespace Renderer
         }
     }
 
-    void DeferredBasePass::FlushBatches2ndPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *pMeshletListSRV, RG::RGBuffer *pMeshletListCounterSRV)
+    void FDeferredBasePass::FlushBatches2ndPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pIndirectCommandBuffer, RG::FRGBuffer *pMeshletListSRV, RG::FRGBuffer *pMeshletListCounterSRV)
     {
         for (size_t i = 0; i < m_IndirectBatches.size(); ++i)
         {
-            const IndirectBatch &batch = m_IndirectBatches[i];
+            const FIndirectBatch &batch = m_IndirectBatches[i];
             pCmdList->SetPipelineState(batch.PSO);
 
             uint32_t rootConsts[5] = {pMeshletListSRV->GetSRV()->GetHeapIndex(), pMeshletListCounterSRV->GetSRV()->GetHeapIndex(), batch.MeshletListBufferOffset, (uint32_t)i, 0};
@@ -540,7 +540,7 @@ namespace Renderer
         }
     }
 
-    void DeferredBasePass::BuildMeshletList(RHI::RHICommandList *pCmdList, RG::RGBuffer *cullingResultSRV, RG::RGBuffer *meshletListBufferUAV, RG::RGBuffer *meshletListCounterBufferUAV)
+    void FDeferredBasePass::BuildMeshletList(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *cullingResultSRV, RG::FRGBuffer *meshletListBufferUAV, RG::FRGBuffer *meshletListCounterBufferUAV)
     {
         pCmdList->SetPipelineState(m_BuildMeshletListPSO);
 
@@ -559,7 +559,7 @@ namespace Renderer
         }
     }
 
-    void DeferredBasePass::BuildIndirectCommand(RHI::RHICommandList *pCmdList, RG::RGBuffer *pCounterBufferSRV, RG::RGBuffer *pCommandBufferUAV)
+    void FDeferredBasePass::BuildIndirectCommand(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pCounterBufferSRV, RG::FRGBuffer *pCommandBufferUAV)
     {
         pCmdList->SetPipelineState(m_BuildIndirectCmdPSO);
 

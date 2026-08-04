@@ -9,14 +9,14 @@
 
 namespace Window
 {
-    std::vector<const char *> GLFWindow::GetRequiredExtensions() const
+    std::vector<const char *> FGLFWindow::GetRequiredExtensions() const
     {
         uint32_t extensionCount = 0;
         const char** extensions = glfwGetRequiredInstanceExtensions(&extensionCount);
         return std::vector<const char*>(extensions, extensions + extensionCount);
     }
 
-    GLFWindow::GLFWindow(const WindowCreateInfo &createInfo)
+    FGLFWindow::FGLFWindow(const FWindowCreateInfo &createInfo)
     {
         if (glfwInit() != GLFW_TRUE)
         {
@@ -45,7 +45,7 @@ namespace Window
         glfwSetWindowUserPointer(this->m_Hwnd, (void*)this);
         glfwSetWindowSizeCallback(this->m_Hwnd, [](GLFWwindow* handle, int width, int height)
         {
-                auto& window = *(GLFWindow*)glfwGetWindowUserPointer(handle);
+                auto& window = *(FGLFWindow*)glfwGetWindowUserPointer(handle);
                 for (auto& callback : window.m_OnResizeCallbacks)
                 {
                     if (callback) callback(window, (uint32_t)width, (uint32_t)height);
@@ -53,19 +53,19 @@ namespace Window
         });
         glfwSetKeyCallback(this->m_Hwnd, [](GLFWwindow* handle, int key, int scancode, int action, int mods)
         {
-            auto& window = *(GLFWindow*)glfwGetWindowUserPointer(handle);
+            auto& window = *(FGLFWindow*)glfwGetWindowUserPointer(handle);
             if (window.m_OnKeyChanged) window.m_OnKeyChanged(window, (Utility::KeyCode)key, action == GLFW_PRESS);
         });
         glfwSetMouseButtonCallback(this->m_Hwnd, [](GLFWwindow* handle, int button, int action, int mods)
         {
-            auto& window = *(GLFWindow*)glfwGetWindowUserPointer(handle);
+            auto& window = *(FGLFWindow*)glfwGetWindowUserPointer(handle);
             if (window.m_OnMouseChanged) window.m_OnMouseChanged(window, (Utility::MouseButton)button, action == GLFW_PRESS);
         });
 
         m_LastCursorPosition = GetCursorPosition();
     }
 
-    GLFWindow::GLFWindow(GLFWindow&& other) noexcept
+    FGLFWindow::FGLFWindow(FGLFWindow&& other) noexcept
     {
         this->m_Hwnd = other.m_Hwnd;
         this->m_OnResizeCallbacks = other.m_OnResizeCallbacks;
@@ -73,7 +73,7 @@ namespace Window
         glfwSetWindowUserPointer(this->m_Hwnd, (void*)this);
     }
 
-    GLFWindow &GLFWindow::operator=(GLFWindow &&other) noexcept
+    FGLFWindow &FGLFWindow::operator=(FGLFWindow &&other) noexcept
     {
         this->m_Hwnd = other.m_Hwnd;
         this->m_OnResizeCallbacks = other.m_OnResizeCallbacks;
@@ -82,7 +82,7 @@ namespace Window
         return *this;
     }
 
-    GLFWindow::~GLFWindow()
+    FGLFWindow::~FGLFWindow()
     {
         if (this->m_Hwnd != nullptr)
         {
@@ -92,68 +92,68 @@ namespace Window
         m_OnResizeCallbacks.clear();
     }
 
-    HWND GLFWindow::GetWin32WindowHandle()
+    HWND FGLFWindow::GetWin32WindowHandle()
     {
         return glfwGetWin32Window(this->m_Hwnd);
     }
 
-    void GLFWindow::PollEvents() const
+    void FGLFWindow::PollEvents() const
     {
         glfwPollEvents();
     }
 
-    bool GLFWindow::ShouldClose() const
+    bool FGLFWindow::ShouldClose() const
     {
         return glfwWindowShouldClose(this->m_Hwnd);
     }
 
-    void GLFWindow::Close()
+    void FGLFWindow::Close()
     {
         glfwSetWindowShouldClose(this->m_Hwnd, true);
     }
 
-    void GLFWindow::SetSize(float2 size)
+    void FGLFWindow::SetSize(float2 size)
     {
         glfwSetWindowSize(this->m_Hwnd, (int)size.x, (int)size.y);
     }
 
-    float2 GLFWindow::GetSize() const
+    float2 FGLFWindow::GetSize() const
     {
         int width = 0, height = 0;
         glfwGetWindowSize(this->m_Hwnd, &width, &height);
         return float2((float)width, (float)height);
     }
 
-    void GLFWindow::SetPosition(float2 position)
+    void FGLFWindow::SetPosition(float2 position)
     {
         glfwSetWindowPos(this->m_Hwnd, (int)position.x, (int)position.y);
     }
 
-    float2 GLFWindow::GetPosition() const
+    float2 FGLFWindow::GetPosition() const
     {
         int x = 0, y = 0;
         glfwGetWindowPos(this->m_Hwnd, &x, &y);
         return float2((float)x, (float)y);
     }
 
-    void GLFWindow::SetTitle(const char *title)
+    void FGLFWindow::SetTitle(const char *title)
     {
         glfwSetWindowTitle(this->m_Hwnd, title);
     }
 
-    float2 GLFWindow::GetCursorPosition() const
+    float2 FGLFWindow::GetCursorPosition() const
     {
         double x = 0, y = 0;
         glfwGetCursorPos(this->m_Hwnd, &x, &y);
         return float2((float)x, (float)y);
     }
 
-    void GLFWindow::SetCursorPosition(float2 position)
+    void FGLFWindow::SetCursorPosition(float2 position)
     {
         glfwSetCursorPos(this->m_Hwnd, (int)position.x, (int)position.y);
     }
 
-    float2 GLFWindow::GetCursorDelta()
+    float2 FGLFWindow::GetCursorDelta()
     {
         if (IsMousePressed(Utility::MouseButton::LEFT) || IsMousePressed(Utility::MouseButton::RIGHT))
         {
@@ -169,68 +169,68 @@ namespace Window
         return float2(0.0f);
     }
 
-    Utility::CursorMode GLFWindow::GetCursorMode() const
+    Utility::CursorMode FGLFWindow::GetCursorMode() const
     {
         return (Utility::CursorMode)glfwGetInputMode(this->m_Hwnd, GLFW_CURSOR);
     }
 
-    void GLFWindow::SetCursorMode(Utility::CursorMode mode)
+    void FGLFWindow::SetCursorMode(Utility::CursorMode mode)
     {
         glfwSetInputMode(this->m_Hwnd, GLFW_CURSOR, (int)mode);
     }
 
-    bool GLFWindow::IsKeyPressed(Utility::KeyCode key) const
+    bool FGLFWindow::IsKeyPressed(Utility::KeyCode key) const
     {
         return glfwGetKey(this->m_Hwnd, (int)key) == GLFW_PRESS;
     }
 
-    bool GLFWindow::IsKeyReleased(Utility::KeyCode key) const
+    bool FGLFWindow::IsKeyReleased(Utility::KeyCode key) const
     {
         return glfwGetKey(this->m_Hwnd, (int)key) == GLFW_RELEASE;
     }
 
-    bool GLFWindow::IsMousePressed(Utility::MouseButton button) const
+    bool FGLFWindow::IsMousePressed(Utility::MouseButton button) const
     {
         return glfwGetMouseButton(this->m_Hwnd, (int)button) == GLFW_PRESS;
     }
 
-    bool GLFWindow::IsMouseReleased(Utility::MouseButton button) const
+    bool FGLFWindow::IsMouseReleased(Utility::MouseButton button) const
     {
         return glfwGetMouseButton(this->m_Hwnd, (int)button) == GLFW_RELEASE;
     }
 
-    float GLFWindow::GetTimeSinceCreation() const
+    float FGLFWindow::GetTimeSinceCreation() const
     {
         return (float)glfwGetTime();
     }
 
-    void GLFWindow::SetTimeSinceCreation(float time)
+    void FGLFWindow::SetTimeSinceCreation(float time)
     {
         return glfwSetTime((float)time);
     }
 
-    void GLFWindow::OnResize(std::function<void(GLFWindow &, uint32_t width, uint32_t height)> callback)
+    void FGLFWindow::OnResize(std::function<void(FGLFWindow &, uint32_t width, uint32_t height)> callback)
     {
         this->m_OnResizeCallbacks.push_back(std::move(callback));
     }
 
-    void GLFWindow::OnKeyChanged(std::function<void(GLFWindow &, Utility::KeyCode, bool)> callback)
+    void FGLFWindow::OnKeyChanged(std::function<void(FGLFWindow &, Utility::KeyCode, bool)> callback)
     {
         this->m_OnKeyChanged = std::move(callback);
     }
 
-    void GLFWindow::OnMouseChanged(std::function<void(GLFWindow &, Utility::MouseButton, bool)> callback)
+    void FGLFWindow::OnMouseChanged(std::function<void(FGLFWindow &, Utility::MouseButton, bool)> callback)
     {
         this->m_OnMouseChanged = std::move(callback);
     }
 
-    void GLFWindow::SetContext(GLFWwindow *window)
+    void FGLFWindow::SetContext(GLFWwindow *window)
     {
         this->m_Hwnd = window;
         glfwMakeContextCurrent(window);
     }
 
-    vk::Result GLFWindow::CreateVulkanSurface(vk::Instance instance, vk::SurfaceKHR& surface)
+    vk::Result FGLFWindow::CreateVulkanSurface(vk::Instance instance, vk::SurfaceKHR& surface)
     {
         return (vk::Result)glfwCreateWindowSurface(VkInstance(instance), m_Hwnd, nullptr, (VkSurfaceKHR*)&surface);
     }

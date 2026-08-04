@@ -2,10 +2,10 @@
 
 namespace Utility
 {
-    std::filesystem::path FilePaths::m_WorkingDir = std::filesystem::path();
-    std::filesystem::path FilePaths::m_CurrentProjectFile = std::filesystem::path();
+    std::filesystem::path FFilePaths::m_WorkingDir = std::filesystem::path();
+    std::filesystem::path FFilePaths::m_CurrentProjectFile = std::filesystem::path();
 
-    std::filesystem::path FilePaths::WorkingDir()
+    std::filesystem::path FFilePaths::WorkingDir()
     {
         if (m_WorkingDir.empty())
         {
@@ -14,62 +14,62 @@ namespace Utility
         return m_WorkingDir;
     }
 
-    std::filesystem::path FilePaths::EngineRoot()
+    std::filesystem::path FFilePaths::EngineRoot()
     {
         return WorkingDir().parent_path();
     }
 
-    std::filesystem::path FilePaths::EngineShaderPath()
+    std::filesystem::path FFilePaths::EngineShaderPath()
     {
         return EngineAssetPath() / "Shaders";
     }
 
-    std::filesystem::path FilePaths::EngineAssetPath()
+    std::filesystem::path FFilePaths::EngineAssetPath()
     {
         return EngineRoot() / "Assets";
     }
 
-    std::filesystem::path FilePaths::EngineBinariesPath()
+    std::filesystem::path FFilePaths::EngineBinariesPath()
     {
         return EngineRoot() / "Binary";
     }
 
-    std::filesystem::path FilePaths::EnginePluginPath()
+    std::filesystem::path FFilePaths::EnginePluginPath()
     {
         return EngineRoot() / "Plugins";
     }
 
-    std::filesystem::path FilePaths::EnginePluginAssetPath(const std::string& pluginName)
+    std::filesystem::path FFilePaths::EnginePluginAssetPath(const std::string& pluginName)
     {
         return EnginePluginPath() / pluginName / "Assets";
     }
 
-    std::filesystem::path FilePaths::ProjectFile()
+    std::filesystem::path FFilePaths::ProjectFile()
     {
         return m_CurrentProjectFile;
     }
 
-    std::filesystem::path FilePaths::ProjectRoot()
+    std::filesystem::path FFilePaths::ProjectRoot()
     {
         return m_CurrentProjectFile.parent_path();
     }
 
-    std::filesystem::path FilePaths::ProjectAssetPath()
+    std::filesystem::path FFilePaths::ProjectAssetPath()
     {
         return ProjectRoot() / "Asset";
     }
 
-    std::filesystem::path FilePaths::ProjectBinariesPath()
+    std::filesystem::path FFilePaths::ProjectBinariesPath()
     {
         return ProjectRoot() / "Binaries";
     }
 
-    std::filesystem::path FilePaths::ProjectPluginPath()
+    std::filesystem::path FFilePaths::ProjectPluginPath()
     {
         return ProjectRoot() / "Plugin";
     }
 
-    std::filesystem::path FilePaths::ProjectPluginAssetPath(const std::string& pluginName)
+    std::filesystem::path FFilePaths::ProjectPluginAssetPath(const std::string& pluginName)
     {
         return ProjectPluginPath() / pluginName / "Asset";
     }

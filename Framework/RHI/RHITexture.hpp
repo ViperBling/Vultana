@@ -4,12 +4,12 @@
 
 namespace RHI
 {
-    class RHITexture : public RHIResource
+    class FRHITexture : public FRHIResource
     {
     public:
-        virtual ~RHITexture() = default;
+        virtual ~FRHITexture() = default;
 
-        const RHITextureDesc& GetDesc() const { return m_Desc; }
+        const FRHITextureDesc& GetDesc() const { return m_Desc; }
 
         virtual bool IsTexture() const override { return true; }
         virtual uint32_t GetRequiredStagingBufferSize() const = 0;
@@ -18,6 +18,6 @@ namespace RHI
         virtual void* GetSharedHandle() const = 0;
 
     protected:
-        RHITextureDesc m_Desc {};
+        FRHITextureDesc m_Desc {};
     };
 }

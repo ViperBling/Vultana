@@ -5,18 +5,18 @@
 
 namespace Renderer
 {
-    class HiZBuffer
+    class FHiZBuffer
     {
     public:
-        HiZBuffer(Renderer::RendererBase* pRenderer);
+        FHiZBuffer(Renderer::FRendererBase* pRenderer);
 
-        void GenerateCullingHZB1stPhase(RG::RenderGraph* rg);
-        void GenerateCullingHZB2ndPhase(RG::RenderGraph* rg, RG::RGHandle depthRT);
-        void GenerateSceneHZB(RG::RenderGraph* rg, RG::RGHandle depthRT);
+        void GenerateCullingHZB1stPhase(RG::FRenderGraph* rg);
+        void GenerateCullingHZB2ndPhase(RG::FRenderGraph* rg, RG::FRGHandle depthRT);
+        void GenerateSceneHZB(RG::FRenderGraph* rg, RG::FRGHandle depthRT);
 
-        RG::RGHandle GetCullingHZBMip1stPhase(uint32_t mip) const;
-        RG::RGHandle GetCullingHZBMip2ndPhase(uint32_t mip) const;
-        RG::RGHandle GetSceneHZBMip(uint32_t mip) const;
+        RG::FRGHandle GetCullingHZBMip1stPhase(uint32_t mip) const;
+        RG::FRGHandle GetCullingHZBMip2ndPhase(uint32_t mip) const;
+        RG::FRGHandle GetSceneHZBMip(uint32_t mip) const;
 
         uint32_t GetHZBMipCount() const { return m_HZBMipCount; }
         uint32_t GetHZBWidth() const { return m_HZBSize.x; }
@@ -25,28 +25,28 @@ namespace Renderer
     private:
         void CalcHZBSize();
 
-        void ReprojectDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectedDepthTexture);
-        void DilationDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectedDepthSRV, RG::RGTexture* hzbMip0UAV);
-        void BuildHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* texture, bool minMax = false);
-        void InitHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* inputDepthSRV, RG::RGTexture* hzbMip0UAV, bool minMax = false);
+        void ReprojectDepth(RHI::FRHICommandList* pCmdList, RG::FRGTexture* reprojectedDepthTexture);
+        void DilationDepth(RHI::FRHICommandList* pCmdList, RG::FRGTexture* reprojectedDepthSRV, RG::FRGTexture* hzbMip0UAV);
+        void BuildHZB(RHI::FRHICommandList* pCmdList, RG::FRGTexture* texture, bool minMax = false);
+        void InitHZB(RHI::FRHICommandList* pCmdList, RG::FRGTexture* inputDepthSRV, RG::FRGTexture* hzbMip0UAV, bool minMax = false);
 
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
 
-        RHI::RHIPipelineState* m_pDepthReprojectionPSO = nullptr;
-        RHI::RHIPipelineState* m_pDepthDilationPSO = nullptr;
-        RHI::RHIPipelineState* m_pDepthMipFilterPSO = nullptr;
-        RHI::RHIPipelineState* m_pInitHZBPSO = nullptr;
+        RHI::FRHIPipelineState* m_pDepthReprojectionPSO = nullptr;
+        RHI::FRHIPipelineState* m_pDepthDilationPSO = nullptr;
+        RHI::FRHIPipelineState* m_pDepthMipFilterPSO = nullptr;
+        RHI::FRHIPipelineState* m_pInitHZBPSO = nullptr;
 
-        RHI::RHIPipelineState* m_pInitSceneHZBPSO = nullptr;
-        RHI::RHIPipelineState* m_pDepthMipFilterMinMaxPSO = nullptr;
+        RHI::FRHIPipelineState* m_pInitSceneHZBPSO = nullptr;
+        RHI::FRHIPipelineState* m_pDepthMipFilterMinMaxPSO = nullptr;
 
         uint32_t m_HZBMipCount = 0;
         uint2 m_HZBSize;
 
         static const uint32_t MAX_HZB_MIP_COUNT = 13;
-        RG::RGHandle m_CullingHZBMips1stPhase[MAX_HZB_MIP_COUNT] = {};
-        RG::RGHandle m_CullingHZBMips2ndPhase[MAX_HZB_MIP_COUNT] = {};
-        RG::RGHandle m_SceneHZBMips[MAX_HZB_MIP_COUNT] = {};
+        RG::FRGHandle m_CullingHZBMips1stPhase[MAX_HZB_MIP_COUNT] = {};
+        RG::FRGHandle m_CullingHZBMips2ndPhase[MAX_HZB_MIP_COUNT] = {};
+        RG::FRGHandle m_SceneHZBMips[MAX_HZB_MIP_COUNT] = {};
     };
 }

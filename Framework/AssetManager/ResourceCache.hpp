@@ -6,13 +6,13 @@
 
 namespace Assets
 {
-    class ResourceCache
+    class FResourceCache
     {
     public:
-        static ResourceCache* GetInstance();
+        static FResourceCache* GetInstance();
 
-        RenderResources::Texture2D* GetTexture2D(const eastl::string& file, bool srgb = true);
-        void ReleaseTexture2D(RenderResources::Texture2D* texture);
+        RenderResources::FTexture2D* GetTexture2D(const eastl::string& file, bool srgb = true);
+        void ReleaseTexture2D(RenderResources::FTexture2D* texture);
 
         OffsetAllocator::Allocation GetSceneBuffer(const eastl::string& name, const void* data, uint32_t size);
         void ReleaseSceneBuffer(OffsetAllocator::Allocation allocation);

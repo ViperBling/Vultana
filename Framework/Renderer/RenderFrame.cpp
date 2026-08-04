@@ -5,7 +5,7 @@
 
 namespace Renderer
 {
-    void RendererBase::BuildRenderGraph(RG::RGHandle &outputColor, RG::RGHandle &outputDepth)
+    void FRendererBase::BuildRenderGraph(RG::FRGHandle &outputColor, RG::FRGHandle &outputDepth)
     {
         m_pRenderGraph->Clear();
 
@@ -33,8 +33,8 @@ namespace Renderer
         m_SecondPhaseMeshletListHandle = m_pDeferredBasePass->GetSecondPhaseMeshletListBuffer();
         m_SecondPhaseMeshletListCounterHandle = m_pDeferredBasePass->GetSecondPhaseMeshletListCounterBuffer();
 
-        RG::RGHandle sceneColorRT = m_pDeferredBasePass->GetDiffuseRT();
-        RG::RGHandle sceneDepthRT = m_pDeferredBasePass->GetDepthRT();
+        RG::FRGHandle sceneColorRT = m_pDeferredBasePass->GetDiffuseRT();
+        RG::FRGHandle sceneDepthRT = m_pDeferredBasePass->GetDepthRT();
 
         OutlinePass(sceneColorRT, sceneDepthRT);
         ObjectIDPass(sceneDepthRT);
@@ -49,31 +49,31 @@ namespace Renderer
         m_pRenderGraph->Compile();
     }
 
-    void RendererBase::ObjectIDPass(RG::RGHandle &depth)
+    void FRendererBase::ObjectIDPass(RG::FRGHandle &depth)
     {
         if (!m_bEnableObjectIDRendering) return;
         
         struct FIDPassData
         {
-            RG::RGHandle IDTexture;
-            RG::RGHandle SceneDepthTexture;
+            RG::FRGHandle IDTexture;
+            RG::FRGHandle SceneDepthTexture;
         };
 
         auto idPass = m_pRenderGraph->AddPass<FIDPassData>("Object ID Pass", RG::RenderPassType::Graphics,
-        [&](FIDPassData& data, RG::RGBuilder& builder)
+        [&](FIDPassData& data, RG::FRGBuilder& builder)
         {
-            RG::RGTexture::Desc desc;
+            RG::FRGTexture::Desc desc;
             desc.Width = m_RenderWidth;
             desc.Height = m_RenderHeight;
             desc.Format = RHI::ERHIFormat::R32UI;
             
-            data.IDTexture = builder.Create<RG::RGTexture>(desc, "ObjectIDTexture");
+            data.IDTexture = builder.Create<RG::FRGTexture>(desc, "ObjectIDTexture");
             data.IDTexture = builder.WriteColor(0, data.IDTexture, 0, RHI::ERHIRenderPassLoadOp::Clear, float4(1000000, 0, 0, 0));
             data.SceneDepthTexture = builder.ReadDepth(depth, 0);
         },
-        [&](const FIDPassData& data, RHI::RHICommandList* pCmdList)
+        [&](const FIDPassData& data, RHI::FRHICommandList* pCmdList)
         {
-            Scene::World* pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
+            Scene::FWorld* pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
             for (size_t i = 0; i < m_IDPassBatches.size(); i++)
             {
                 DrawBatch(pCmdList, m_IDPassBatches[i]);
@@ -84,24 +84,24 @@ namespace Renderer
 
         struct FCopyIDPassData
         {
-            RG::RGHandle SrcTexture;
+            RG::FRGHandle SrcTexture;
         };
 
         m_pRenderGraph->AddPass<FCopyIDPassData>("Copy ID To Readback Buffer", RG::RenderPassType::Copy,
-        [&](FCopyIDPassData& data, RG::RGBuilder& builder)
+        [&](FCopyIDPassData& data, RG::FRGBuilder& builder)
         {
             data.SrcTexture = builder.Read(idPass->IDTexture);
             builder.SkipCulling();
         },
-        [&](const FCopyIDPassData& data, RHI::RHICommandList* pCmdList)
+        [&](const FCopyIDPassData& data, RHI::FRHICommandList* pCmdList)
         {
-            RG::RGTexture* srcTexture = m_pRenderGraph->GetTexture(data.SrcTexture);
+            RG::FRGTexture* srcTexture = m_pRenderGraph->GetTexture(data.SrcTexture);
 
             m_ObjectIDRowPitch = srcTexture->GetTexture()->GetRowPitch();
             uint32_t size = m_ObjectIDRowPitch * srcTexture->GetTexture()->GetDesc().Height;
             if (m_pObjectIDBuffer == nullptr || m_pObjectIDBuffer->GetDesc().Size < size)
             {
-                RHI::RHIBufferDesc desc;
+                RHI::FRHIBufferDesc desc;
                 desc.Size = size;
                 desc.MemoryType = RHI::ERHIMemoryType::GPUToCPU;
                 m_pObjectIDBuffer.reset(m_pDevice->CreateBuffer(desc, "RendererBase::ObjectIDBuffer"));
@@ -110,21 +110,21 @@ namespace Renderer
         });
     }
 
-    void RendererBase::OutlinePass(RG::RGHandle &color, RG::RGHandle &depth)
+    void FRendererBase::OutlinePass(RG::FRGHandle &color, RG::FRGHandle &depth)
     {
         struct FOutlinePassData
         {
-            RG::RGHandle OutSceneColorRT;
-            RG::RGHandle OutSceneDepthRT;
+            RG::FRGHandle OutSceneColorRT;
+            RG::FRGHandle OutSceneDepthRT;
         };
 
         auto outlinePass = m_pRenderGraph->AddPass<FOutlinePassData>("Outline Pass", RG::RenderPassType::Graphics,
-        [&](FOutlinePassData& data, RG::RGBuilder& builder)
+        [&](FOutlinePassData& data, RG::FRGBuilder& builder)
         {
             data.OutSceneColorRT = builder.WriteColor(0, color, 0, RHI::ERHIRenderPassLoadOp::Load);
             data.OutSceneDepthRT = builder.WriteDepth(depth, 0, RHI::ERHIRenderPassLoadOp::Load);
         },
-        [&](const FOutlinePassData& data, RHI::RHICommandList* pCmdList)
+        [&](const FOutlinePassData& data, RHI::FRHICommandList* pCmdList)
         {
             for (size_t i = 0; i < m_OutlinePassBatches.size(); i++)
             {
@@ -136,23 +136,23 @@ namespace Renderer
         depth = outlinePass->OutSceneDepthRT;
     }
 
-    void RendererBase::CopyHistoryPass(RG::RGHandle sceneDepth, /* RG::RGHandle sceneNormal, */ RG::RGHandle sceneColor)
+    void FRendererBase::CopyHistoryPass(RG::FRGHandle sceneDepth, /* RG::RGHandle sceneNormal, */ RG::FRGHandle sceneColor)
     {
         struct FCopyDepthPassData
         {
-            RG::RGHandle SrcSceneDepthTexture;
-            RG::RGHandle DstSceneDepthTexture;
+            RG::FRGHandle SrcSceneDepthTexture;
+            RG::FRGHandle DstSceneDepthTexture;
         };
 
         m_pRenderGraph->AddPass<FCopyDepthPassData>("Copy History Pass", RG::RenderPassType::Compute,
-        [&](FCopyDepthPassData& data, RG::RGBuilder& builder)
+        [&](FCopyDepthPassData& data, RG::FRGBuilder& builder)
         {
             data.SrcSceneDepthTexture = builder.Read(sceneDepth);
             data.DstSceneDepthTexture = builder.Write(m_PrevSceneDepthHandle);
         },
-        [&](const FCopyDepthPassData& data, RHI::RHICommandList* pCmdList)
+        [&](const FCopyDepthPassData& data, RHI::FRHICommandList* pCmdList)
         {
-            RG::RGTexture* srcSceneDepthTexture = m_pRenderGraph->GetTexture(data.SrcSceneDepthTexture);
+            RG::FRGTexture* srcSceneDepthTexture = m_pRenderGraph->GetTexture(data.SrcSceneDepthTexture);
 
             uint32_t cb[2] = { srcSceneDepthTexture->GetSRV()->GetHeapIndex(), srcSceneDepthTexture->GetUAV()->GetHeapIndex() };
 
@@ -166,12 +166,12 @@ namespace Renderer
             // RG::RGHandle SrcSceneNormalTexture;
             // RG::RGHandle DstSceneNormalTexture;
 
-            RG::RGHandle SrcSceneColorTexture;
-            RG::RGHandle DstSceneColorTexture;
+            RG::FRGHandle SrcSceneColorTexture;
+            RG::FRGHandle DstSceneColorTexture;
         };
 
         m_pRenderGraph->AddPass<FCopyPassData>("Copy History Textures Pass", RG::RenderPassType::Copy,
-        [&](FCopyPassData& data, RG::RGBuilder& builder)
+        [&](FCopyPassData& data, RG::FRGBuilder& builder)
         {
             // data.SrcSceneNormalTexture = builder.Read(sceneNormal);
             // data.DstSceneNormalTexture = builder.Write(m_PrevNormalHandle);
@@ -181,17 +181,17 @@ namespace Renderer
 
             builder.SkipCulling();
         },
-        [&](const FCopyPassData& data, RHI::RHICommandList* pCmdList)
+        [&](const FCopyPassData& data, RHI::FRHICommandList* pCmdList)
         {
             // RG::RGTexture* srcSceneNormalTexture = m_pRenderGraph->GetTexture(data.SrcSceneNormalTexture);
-            RG::RGTexture* srcSceneColorTexture = m_pRenderGraph->GetTexture(data.SrcSceneColorTexture);
+            RG::FRGTexture* srcSceneColorTexture = m_pRenderGraph->GetTexture(data.SrcSceneColorTexture);
 
             // pCmdList->CopyTexture(srcSceneNormalTexture->GetTexture(), m_pPrevNormalTexture->GetTexture(), 0, 0,  0, 0);
             pCmdList->CopyTexture(srcSceneColorTexture->GetTexture(), m_pPrevSceneColorTexture->GetTexture(), 0, 0, 0, 0);
         });
     }
 
-    void RendererBase::ImportPrevFrameTextures()
+    void FRendererBase::ImportPrevFrameTextures()
     {
         if (m_pPrevSceneDepthTexture == nullptr || m_pPrevSceneDepthTexture->GetTexture()->GetDesc().Width != m_RenderWidth || m_pPrevSceneDepthTexture->GetTexture()->GetDesc().Height != m_RenderHeight)
         {
@@ -214,19 +214,19 @@ namespace Renderer
         {
             struct FClearHistoryPassData
             {
-                RG::RGHandle LinearSceneDepth;
+                RG::FRGHandle LinearSceneDepth;
                 // RG::RGHandle SceneNormal;
-                RG::RGHandle SceneColor;
+                RG::FRGHandle SceneColor;
             };
 
             auto clearHistoryPass = m_pRenderGraph->AddPass<FClearHistoryPassData>("Clear History Pass", RG::RenderPassType::Compute,
-            [&](FClearHistoryPassData& data, RG::RGBuilder& builder)
+            [&](FClearHistoryPassData& data, RG::FRGBuilder& builder)
             {
                 data.LinearSceneDepth = builder.Write(m_PrevSceneDepthHandle);
                 // data.SceneNormal = builder.Write(m_PrevNormalHandle);
                 data.SceneColor = builder.Write(m_PrevSceneColorHandle);
             },
-            [=](const FClearHistoryPassData& data, RHI::RHICommandList* pCmdList)
+            [=](const FClearHistoryPassData& data, RHI::FRHICommandList* pCmdList)
             {
                 float clearValue[4] = { 0 };
                 pCmdList->ClearUAV(m_pPrevSceneDepthTexture->GetTexture(), m_pPrevSceneDepthTexture->GetUAV(), clearValue);

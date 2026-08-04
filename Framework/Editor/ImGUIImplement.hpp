@@ -7,25 +7,25 @@
 
 namespace Editor
 {
-    class ImGuiImplement
+    class FImGuiImplement
     {
     public:
-        ImGuiImplement(Renderer::RendererBase* pRenderer);
-        ~ImGuiImplement();
+        FImGuiImplement(Renderer::FRendererBase* pRenderer);
+        ~FImGuiImplement();
 
         bool Init();
         void NewFrame();
-        void Render(RHI::RHICommandList* pCmdList);
+        void Render(RHI::FRHICommandList* pCmdList);
     
     private:
-        void SetupRenderStates(RHI::RHICommandList* pCmdList, uint32_t frameIdx);
+        void SetupRenderStates(RHI::FRHICommandList* pCmdList, uint32_t frameIdx);
     
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
-        RHI::RHIPipelineState* m_pPSO;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
+        RHI::FRHIPipelineState* m_pPSO;
 
-        eastl::unique_ptr<RenderResources::Texture2D> m_pFontTexture;
-        eastl::unique_ptr<RenderResources::StructuredBuffer> m_pVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
-        eastl::unique_ptr<RenderResources::IndexBuffer> m_pIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pFontTexture;
+        eastl::unique_ptr<RenderResources::FStructuredBuffer> m_pVertexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::FIndexBuffer> m_pIndexBuffer[RHI::RHI_MAX_INFLIGHT_FRAMES];
     };
 }

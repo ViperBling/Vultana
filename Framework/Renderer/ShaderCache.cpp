@@ -12,7 +12,7 @@
 
 namespace RHI
 {
-    inline bool operator==(const RHI::RHIShaderDesc& lhs, const RHI::RHIShaderDesc& rhs)
+    inline bool operator==(const RHI::FRHIShaderDesc& lhs, const RHI::FRHIShaderDesc& rhs)
     {
         if (lhs.File != rhs.File || lhs.EntryPoint != rhs.EntryPoint || lhs.Type != rhs.Type)
         {
@@ -57,17 +57,17 @@ namespace Renderer
         return content;
     }
 
-    ShaderCache::ShaderCache(RendererBase *renderer)
+    FShaderCache::FShaderCache(FRendererBase *renderer)
     {
         m_pRenderer = renderer;
     }
 
-    RHI::RHIShader *ShaderCache::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    RHI::FRHIShader *FShaderCache::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
-        eastl::string filePath = Core::VultanaEngine::GetEngineInstance()->GetShaderPath() + file;
+        eastl::string filePath = Core::FVultanaEngine::GetEngineInstance()->GetShaderPath() + file;
         eastl::string absolutePath = std::filesystem::absolute(filePath.c_str()).string().c_str();
 
-        RHI::RHIShaderDesc desc;
+        RHI::FRHIShaderDesc desc;
         desc.Type = type;
         desc.File = absolutePath;
         desc.EntryPoint = entryPoint;
@@ -80,15 +80,15 @@ namespace Renderer
             return iter->second.get();
         }
 
-        RHI::RHIShader* shader = CreateShader(absolutePath, entryPoint, type, defines, flags);
+        RHI::FRHIShader* shader = CreateShader(absolutePath, entryPoint, type, defines, flags);
         if (shader != nullptr)
         {
-            m_CachedShaders.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIShader>(shader)));
+            m_CachedShaders.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::FRHIShader>(shader)));
         }
         return shader;
     }
 
-    eastl::string ShaderCache::GetCachedFileContent(const eastl::string &file)
+    eastl::string FShaderCache::GetCachedFileContent(const eastl::string &file)
     {
         auto iter = m_CachedFile.find(file);
         if (iter != m_CachedFile.end())
@@ -102,7 +102,7 @@ namespace Renderer
         return source;
     }
 
-    void ShaderCache::ReloadShaders()
+    void FShaderCache::ReloadShaders()
     {
         for (auto iter = m_CachedFile.begin(); iter != m_CachedFile.end(); iter++)
         {
@@ -115,7 +115,7 @@ namespace Renderer
             {
                 m_CachedFile[path] = newSource;
 
-                eastl::vector<RHI::RHIShader*> changedShaders = GetShaderList(path);
+                eastl::vector<RHI::FRHIShader*> changedShaders = GetShaderList(path);
                 for (size_t i = 0; i < changedShaders.size(); i++)
                 {
                     RecompileShader(changedShaders[i]);
@@ -124,7 +124,7 @@ namespace Renderer
         }
     }
 
-    RHI::RHIShader *ShaderCache::CreateShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    RHI::FRHIShader *FShaderCache::CreateShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
         eastl::string source = GetCachedFileContent(file);
 
@@ -133,20 +133,20 @@ namespace Renderer
         {
             return nullptr;
         }
-        RHI::RHIShaderDesc desc;
+        RHI::FRHIShaderDesc desc;
         desc.Type = type;
         desc.File = file;
         desc.EntryPoint = entryPoint;
         desc.Defines = defines;
 
         eastl::string name = file + " : " + entryPoint;
-        RHI::RHIShader* shader = m_pRenderer->GetDevice()->CreateShader(desc, shaderBlob, name);
+        RHI::FRHIShader* shader = m_pRenderer->GetDevice()->CreateShader(desc, shaderBlob, name);
         return shader;
     }
 
-    void ShaderCache::RecompileShader(RHI::RHIShader *shader)
+    void FShaderCache::RecompileShader(RHI::FRHIShader *shader)
     {
-        const RHI::RHIShaderDesc& desc = shader->GetDesc();
+        const RHI::FRHIShaderDesc& desc = shader->GetDesc();
         VTNA_LOG_INFO("Recompiling shader: {}", desc.File);
 
         eastl::string source = GetCachedFileContent(desc.File);
@@ -159,13 +159,13 @@ namespace Renderer
 
         shader->Create(shaderBlob);
 
-        PipelineStateCache* psoCache = m_pRenderer->GetPipelineStateCache();
+        FPipelineStateCache* psoCache = m_pRenderer->GetPipelineStateCache();
         psoCache->RecreatePSO(shader);
     }
 
-    eastl::vector<RHI::RHIShader *> ShaderCache::GetShaderList(const eastl::string &file)
+    eastl::vector<RHI::FRHIShader *> FShaderCache::GetShaderList(const eastl::string &file)
     {
-        eastl::vector<RHI::RHIShader*> shaders;
+        eastl::vector<RHI::FRHIShader*> shaders;
 
         for (auto iter = m_CachedShaders.begin(); iter != m_CachedShaders.end(); iter++)
         {
@@ -177,9 +177,9 @@ namespace Renderer
         return shaders;
     }
 
-    bool ShaderCache::IsFileIncluded(const RHI::RHIShader *shader, const eastl::string &file)
+    bool FShaderCache::IsFileIncluded(const RHI::FRHIShader *shader, const eastl::string &file)
     {
-        const RHI::RHIShaderDesc& desc = shader->GetDesc();
+        const RHI::FRHIShaderDesc& desc = shader->GetDesc();
         if (desc.File == file)
         {
             return true;

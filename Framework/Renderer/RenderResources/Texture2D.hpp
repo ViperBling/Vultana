@@ -6,27 +6,27 @@
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 }
 
 namespace RenderResources
 {
-    class Texture2D
+    class FTexture2D
     {
     public:
-        Texture2D(const eastl::string& name);
+        FTexture2D(const eastl::string& name);
 
         bool Create(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags);
 
-        RHI::RHITexture* GetTexture() const { return m_pTexture.get(); }
-        RHI::RHIDescriptor* GetSRV() const { return m_pSRV.get(); }
-        RHI::RHIDescriptor* GetUAV(uint32_t mip = 0) const;
+        RHI::FRHITexture* GetTexture() const { return m_pTexture.get(); }
+        RHI::FRHIDescriptor* GetSRV() const { return m_pSRV.get(); }
+        RHI::FRHIDescriptor* GetUAV(uint32_t mip = 0) const;
     
     protected:
         eastl::string m_Name;
 
-        eastl::unique_ptr<RHI::RHITexture> m_pTexture;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pSRV;
-        eastl::vector<eastl::unique_ptr<RHI::RHIDescriptor>> m_UAVs;
+        eastl::unique_ptr<RHI::FRHITexture> m_pTexture;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pSRV;
+        eastl::vector<eastl::unique_ptr<RHI::FRHIDescriptor>> m_UAVs;
     };
 }

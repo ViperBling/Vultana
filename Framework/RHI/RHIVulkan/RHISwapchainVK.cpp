@@ -7,14 +7,14 @@
 
 namespace RHI
 {
-    RHISwapchainVK::RHISwapchainVK(RHIDeviceVK *device, const RHISwapchainDesc &desc, const eastl::string &name)
+    FVulkanSwapchain::FVulkanSwapchain(FVulkanDevice *device, const FRHISwapchainDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
         m_Name = name;
     }
 
-    RHISwapchainVK::~RHISwapchainVK()
+    FVulkanSwapchain::~FVulkanSwapchain()
     {
         for (size_t i = 0; i < m_BackBuffers.size(); i++)
         {
@@ -22,7 +22,7 @@ namespace RHI
         }
         m_BackBuffers.clear();
 
-        auto device = (RHIDeviceVK*)m_pDevice;
+        auto device = (FVulkanDevice*)m_pDevice;
         device->Delete(m_Swapchain);
         device->Delete(m_Surface);
 
@@ -36,7 +36,7 @@ namespace RHI
         }
     }
 
-    bool RHISwapchainVK::Create()
+    bool FVulkanSwapchain::Create()
     {
         if (!CreateSurface() 
             || !CreateSwapchain() 
@@ -50,7 +50,7 @@ namespace RHI
         return true;
     }
 
-    void RHISwapchainVK::Present(vk::Queue queue)
+    void FVulkanSwapchain::Present(vk::Queue queue)
     {
         vk::Semaphore waitSemphore = GetPresentSemaphore();
 
@@ -67,39 +67,39 @@ namespace RHI
         }
     }
 
-    vk::Semaphore RHISwapchainVK::GetAcquireSemaphore()
+    vk::Semaphore FVulkanSwapchain::GetAcquireSemaphore()
     {
         return m_AcquireSemaphores[m_FrameSemaphoreIndex];
     }
 
-    vk::Semaphore RHISwapchainVK::GetPresentSemaphore()
+    vk::Semaphore FVulkanSwapchain::GetPresentSemaphore()
     {
         return m_PresentSemaphores[m_FrameSemaphoreIndex];
     }
 
-    void RHISwapchainVK::AcquireNextBackBuffer()
+    void FVulkanSwapchain::AcquireNextBackBuffer()
     {
         m_FrameSemaphoreIndex = (m_FrameSemaphoreIndex + 1) % m_AcquireSemaphores.size();
 
         vk::Semaphore signalSemphore = GetAcquireSemaphore();
 
-        vk::Result res = ((RHIDeviceVK*)m_pDevice)->GetDevice().acquireNextImageKHR(m_Swapchain, UINT64_MAX, signalSemphore, nullptr, &m_CurrentBackBuffer);
+        vk::Result res = ((FVulkanDevice*)m_pDevice)->GetDevice().acquireNextImageKHR(m_Swapchain, UINT64_MAX, signalSemphore, nullptr, &m_CurrentBackBuffer);
 
         if (res == vk::Result::eSuboptimalKHR || res == vk::Result::eErrorOutOfDateKHR)
         {
             RecreateSwapchain();
 
-            res = ((RHIDeviceVK*)m_pDevice)->GetDevice().acquireNextImageKHR(m_Swapchain, UINT64_MAX, signalSemphore, nullptr, &m_CurrentBackBuffer);
+            res = ((FVulkanDevice*)m_pDevice)->GetDevice().acquireNextImageKHR(m_Swapchain, UINT64_MAX, signalSemphore, nullptr, &m_CurrentBackBuffer);
             assert(res == vk::Result::eSuccess);
         }
     }
 
-    RHITexture *RHISwapchainVK::GetBackBuffer() const
+    FRHITexture *FVulkanSwapchain::GetBackBuffer() const
     {
         return m_BackBuffers[m_CurrentBackBuffer];
     }
 
-    bool RHISwapchainVK::Resize(uint32_t width, uint32_t height)
+    bool FVulkanSwapchain::Resize(uint32_t width, uint32_t height)
     {
         if (m_Desc.Width == width && m_Desc.Height == height)
         {
@@ -110,7 +110,7 @@ namespace RHI
         return RecreateSwapchain();
     }
 
-    void RHISwapchainVK::SetVSyncEnabled(bool enabled)
+    void FVulkanSwapchain::SetVSyncEnabled(bool enabled)
     {
         if (m_bEnableVSync != enabled)
         {
@@ -119,12 +119,12 @@ namespace RHI
         }
     }
 
-    bool RHISwapchainVK::CreateSurface()
+    bool FVulkanSwapchain::CreateSurface()
     {
-        vk::Instance instance = ((RHIDeviceVK*)m_pDevice)->GetInstance();
-        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        vk::detail::DispatchLoaderDynamic dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
-        vk::PhysicalDevice physcialDevice = ((RHIDeviceVK*)m_pDevice)->GetPhysicalDevice();
+        vk::Instance instance = ((FVulkanDevice*)m_pDevice)->GetInstance();
+        vk::Device device = ((FVulkanDevice*)m_pDevice)->GetDevice();
+        vk::detail::DispatchLoaderDynamic dynamicLoader = ((FVulkanDevice*)m_pDevice)->GetDynamicLoader();
+        vk::PhysicalDevice physcialDevice = ((FVulkanDevice*)m_pDevice)->GetPhysicalDevice();
         
         vk::Win32SurfaceCreateInfoKHR surfaceCI {};
         surfaceCI.hinstance = GetModuleHandle(nullptr);
@@ -141,11 +141,11 @@ namespace RHI
         return true;
     }
 
-    bool RHISwapchainVK::CreateSwapchain()
+    bool FVulkanSwapchain::CreateSwapchain()
     {
-        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
-        auto physcialDevice = ((RHIDeviceVK*)m_pDevice)->GetPhysicalDevice();
+        vk::Device device = ((FVulkanDevice*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((FVulkanDevice*)m_pDevice)->GetDynamicLoader();
+        auto physcialDevice = ((FVulkanDevice*)m_pDevice)->GetPhysicalDevice();
         vk::SwapchainKHR oldSwapchain = m_Swapchain;
 
         auto presentMode = physcialDevice.getSurfacePresentModesKHR(m_Surface);
@@ -195,16 +195,16 @@ namespace RHI
 
         if (oldSwapchain != VK_NULL_HANDLE)
         {
-            ((RHIDeviceVK*)m_pDevice)->Delete(oldSwapchain);
+            ((FVulkanDevice*)m_pDevice)->Delete(oldSwapchain);
         }
         return true;
     }
 
-    bool RHISwapchainVK::CreateTextures()
+    bool FVulkanSwapchain::CreateTextures()
     {
         vk::Device device = (VkDevice)m_pDevice->GetNativeHandle();
 
-        RHI::RHITextureDesc desc {};
+        RHI::FRHITextureDesc desc {};
         desc.Width = m_Desc.Width;
         desc.Height = m_Desc.Height;
         desc.Format = m_Desc.ColorFormat;
@@ -216,7 +216,7 @@ namespace RHI
         {
             eastl::string name = fmt::format("{} texture {}", m_Name, i).c_str();
 
-            RHITextureVK* texture = new RHITextureVK((RHIDeviceVK*)m_pDevice, desc, name);
+            FVulkanTexture* texture = new FVulkanTexture((FVulkanDevice*)m_pDevice, desc, name);
             texture->Create(images[i]);
             
             m_BackBuffers.push_back(texture);
@@ -224,10 +224,10 @@ namespace RHI
         return true;
     }
 
-    bool RHISwapchainVK::CreateSemaphores()
+    bool FVulkanSwapchain::CreateSemaphores()
     {
-        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        vk::Device device = ((FVulkanDevice*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((FVulkanDevice*)m_pDevice)->GetDynamicLoader();
         vk::SemaphoreCreateInfo semaphoreCI {};
 
         for (uint32_t i = 0; i < m_Desc.BufferCount; i++)
@@ -260,9 +260,9 @@ namespace RHI
         return true;
     }
 
-    bool RHISwapchainVK::RecreateSwapchain()
+    bool FVulkanSwapchain::RecreateSwapchain()
     {
-        auto deviceVK = (RHIDeviceVK*)m_pDevice;
+        auto deviceVK = (FVulkanDevice*)m_pDevice;
         auto device = deviceVK->GetDevice();
         device.waitIdle();
 

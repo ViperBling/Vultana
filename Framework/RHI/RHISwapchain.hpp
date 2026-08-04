@@ -4,21 +4,21 @@
 
 namespace RHI
 {
-    class RHITexture;
+    class FRHITexture;
 
-    class RHISwapchain : public RHIResource
+    class FRHISwapchain : public FRHIResource
     {
     public:
-        virtual ~RHISwapchain() = default;
+        virtual ~FRHISwapchain() = default;
 
         virtual void AcquireNextBackBuffer() = 0;
-        virtual RHITexture* GetBackBuffer() const = 0;
+        virtual FRHITexture* GetBackBuffer() const = 0;
         virtual bool Resize(uint32_t width, uint32_t height) = 0;
         virtual void SetVSyncEnabled(bool enabled) = 0;
 
-        const RHISwapchainDesc* GetDesc() const { return &m_Desc; }
+        const FRHISwapchainDesc* GetDesc() const { return &m_Desc; }
 
     protected:
-        RHISwapchainDesc m_Desc {};
+        FRHISwapchainDesc m_Desc {};
     };
 }

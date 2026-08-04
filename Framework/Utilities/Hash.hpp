@@ -70,7 +70,7 @@ namespace Utility
         return 0xFFFFFFFF;
     }
 
-    class HashUtils
+    class FHashUtils
     {
     public:
         static uint64_t CityHash(const void* buffer, size_t length)

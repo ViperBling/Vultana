@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHITextureVK : public RHITexture
+    class FVulkanTexture : public FRHITexture
     {
     public:
-        RHITextureVK(RHIDeviceVK* device, const RHITextureDesc& desc, const eastl::string& name);
-        ~RHITextureVK();
+        FVulkanTexture(FVulkanDevice* device, const FRHITextureDesc& desc, const eastl::string& name);
+        ~FVulkanTexture();
 
         bool Create();
         bool Create(vk::Image image);

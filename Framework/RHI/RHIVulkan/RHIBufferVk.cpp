@@ -7,24 +7,24 @@
 
 namespace RHI
 {
-    RHIBufferVK::RHIBufferVK(RHIDeviceVK *device, const RHIBufferDesc &desc, const eastl::string &name)
+    FVulkanBuffer::FVulkanBuffer(FVulkanDevice *device, const FRHIBufferDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
         m_Name = name;
     }
 
-    RHIBufferVK::~RHIBufferVK()
+    FVulkanBuffer::~FVulkanBuffer()
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_Buffer);
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_Allocation);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_Buffer);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_Allocation);
     }
 
-    bool RHIBufferVK::Create()
+    bool FVulkanBuffer::Create()
     {
-        vk::Device device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
-        VmaAllocator allocator = ((RHIDeviceVK*)m_pDevice)->GetVmaAllocator();
+        vk::Device device = ((FVulkanDevice*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((FVulkanDevice*)m_pDevice)->GetDynamicLoader();
+        VmaAllocator allocator = ((FVulkanDevice*)m_pDevice)->GetVmaAllocator();
 
         vk::BufferCreateInfo bufferCI {};
         bufferCI.size = m_Desc.Size;
@@ -104,23 +104,23 @@ namespace RHI
         return true;
     }
 
-    void * RHIBufferVK::GetCPUAddress()
+    void * FVulkanBuffer::GetCPUAddress()
     {
         return m_pData;
     }
     
-    uint64_t RHIBufferVK::GetGPUAddress()
+    uint64_t FVulkanBuffer::GetGPUAddress()
     {
         vk::BufferDeviceAddressInfo addressInfo {};
         addressInfo.buffer = m_Buffer;
 
-        return ((RHIDeviceVK*)m_pDevice)->GetDevice().getBufferAddress(addressInfo);
+        return ((FVulkanDevice*)m_pDevice)->GetDevice().getBufferAddress(addressInfo);
     }
 
-    uint32_t RHIBufferVK::GetRequiredStagingBufferSize() const
+    uint32_t FVulkanBuffer::GetRequiredStagingBufferSize() const
     {
         vk::MemoryRequirements memReq {};
-        ((RHIDeviceVK*)m_pDevice)->GetDevice().getBufferMemoryRequirements(m_Buffer, &memReq);
+        ((FVulkanDevice*)m_pDevice)->GetDevice().getBufferMemoryRequirements(m_Buffer, &memReq);
         return (uint32_t)memReq.size;
     }
 }

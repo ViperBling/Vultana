@@ -5,10 +5,10 @@
 
 namespace Utility
 {
-    class FilePaths
+    class FFilePaths
     {
     public:
-        FilePaths() = delete;
+        FFilePaths() = delete;
 
         static std::filesystem::path WorkingDir();
         static std::filesystem::path EngineRoot();

@@ -4,7 +4,7 @@
 
 namespace Scene
 {
-    class DirectionalLight : public ILight
+    class FDirectionalLight : public ILight
     {
     public:
         virtual bool Create();

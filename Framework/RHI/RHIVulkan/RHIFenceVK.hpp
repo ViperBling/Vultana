@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIFenceVK : public RHIFence
+    class FVulkanFence : public FRHIFence
     {
     public:
-        RHIFenceVK(RHIDeviceVK* device, const eastl::string& name);
-        ~RHIFenceVK();
+        FVulkanFence(FVulkanDevice* device, const eastl::string& name);
+        ~FVulkanFence();
 
         bool Create();
 

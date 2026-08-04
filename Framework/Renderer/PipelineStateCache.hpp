@@ -20,15 +20,15 @@ inline uint64_t HashCombine64(uint64_t hash0, uint64_t hash1)
 namespace eastl
 {
     template<>
-    struct hash<RHI::RHIGraphicsPipelineStateDesc>
+    struct hash<RHI::FRHIGraphicsPipelineStateDesc>
     {
-        size_t operator()(const RHI::RHIGraphicsPipelineStateDesc& desc) const
+        size_t operator()(const RHI::FRHIGraphicsPipelineStateDesc& desc) const
         {
             uint64_t vsHash = desc.VS->GetHash();
             uint64_t psHash = desc.PS ? desc.PS->GetHash() : 0;
 
-            const size_t stateOffset = offsetof(RHI::RHIGraphicsPipelineStateDesc, RasterizerState);
-            uint64_t stateHash = CityHash64(reinterpret_cast<const char*>(&desc) + stateOffset, sizeof(RHI::RHIGraphicsPipelineStateDesc) - stateOffset);
+            const size_t stateOffset = offsetof(RHI::FRHIGraphicsPipelineStateDesc, RasterizerState);
+            uint64_t stateHash = CityHash64(reinterpret_cast<const char*>(&desc) + stateOffset, sizeof(RHI::FRHIGraphicsPipelineStateDesc) - stateOffset);
             uint64_t hash = HashCombine64(HashCombine64(vsHash, psHash), stateOffset);
 
             static_assert(sizeof(size_t) == sizeof(uint64_t), "Only supports 64-bit platforms");
@@ -37,16 +37,16 @@ namespace eastl
     };
 
     template<>
-    struct hash<RHI::RHIMeshShadingPipelineStateDesc>
+    struct hash<RHI::FRHIMeshShadingPipelineStateDesc>
     {
-        size_t operator()(const RHI::RHIMeshShadingPipelineStateDesc& desc) const
+        size_t operator()(const RHI::FRHIMeshShadingPipelineStateDesc& desc) const
         {
             uint64_t asHash = desc.AS ? desc.AS->GetHash() : 0;
             uint64_t m_sHash = desc.MS->GetHash();
             uint64_t psHash = desc.PS ? desc.PS->GetHash() : 0;
 
-            const size_t stateOffset = offsetof(RHI::RHIMeshShadingPipelineStateDesc, RasterizerState);
-            uint64_t stateHash = CityHash64(reinterpret_cast<const char*>(&desc) + stateOffset, sizeof(RHI::RHIMeshShadingPipelineStateDesc) - stateOffset);
+            const size_t stateOffset = offsetof(RHI::FRHIMeshShadingPipelineStateDesc, RasterizerState);
+            uint64_t stateHash = CityHash64(reinterpret_cast<const char*>(&desc) + stateOffset, sizeof(RHI::FRHIMeshShadingPipelineStateDesc) - stateOffset);
             uint64_t hash = HashCombine64(HashCombine64(HashCombine64(asHash, m_sHash), psHash), stateHash);
 
             static_assert(sizeof(size_t) == sizeof(uint64_t), "Only supports 64-bit platforms");
@@ -55,9 +55,9 @@ namespace eastl
     };
 
     template<>
-    struct hash<RHI::RHIComputePipelineStateDesc>
+    struct hash<RHI::FRHIComputePipelineStateDesc>
     {
-        size_t operator()(const RHI::RHIComputePipelineStateDesc& desc) const
+        size_t operator()(const RHI::FRHIComputePipelineStateDesc& desc) const
         {
             static_assert(sizeof(size_t) == sizeof(uint64_t), "Only supports 64-bit platforms");
             return desc.CS->GetHash();
@@ -67,23 +67,23 @@ namespace eastl
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 
-    class PipelineStateCache
+    class FPipelineStateCache
     {
     public:
-        PipelineStateCache(RendererBase* renderer);
+        FPipelineStateCache(FRendererBase* renderer);
 
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const eastl::string& name);
+        RHI::FRHIPipelineState* GetPipelineState(const RHI::FRHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
+        RHI::FRHIPipelineState* GetPipelineState(const RHI::FRHIMeshShadingPipelineStateDesc& desc, const eastl::string& name);
+        RHI::FRHIPipelineState* GetPipelineState(const RHI::FRHIComputePipelineStateDesc& desc, const eastl::string& name);
 
-        void RecreatePSO(RHI::RHIShader* shader);
+        void RecreatePSO(RHI::FRHIShader* shader);
     
     private:
-        RendererBase* m_pRenderer = nullptr;
-        eastl::hash_map<RHI::RHIGraphicsPipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> m_CachedGraphicsPSO;
-        eastl::hash_map<RHI::RHIMeshShadingPipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> m_CachedMeshletPSO;
-        eastl::hash_map<RHI::RHIComputePipelineStateDesc, eastl::unique_ptr<RHI::RHIPipelineState>> m_CachedComputePSO;
+        FRendererBase* m_pRenderer = nullptr;
+        eastl::hash_map<RHI::FRHIGraphicsPipelineStateDesc, eastl::unique_ptr<RHI::FRHIPipelineState>> m_CachedGraphicsPSO;
+        eastl::hash_map<RHI::FRHIMeshShadingPipelineStateDesc, eastl::unique_ptr<RHI::FRHIPipelineState>> m_CachedMeshletPSO;
+        eastl::hash_map<RHI::FRHIComputePipelineStateDesc, eastl::unique_ptr<RHI::FRHIPipelineState>> m_CachedComputePSO;
     };
 }

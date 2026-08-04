@@ -3,7 +3,7 @@
 
 namespace RHI
 {
-    inline bool operator==(const RHI::RHIGraphicsPipelineStateDesc& lhs, const RHI::RHIGraphicsPipelineStateDesc& rhs)
+    inline bool operator==(const RHI::FRHIGraphicsPipelineStateDesc& lhs, const RHI::FRHIGraphicsPipelineStateDesc& rhs)
     {
         if (lhs.VS->GetHash() != rhs.VS->GetHash()) return false;
         uint64_t lhsPSHash = lhs.PS ? lhs.PS->GetHash() : 0;
@@ -11,14 +11,14 @@ namespace RHI
 
         if (lhsPSHash != rhsPSHash) return false;
 
-        const size_t stateOffset = offsetof(RHI::RHIGraphicsPipelineStateDesc, RasterizerState);
+        const size_t stateOffset = offsetof(RHI::FRHIGraphicsPipelineStateDesc, RasterizerState);
         void* lhsStates = (char*)&lhs + stateOffset;
         void* rhsStates = (char*)&rhs + stateOffset;
 
-        return memcmp(lhsStates, rhsStates, sizeof(RHI::RHIGraphicsPipelineStateDesc) - stateOffset) == 0;
+        return memcmp(lhsStates, rhsStates, sizeof(RHI::FRHIGraphicsPipelineStateDesc) - stateOffset) == 0;
     }
 
-    inline bool operator==(const RHI::RHIMeshShadingPipelineStateDesc& lhs, const RHI::RHIMeshShadingPipelineStateDesc& rhs)
+    inline bool operator==(const RHI::FRHIMeshShadingPipelineStateDesc& lhs, const RHI::FRHIMeshShadingPipelineStateDesc& rhs)
     {
         if (lhs.MS->GetHash() != rhs.MS->GetHash()) return false;
 
@@ -30,14 +30,14 @@ namespace RHI
         uint64_t rhsASHash = rhs.AS ? rhs.AS->GetHash() : 0;
         if (lhsASHash != rhsASHash) return false;
 
-        const size_t stateOffset = offsetof(RHI::RHIMeshShadingPipelineStateDesc, RasterizerState);
+        const size_t stateOffset = offsetof(RHI::FRHIMeshShadingPipelineStateDesc, RasterizerState);
         void* lhsStates = (char*)&lhs + stateOffset;
         void* rhsStates = (char*)&rhs + stateOffset;
 
-        return memcmp(lhsStates, rhsStates, sizeof(RHI::RHIMeshShadingPipelineStateDesc) - stateOffset) == 0;
+        return memcmp(lhsStates, rhsStates, sizeof(RHI::FRHIMeshShadingPipelineStateDesc) - stateOffset) == 0;
     }
 
-    inline bool operator==(const RHI::RHIComputePipelineStateDesc& lhs, const RHI::RHIComputePipelineStateDesc& rhs)
+    inline bool operator==(const RHI::FRHIComputePipelineStateDesc& lhs, const RHI::FRHIComputePipelineStateDesc& rhs)
     {
         return lhs.CS->GetHash() == rhs.CS->GetHash();
     }
@@ -45,12 +45,12 @@ namespace RHI
 
 namespace Renderer
 {
-    PipelineStateCache::PipelineStateCache(RendererBase *renderer)
+    FPipelineStateCache::FPipelineStateCache(FRendererBase *renderer)
     {
         m_pRenderer = renderer;
     }
 
-    RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
+    RHI::FRHIPipelineState *FPipelineStateCache::GetPipelineState(const RHI::FRHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         auto iter = m_CachedGraphicsPSO.find(desc);
         if (iter != m_CachedGraphicsPSO.end())
@@ -58,15 +58,15 @@ namespace Renderer
             return iter->second.get();
         }
 
-        RHI::RHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateGraphicsPipelineState(desc, name);
+        RHI::FRHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateGraphicsPipelineState(desc, name);
         if (pPSO != nullptr)
         {
-            m_CachedGraphicsPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            m_CachedGraphicsPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::FRHIPipelineState>(pPSO)));
         }
         return pPSO;
     }
 
-    RHI::RHIPipelineState* PipelineStateCache::GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name)
+    RHI::FRHIPipelineState* FPipelineStateCache::GetPipelineState(const RHI::FRHIMeshShadingPipelineStateDesc& desc, const eastl::string& name)
     {
         auto iter = m_CachedMeshletPSO.find(desc);
         if (iter != m_CachedMeshletPSO.end())
@@ -74,15 +74,15 @@ namespace Renderer
             return iter->second.get();
         }
 
-        RHI::RHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateMeshShadingPipelineState(desc, name);
+        RHI::FRHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateMeshShadingPipelineState(desc, name);
         if (pPSO != nullptr)
         {
-            m_CachedMeshletPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            m_CachedMeshletPSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::FRHIPipelineState>(pPSO)));
         }
         return pPSO;
     }
 
-    RHI::RHIPipelineState *PipelineStateCache::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
+    RHI::FRHIPipelineState *FPipelineStateCache::GetPipelineState(const RHI::FRHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         auto iter = m_CachedComputePSO.find(desc);
         if (iter != m_CachedComputePSO.end())
@@ -90,21 +90,21 @@ namespace Renderer
             return iter->second.get();
         }
 
-        RHI::RHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateComputePipelineState(desc, name);
+        RHI::FRHIPipelineState* pPSO = m_pRenderer->GetDevice()->CreateComputePipelineState(desc, name);
         if (pPSO)
         {
-            m_CachedComputePSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::RHIPipelineState>(pPSO)));
+            m_CachedComputePSO.insert(eastl::make_pair(desc, eastl::unique_ptr<RHI::FRHIPipelineState>(pPSO)));
         }
 
         return pPSO;
     }
 
-    void PipelineStateCache::RecreatePSO(RHI::RHIShader *shader)
+    void FPipelineStateCache::RecreatePSO(RHI::FRHIShader *shader)
     {
         for (auto iter = m_CachedGraphicsPSO.begin(); iter != m_CachedGraphicsPSO.end(); iter++)
         {
-            const RHI::RHIGraphicsPipelineStateDesc& desc = iter->first;
-            RHI::RHIPipelineState* pPSO = iter->second.get();
+            const RHI::FRHIGraphicsPipelineStateDesc& desc = iter->first;
+            RHI::FRHIPipelineState* pPSO = iter->second.get();
             if (desc.VS == shader || desc.PS == shader)
             {
                 pPSO->Create();
@@ -112,8 +112,8 @@ namespace Renderer
         }
         for (auto iter = m_CachedMeshletPSO.begin(); iter != m_CachedMeshletPSO.end(); iter++)
         {
-            const RHI::RHIMeshShadingPipelineStateDesc& desc = iter->first;
-            RHI::RHIPipelineState* pPSO = iter->second.get();
+            const RHI::FRHIMeshShadingPipelineStateDesc& desc = iter->first;
+            RHI::FRHIPipelineState* pPSO = iter->second.get();
             if (desc.AS == shader || desc.MS == shader || desc.PS == shader)
             {
                 pPSO->Create();
@@ -121,8 +121,8 @@ namespace Renderer
         }
         for (auto iter = m_CachedComputePSO.begin(); iter != m_CachedComputePSO.end(); iter++)
         {
-            const RHI::RHIComputePipelineStateDesc& desc = iter->first;
-            RHI::RHIPipelineState* pPSO = iter->second.get();
+            const RHI::FRHIComputePipelineStateDesc& desc = iter->first;
+            RHI::FRHIPipelineState* pPSO = iter->second.get();
             if (desc.CS == shader)
             {
                 pPSO->Create();

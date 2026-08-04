@@ -30,7 +30,7 @@ static std::function<void(const std::string&, const std::string&)> GDebugErrorCa
 
 namespace Utility
 {
-    class FileUtils
+    class FFileUtils
     {
     public:
         static std::string ReadTextFile(const std::string& fileName)

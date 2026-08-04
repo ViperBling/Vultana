@@ -3,14 +3,14 @@
 
 namespace RHI
 {
-    RHIDevice *CreateRHIDevice(const RHIDeviceDesc &desc)
+    FRHIDevice *CreateRHIDevice(const FRHIDeviceDesc &desc)
     {
-        RHIDevice* device = nullptr;
+        FRHIDevice* device = nullptr;
 
         switch (desc.RenderBackend)
         {
         case ERHIRenderBackend::Vulkan:
-            device = new RHI::RHIDeviceVK(desc);
+            device = new RHI::FVulkanDevice(desc);
             break;
         default:
             break;
@@ -199,12 +199,12 @@ namespace RHI
         return format == ERHIFormat::RGBA8SRGB || format == ERHIFormat::BGRA8SRGB;
     }
 
-    uint32_t CalcSubresource(const RHITextureDesc &desc, uint32_t mipLevel, uint32_t arraySlice)
+    uint32_t CalcSubresource(const FRHITextureDesc &desc, uint32_t mipLevel, uint32_t arraySlice)
     {
         return mipLevel + desc.MipLevels * arraySlice;
     }
 
-    void DecomposeSubresource(const RHITextureDesc &desc, uint32_t subresource, uint32_t &mipLevel, uint32_t &arraySlice)
+    void DecomposeSubresource(const FRHITextureDesc &desc, uint32_t subresource, uint32_t &mipLevel, uint32_t &arraySlice)
     {
         mipLevel = subresource % desc.MipLevels;
         arraySlice = (subresource / desc.MipLevels) % desc.ArraySize;

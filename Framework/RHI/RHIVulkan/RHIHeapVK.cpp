@@ -4,23 +4,23 @@
 
 namespace RHI
 {
-    RHIHeapVK::RHIHeapVK(RHIDeviceVK *device, const RHIHeapDesc &desc, const eastl::string &name)
+    FVulkanHeap::FVulkanHeap(FVulkanDevice *device, const FRHIHeapDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
         m_Name = name;
     }
 
-    RHIHeapVK::~RHIHeapVK()
+    FVulkanHeap::~FVulkanHeap()
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_Allocation);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_Allocation);
     }
 
-    bool RHIHeapVK::Create()
+    bool FVulkanHeap::Create()
     {
         assert(m_Desc.Size % (64 * 1024) == 0);
 
-        VmaAllocator allocator = ((RHIDeviceVK*)m_pDevice)->GetVmaAllocator();
+        VmaAllocator allocator = ((FVulkanDevice*)m_pDevice)->GetVmaAllocator();
 
         vk::MemoryRequirements memoryReq {};
         memoryReq.size = m_Desc.Size;

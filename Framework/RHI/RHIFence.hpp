@@ -4,10 +4,10 @@
 
 namespace RHI
 {
-    class RHIFence : public RHIResource
+    class FRHIFence : public FRHIResource
     {
     public:
-        virtual ~RHIFence() = default;
+        virtual ~FRHIFence() = default;
 
         virtual void Wait(uint64_t value) = 0;
         virtual void Signal(uint64_t value) = 0;

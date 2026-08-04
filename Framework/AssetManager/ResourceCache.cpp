@@ -3,30 +3,30 @@
 
 namespace Assets
 {
-    ResourceCache *ResourceCache::GetInstance()
+    FResourceCache *FResourceCache::GetInstance()
     {
-        static ResourceCache instance;
+        static FResourceCache instance;
         return &instance;
     }
 
-    RenderResources::Texture2D *ResourceCache::GetTexture2D(const eastl::string &file, bool srgb)
+    RenderResources::FTexture2D *FResourceCache::GetTexture2D(const eastl::string &file, bool srgb)
     {
         auto iter = m_CachedTexture2D.find(file);
         if (iter != m_CachedTexture2D.end())
         {
             iter->second.RefCount++;
-            return (RenderResources::Texture2D*)iter->second.Data;
+            return (RenderResources::FTexture2D*)iter->second.Data;
         }
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
         FResource texture;
         texture.RefCount = 1;
         texture.Data = pRenderer->CreateTexture2D(file, srgb);
         m_CachedTexture2D.insert(eastl::make_pair(file, texture));
 
-        return (RenderResources::Texture2D*)texture.Data;
+        return (RenderResources::FTexture2D*)texture.Data;
     }
 
-    void ResourceCache::ReleaseTexture2D(RenderResources::Texture2D *texture)
+    void FResourceCache::ReleaseTexture2D(RenderResources::FTexture2D *texture)
     {
         if (texture == nullptr)
         {
@@ -48,7 +48,7 @@ namespace Assets
         assert(false);
     }
 
-    OffsetAllocator::Allocation ResourceCache::GetSceneBuffer(const eastl::string &name, const void *data, uint32_t size)
+    OffsetAllocator::Allocation FResourceCache::GetSceneBuffer(const eastl::string &name, const void *data, uint32_t size)
     {
         auto iter = m_CachedSceneBuffer.find(name);
         if (iter != m_CachedSceneBuffer.end())
@@ -56,7 +56,7 @@ namespace Assets
             iter->second.RefCount++;
             return iter->second.Allocation;
         }
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
         FSceneBuffer buffer;
         buffer.RefCount = 1;
@@ -65,7 +65,7 @@ namespace Assets
         return buffer.Allocation;
     }
 
-    void ResourceCache::ReleaseSceneBuffer(OffsetAllocator::Allocation allocation)
+    void FResourceCache::ReleaseSceneBuffer(OffsetAllocator::Allocation allocation)
     {
         if (allocation.metadata == OffsetAllocator::Allocation::NO_SPACE)
         {
@@ -79,7 +79,7 @@ namespace Assets
                 iter->second.RefCount--;
                 if (iter->second.RefCount == 0)
                 {
-                    auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+                    auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
                     pRenderer->FreeSceneStaticBuffer(allocation);
                     m_CachedSceneBuffer.erase(iter);
                 }

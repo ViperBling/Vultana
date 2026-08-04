@@ -178,7 +178,7 @@ namespace RHI
         }
     }
 
-    inline vk::ImageCreateInfo ToVulkanImageCreateInfo(const RHITextureDesc& desc)
+    inline vk::ImageCreateInfo ToVulkanImageCreateInfo(const FRHITextureDesc& desc)
     {
         vk::ImageCreateInfo createInfo;
         createInfo.imageType = desc.Type == ERHITextureType::Texture3D ? vk::ImageType::e3D : vk::ImageType::e2D;
@@ -371,7 +371,7 @@ namespace RHI
         }
     }
 
-    inline vk::PipelineRasterizationStateCreateInfo ToVKPipelineRSStateCreateInfo(const RHIRasterizerState& state)
+    inline vk::PipelineRasterizationStateCreateInfo ToVKPipelineRSStateCreateInfo(const FRHIRasterizerState& state)
     {
         vk::PipelineRasterizationStateCreateInfo createInfo;
         createInfo.depthClampEnable = !state.bDepthClip;
@@ -437,7 +437,7 @@ namespace RHI
         }
     }
 
-    inline vk::StencilOpState ToVKStencilOpState(RHIDepthStencilOp state, uint8_t readMask, uint8_t writeMask)
+    inline vk::StencilOpState ToVKStencilOpState(FRHIDepthStencilOp state, uint8_t readMask, uint8_t writeMask)
     {
         vk::StencilOpState stencilState;
         stencilState.failOp = ToVKStencilOp(state.StencilFailOp);
@@ -450,7 +450,7 @@ namespace RHI
         return stencilState;
     }
 
-    inline vk::PipelineDepthStencilStateCreateInfo ToVKPipelineDSStateCreateInfo(const RHIDepthStencilState& state)
+    inline vk::PipelineDepthStencilStateCreateInfo ToVKPipelineDSStateCreateInfo(const FRHIDepthStencilState& state)
     {
         vk::PipelineDepthStencilStateCreateInfo createInfo;
         createInfo.depthTestEnable = state.bDepthTest;
@@ -517,7 +517,7 @@ namespace RHI
         }
     }
 
-    inline vk::PipelineColorBlendStateCreateInfo ToVKPipelineCBStateCreateInfo(const RHIBlendState* states, vk::PipelineColorBlendAttachmentState* vkStates)
+    inline vk::PipelineColorBlendStateCreateInfo ToVKPipelineCBStateCreateInfo(const FRHIBlendState* states, vk::PipelineColorBlendAttachmentState* vkStates)
     {
         for (uint32_t i = 0; i < RHI_MAX_COLOR_ATTACHMENT_COUNT; i++)
         {

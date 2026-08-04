@@ -7,13 +7,13 @@
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 
-    class GPUScene
+    class FGPUScene
     {
     public:
-        GPUScene(RendererBase* pRenderer);
-        ~GPUScene();
+        FGPUScene(FRendererBase* pRenderer);
+        ~FGPUScene();
 
         OffsetAllocator::Allocation AllocateStaticBuffer(uint32_t size);
         void FreeStaticBuffer(OffsetAllocator::Allocation allocation);
@@ -29,34 +29,34 @@ namespace Renderer
         void Update();
         void ResetFrameData();
 
-        void BeginAnimationUpdate(RHI::RHICommandList* pCmdList);
-        void EndAnimationUpdate(RHI::RHICommandList* pCmdList);
+        void BeginAnimationUpdate(RHI::FRHICommandList* pCmdList);
+        void EndAnimationUpdate(RHI::FRHICommandList* pCmdList);
 
-        RHI::RHIBuffer* GetSceneStaticBuffer() const { return m_pSceneStaticBuffer->GetBuffer(); }
-        RHI::RHIDescriptor* GetSceneStaticBufferSRV() const { return m_pSceneStaticBuffer->GetSRV(); }
+        RHI::FRHIBuffer* GetSceneStaticBuffer() const { return m_pSceneStaticBuffer->GetBuffer(); }
+        RHI::FRHIDescriptor* GetSceneStaticBufferSRV() const { return m_pSceneStaticBuffer->GetSRV(); }
 
-        RHI::RHIBuffer* GetSceneAnimationBuffer() const { return m_pSceneAnimationBuffer->GetBuffer(); }
-        RHI::RHIDescriptor* GetSceneAnimationBufferSRV() const { return m_pSceneAnimationBuffer->GetSRV(); }
-        RHI::RHIDescriptor* GetSceneAnimationBufferUAV() const { return m_pSceneAnimationBuffer->GetUAV(); }
+        RHI::FRHIBuffer* GetSceneAnimationBuffer() const { return m_pSceneAnimationBuffer->GetBuffer(); }
+        RHI::FRHIDescriptor* GetSceneAnimationBufferSRV() const { return m_pSceneAnimationBuffer->GetSRV(); }
+        RHI::FRHIDescriptor* GetSceneAnimationBufferUAV() const { return m_pSceneAnimationBuffer->GetUAV(); }
 
-        RHI::RHIBuffer* GetSceneConstantBuffer() const;
-        RHI::RHIDescriptor* GetSceneConstantBufferSRV() const;
+        RHI::FRHIBuffer* GetSceneConstantBuffer() const;
+        RHI::FRHIDescriptor* GetSceneConstantBufferSRV() const;
 
         uint32_t GetInstanceDataAddress() const { return m_InstanceDataAddress; }
 
     private:
-        RendererBase* m_pRenderer = nullptr;
+        FRendererBase* m_pRenderer = nullptr;
 
         eastl::vector<FInstanceData> m_InstanceData;
         uint32_t m_InstanceDataAddress = 0;
 
-        eastl::unique_ptr<RenderResources::RawBuffer> m_pSceneStaticBuffer;
+        eastl::unique_ptr<RenderResources::FRawBuffer> m_pSceneStaticBuffer;
         eastl::unique_ptr<OffsetAllocator::Allocator> m_pSceneStaticBufferAllocator;
 
-        eastl::unique_ptr<RenderResources::RawBuffer> m_pSceneAnimationBuffer;
+        eastl::unique_ptr<RenderResources::FRawBuffer> m_pSceneAnimationBuffer;
         eastl::unique_ptr<OffsetAllocator::Allocator> m_pSceneAnimationBufferAllocator;
 
-        eastl::unique_ptr<RenderResources::RawBuffer> m_pSceneConstantBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::FRawBuffer> m_pSceneConstantBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
         uint32_t m_ConstantBufferOffset = 0;
     };
 }

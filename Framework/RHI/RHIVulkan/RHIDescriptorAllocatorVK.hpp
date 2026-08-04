@@ -4,13 +4,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIConstantBufferAllocatorVK
+    class FVulkanConstantBufferAllocator
     {
     public:
-        RHIConstantBufferAllocatorVK(RHIDeviceVK* device, uint32_t bufferSize);
-        ~RHIConstantBufferAllocatorVK();
+        FVulkanConstantBufferAllocator(FVulkanDevice* device, uint32_t bufferSize);
+        ~FVulkanConstantBufferAllocator();
 
         void Allocate(uint32_t size, void** cpuAddress, vk::DeviceAddress* gpuAddress);
         void Reset();
@@ -19,7 +19,7 @@ namespace RHI
 
     
     private:
-        RHIDeviceVK* m_Device = nullptr;
+        FVulkanDevice* m_Device = nullptr;
         vk::Buffer m_Buffer = VK_NULL_HANDLE;
         VmaAllocation m_Allocation = VK_NULL_HANDLE;
         vk::DeviceAddress m_GPUAddress = 0;
@@ -28,11 +28,11 @@ namespace RHI
         uint32_t m_AllocatedSize = 0;
     };
 
-    class RHIDescriptorAllocatorVK
+    class FVulkanDescriptorAllocator
     {
     public:
-        RHIDescriptorAllocatorVK(RHIDeviceVK* device, uint32_t descSize, uint32_t descCount, vk::BufferUsageFlags usage);
-        ~RHIDescriptorAllocatorVK();
+        FVulkanDescriptorAllocator(FVulkanDevice* device, uint32_t descSize, uint32_t descCount, vk::BufferUsageFlags usage);
+        ~FVulkanDescriptorAllocator();
 
         uint32_t Allocate(void** desc);
         void Free(uint32_t index);
@@ -40,7 +40,7 @@ namespace RHI
         vk::DeviceAddress GetGPUAddress() const { return m_GPUAddress; }
     
     private:
-        RHIDeviceVK* m_Device = nullptr;
+        FVulkanDevice* m_Device = nullptr;
         vk::Buffer m_Buffer = VK_NULL_HANDLE;
         VmaAllocation m_Allocation = VK_NULL_HANDLE;
         vk::DeviceAddress m_GPUAddress = 0;

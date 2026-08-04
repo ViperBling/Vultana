@@ -6,17 +6,17 @@
 
 namespace Renderer
 {
-    GPUDrivenStats::GPUDrivenStats(RendererBase *pRenderer) : m_pRenderer(pRenderer)
+    FGPUDrivenStats::FGPUDrivenStats(FRendererBase *pRenderer) : m_pRenderer(pRenderer)
     {
         // --- Stats accumulation buffer (GPU-only, UAV) ---
-        m_pStatsBuffer = eastl::make_unique<RenderResources::TypedBuffer>("GPUDrivenStats::m_pStatsBuffer");
+        m_pStatsBuffer = eastl::make_unique<RenderResources::FTypedBuffer>("GPUDrivenStats::m_pStatsBuffer");
         m_pStatsBuffer->Create(RHI::ERHIFormat::R32UI, STATS_MAX_TYPE_COUNT, RHI::ERHIMemoryType::GPUOnly, true);
 
         // --- Per-inflight-frame readback buffers (GPU-to-CPU) ---
-        RHI::RHIDevice *pDevice = pRenderer->GetDevice();
+        RHI::FRHIDevice *pDevice = pRenderer->GetDevice();
         for (uint32_t i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; ++i)
         {
-            RHI::RHIBufferDesc desc;
+            RHI::FRHIBufferDesc desc;
             desc.Stride = sizeof(uint32_t);
             desc.Size = sizeof(uint32_t) * STATS_MAX_TYPE_COUNT;
             desc.Format = RHI::ERHIFormat::R32UI;
@@ -33,7 +33,7 @@ namespace Renderer
         memset(m_ReadbackValues, 0, sizeof(m_ReadbackValues));
     }
 
-    void GPUDrivenStats::Clear(RHI::RHICommandList *pCmdList)
+    void FGPUDrivenStats::Clear(RHI::FRHICommandList *pCmdList)
     {
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenStats::Clear");
 
@@ -45,14 +45,14 @@ namespace Renderer
         pCmdList->BufferBarrier(m_pStatsBuffer->GetBuffer(), RHI::RHIAccessClearUAV, RHI::RHIAccessMaskUAV);
     }
 
-    void GPUDrivenStats::Readback(RHI::RHICommandList *pCmdList)
+    void FGPUDrivenStats::Readback(RHI::FRHICommandList *pCmdList)
     {
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenStats::Readback");
 
         const uint64_t frameID = m_pRenderer->GetFrameID();
         const uint32_t frameIndex = frameID % RHI::RHI_MAX_INFLIGHT_FRAMES;
 
-        RHI::RHIBuffer *pReadback = m_pReadbackBuffers[frameIndex].get();
+        RHI::FRHIBuffer *pReadback = m_pReadbackBuffers[frameIndex].get();
 
         if (frameID >= RHI::RHI_MAX_INFLIGHT_FRAMES)
         {
@@ -87,7 +87,7 @@ namespace Renderer
         // }
     }
 
-    void GPUDrivenStats::OnGui()
+    void FGPUDrivenStats::OnGui()
     {
         if (!ImGui::Begin("GPU Driven Stats", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize))
         {
@@ -95,7 +95,7 @@ namespace Renderer
             return;
         }
 
-        struct StatEntry
+        struct FStatEntry
         {
             const char *Label;
             uint32_t Index;
@@ -105,7 +105,7 @@ namespace Renderer
         ImGui::Separator();
 
         {
-            StatEntry entries[] = {
+            FStatEntry entries[] = {
                 {"Objects Culled", STATS_1ST_PHASE_CULLED_OBJECTS},
                 {"Objects Rendered", STATS_1ST_PHASE_RENDERED_OBJECTS},
             };
@@ -118,7 +118,7 @@ namespace Renderer
         ImGui::Separator();
 
         {
-            StatEntry entries[] = {
+            FStatEntry entries[] = {
                 {"Frustum Culled", STATS_1ST_PHASE_FRUSTUM_CULLED_MESHLET},
                 {"Backface Culled", STATS_1ST_PHASE_BACKFACE_CULLED_MESHLET},
                 {"Occlusion Culled", STATS_1ST_PHASE_OCCLUSION_CULLED_MESHLET},
@@ -133,7 +133,7 @@ namespace Renderer
         ImGui::Separator();
 
         {
-            StatEntry entries[] = {
+            FStatEntry entries[] = {
                 {"Culled", STATS_1ST_PHASE_CULLED_TRIANGLE},
                 {"Rendered", STATS_1ST_PHASE_RENDERED_TRIANGLE},
             };
@@ -146,7 +146,7 @@ namespace Renderer
         ImGui::Separator();
 
         {
-            StatEntry entries[] = {
+            FStatEntry entries[] = {
                 {"Objects Culled", STATS_2ND_PHASE_CULLED_OBJECTS},
                 {"Objects Rendered", STATS_2ND_PHASE_RENDERED_OBJECTS},
             };
@@ -159,7 +159,7 @@ namespace Renderer
         ImGui::Separator();
 
         {
-            StatEntry entries[] = {
+            FStatEntry entries[] = {
                 {"Frustum Culled", STATS_2ND_PHASE_FRUSTUM_CULLED_MESHLET},
                 {"Backface Culled", STATS_2ND_PHASE_BACKFACE_CULLED_MESHLET},
                 {"Occlusion Culled", STATS_2ND_PHASE_OCCLUSION_CULLED_MESHLET},
@@ -174,7 +174,7 @@ namespace Renderer
         ImGui::Separator();
 
         {
-            StatEntry entries[] = {
+            FStatEntry entries[] = {
                 {"Culled", STATS_2ND_PHASE_CULLED_TRIANGLE},
                 {"Rendered", STATS_2ND_PHASE_RENDERED_TRIANGLE},
             };
@@ -185,7 +185,7 @@ namespace Renderer
         ImGui::End();
     }
 
-    uint32_t GPUDrivenStats::GetCounterValue(uint32_t index) const
+    uint32_t FGPUDrivenStats::GetCounterValue(uint32_t index) const
     {
         return (index < 16) ? m_ReadbackValues[index] : 0;
     }

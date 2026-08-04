@@ -4,10 +4,10 @@
 
 namespace RHI
 {
-    class RHIPipelineState : public RHIResource
+    class FRHIPipelineState : public FRHIResource
     {
     public:
-        virtual ~RHIPipelineState() = default;
+        virtual ~FRHIPipelineState() = default;
         
         virtual bool Create() = 0;
         

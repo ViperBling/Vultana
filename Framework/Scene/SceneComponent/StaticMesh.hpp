@@ -7,24 +7,24 @@
 
 namespace Assets
 {
-    class MeshMaterial;
-    class ModelLoader;
+    class FMeshMaterial;
+    class FModelLoader;
 }
 
 namespace Scene
 {
-    class Camera;
+    class FCamera;
 
-    class StaticMesh : public IVisibleObject
+    class FStaticMesh : public IVisibleObject
     {
-        friend class Assets::ModelLoader;
+        friend class Assets::FModelLoader;
     public:
-        StaticMesh(const eastl::string& name);
-        ~StaticMesh();
+        FStaticMesh(const eastl::string& name);
+        ~FStaticMesh();
 
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
-        virtual void Render(Renderer::RendererBase* pRenderer) override;
+        virtual void Render(Renderer::FRendererBase* pRenderer) override;
         
         virtual void OnGUI() override;
         // virtual void SetPosition(const float3& position) override;
@@ -32,16 +32,16 @@ namespace Scene
         // virtual void SetScale(const float3& scale) override;
         bool FrustumCull(const float4* plane, uint32_t planeCount) const override;
 
-        Assets::MeshMaterial* GetMaterial() const { return m_pMaterial.get(); }
+        Assets::FMeshMaterial* GetMaterial() const { return m_pMaterial.get(); }
 
     private:
         void UpdateConstants();
-        void Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState* pPSO);
-        void Dispatch(Renderer::RenderBatch &batch, RHI::RHIPipelineState *pPSO);
+        void Draw(Renderer::FRenderBatch& batch, RHI::FRHIPipelineState* pPSO);
+        void Dispatch(Renderer::FRenderBatch &batch, RHI::FRHIPipelineState *pPSO);
 
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
-        eastl::unique_ptr<Assets::MeshMaterial> m_pMaterial = nullptr;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
+        eastl::unique_ptr<Assets::FMeshMaterial> m_pMaterial = nullptr;
 
         OffsetAllocator::Allocation m_PositionBuffer;
         OffsetAllocator::Allocation m_TexCoordBuffer;

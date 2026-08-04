@@ -6,12 +6,12 @@
 
 namespace RG
 {
-    RenderGraphResourceAllocator::RenderGraphResourceAllocator(RHI::RHIDevice *device)
+    FRenderGraphResourceAllocator::FRenderGraphResourceAllocator(RHI::FRHIDevice *device)
     {
         m_pDevice = device;
     }
     
-    RenderGraphResourceAllocator::~RenderGraphResourceAllocator()
+    FRenderGraphResourceAllocator::~FRenderGraphResourceAllocator()
     {
         for (auto iter = m_AllocatedHeaps.begin(); iter != m_AllocatedHeaps.end(); ++iter)
         {
@@ -31,7 +31,7 @@ namespace RG
         }
     }
     
-    void RenderGraphResourceAllocator::Reset()
+    void FRenderGraphResourceAllocator::Reset()
     {
         for (auto iter = m_AllocatedHeaps.begin(); iter != m_AllocatedHeaps.end();)
         {
@@ -63,11 +63,11 @@ namespace RG
         }
     }
 
-    RHI::RHITexture *RenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::RHITextureDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState)
+    RHI::FRHITexture *FRenderGraphResourceAllocator::AllocateNonOverlappingTexture(const RHI::FRHITextureDesc& desc, const eastl::string& name, RHI::ERHIAccessFlags& initialState)
     {
         for (auto iter = m_FreeOverlappingTextures.begin(); iter != m_FreeOverlappingTextures.end(); ++iter)
         {
-            RHI::RHITexture* texture = iter->Texture;
+            RHI::FRHITexture* texture = iter->Texture;
             if (texture->GetDesc() == desc)
             {
                 initialState = iter->LastUsedState;
@@ -90,7 +90,7 @@ namespace RG
         return m_pDevice->CreateTexture(desc, "RGTexture_" + name);
     }
 
-    void RenderGraphResourceAllocator::FreeNonOverlappingTexture(RHI::RHITexture *texture, RHI::ERHIAccessFlags state)
+    void FRenderGraphResourceAllocator::FreeNonOverlappingTexture(RHI::FRHITexture *texture, RHI::ERHIAccessFlags state)
     {
         if (texture != nullptr)
         {
@@ -98,9 +98,9 @@ namespace RG
         }
     }
 
-    RHI::RHITexture *RenderGraphResourceAllocator::AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHITextureDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
+    RHI::FRHITexture *FRenderGraphResourceAllocator::AllocateTexture(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::FRHITextureDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
     {
-        LifeTimeRange lifeTime = {firstPass, lastPass};
+        FLifeTimeRange lifeTime = {firstPass, lastPass};
         uint32_t textureSize = m_pDevice->GetAllocationSize(desc);
         for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
         {
@@ -109,19 +109,19 @@ namespace RG
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
             {
-                AliasedResource& aliasedRes = heap.Resources[j];
-                if (aliasedRes.Resource->IsTexture() && !aliasedRes.LifeTime.IsUsed() && ((RHI::RHITexture*)aliasedRes.Resource)->GetDesc() == desc)
+                FAliasedResource& aliasedRes = heap.Resources[j];
+                if (aliasedRes.Resource->IsTexture() && !aliasedRes.LifeTime.IsUsed() && ((RHI::FRHITexture*)aliasedRes.Resource)->GetDesc() == desc)
                 {
                     aliasedRes.LifeTime = lifeTime;
                     initialState = aliasedRes.LastUsedState;
                     aliasedRes.LastUsedState = lastState;
-                    return (RHI::RHITexture*)aliasedRes.Resource;
+                    return (RHI::FRHITexture*)aliasedRes.Resource;
                 }
             }
-            RHI::RHITextureDesc newDesc = desc;
+            RHI::FRHITextureDesc newDesc = desc;
             newDesc.Heap = heap.Heap;
 
-            AliasedResource aliasedTexture;
+            FAliasedResource aliasedTexture;
             aliasedTexture.Resource = m_pDevice->CreateTexture(newDesc, "RGTexture_" + name);
             aliasedTexture.LifeTime = lifeTime;
             aliasedTexture.LastUsedState = lastState;
@@ -140,15 +140,15 @@ namespace RG
                 initialState = RHI::RHIAccessMaskUAV;
             }
             assert(aliasedTexture.Resource != nullptr);
-            return (RHI::RHITexture*)aliasedTexture.Resource;
+            return (RHI::FRHITexture*)aliasedTexture.Resource;
         }
         AllocateHeap(textureSize);
         return AllocateTexture(firstPass, lastPass, lastState, desc, name, initialState);
     }
 
-    RHI::RHIBuffer *RenderGraphResourceAllocator::AllocateBuffer(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::RHIBufferDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
+    RHI::FRHIBuffer *FRenderGraphResourceAllocator::AllocateBuffer(uint32_t firstPass, uint32_t lastPass, RHI::ERHIAccessFlags lastState, const RHI::FRHIBufferDesc &desc, const eastl::string &name, RHI::ERHIAccessFlags &initialState)
     {
-        LifeTimeRange lifeTime = {firstPass, lastPass};
+        FLifeTimeRange lifeTime = {firstPass, lastPass};
         uint32_t bufferSize = desc.Size;
 
         for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
@@ -158,19 +158,19 @@ namespace RG
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
             {
-                AliasedResource& aliasedRes = heap.Resources[j];
-                if (aliasedRes.Resource->IsBuffer() && !aliasedRes.LifeTime.IsUsed() && ((RHI::RHIBuffer*)aliasedRes.Resource)->GetDesc() == desc)
+                FAliasedResource& aliasedRes = heap.Resources[j];
+                if (aliasedRes.Resource->IsBuffer() && !aliasedRes.LifeTime.IsUsed() && ((RHI::FRHIBuffer*)aliasedRes.Resource)->GetDesc() == desc)
                 {
                     aliasedRes.LifeTime = lifeTime;
                     initialState = aliasedRes.LastUsedState;
                     aliasedRes.LastUsedState = lastState;
-                    return (RHI::RHIBuffer*)aliasedRes.Resource;
+                    return (RHI::FRHIBuffer*)aliasedRes.Resource;
                 }
             }
-            RHI::RHIBufferDesc newDesc = desc;
+            RHI::FRHIBufferDesc newDesc = desc;
             newDesc.Heap = heap.Heap;
 
-            AliasedResource aliasedBuffer;
+            FAliasedResource aliasedBuffer;
             aliasedBuffer.Resource = m_pDevice->CreateBuffer(newDesc, "RGBuffer_" + name);
             aliasedBuffer.LifeTime = lifeTime;
             aliasedBuffer.LastUsedState = lastState;
@@ -178,13 +178,13 @@ namespace RG
 
             initialState = RHI::RHIAccessDiscard;
             assert(aliasedBuffer.Resource != nullptr);
-            return (RHI::RHIBuffer*)aliasedBuffer.Resource;
+            return (RHI::FRHIBuffer*)aliasedBuffer.Resource;
         }
         AllocateHeap(bufferSize);
         return AllocateBuffer(firstPass, lastPass, lastState, desc, name, initialState);
     }
 
-    void RenderGraphResourceAllocator::Free(RHI::RHIResource *resource, RHI::ERHIAccessFlags state, bool bIsSetState)
+    void FRenderGraphResourceAllocator::Free(RHI::FRHIResource *resource, RHI::ERHIAccessFlags state, bool bIsSetState)
     {
         if (resource != nullptr)
         {
@@ -193,7 +193,7 @@ namespace RG
                 FHeap& heap = m_AllocatedHeaps[i];
                 for (size_t j = 0; j < heap.Resources.size(); j++)
                 {
-                    AliasedResource& aliasedRes = heap.Resources[j];
+                    FAliasedResource& aliasedRes = heap.Resources[j];
                     if (aliasedRes.Resource == resource)
                     {
                         aliasedRes.LifeTime.Reset();
@@ -210,20 +210,20 @@ namespace RG
         }
     }
 
-    RHI::RHIResource *RenderGraphResourceAllocator::GetAliasedPreviousResource(RHI::RHIResource *resource, uint32_t firstPass, RHI::ERHIAccessFlags &lastUsedState)
+    RHI::FRHIResource *FRenderGraphResourceAllocator::GetAliasedPreviousResource(RHI::FRHIResource *resource, uint32_t firstPass, RHI::ERHIAccessFlags &lastUsedState)
     {
         for (size_t i = 0; i < m_AllocatedHeaps.size(); i++)
         {
             FHeap& heap = m_AllocatedHeaps[i];
             if (!heap.Contains(resource)) continue;
 
-            AliasedResource* aliasedRes = nullptr;
-            RHI::RHIResource* prevResource = nullptr;
+            FAliasedResource* aliasedRes = nullptr;
+            RHI::FRHIResource* prevResource = nullptr;
             uint32_t prevResourceLastPass = 0;
 
             for (size_t j = 0; j < heap.Resources.size(); j++)
             {
-                AliasedResource& res = heap.Resources[j];
+                FAliasedResource& res = heap.Resources[j];
                 if (res.Resource != resource && res.LifeTime.LastPass < firstPass && res.LifeTime.LastPass > prevResourceLastPass)
                 {
                     aliasedRes = &res;
@@ -242,7 +242,7 @@ namespace RG
         return nullptr;
     }
 
-    RHI::RHIDescriptor *RenderGraphResourceAllocator::GetDescriptor(RHI::RHIResource *resource, const RHI::RHIShaderResourceViewDesc &desc)
+    RHI::FRHIDescriptor *FRenderGraphResourceAllocator::GetDescriptor(RHI::FRHIResource *resource, const RHI::FRHIShaderResourceViewDesc &desc)
     {
         for (size_t i = 0; i < m_AllocatedSRVs.size(); i++)
         {
@@ -251,12 +251,12 @@ namespace RG
                 return m_AllocatedSRVs[i].Descriptor;
             }
         }
-        RHI::RHIDescriptor* srv = m_pDevice->CreateShaderResourceView(resource, desc, resource->GetName());
+        RHI::FRHIDescriptor* srv = m_pDevice->CreateShaderResourceView(resource, desc, resource->GetName());
         m_AllocatedSRVs.push_back({resource, srv, desc});
         return srv;
     }
 
-    RHI::RHIDescriptor *RenderGraphResourceAllocator::GetDescriptor(RHI::RHIResource *resource, const RHI::RHIUnorderedAccessViewDesc &desc)
+    RHI::FRHIDescriptor *FRenderGraphResourceAllocator::GetDescriptor(RHI::FRHIResource *resource, const RHI::FRHIUnorderedAccessViewDesc &desc)
     {
         for (size_t i = 0; i < m_AllocatedUAVs.size(); i++)
         {
@@ -265,17 +265,17 @@ namespace RG
                 return m_AllocatedUAVs[i].Descriptor;
             }
         }
-        RHI::RHIDescriptor* uav = m_pDevice->CreateUnorderedAccessView(resource, desc, resource->GetName());
+        RHI::FRHIDescriptor* uav = m_pDevice->CreateUnorderedAccessView(resource, desc, resource->GetName());
         m_AllocatedUAVs.push_back({resource, uav, desc});
         return uav;
     }
 
-    void RenderGraphResourceAllocator::CheckHeapUsage(FHeap &heap)
+    void FRenderGraphResourceAllocator::CheckHeapUsage(FHeap &heap)
     {
         uint64_t currentFrame = m_pDevice->GetFrameID();
         for (auto iter = heap.Resources.begin(); iter != heap.Resources.end();)
         {
-            const AliasedResource aliasedRes = *iter;
+            const FAliasedResource aliasedRes = *iter;
             if (currentFrame - aliasedRes.LastUsedFrame > 30)
             {
                 DeleteDescriptor(aliasedRes.Resource);
@@ -289,7 +289,7 @@ namespace RG
         }
     }
 
-    void RenderGraphResourceAllocator::DeleteDescriptor(RHI::RHIResource *resource)
+    void FRenderGraphResourceAllocator::DeleteDescriptor(RHI::FRHIResource *resource)
     {
         for (auto iter = m_AllocatedSRVs.begin(); iter != m_AllocatedSRVs.end();)
         {
@@ -317,9 +317,9 @@ namespace RG
         }
     }
 
-    void RenderGraphResourceAllocator::AllocateHeap(uint32_t size)
+    void FRenderGraphResourceAllocator::AllocateHeap(uint32_t size)
     {
-        RHI::RHIHeapDesc heapDesc;
+        RHI::FRHIHeapDesc heapDesc;
         heapDesc.Size = RoundUpPow2(size, 64u * 1024);
 
         eastl::string heapName = fmt::format("RG Heap {:.1} MB", heapDesc.Size / (1024.0f * 1024.0f)).c_str();

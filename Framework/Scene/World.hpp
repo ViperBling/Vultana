@@ -11,13 +11,13 @@ namespace tinyxml2
 
 namespace Scene
 {
-    class World
+    class FWorld
     {
     public:
-        World();
-        ~World();
+        FWorld();
+        ~FWorld();
 
-        Camera* GetCamera() { return m_pCamera.get(); }
+        FCamera* GetCamera() { return m_pCamera.get(); }
 
         void LoadScene(const eastl::string& file);
 
@@ -40,7 +40,7 @@ namespace Scene
         void CreateModel(tinyxml2::XMLElement* element);
 
     private:
-        eastl::unique_ptr<Camera> m_pCamera;
+        eastl::unique_ptr<FCamera> m_pCamera;
 
         eastl::vector<eastl::unique_ptr<IVisibleObject>> m_Objects;
         eastl::vector<eastl::unique_ptr<ILight>> m_Lights;

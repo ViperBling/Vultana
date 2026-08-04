@@ -4,6 +4,6 @@
 
 namespace Renderer
 {
-    void ClearUAV(RHI::RHICommandList* pCmdList, RHI::RHIResource* resource, RHI::RHIDescriptor* descriptor, const RHI::RHIUnorderedAccessViewDesc& uavDesc, const float* value);
-    void ClearUAV(RHI::RHICommandList* pCmdList, RHI::RHIResource* resource, RHI::RHIDescriptor* descriptor, const RHI::RHIUnorderedAccessViewDesc& uavDesc, const uint32_t* value);
+    void ClearUAV(RHI::FRHICommandList* pCmdList, RHI::FRHIResource* resource, RHI::FRHIDescriptor* descriptor, const RHI::FRHIUnorderedAccessViewDesc& uavDesc, const float* value);
+    void ClearUAV(RHI::FRHICommandList* pCmdList, RHI::FRHIResource* resource, RHI::FRHIDescriptor* descriptor, const RHI::FRHIUnorderedAccessViewDesc& uavDesc, const uint32_t* value);
 }

@@ -4,17 +4,17 @@
 
 namespace RenderResources
 {
-    StructuredBuffer::StructuredBuffer(const eastl::string &name)
+    FStructuredBuffer::FStructuredBuffer(const eastl::string &name)
     {
         m_Name = name;
     }
 
-    bool StructuredBuffer::Create(uint32_t stride, uint32_t elementCount, RHI::ERHIMemoryType memoryType, bool isUAV)
+    bool FStructuredBuffer::Create(uint32_t stride, uint32_t elementCount, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
-        Renderer::RendererBase *renderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        RHI::RHIDevice *device = renderer->GetDevice();
+        Renderer::FRendererBase *renderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        RHI::FRHIDevice *device = renderer->GetDevice();
 
-        RHI::RHIBufferDesc desc;
+        RHI::FRHIBufferDesc desc;
         desc.Stride = stride;
         desc.Size = stride * elementCount;
         desc.Format = RHI::ERHIFormat::Unknown;
@@ -32,7 +32,7 @@ namespace RenderResources
             return false;
         }
 
-        RHI::RHIShaderResourceViewDesc srvDesc;
+        RHI::FRHIShaderResourceViewDesc srvDesc;
         srvDesc.Type = RHI::ERHIShaderResourceViewType::StructuredBuffer;
         // Union(Buffer or Texture) in RHIShaderResourceViewDesc share the same memory, 
         // we initialized Texture in constructor, so we need to set buffer offset to 0 here incase it's uninitialized.
@@ -46,7 +46,7 @@ namespace RenderResources
 
         if (isUAV)
         {
-            RHI::RHIUnorderedAccessViewDesc uavDesc;
+            RHI::FRHIUnorderedAccessViewDesc uavDesc;
             uavDesc.Type = RHI::ERHIUnorderedAccessViewType::StructuredBuffer;
             // Union(Buffer or Texture) in RHIShaderResourceViewDesc share the same memory, 
             // we initialized Texture in constructor, so we need to set buffer offset to 0 here incase it's uninitialized.

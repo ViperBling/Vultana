@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHICommandListVK : public RHICommandList
+    class FVulkanCommandList : public FRHICommandList
     {
     public:
-        RHICommandListVK(RHIDeviceVK* device, ERHICommandQueueType queueType, const eastl::string& name);
-        ~RHICommandListVK();
+        FVulkanCommandList(FVulkanDevice* device, ERHICommandQueueType queueType, const eastl::string& name);
+        ~FVulkanCommandList();
 
         bool Create();
 
@@ -20,9 +20,9 @@ namespace RHI
         virtual void ResetAllocator() override;
         virtual void Begin() override;
         virtual void End() override;
-        virtual void Wait(RHIFence* fence, uint64_t value) override;
-        virtual void Signal(RHIFence* fence, uint64_t value) override;
-        virtual void Present(RHISwapchain* swapchain) override;
+        virtual void Wait(FRHIFence* fence, uint64_t value) override;
+        virtual void Signal(FRHIFence* fence, uint64_t value) override;
+        virtual void Present(FRHISwapchain* swapchain) override;
         virtual void Submit() override;
         virtual void ResetState() override;
 
@@ -31,25 +31,25 @@ namespace RHI
         virtual void BeginEvent(const eastl::string& eventName) override;
         virtual void EndEvent() override;
 
-        virtual void CopyBufferToTexture(RHIBuffer* srcBuffer, RHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
-        virtual void CopyTextureToBuffer(RHITexture* srcTexture, RHIBuffer* dstBuffer, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
-        virtual void CopyBuffer(RHIBuffer* src, RHIBuffer* dst, uint32_t srcOffset, uint32_t dstOffset, uint32_t size) override;
-        virtual void CopyTexture(RHITexture* src, RHITexture* dst, uint32_t srcMipLevel, uint32_t dstMipLevel, uint32_t srcArraySlice, uint32_t dstArraySlice) override;
-        virtual void ClearUAV(RHIResource* resource, RHIDescriptor* uav, const float* clearValue) override;
-        virtual void ClearUAV(RHIResource* resource, RHIDescriptor* uav, const uint32_t* clearValue) override;
-        virtual void WriteBuffer(RHIBuffer* buffer, uint32_t offset, uint32_t data) override;
+        virtual void CopyBufferToTexture(FRHIBuffer* srcBuffer, FRHITexture* dstTexture, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
+        virtual void CopyTextureToBuffer(FRHITexture* srcTexture, FRHIBuffer* dstBuffer, uint32_t mipLevel, uint32_t arraySlice, uint32_t offset) override;
+        virtual void CopyBuffer(FRHIBuffer* src, FRHIBuffer* dst, uint32_t srcOffset, uint32_t dstOffset, uint32_t size) override;
+        virtual void CopyTexture(FRHITexture* src, FRHITexture* dst, uint32_t srcMipLevel, uint32_t dstMipLevel, uint32_t srcArraySlice, uint32_t dstArraySlice) override;
+        virtual void ClearUAV(FRHIResource* resource, FRHIDescriptor* uav, const float* clearValue) override;
+        virtual void ClearUAV(FRHIResource* resource, FRHIDescriptor* uav, const uint32_t* clearValue) override;
+        virtual void WriteBuffer(FRHIBuffer* buffer, uint32_t offset, uint32_t data) override;
 
-        virtual void TextureBarrier(RHITexture* texture, uint32_t subResouce, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
-        virtual void BufferBarrier(RHIBuffer* buffer, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
+        virtual void TextureBarrier(FRHITexture* texture, uint32_t subResouce, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
+        virtual void BufferBarrier(FRHIBuffer* buffer, ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
         virtual void GlobalBarrier(ERHIAccessFlags accessFlagBefore, ERHIAccessFlags accessFlagAfter) override;
         virtual void FlushBarriers() override;
 
-        virtual void BeginRenderPass(const RHIRenderPassDesc& desc) override;
+        virtual void BeginRenderPass(const FRHIRenderPassDesc& desc) override;
         virtual void EndRenderPass() override;
-        virtual void SetPipelineState(RHIPipelineState* pipelineState) override;
+        virtual void SetPipelineState(FRHIPipelineState* pipelineState) override;
         virtual void SetStencilReference(uint8_t stencil) override;
         virtual void SetBlendFactor(const float* blendFactor) override;
-        virtual void SetIndexBuffer(RHIBuffer* buffer, uint32_t offset, ERHIFormat format) override;
+        virtual void SetIndexBuffer(FRHIBuffer* buffer, uint32_t offset, ERHIFormat format) override;
         virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
         virtual void SetScissorRect(uint32_t x, uint32_t y, uint32_t width, uint32_t height) override;
         virtual void SetGraphicsConstants(uint32_t slot, const void* data, size_t dataSize) override;
@@ -60,15 +60,15 @@ namespace RHI
         virtual void Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
         virtual void DispatchMesh(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
 
-        virtual void DrawIndirect(RHIBuffer* buffer, uint32_t offset) override;
-        virtual void DrawIndexedIndirect(RHIBuffer* buffer, uint32_t offset) override;
-        virtual void DispatchIndirect(RHIBuffer* buffer, uint32_t offset) override;
-        virtual void DispatchMeshIndirect(RHIBuffer* buffer, uint32_t offset) override;
+        virtual void DrawIndirect(FRHIBuffer* buffer, uint32_t offset) override;
+        virtual void DrawIndexedIndirect(FRHIBuffer* buffer, uint32_t offset) override;
+        virtual void DispatchIndirect(FRHIBuffer* buffer, uint32_t offset) override;
+        virtual void DispatchMeshIndirect(FRHIBuffer* buffer, uint32_t offset) override;
 
-        virtual void MultiDrawIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
-        virtual void MultiDrawIndexedIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
-        virtual void MultiDispatchIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
-        virtual void MultiDispatchMeshIndirect(uint32_t maxCount, RHIBuffer* argsBuffer, uint32_t argsBufferOffset, RHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDrawIndirect(uint32_t maxCount, FRHIBuffer* argsBuffer, uint32_t argsBufferOffset, FRHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDrawIndexedIndirect(uint32_t maxCount, FRHIBuffer* argsBuffer, uint32_t argsBufferOffset, FRHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDispatchIndirect(uint32_t maxCount, FRHIBuffer* argsBuffer, uint32_t argsBufferOffset, FRHIBuffer* countBuffer, uint32_t countBufferOffset) override;
+        virtual void MultiDispatchMeshIndirect(uint32_t maxCount, FRHIBuffer* argsBuffer, uint32_t argsBufferOffset, FRHIBuffer* countBuffer, uint32_t countBufferOffset) override;
 
     private:
         void UpdateGraphicsDescriptorBuffer();
@@ -87,11 +87,11 @@ namespace RHI
         eastl::vector<vk::BufferMemoryBarrier2> m_BufferMemoryBarriers;
         eastl::vector<vk::ImageMemoryBarrier2> m_ImageMemoryBarriers;
 
-        eastl::vector<eastl::pair<RHIFence*, uint64_t>> m_PendingWaits;
-        eastl::vector<eastl::pair<RHIFence*, uint64_t>> m_PendingSignals;
-        eastl::vector<RHISwapchain*> m_PendingSwapchain;
+        eastl::vector<eastl::pair<FRHIFence*, uint64_t>> m_PendingWaits;
+        eastl::vector<eastl::pair<FRHIFence*, uint64_t>> m_PendingSignals;
+        eastl::vector<FRHISwapchain*> m_PendingSwapchain;
 
-        struct ConstantData
+        struct FConstantData
         {
             uint32_t cb0[RHI_MAX_ROOT_CONSTANTS] = {};
             vk::DescriptorAddressInfoEXT cbv1 = {};
@@ -99,7 +99,7 @@ namespace RHI
             bool dirty = false;                     // 标志位，避免ConstantsBuffer的重复绑定
         };
 
-        ConstantData m_GraphicsConstants;
-        ConstantData m_ComputeConstants;
+        FConstantData m_GraphicsConstants;
+        FConstantData m_ComputeConstants;
     };
 }

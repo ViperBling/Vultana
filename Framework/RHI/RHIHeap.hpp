@@ -4,11 +4,11 @@
 
 namespace RHI
 {
-    class RHIHeap : public RHIResource
+    class FRHIHeap : public FRHIResource
     {
     public:
-        const RHIHeapDesc& GetDesc() const { return m_Desc; }
+        const FRHIHeapDesc& GetDesc() const { return m_Desc; }
     protected:
-        RHIHeapDesc m_Desc {};
+        FRHIHeapDesc m_Desc {};
     };
 }

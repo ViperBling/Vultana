@@ -145,7 +145,7 @@ static inline RHI::ERHIFormat GetTextureFormat(ddspp::DXGIFormat format, bool sr
 
 namespace Assets
 {
-    TextureLoader::~TextureLoader()
+    FTextureLoader::~FTextureLoader()
     {
         if (m_pDecompressedData)
         {
@@ -153,7 +153,7 @@ namespace Assets
         }
     }
 
-    bool TextureLoader::Load(const eastl::string &filename, bool srgb)
+    bool FTextureLoader::Load(const eastl::string &filename, bool srgb)
     {
         std::ifstream is;
         is.open(filename.c_str(), std::ios::binary);
@@ -183,7 +183,7 @@ namespace Assets
         }
     }
 
-    bool TextureLoader::Resize(uint32_t width, uint32_t height)
+    bool FTextureLoader::Resize(uint32_t width, uint32_t height)
     {
         if (m_pDecompressedData == nullptr)
         {
@@ -205,7 +205,7 @@ namespace Assets
         return true;
     }
 
-    bool TextureLoader::LoadDDS(bool srgb)
+    bool FTextureLoader::LoadDDS(bool srgb)
     {
         uint8_t* data = m_FileData.data();
 
@@ -230,7 +230,7 @@ namespace Assets
         return true;
     }
 
-    bool TextureLoader::LoadSTB(bool srgb)
+    bool FTextureLoader::LoadSTB(bool srgb)
     {
         int x, y, comp;
         stbi_info_from_memory((stbi_uc*)m_FileData.data(), static_cast<int>(m_FileData.size()), &x, &y, &comp);

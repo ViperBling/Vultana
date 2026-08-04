@@ -5,11 +5,11 @@
 
 namespace Renderer
 {
-    GPUDrivenDebugLine::GPUDrivenDebugLine(Renderer::RendererBase * pRenderer)
+    FGPUDrivenDebugLine::FGPUDrivenDebugLine(Renderer::FRendererBase * pRenderer)
     {
         m_pRenderer = pRenderer;
 
-        RHI::RHIGraphicsPipelineStateDesc psoDesc {};
+        RHI::FRHIGraphicsPipelineStateDesc psoDesc {};
         psoDesc.VS = pRenderer->GetShader("GPUDrivenDebugLine.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         psoDesc.PS = pRenderer->GetShader("GPUDrivenDebugLine.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         psoDesc.DepthStencilState.bDepthTest = true;
@@ -20,15 +20,15 @@ namespace Renderer
         psoDesc.PrimitiveType = RHI::ERHIPrimitiveType::LineList;
         m_pPSO = pRenderer->GetPipelineState(psoDesc, "GPUDrivenDebugLine::m_pPSO");
 
-        RHI::RHIDrawCommand cmd = {};
+        RHI::FRHIDrawCommand cmd = {};
         cmd.InstanceCount = 1;
-        m_pDrawArgsBuffer.reset(pRenderer->CreateRawBuffer(&cmd, sizeof(RHI::RHIDrawCommand), "GPUDrivenDebugLine::m_pDrawArgsBuffer", RHI::ERHIMemoryType::GPUOnly, true));
+        m_pDrawArgsBuffer.reset(pRenderer->CreateRawBuffer(&cmd, sizeof(RHI::FRHIDrawCommand), "GPUDrivenDebugLine::m_pDrawArgsBuffer", RHI::ERHIMemoryType::GPUOnly, true));
 
         const uint32_t lineVertexStride = 16;
         m_pLineVertexBuffer.reset(pRenderer->CreateStructuredBuffer(nullptr, lineVertexStride, MAX_VERTEX_COUNT, "GPUDrivenDebugLine::m_pLineVertexBuffer", RHI::ERHIMemoryType::GPUOnly, true));
     }
 
-    void GPUDrivenDebugLine::Clear(RHI::RHICommandList *pCmdList)
+    void FGPUDrivenDebugLine::Clear(RHI::FRHICommandList *pCmdList)
     {
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenDebugLine::Clear");
 
@@ -42,13 +42,13 @@ namespace Renderer
         pCmdList->BufferBarrier(m_pLineVertexBuffer->GetBuffer(), RHI::RHIAccessVertexShaderSRV, RHI::RHIAccessMaskUAV);
     }
 
-    void GPUDrivenDebugLine::PrepareForDraw(RHI::RHICommandList *pCmdList)
+    void FGPUDrivenDebugLine::PrepareForDraw(RHI::FRHICommandList *pCmdList)
     {
         pCmdList->BufferBarrier(m_pDrawArgsBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessIndirectArgs);
         pCmdList->BufferBarrier(m_pLineVertexBuffer->GetBuffer(), RHI::RHIAccessMaskUAV, RHI::RHIAccessVertexShaderSRV);
     }
 
-    void GPUDrivenDebugLine::Draw(RHI::RHICommandList *pCmdList)
+    void FGPUDrivenDebugLine::Draw(RHI::FRHICommandList *pCmdList)
     {
         GPU_EVENT_DEBUG(pCmdList, "GPUDrivenDebugLine::Draw");
 

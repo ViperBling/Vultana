@@ -14,23 +14,23 @@ namespace enki
 
 namespace Editor
 {
-    class VultanaEditor;
+    class FVultanaEditor;
 }
 
 namespace Core
 {
-    class VultanaEngine
+    class FVultanaEngine
     {
     public:
-        static VultanaEngine* GetEngineInstance();
+        static FVultanaEngine* GetEngineInstance();
 
         void Init(void* windowHandle, uint32_t width, uint32_t height);
         void Shutdown();
         void Tick();
 
-        Scene::World* GetWorld() const { return m_pWorld.get(); }
-        Renderer::RendererBase* GetRenderer() const { return m_pRenderer.get(); }
-        Editor::VultanaEditor* GetEditor() const { return m_pEditor.get(); }
+        Scene::FWorld* GetWorld() const { return m_pWorld.get(); }
+        Renderer::FRendererBase* GetRenderer() const { return m_pRenderer.get(); }
+        Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
 
         void* GetWindowHandle() const { return m_WndHandle; }
@@ -41,15 +41,15 @@ namespace Core
         const eastl::string& GetShaderPath() const { return m_ShaderPath; }
 
     private:
-        ~VultanaEngine();
+        ~FVultanaEngine();
 
     public:
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
 
     private:
-        eastl::unique_ptr<Scene::World> m_pWorld;
-        eastl::unique_ptr<Renderer::RendererBase> m_pRenderer;
-        eastl::unique_ptr<Editor::VultanaEditor> m_pEditor;
+        eastl::unique_ptr<Scene::FWorld> m_pWorld;
+        eastl::unique_ptr<Renderer::FRendererBase> m_pRenderer;
+        eastl::unique_ptr<Editor::FVultanaEditor> m_pEditor;
 
         eastl::unique_ptr<class enki::TaskScheduler> m_pTaskScheduler;
 

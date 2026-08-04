@@ -3,12 +3,12 @@
 
 namespace Scene
 {
-    bool DirectionalLight::Create()
+    bool FDirectionalLight::Create()
     {
         return true;
     }
 
-    void DirectionalLight::Tick(float deltaTime)
+    void FDirectionalLight::Tick(float deltaTime)
     {
         float4x4 R = rotation_matrix(m_Rotation);
         m_LightDirection = normalize(mul(R, float4(0.0f, 1.0f, 0.0f, 0.0f)).xyz());
@@ -16,7 +16,7 @@ namespace Scene
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantCaptureKeyboard && !io.WantCaptureMouse && ImGui::IsKeyDown(ImGuiKey_L))
         {
-            Camera* camera = Core::VultanaEngine::GetEngineInstance()->GetWorld()->GetCamera();
+            FCamera* camera = Core::FVultanaEngine::GetEngineInstance()->GetWorld()->GetCamera();
             const float4x4& mtxView = camera->GetViewMatrix();
 
             m_LightDirection = normalize(mul(mtxView, float4(m_LightDirection, 0.0f))).xyz();

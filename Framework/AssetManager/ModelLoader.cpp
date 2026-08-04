@@ -94,7 +94,7 @@ inline uint32_t GetNodeIndex(const cgltf_data* data, const cgltf_node* node)
 
 namespace Assets
 {
-    ModelLoader::ModelLoader(Scene::World *pWorld)
+    FModelLoader::FModelLoader(Scene::FWorld *pWorld)
     {
         m_pWorld = pWorld;
 
@@ -105,11 +105,11 @@ namespace Assets
         m_MtxWorld = mul(T, mul(R, S));
     }
 
-    ModelLoader::~ModelLoader()
+    FModelLoader::~FModelLoader()
     {
     }
 
-    void ModelLoader::LoadModelSettings(tinyxml2::XMLElement *element)
+    void FModelLoader::LoadModelSettings(tinyxml2::XMLElement *element)
     {
         m_File = element->FindAttribute("File")->Value();
 
@@ -135,9 +135,9 @@ namespace Assets
         m_MtxWorld = mul(T, mul(R, S));
     }
 
-    void ModelLoader::LoadGLTF(const char *gltfFile)
+    void FModelLoader::LoadGLTF(const char *gltfFile)
     {
-        eastl::string file = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : m_File);
+        eastl::string file = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : m_File);
 
         cgltf_options options = {};
         cgltf_data* data = nullptr;
@@ -152,8 +152,8 @@ namespace Assets
 
         if (data->animations_count > 0)
         {
-            Scene::SkeletalMesh* mesh = new Scene::SkeletalMesh(m_File);
-            mesh->m_pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+            Scene::FSkeletalMesh* mesh = new Scene::FSkeletalMesh(m_File);
+            mesh->m_pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
             mesh->m_pAnimation.reset(LoadAnimation(data, &data->animations[0]));
             mesh->m_pSkeleton.reset(LoadSkeleton(data, &data->skins[0]));
 
@@ -186,7 +186,7 @@ namespace Assets
         cgltf_free(data);
     }
 
-    void ModelLoader::LoadStaticMeshNode(const cgltf_data* data, cgltf_node *node, const float4x4 &parentMtx)
+    void FModelLoader::LoadStaticMeshNode(const cgltf_data* data, cgltf_node *node, const float4x4 &parentMtx)
     {
         float4x4 mtxLocalToParent;
         GetTransform(node, mtxLocalToParent);
@@ -206,7 +206,7 @@ namespace Assets
             for (cgltf_size i = 0; i < node->mesh->primitives_count; i++)
             {
                 eastl::string name = fmt::format("Mesh_{}_{} : {}", meshIdx, i, (node->mesh->name ? node->mesh->name : "")).c_str();
-                Scene::StaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
+                Scene::FStaticMesh* mesh = LoadStaticMesh(&node->mesh->primitives[i], name, bFrontFaceCCW);
                 mesh->m_pMaterial->m_bFrontFaceCCW = bFrontFaceCCW;
                 mesh->SetPosition(position);
                 mesh->SetRotation(rotation);
@@ -247,9 +247,9 @@ namespace Assets
         return stream;
     }
 
-    Scene::StaticMesh *ModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const eastl::string &name, bool bFrontFaceCCW)
+    Scene::FStaticMesh *FModelLoader::LoadStaticMesh(const cgltf_primitive *primitive, const eastl::string &name, bool bFrontFaceCCW)
     {
-        Scene::StaticMesh* mesh = new Scene::StaticMesh(m_File + " " + name);
+        Scene::FStaticMesh* mesh = new Scene::FStaticMesh(m_File + " " + name);
         mesh->m_pMaterial.reset(LoadMaterial(primitive->material));
 
         size_t indexCount;
@@ -376,7 +376,7 @@ namespace Assets
             meshletTriangles16.push_back(meshletTriangles[i]);
         }
 
-        struct MeshletBound
+        struct FMeshletBound
         {
             float3 Center;
             float Radius;
@@ -399,14 +399,14 @@ namespace Assets
             uint vertexOffset;
             uint triangleOffset;
         };
-        eastl::vector<MeshletBound> meshletBounds(meshletCount);
+        eastl::vector<FMeshletBound> meshletBounds(meshletCount);
 
         for (size_t i = 0; i < meshletCount; i++)
         {
             const meshopt_Meshlet& meshlet = meshlets[i];
             meshopt_Bounds meshoptBounds = meshopt_computeMeshletBounds(&meshletVertices[meshlet.vertex_offset], &meshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, (const float*)posVertices, remappedVertexCount, posStride);
 
-            MeshletBound bound;
+            FMeshletBound bound;
             bound.Center = float3(meshoptBounds.center);
             bound.Radius = meshoptBounds.radius;    
             bound.AxisX = meshoptBounds.cone_axis_s8[0];
@@ -421,8 +421,8 @@ namespace Assets
             meshletBounds[i] = bound;
         }
 
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto resourceCache = ResourceCache::GetInstance();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        auto resourceCache = FResourceCache::GetInstance();
 
         mesh->m_pRenderer = pRenderer;
 
@@ -465,7 +465,7 @@ namespace Assets
         }
 
         mesh->m_MeshletCount = (uint32_t)meshletCount;
-        mesh->m_MeshletBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(MeshletBound) * (uint32_t)meshletBounds.size());
+        mesh->m_MeshletBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(FMeshletBound) * (uint32_t)meshletBounds.size());
         mesh->m_MeshletIndicesBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletIndicesBuffer", meshletTriangles16.data(), sizeof(unsigned short) * (uint32_t)meshletTriangles16.size());
         mesh->m_MeshletVertexBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletVertexBuffer", meshletVertices.data(), sizeof(unsigned int) * (uint32_t)meshletVertices.size());
 
@@ -487,9 +487,9 @@ namespace Assets
         return mesh;
     }
 
-    Scene::Animation *ModelLoader::LoadAnimation(const cgltf_data *data, const cgltf_animation *gltfAnimation)
+    Scene::FAnimation *FModelLoader::LoadAnimation(const cgltf_data *data, const cgltf_animation *gltfAnimation)
     {
-        Scene::Animation* animation = new Scene::Animation(gltfAnimation->name ? gltfAnimation->name : "");
+        Scene::FAnimation* animation = new Scene::FAnimation(gltfAnimation->name ? gltfAnimation->name : "");
         animation->m_Channels.reserve(gltfAnimation->channels_count);
 
         for (cgltf_size i = 0; i < gltfAnimation->channels_count; i++)
@@ -547,14 +547,14 @@ namespace Assets
         return animation;
     }
 
-    Scene::Skeleton *ModelLoader::LoadSkeleton(const cgltf_data *data, const cgltf_skin *gltfSkin)
+    Scene::FSkeleton *FModelLoader::LoadSkeleton(const cgltf_data *data, const cgltf_skin *gltfSkin)
     {
         if (gltfSkin == nullptr)
         {
             return nullptr;
         }
 
-        Scene::Skeleton* skeleton = new Scene::Skeleton(gltfSkin->name ? gltfSkin->name : "");
+        Scene::FSkeleton* skeleton = new Scene::FSkeleton(gltfSkin->name ? gltfSkin->name : "");
         skeleton->m_Joints.resize(gltfSkin->joints_count);
         skeleton->m_InverseBindMatrices.resize(gltfSkin->joints_count);
         skeleton->m_JointMatrices.resize(gltfSkin->joints_count);
@@ -592,7 +592,7 @@ namespace Assets
         return skeleton;
     }
 
-    Scene::FSkeletalMeshNode *ModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
+    Scene::FSkeletalMeshNode *FModelLoader::LoadSkeletalMeshNode(const cgltf_data *data, cgltf_node *gltfNode)
     {
         Scene::FSkeletalMeshNode* node = new Scene::FSkeletalMeshNode;
         node->ID = GetNodeIndex(data, gltfNode);
@@ -640,13 +640,13 @@ namespace Assets
         return node;
     }
 
-    Scene::FSkeletalMeshData *ModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const eastl::string &name)
+    Scene::FSkeletalMeshData *FModelLoader::LoadSkeletalMeshData(const cgltf_primitive *primitive, const eastl::string &name)
     {
         Scene::FSkeletalMeshData* mesh = new Scene::FSkeletalMeshData;
         mesh->Name = m_File + "_" + name;
         mesh->Material.reset(LoadMaterial(primitive->material));
 
-        Assets::ResourceCache* cache = Assets::ResourceCache::GetInstance();
+        Assets::FResourceCache* cache = Assets::FResourceCache::GetInstance();
 
         size_t indexCount;
         meshopt_Stream indices = LoadBufferStream(primitive->indices, false, indexCount);
@@ -741,7 +741,7 @@ namespace Assets
         return mesh;
     }
 
-    inline FMaterialTextureInfo LoadTextureInfo(const RenderResources::Texture2D* texture, const cgltf_texture_view& textureView)
+    inline FMaterialTextureInfo LoadTextureInfo(const RenderResources::FTexture2D* texture, const cgltf_texture_view& textureView)
     {
         FMaterialTextureInfo info;
         if (texture)
@@ -760,9 +760,9 @@ namespace Assets
         return info;
     }
 
-    MeshMaterial *ModelLoader::LoadMaterial(const cgltf_material *gltfMaterial)
+    FMeshMaterial *FModelLoader::LoadMaterial(const cgltf_material *gltfMaterial)
     {
-        MeshMaterial* material = new MeshMaterial;
+        FMeshMaterial* material = new FMeshMaterial;
         if (gltfMaterial == nullptr)
         {
             return material;
@@ -807,14 +807,14 @@ namespace Assets
         return material;
     }
 
-    RenderResources::Texture2D *ModelLoader::LoadTexture(const cgltf_texture_view& textureView, bool srgb)
+    RenderResources::FTexture2D *FModelLoader::LoadTexture(const cgltf_texture_view& textureView, bool srgb)
     {
         if (textureView.texture == nullptr || textureView.texture->image->uri == nullptr) return nullptr;
 
         size_t lastSlash = m_File.find_last_of('/');
-        eastl::string texturePath = Core::VultanaEngine::GetEngineInstance()->GetAssetsPath() + m_File.substr(0, lastSlash + 1);
-        Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        auto texture = ResourceCache::GetInstance()->GetTexture2D(texturePath + textureView.texture->image->uri, srgb);
+        eastl::string texturePath = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + m_File.substr(0, lastSlash + 1);
+        Renderer::FRendererBase* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        auto texture = FResourceCache::GetInstance()->GetTexture2D(texturePath + textureView.texture->image->uri, srgb);
         return texture;
     }
 }
