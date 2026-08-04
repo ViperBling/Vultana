@@ -7,16 +7,16 @@ namespace RG
 {
     using DAGNodeID = uint32_t;
 
-    class DirectedAcyclicGraph;
-    class DAGNode;
+    class FDirectedAcyclicGraph;
+    class FDAGNode;
 
-    class DAGEdge
+    class FDAGEdge
     {
-        friend class DirectedAcyclicGraph;
+        friend class FDirectedAcyclicGraph;
 
     public:
-        DAGEdge(DirectedAcyclicGraph& graph, DAGNode* from, DAGNode* to);
-        virtual ~DAGEdge() {}
+        FDAGEdge(FDirectedAcyclicGraph& graph, FDAGNode* from, FDAGNode* to);
+        virtual ~FDAGEdge() {}
 
         DAGNodeID GetFromNode() const { return m_FromNode; }
         DAGNodeID GetToNode() const { return m_ToNode; }
@@ -26,13 +26,13 @@ namespace RG
         const DAGNodeID m_ToNode;
     };
 
-    class DAGNode
+    class FDAGNode
     {
-        friend class DirectedAcyclicGraph;
+        friend class FDirectedAcyclicGraph;
 
     public:
-        DAGNode(DirectedAcyclicGraph& graph);
-        virtual ~DAGNode() {}
+        FDAGNode(FDirectedAcyclicGraph& graph);
+        virtual ~FDAGNode() {}
 
         DAGNodeID GetID() const { return m_ID; }
 
@@ -55,27 +55,27 @@ namespace RG
         static const uint32_t TARGET = 0x80000000u;
     };
 
-    class DirectedAcyclicGraph
+    class FDirectedAcyclicGraph
     {
     public:
         DAGNodeID GenerateNodeID() { return (DAGNodeID)m_Nodes.size(); }
-        DAGNode* GetNode(DAGNodeID id) const { return m_Nodes[id]; }
-        DAGEdge* GetEdge(DAGNodeID from, DAGNodeID to) const;
+        FDAGNode* GetNode(DAGNodeID id) const { return m_Nodes[id]; }
+        FDAGEdge* GetEdge(DAGNodeID from, DAGNodeID to) const;
 
-        void RegisterNode(DAGNode* node);
-        void RegisterEdge(DAGEdge* edge);
+        void RegisterNode(FDAGNode* node);
+        void RegisterEdge(FDAGEdge* edge);
 
         void Clear();
         void Cull();
-        bool IsEdgeValid(const DAGEdge* edge) const;
+        bool IsEdgeValid(const FDAGEdge* edge) const;
 
-        void GetIncomingEdges(const DAGNode* node, eastl::vector<DAGEdge*>& edges) const;
-        void GetOutgoingEdges(const DAGNode* node, eastl::vector<DAGEdge*>& edges) const;
+        void GetIncomingEdges(const FDAGNode* node, eastl::vector<FDAGEdge*>& edges) const;
+        void GetOutgoingEdges(const FDAGNode* node, eastl::vector<FDAGEdge*>& edges) const;
 
         eastl::string ExportGraphViz();
 
     private:
-        eastl::vector<DAGNode*> m_Nodes;
-        eastl::vector<DAGEdge*> m_Edges;
+        eastl::vector<FDAGNode*> m_Nodes;
+        eastl::vector<FDAGEdge*> m_Edges;
     };
 }

@@ -7,7 +7,7 @@
 
 namespace Assets
 {
-    class ModelLoader;
+    class FModelLoader;
 };
 
 namespace Scene
@@ -26,20 +26,20 @@ namespace Scene
         eastl::vector<eastl::pair<float, float4>> KeyFrames;
     };
 
-    class SkeletalMesh;
+    class FSkeletalMesh;
 
-    class Animation
+    class FAnimation
     {
-        friend class Assets::ModelLoader;
+        friend class Assets::FModelLoader;
 
     public:
-        Animation(const eastl::string& name);
-        void Update(SkeletalMesh* mesh, float deltaTime);
+        FAnimation(const eastl::string& name);
+        void Update(FSkeletalMesh* mesh, float deltaTime);
 
         void ResetAnimation() { m_CurrentAnimTime = 0.0f; }
     
     private:
-        void UpdateChannel(SkeletalMesh* mesh, const FAnimationChannel& channel);
+        void UpdateChannel(FSkeletalMesh* mesh, const FAnimationChannel& channel);
     
     private:
         eastl::string m_Name;

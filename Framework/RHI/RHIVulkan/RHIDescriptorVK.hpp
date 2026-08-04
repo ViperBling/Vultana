@@ -6,79 +6,79 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIShaderResourceViewVK : public RHIDescriptor
+    class FVulkanShaderResourceView : public FRHIDescriptor
     {
     public:
-        RHIShaderResourceViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIShaderResourceViewDesc& desc, const eastl::string& name);
-        ~RHIShaderResourceViewVK();
+        FVulkanShaderResourceView(FVulkanDevice* device, FRHIResource* pResource, const FRHIShaderResourceViewDesc& desc, const eastl::string& name);
+        ~FVulkanShaderResourceView();
 
         bool Create();
         vk::ImageView GetImageView() const { return m_ImageView; }
 
-        const RHIShaderResourceViewDesc& GetDesc() const { return m_Desc; }
+        const FRHIShaderResourceViewDesc& GetDesc() const { return m_Desc; }
         virtual void* GetNativeHandle() const override { return m_Resource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
     
     private:
-        RHIResource* m_Resource = nullptr;
-        RHIShaderResourceViewDesc m_Desc {};
+        FRHIResource* m_Resource = nullptr;
+        FRHIShaderResourceViewDesc m_Desc {};
         vk::ImageView m_ImageView = VK_NULL_HANDLE;
         uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 
-    class RHIUnorderedAccessViewVK : public RHIDescriptor
+    class FVulkanUnorderedAccessView : public FRHIDescriptor
     {
     public:
-        RHIUnorderedAccessViewVK(RHIDeviceVK* device, RHIResource* pResource, const RHIUnorderedAccessViewDesc& desc, const eastl::string& name);
-        ~RHIUnorderedAccessViewVK();
+        FVulkanUnorderedAccessView(FVulkanDevice* device, FRHIResource* pResource, const FRHIUnorderedAccessViewDesc& desc, const eastl::string& name);
+        ~FVulkanUnorderedAccessView();
 
         bool Create();
 
-        const RHIUnorderedAccessViewDesc& GetDesc() const { return m_Desc; }
+        const FRHIUnorderedAccessViewDesc& GetDesc() const { return m_Desc; }
         virtual void* GetNativeHandle() const override { return m_Resource->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
 
     private:
-        RHIResource* m_Resource = nullptr;
-        RHIUnorderedAccessViewDesc m_Desc {};
+        FRHIResource* m_Resource = nullptr;
+        FRHIUnorderedAccessViewDesc m_Desc {};
         vk::ImageView m_ImageView = VK_NULL_HANDLE;
         uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 
-    class RHIConstantBufferViewVK : public RHIDescriptor
+    class FVulkanConstantBufferView : public FRHIDescriptor
     {
     public:
-        RHIConstantBufferViewVK(RHIDeviceVK* device, RHIBuffer* buffer, const RHIConstantBufferViewDesc& desc, const eastl::string& name);
-        ~RHIConstantBufferViewVK();
+        FVulkanConstantBufferView(FVulkanDevice* device, FRHIBuffer* buffer, const FRHIConstantBufferViewDesc& desc, const eastl::string& name);
+        ~FVulkanConstantBufferView();
 
         bool Create();
 
-        const RHIConstantBufferViewDesc& GetDesc() const { return m_Desc; }
+        const FRHIConstantBufferViewDesc& GetDesc() const { return m_Desc; }
         virtual void* GetNativeHandle() const override { return m_Buffer->GetNativeHandle(); }
         virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
 
     private:
-        RHIBuffer* m_Buffer = nullptr;
-        RHIConstantBufferViewDesc m_Desc {};
+        FRHIBuffer* m_Buffer = nullptr;
+        FRHIConstantBufferViewDesc m_Desc {};
         uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };
 
-    class RHISamplerVK : public RHIDescriptor
+    class FVulkanSampler : public FRHIDescriptor
     {
     public:
-        RHISamplerVK(RHIDeviceVK* device, const RHISamplerDesc& desc, const eastl::string& name);
-        ~RHISamplerVK();
+        FVulkanSampler(FVulkanDevice* device, const FRHISamplerDesc& desc, const eastl::string& name);
+        ~FVulkanSampler();
 
         bool Create();
 
-        const RHISamplerDesc& GetDesc() const { return m_Desc; }
+        const FRHISamplerDesc& GetDesc() const { return m_Desc; }
         virtual void* GetNativeHandle() const override { return m_Sampler; }
         virtual uint32_t GetHeapIndex() const override { return m_HeapIndex; }
     
     private:
-        RHISamplerDesc m_Desc {};
+        FRHISamplerDesc m_Desc {};
         vk::Sampler m_Sampler = VK_NULL_HANDLE;
         uint32_t m_HeapIndex = RHI_INVALID_RESOURCE;
     };

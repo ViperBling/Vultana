@@ -5,7 +5,7 @@
 
 namespace RHI
 {
-    RHIGraphicsPipelineStateVK::RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
+    FVulkanGraphicsPipelineState::FVulkanGraphicsPipelineState(FVulkanDevice *device, const FRHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
@@ -13,14 +13,14 @@ namespace RHI
         m_Type = ERHIPipelineType::Graphics;
     }
 
-    RHIGraphicsPipelineStateVK::~RHIGraphicsPipelineStateVK()
+    FVulkanGraphicsPipelineState::~FVulkanGraphicsPipelineState()
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_Pipeline);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_Pipeline);
     }
 
-    bool RHIGraphicsPipelineStateVK::Create()
+    bool FVulkanGraphicsPipelineState::Create()
     {
-        auto device = static_cast<RHIDeviceVK*>(m_pDevice);
+        auto device = static_cast<FVulkanDevice*>(m_pDevice);
         device->Delete(m_Pipeline);
 
         vk::PipelineShaderStageCreateInfo shaderStages[2];
@@ -91,7 +91,7 @@ namespace RHI
         return true;
     }
 
-    RHIMeshShadingPipelineStateVK::RHIMeshShadingPipelineStateVK(RHIDeviceVK *device, const RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
+    FVulkanMeshShadingPipelineState::FVulkanMeshShadingPipelineState(FVulkanDevice *device, const FRHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
@@ -99,14 +99,14 @@ namespace RHI
         m_Type = ERHIPipelineType::MeshShading;
     }
     
-    RHIMeshShadingPipelineStateVK::~RHIMeshShadingPipelineStateVK()
+    FVulkanMeshShadingPipelineState::~FVulkanMeshShadingPipelineState()
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_Pipeline);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_Pipeline);
     }
 
-    bool RHIMeshShadingPipelineStateVK::Create()
+    bool FVulkanMeshShadingPipelineState::Create()
     {
-        auto device = static_cast<RHIDeviceVK*>(m_pDevice);
+        auto device = static_cast<FVulkanDevice*>(m_pDevice);
         device->Delete(m_Pipeline);
 
         uint32_t shaderStageCount = 1;
@@ -181,7 +181,7 @@ namespace RHI
         return true;
     }
 
-    RHIComputePipelineStateVK::RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const eastl::string &name)
+    FVulkanComputePipelineState::FVulkanComputePipelineState(FVulkanDevice *device, const FRHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
@@ -189,14 +189,14 @@ namespace RHI
         m_Type = ERHIPipelineType::Compute;
     }
 
-    RHIComputePipelineStateVK::~RHIComputePipelineStateVK()
+    FVulkanComputePipelineState::~FVulkanComputePipelineState()
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_Pipeline);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_Pipeline);
     }
 
-    bool RHIComputePipelineStateVK::Create()
+    bool FVulkanComputePipelineState::Create()
     {
-        auto device = static_cast<RHIDeviceVK*>(m_pDevice);
+        auto device = static_cast<FVulkanDevice*>(m_pDevice);
         device->Delete(m_Pipeline);
 
         vk::ComputePipelineCreateInfo pipelineCI {};

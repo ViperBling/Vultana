@@ -11,38 +11,38 @@
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 }
 
 namespace RG
 {
-    class RenderGraphResourceNode;
+    class FRenderGraphResourceNode;
 
-    class RenderGraph
+    class FRenderGraph
     {
-        friend class RGBuilder;
+        friend class FRGBuilder;
     public:
-        RenderGraph(Renderer::RendererBase* pRenderer);
+        FRenderGraph(Renderer::FRendererBase* pRenderer);
 
         template<typename Data, typename Setup, typename Execute>
-        RenderGraphPass<Data>& AddPass(const eastl::string& name, RenderPassType type, const Setup& setup, const Execute& execute);
+        TRenderGraphPass<Data>& AddPass(const eastl::string& name, RenderPassType type, const Setup& setup, const Execute& execute);
 
         void BeginEvent(const eastl::string& name) { m_EventNames.push_back(name); }
         void EndEvent();
 
         void Clear();
         void Compile();
-        void Execute(Renderer::RendererBase* pRenderer, RHI::RHICommandList* pGraphicsCmdList, RHI::RHICommandList* pComputeCmdList);
+        void Execute(Renderer::FRendererBase* pRenderer, RHI::FRHICommandList* pGraphicsCmdList, RHI::FRHICommandList* pComputeCmdList);
 
-        void Present(const RGHandle& handle, RHI::ERHIAccessFlags finalState);
+        void Present(const FRGHandle& handle, RHI::ERHIAccessFlags finalState);
 
-        RGHandle Import(RHI::RHITexture* texture, RHI::ERHIAccessFlags state);
-        RGHandle Import(RHI::RHIBuffer* buffer, RHI::ERHIAccessFlags state);
+        FRGHandle Import(RHI::FRHITexture* texture, RHI::ERHIAccessFlags state);
+        FRGHandle Import(RHI::FRHIBuffer* buffer, RHI::ERHIAccessFlags state);
 
-        RGTexture* GetTexture(const RGHandle& handle);
-        RGBuffer* GetBuffer(const RGHandle& handle);
+        FRGTexture* GetTexture(const FRGHandle& handle);
+        FRGBuffer* GetBuffer(const FRGHandle& handle);
 
-        const DirectedAcyclicGraph& GetDAG() const { return m_Graph; }
+        const FDirectedAcyclicGraph& GetDAG() const { return m_Graph; }
         eastl::string Export();
     
     private:
@@ -53,65 +53,65 @@ namespace RG
         T* AllocatePOD(ArgsT&&... args);
 
         template<typename Resource>
-        RGHandle Create(const typename Resource::Desc& desc, const eastl::string& name);
+        FRGHandle Create(const typename Resource::Desc& desc, const eastl::string& name);
 
-        RGHandle Read(RenderGraphPassBase* pass, const RGHandle& input, RHI::ERHIAccessFlags usage, uint32_t subresource);
-        RGHandle Write(RenderGraphPassBase* pass, const RGHandle& input, RHI::ERHIAccessFlags usage, uint32_t subresource);
+        FRGHandle Read(FRenderGraphPassBase* pass, const FRGHandle& input, RHI::ERHIAccessFlags usage, uint32_t subresource);
+        FRGHandle Write(FRenderGraphPassBase* pass, const FRGHandle& input, RHI::ERHIAccessFlags usage, uint32_t subresource);
 
-        RGHandle WriteColor(RenderGraphPassBase* pass, uint32_t colorIndex, const RGHandle& input, uint32_t subresource, RHI::ERHIRenderPassLoadOp loadOp, const float4& clearColor);
-        RGHandle WriteDepth(RenderGraphPassBase* pass, const RGHandle& input, uint32_t subresource, RHI::ERHIRenderPassLoadOp depthLoadOp, RHI::ERHIRenderPassLoadOp stencilLoadOp, float clearDepth, uint32_t clearStencil);
-        RGHandle ReadDepth(RenderGraphPassBase* pass, const RGHandle& input, uint32_t subresource);
+        FRGHandle WriteColor(FRenderGraphPassBase* pass, uint32_t colorIndex, const FRGHandle& input, uint32_t subresource, RHI::ERHIRenderPassLoadOp loadOp, const float4& clearColor);
+        FRGHandle WriteDepth(FRenderGraphPassBase* pass, const FRGHandle& input, uint32_t subresource, RHI::ERHIRenderPassLoadOp depthLoadOp, RHI::ERHIRenderPassLoadOp stencilLoadOp, float clearDepth, uint32_t clearStencil);
+        FRGHandle ReadDepth(FRenderGraphPassBase* pass, const FRGHandle& input, uint32_t subresource);
 
     private:
-        LinearAllocator m_Allocator {512 * 1024};
-        RenderGraphResourceAllocator m_ResourceAllocator;
-        DirectedAcyclicGraph m_Graph;
+        FLinearAllocator m_Allocator {512 * 1024};
+        FRenderGraphResourceAllocator m_ResourceAllocator;
+        FDirectedAcyclicGraph m_Graph;
 
         eastl::vector<eastl::string> m_EventNames;
 
-        eastl::unique_ptr<RHI::RHIFence> m_pGraphicsQueueFence;
+        eastl::unique_ptr<RHI::FRHIFence> m_pGraphicsQueueFence;
         uint64_t m_GraphicsQueueFenceValue = 0;
-        eastl::unique_ptr<RHI::RHIFence> m_pComputeQueueFence;
+        eastl::unique_ptr<RHI::FRHIFence> m_pComputeQueueFence;
         uint64_t m_ComputeQueueFenceValue = 0;
 
-        eastl::vector<RenderGraphPassBase*> m_Passes;
-        eastl::vector<RenderGraphResource*> m_Resources;
-        eastl::vector<RenderGraphResourceNode*> m_ResourceNodes;
+        eastl::vector<FRenderGraphPassBase*> m_Passes;
+        eastl::vector<FRenderGraphResource*> m_Resources;
+        eastl::vector<FRenderGraphResourceNode*> m_ResourceNodes;
 
-        struct ObjFinalizer
+        struct FObjFinalizer
         {
             void* Object;
             void(*Finalizer)(void*);
         };
-        eastl::vector<ObjFinalizer> m_ObjFinalizers;
+        eastl::vector<FObjFinalizer> m_ObjFinalizers;
 
-        struct PresentTarget
+        struct FPresentTarget
         {
-            RenderGraphResource* Resource;
+            FRenderGraphResource* Resource;
             RHI::ERHIAccessFlags State;
         };
-        eastl::vector<PresentTarget> m_OutputResources;
+        eastl::vector<FPresentTarget> m_OutputResources;
     };
 
-    class RenderGraphEvent
+    class FRenderGraphEvent
     {
     public:
-        RenderGraphEvent(RenderGraph* pGraph, const eastl::string& name)
+        FRenderGraphEvent(FRenderGraph* pGraph, const eastl::string& name)
             : m_pGraph(pGraph)
         {
             m_pGraph->BeginEvent(name);
         }
 
-        ~RenderGraphEvent()
+        ~FRenderGraphEvent()
         {
             m_pGraph->EndEvent();
         }
 
     private:
-        RenderGraph* m_pGraph = nullptr;
+        FRenderGraph* m_pGraph = nullptr;
     };
 }
 
-#define RENDER_GRAPH_EVENT(graph, name) RG::RenderGraphEvent __graph_event__(graph, name)
+#define RENDER_GRAPH_EVENT(graph, name) RG::FRenderGraphEvent __graph_event__(graph, name)
 
 #include "RenderGraph.inl"

@@ -6,21 +6,21 @@
 
 namespace RenderResources
 {
-    class RawBuffer
+    class FRawBuffer
     {
     public:
-        RawBuffer(const eastl::string& name);
+        FRawBuffer(const eastl::string& name);
 
         bool Create(uint32_t size, RHI::ERHIMemoryType memoryType, bool isUAV);
 
-        RHI::RHIBuffer* GetBuffer() const { return m_pBuffer.get(); }
-        RHI::RHIDescriptor* GetSRV() const { return m_pSRV.get(); }
-        RHI::RHIDescriptor* GetUAV() const { return m_pUAV.get(); }
+        RHI::FRHIBuffer* GetBuffer() const { return m_pBuffer.get(); }
+        RHI::FRHIDescriptor* GetSRV() const { return m_pSRV.get(); }
+        RHI::FRHIDescriptor* GetUAV() const { return m_pUAV.get(); }
     
     protected:
         eastl::string m_Name;
-        eastl::unique_ptr<RHI::RHIBuffer> m_pBuffer;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pSRV;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pUAV;
+        eastl::unique_ptr<RHI::FRHIBuffer> m_pBuffer;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pSRV;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pUAV;
     };
 }

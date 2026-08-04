@@ -4,7 +4,7 @@
 
 namespace RHI
 {
-    class RHIDescriptor : public RHIResource
+    class FRHIDescriptor : public FRHIResource
     {
     public:
         virtual uint32_t GetHeapIndex() const = 0;

@@ -27,20 +27,20 @@ namespace Scene
         return float2(C1, C2);
     }
 
-    Camera::Camera()
+    FCamera::FCamera()
     {
         m_Position = { 0.0f, 0.0f, 0.0f };
         m_Rotation = { 0.0f, 0.0f, 0.0f };
 
-        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&Camera::OnWindowResize, this);
+        Core::FVultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&FCamera::OnWindowResize, this);
     }
 
-    Camera::~Camera()
+    FCamera::~FCamera()
     {
-        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
+        Core::FVultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
     }
 
-    void Camera::SetPerspective(float aspectRatio, float yFov, float zNear)
+    void FCamera::SetPerspective(float aspectRatio, float yFov, float zNear)
     {
         m_AspectRatio = aspectRatio;
         m_Fov = yFov;
@@ -56,23 +56,23 @@ namespace Scene
         m_Projection[3][2] = m_Near;
     }
 
-    void Camera::SetPosition(const float3 &position)
+    void FCamera::SetPosition(const float3 &position)
     {
         m_Position = position;
     }
 
-    void Camera::SetRotation(const float3 &rotation)
+    void FCamera::SetRotation(const float3 &rotation)
     {
         m_Rotation = rotation;
     }
 
-    void Camera::SetFOV(float fov)
+    void FCamera::SetFOV(float fov)
     {
         m_Fov = fov;
         SetPerspective(m_AspectRatio, m_Fov, m_Near);
     }
 
-    void Camera::Tick(float deltaTime)
+    void FCamera::Tick(float deltaTime)
     {
         GUICommand("Settings", "Camera", [&]() { OnCameraSettingGUI(); });
 
@@ -94,7 +94,7 @@ namespace Scene
         }
     }
 
-    void Camera::SetupCameraCB(FCameraConstants &cameraCB)
+    void FCamera::SetupCameraCB(FCameraConstants &cameraCB)
     {
         cameraCB.CameraPosition = GetPosition();
         cameraCB.NearPlane = m_Near;
@@ -109,11 +109,11 @@ namespace Scene
         cameraCB.MtxPrevViewProjectionInverse = m_PrevViewProjectionInverse;
     }
 
-    void Camera::DrawViewFrustum(RHI::RHICommandList *pCmdList)
+    void FCamera::DrawViewFrustum(RHI::FRHICommandList *pCmdList)
     {
     }
 
-    void Camera::UpdateFrustumPlanes(const float4x4 &matrix)
+    void FCamera::UpdateFrustumPlanes(const float4x4 &matrix)
     {
         // https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
 
@@ -160,20 +160,20 @@ namespace Scene
         m_FrustumPlanes[5] = NormalizePlane(m_FrustumPlanes[5]);
     }
 
-    void Camera::UpdateMatrix()
+    void FCamera::UpdateMatrix()
     {
         m_World = mul(translation_matrix(m_Position), rotation_matrix(RotationQuat(m_Rotation)));
         m_View = Inverse(m_World);
         m_ViewProjMat = mul(m_Projection, m_View);
     }
 
-    void Camera::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
+    void FCamera::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
     {
         m_AspectRatio = static_cast<float>(width) / static_cast<float>(height);
         SetPerspective(m_AspectRatio, m_Fov, m_Near);
     }
 
-    void Camera::OnCameraSettingGUI()
+    void FCamera::OnCameraSettingGUI()
     {
         bool perspectiveUpdated = false;
         perspectiveUpdated |= ImGui::SliderFloat("FOV", &m_Fov, 5.0f, 135.0f, "%.0f");
@@ -190,7 +190,7 @@ namespace Scene
         ImGui::SliderFloat("Rotation Smoothness", &m_RotateSmoothness, 0.01f, 1.0f, "%.2f");
     }
 
-    void Camera::UpdateCameraPosition(float deltaTime)
+    void FCamera::UpdateCameraPosition(float deltaTime)
     {
         bool moveLeft = false;
         bool moveRight = false;
@@ -251,7 +251,7 @@ namespace Scene
         m_bMoved |= length(moveVelocity * deltaTime) > 0.0001f;
     }
 
-    void Camera::UpdateCameraRotation(float deltaTime)
+    void FCamera::UpdateCameraRotation(float deltaTime)
     {
         ImGuiIO& io = ImGui::GetIO();
 

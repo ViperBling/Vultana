@@ -11,7 +11,7 @@ cbuffer ConstantBuffer : register(b1)
     float4x4 ProjectionMatrix;
 };
 
-struct Vertex
+struct FVertex
 {
     float2 Positon;
     float2 TexCoord;
@@ -32,19 +32,19 @@ float4 UnpackColor(uint color)
         ((color >> IM_COL32_A_SHIFT) & 0xFF) * s);
 }
 
-struct VertexOutput
+struct FVertexOutput
 {
     float4 positionCS : SV_POSITION;
     float2 texCoord : TEXCOORD0;
     float4 vertexColor : COLOR;
 };
 
-VertexOutput VSMain(uint vertexID : SV_VertexID)
+FVertexOutput VSMain(uint vertexID : SV_VertexID)
 {
-    StructuredBuffer<Vertex> vertexBuffer = ResourceDescriptorHeap[cVertexBufferID];
-    Vertex vertex = vertexBuffer[vertexID + cVertexOffset];
+    StructuredBuffer<FVertex> vertexBuffer = ResourceDescriptorHeap[cVertexBufferID];
+    FVertex vertex = vertexBuffer[vertexID + cVertexOffset];
 
-    VertexOutput vsOut = (VertexOutput)0;
+    FVertexOutput vsOut = (FVertexOutput)0;
     vsOut.positionCS = mul(ProjectionMatrix, float4(vertex.Positon.xy, 0.0f, 1.0f));
     vsOut.vertexColor = UnpackColor(vertex.Color);
 
@@ -55,7 +55,7 @@ VertexOutput VSMain(uint vertexID : SV_VertexID)
     return vsOut;
 }
 
-float4 PSMain(VertexOutput fsIn) : SV_TARGET
+float4 PSMain(FVertexOutput fsIn) : SV_TARGET
 {
     Texture2D uiTexture = ResourceDescriptorHeap[cTextureID];
     SamplerState uiSampler = SamplerDescriptorHeap[cSamplerID];

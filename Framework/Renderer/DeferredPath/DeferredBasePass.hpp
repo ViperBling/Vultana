@@ -5,74 +5,74 @@
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 
-    class DeferredBasePass
+    class FDeferredBasePass
     {
     public:
-        DeferredBasePass(RendererBase* pRenderer);
+        FDeferredBasePass(FRendererBase* pRenderer);
         
-        RenderBatch& AddBatch();
+        FRenderBatch& AddBatch();
 
-        void Render1stPhase(RG::RenderGraph* pRenderGraph);
-        void Render2ndPhase(RG::RenderGraph* pRenderGraph);
+        void Render1stPhase(RG::FRenderGraph* pRenderGraph);
+        void Render2ndPhase(RG::FRenderGraph* pRenderGraph);
 
-        RG::RGHandle GetDiffuseRT() const { return m_DiffuseRT; }
-        RG::RGHandle GetNormalRT() const { return m_NormalRT; }
-        RG::RGHandle GetVelocityRT() const { return m_VelocityRT; }
-        RG::RGHandle GetDepthRT() const { return m_DepthRT; }
+        RG::FRGHandle GetDiffuseRT() const { return m_DiffuseRT; }
+        RG::FRGHandle GetNormalRT() const { return m_NormalRT; }
+        RG::FRGHandle GetVelocityRT() const { return m_VelocityRT; }
+        RG::FRGHandle GetDepthRT() const { return m_DepthRT; }
 
-        RG::RGHandle GetSecondPhaseMeshletListBuffer() const { return m_2ndPhaseMeshletListBuffer; }
-        RG::RGHandle GetSecondPhaseMeshletListCounterBuffer() const { return m_2ndPhaseMeshletListCounterBuffer; }
+        RG::FRGHandle GetSecondPhaseMeshletListBuffer() const { return m_2ndPhaseMeshletListBuffer; }
+        RG::FRGHandle GetSecondPhaseMeshletListCounterBuffer() const { return m_2ndPhaseMeshletListCounterBuffer; }
 
     private:
         void MergeBatches();
 
-        void ResetCounter(RHI::RHICommandList *pCmdList, RG::RGBuffer *firstPhaseMeshletCounter, RG::RGBuffer *secondPhaseObjectCounter, RG::RGBuffer *secondPhaseMeshletCounter);
-        void InstanceCulling1stPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *cullingResultUAV, RG::RGBuffer *secondPhaseObjectListUAV, RG::RGBuffer *secondPhaseObjectListCounterUAV);
-        void InstanceCulling2ndPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *cullingResultUAV, RG::RGBuffer *objectListBufferSRV, RG::RGBuffer *objectListCounterBufferSRV);
+        void ResetCounter(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *firstPhaseMeshletCounter, RG::FRGBuffer *secondPhaseObjectCounter, RG::FRGBuffer *secondPhaseMeshletCounter);
+        void InstanceCulling1stPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *cullingResultUAV, RG::FRGBuffer *secondPhaseObjectListUAV, RG::FRGBuffer *secondPhaseObjectListCounterUAV);
+        void InstanceCulling2ndPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pIndirectCommandBuffer, RG::FRGBuffer *cullingResultUAV, RG::FRGBuffer *objectListBufferSRV, RG::FRGBuffer *objectListCounterBufferSRV);
 
-        void FlushBatches1stPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *pMeshletListSRV, RG::RGBuffer *pMeshletListCounterSRV);
-        void FlushBatches2ndPhase(RHI::RHICommandList *pCmdList, RG::RGBuffer *pIndirectCommandBuffer, RG::RGBuffer *pMeshletListSRV, RG::RGBuffer *pMeshletListCounterSRV);
+        void FlushBatches1stPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pIndirectCommandBuffer, RG::FRGBuffer *pMeshletListSRV, RG::FRGBuffer *pMeshletListCounterSRV);
+        void FlushBatches2ndPhase(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pIndirectCommandBuffer, RG::FRGBuffer *pMeshletListSRV, RG::FRGBuffer *pMeshletListCounterSRV);
 
-        void BuildMeshletList(RHI::RHICommandList *pCmdList, RG::RGBuffer *cullingResultSRV, RG::RGBuffer *meshletListBufferUAV, RG::RGBuffer *meshletListCounterBufferUAV);
-        void BuildIndirectCommand(RHI::RHICommandList *pCmdList, RG::RGBuffer *pCounterBufferSRV, RG::RGBuffer *pCommandBufferUAV);
+        void BuildMeshletList(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *cullingResultSRV, RG::FRGBuffer *meshletListBufferUAV, RG::FRGBuffer *meshletListCounterBufferUAV);
+        void BuildIndirectCommand(RHI::FRHICommandList *pCmdList, RG::FRGBuffer *pCounterBufferSRV, RG::FRGBuffer *pCommandBufferUAV);
 
     private:
-        RendererBase* m_pRenderer;
+        FRendererBase* m_pRenderer;
 
-        RHI::RHIPipelineState* m_InstanceCulling1stPhasePSO = nullptr;
-        RHI::RHIPipelineState* m_InstanceCulling2ndPhasePSO = nullptr;
+        RHI::FRHIPipelineState* m_InstanceCulling1stPhasePSO = nullptr;
+        RHI::FRHIPipelineState* m_InstanceCulling2ndPhasePSO = nullptr;
 
-        RHI::RHIPipelineState* m_BuildMeshletListPSO = nullptr;
-        RHI::RHIPipelineState* m_BuildInstanceCullingCmdPSO = nullptr;
-        RHI::RHIPipelineState* m_BuildIndirectCmdPSO = nullptr;
+        RHI::FRHIPipelineState* m_BuildMeshletListPSO = nullptr;
+        RHI::FRHIPipelineState* m_BuildInstanceCullingCmdPSO = nullptr;
+        RHI::FRHIPipelineState* m_BuildIndirectCmdPSO = nullptr;
 
-        eastl::vector<RenderBatch> m_Instance;
+        eastl::vector<FRenderBatch> m_Instance;
 
-        struct IndirectBatch
+        struct FIndirectBatch
         {
-            RHI::RHIPipelineState* PSO;
+            RHI::FRHIPipelineState* PSO;
             uint32_t OriginMeshletListAddress;
             uint32_t OriginMeshletCount;
             uint32_t MeshletListBufferOffset;
         };
-        eastl::vector<IndirectBatch> m_IndirectBatches;
-        eastl::vector<RenderBatch> m_NonGPUDrivenBatches;
+        eastl::vector<FIndirectBatch> m_IndirectBatches;
+        eastl::vector<FRenderBatch> m_NonGPUDrivenBatches;
 
         uint32_t m_TotalInstanceCount = 0;
         uint32_t m_TotalMeshletCount = 0;
         uint32_t m_InstanceIndexAddress = 0;
 
-        RG::RGHandle m_DiffuseRT;
-        RG::RGHandle m_NormalRT;
-        RG::RGHandle m_VelocityRT;
-        RG::RGHandle m_DepthRT;
+        RG::FRGHandle m_DiffuseRT;
+        RG::FRGHandle m_NormalRT;
+        RG::FRGHandle m_VelocityRT;
+        RG::FRGHandle m_DepthRT;
         
-        RG::RGHandle m_2ndPhaseObjectListBuffer;
-        RG::RGHandle m_2ndPhaseObjectListCounterBuffer;
+        RG::FRGHandle m_2ndPhaseObjectListBuffer;
+        RG::FRGHandle m_2ndPhaseObjectListCounterBuffer;
 
-        RG::RGHandle m_2ndPhaseMeshletListBuffer;
-        RG::RGHandle m_2ndPhaseMeshletListCounterBuffer;
+        RG::FRGHandle m_2ndPhaseMeshletListBuffer;
+        RG::FRGHandle m_2ndPhaseMeshletListCounterBuffer;
     };
 }

@@ -27,12 +27,12 @@ namespace RHI
         return VK_FALSE;
     }
 
-    RHIDeviceVK::RHIDeviceVK(const RHIDeviceDesc &desc)
+    FVulkanDevice::FVulkanDevice(const FRHIDeviceDesc &desc)
     {
         m_Desc = desc;
     }
 
-    RHIDeviceVK::~RHIDeviceVK()
+    FVulkanDevice::~FVulkanDevice()
     {
         m_Device.waitIdle();
         
@@ -57,21 +57,21 @@ namespace RHI
         m_Instance.destroy();
     }
 
-    bool RHIDeviceVK::Initialize()
+    bool FVulkanDevice::Initialize()
     {
         CreateInstance();
         CreateDevice();
         CreateVmaAllocator();
         CreatePipelineLayout();
 
-        m_DeferredDeletionQueue = new RHIDeletionQueueVK(this);
+        m_DeferredDeletionQueue = new FVulkanDeletionQueue(this);
 
         for (size_t i = 0; i < RHI_MAX_INFLIGHT_FRAMES; i++)
         {
             m_TransitionCopyCmdList[i] = CreateCommandList(ERHICommandQueueType::Copy, "Transition CmdList(Copy)");
             m_TransitionGraphicsCmdList[i] = CreateCommandList(ERHICommandQueueType::Graphics, "Transition CmdList(Graphics)");
 
-            m_ConstantBufferAllocators[i] = new RHIConstantBufferAllocatorVK(this, 8 * 1024 * 1024);
+            m_ConstantBufferAllocators[i] = new FVulkanConstantBufferAllocator(this, 8 * 1024 * 1024);
         }
 
         vk::PhysicalDeviceProperties2 props2 {};
@@ -88,13 +88,13 @@ namespace RHI
 
         size_t samplerDescSize = m_DescBufferProps.samplerDescriptorSize;
 
-        m_ResourceDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)resourceDescSize, RHI_MAX_RESOURCE_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
-        m_SamplerDesAllocator = new RHIDescriptorAllocatorVK(this, (uint32_t)samplerDescSize, RHI_MAX_SAMPLER_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
+        m_ResourceDesAllocator = new FVulkanDescriptorAllocator(this, (uint32_t)resourceDescSize, RHI_MAX_RESOURCE_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eResourceDescriptorBufferEXT);
+        m_SamplerDesAllocator = new FVulkanDescriptorAllocator(this, (uint32_t)samplerDescSize, RHI_MAX_SAMPLER_DESCRIPTOR_COUNT, vk::BufferUsageFlagBits::eSamplerDescriptorBufferEXT);
 
         return true;
     }
 
-    void RHIDeviceVK::BeginFrame()
+    void FVulkanDevice::BeginFrame()
     {
         m_DeferredDeletionQueue->Flush();
 
@@ -104,16 +104,16 @@ namespace RHI
         m_ConstantBufferAllocators[index]->Reset();
     }
 
-    void RHIDeviceVK::EndFrame()
+    void FVulkanDevice::EndFrame()
     {
         ++m_FrameID;
 
         vmaSetCurrentFrameIndex(m_Allocator, (uint32_t)m_FrameID);
     }
 
-    RHISwapchain *RHIDeviceVK::CreateSwapchain(const RHISwapchainDesc &desc, const eastl::string &name)
+    FRHISwapchain *FVulkanDevice::CreateSwapchain(const FRHISwapchainDesc &desc, const eastl::string &name)
     {
-        RHISwapchainVK *swapchain = new RHISwapchainVK(this, desc, name);
+        FVulkanSwapchain *swapchain = new FVulkanSwapchain(this, desc, name);
         if (!swapchain->Create())
         {
             delete swapchain;
@@ -122,9 +122,9 @@ namespace RHI
         return swapchain;
     }
 
-    RHICommandList *RHIDeviceVK::CreateCommandList(ERHICommandQueueType queueType, const eastl::string &name)
+    FRHICommandList *FVulkanDevice::CreateCommandList(ERHICommandQueueType queueType, const eastl::string &name)
     {
-        RHICommandListVK* cmdList = new RHICommandListVK(this, queueType, name);
+        FVulkanCommandList* cmdList = new FVulkanCommandList(this, queueType, name);
         if (!cmdList->Create())
         {
             delete cmdList;
@@ -133,9 +133,9 @@ namespace RHI
         return cmdList;
     }
 
-    RHIFence *RHIDeviceVK::CreateFence(const eastl::string &name)
+    FRHIFence *FVulkanDevice::CreateFence(const eastl::string &name)
     {
-        RHIFenceVK* fence = new RHIFenceVK(this, name);
+        FVulkanFence* fence = new FVulkanFence(this, name);
         if (!fence->Create())
         {
             delete fence;
@@ -144,9 +144,9 @@ namespace RHI
         return fence;
     }
 
-    RHIHeap *RHIDeviceVK::CreateHeap(const RHIHeapDesc &desc, const eastl::string &name)
+    FRHIHeap *FVulkanDevice::CreateHeap(const FRHIHeapDesc &desc, const eastl::string &name)
     {
-        RHIHeapVK* heap = new RHIHeapVK(this, desc, name);
+        FVulkanHeap* heap = new FVulkanHeap(this, desc, name);
         if (!heap->Create())
         {
             delete heap;
@@ -155,9 +155,9 @@ namespace RHI
         return heap;
     }
 
-    RHIBuffer *RHIDeviceVK::CreateBuffer(const RHIBufferDesc &desc, const eastl::string &name)
+    FRHIBuffer *FVulkanDevice::CreateBuffer(const FRHIBufferDesc &desc, const eastl::string &name)
     {
-        RHIBufferVK* buffer = new RHIBufferVK(this, desc, name);
+        FVulkanBuffer* buffer = new FVulkanBuffer(this, desc, name);
         if (!buffer->Create())
         {
             delete buffer;
@@ -166,9 +166,9 @@ namespace RHI
         return buffer;
     }
 
-    RHITexture *RHIDeviceVK::CreateTexture(const RHITextureDesc &desc, const eastl::string &name)
+    FRHITexture *FVulkanDevice::CreateTexture(const FRHITextureDesc &desc, const eastl::string &name)
     {
-        RHITextureVK* texture = new RHITextureVK(this, desc, name);
+        FVulkanTexture* texture = new FVulkanTexture(this, desc, name);
         if (!texture->Create())
         {
             delete texture;
@@ -177,9 +177,9 @@ namespace RHI
         return texture;
     }
 
-    RHIShader *RHIDeviceVK::CreateShader(const RHIShaderDesc &desc, eastl::span<uint8_t> data, const eastl::string &name)
+    FRHIShader *FVulkanDevice::CreateShader(const FRHIShaderDesc &desc, eastl::span<uint8_t> data, const eastl::string &name)
     {
-        RHIShaderVK* shader = new RHIShaderVK(this, desc, name);
+        FVulkanShader* shader = new FVulkanShader(this, desc, name);
         if (!shader->Create(data))
         {
             delete shader;
@@ -188,9 +188,9 @@ namespace RHI
         return shader;
     }
 
-    RHIPipelineState *RHIDeviceVK::CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
+    FRHIPipelineState *FVulkanDevice::CreateGraphicsPipelineState(const FRHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
-        RHIGraphicsPipelineStateVK* pipeline = new RHIGraphicsPipelineStateVK(this, desc, name);
+        FVulkanGraphicsPipelineState* pipeline = new FVulkanGraphicsPipelineState(this, desc, name);
         if (!pipeline->Create())
         {
             delete pipeline;
@@ -199,9 +199,9 @@ namespace RHI
         return pipeline;
     }
 
-    RHIPipelineState *RHIDeviceVK::CreateMeshShadingPipelineState(const RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
+    FRHIPipelineState *FVulkanDevice::CreateMeshShadingPipelineState(const FRHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
     {
-        RHIMeshShadingPipelineStateVK* pipeline = new RHIMeshShadingPipelineStateVK(this, desc, name);
+        FVulkanMeshShadingPipelineState* pipeline = new FVulkanMeshShadingPipelineState(this, desc, name);
         if (!pipeline->Create())
         {
             delete pipeline;
@@ -210,9 +210,9 @@ namespace RHI
         return pipeline;
     }
 
-    RHIPipelineState *RHIDeviceVK::CreateComputePipelineState(const RHIComputePipelineStateDesc &desc, const eastl::string &name)
+    FRHIPipelineState *FVulkanDevice::CreateComputePipelineState(const FRHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
-        RHIComputePipelineStateVK* pipeline = new RHIComputePipelineStateVK(this, desc, name);
+        FVulkanComputePipelineState* pipeline = new FVulkanComputePipelineState(this, desc, name);
         if (!pipeline->Create())
         {
             delete pipeline;
@@ -221,9 +221,9 @@ namespace RHI
         return pipeline;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateShaderResourceView(RHIResource *resource, const RHIShaderResourceViewDesc &desc, const eastl::string &name)
+    FRHIDescriptor *FVulkanDevice::CreateShaderResourceView(FRHIResource *resource, const FRHIShaderResourceViewDesc &desc, const eastl::string &name)
     {
-        RHIShaderResourceViewVK* srv = new RHIShaderResourceViewVK(this, resource, desc, name);
+        FVulkanShaderResourceView* srv = new FVulkanShaderResourceView(this, resource, desc, name);
         if (!srv->Create())
         {
             delete srv;
@@ -232,9 +232,9 @@ namespace RHI
         return srv;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateUnorderedAccessView(RHIResource *resource, const RHIUnorderedAccessViewDesc &desc, const eastl::string &name)
+    FRHIDescriptor *FVulkanDevice::CreateUnorderedAccessView(FRHIResource *resource, const FRHIUnorderedAccessViewDesc &desc, const eastl::string &name)
     {
-        RHIUnorderedAccessViewVK* uav = new RHIUnorderedAccessViewVK(this, resource, desc, name);
+        FVulkanUnorderedAccessView* uav = new FVulkanUnorderedAccessView(this, resource, desc, name);
         if (!uav->Create())
         {
             delete uav;
@@ -243,9 +243,9 @@ namespace RHI
         return uav;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateConstantBufferView(RHIBuffer *resource, const RHIConstantBufferViewDesc &desc, const eastl::string &name)
+    FRHIDescriptor *FVulkanDevice::CreateConstantBufferView(FRHIBuffer *resource, const FRHIConstantBufferViewDesc &desc, const eastl::string &name)
     {
-        RHIConstantBufferViewVK* cbv = new RHIConstantBufferViewVK(this, resource, desc, name);
+        FVulkanConstantBufferView* cbv = new FVulkanConstantBufferView(this, resource, desc, name);
         if (!cbv->Create())
         {
             delete cbv;
@@ -254,9 +254,9 @@ namespace RHI
         return cbv;
     }
 
-    RHIDescriptor *RHIDeviceVK::CreateSampler(const RHISamplerDesc &desc, const eastl::string &name)
+    FRHIDescriptor *FVulkanDevice::CreateSampler(const FRHISamplerDesc &desc, const eastl::string &name)
     {
-        RHISamplerVK* sampler = new RHISamplerVK(this, desc, name);
+        FVulkanSampler* sampler = new FVulkanSampler(this, desc, name);
         if (!sampler->Create())
         {
             delete sampler;
@@ -265,12 +265,12 @@ namespace RHI
         return sampler;
     }
 
-    uint32_t RHIDeviceVK::GetAllocationSize(const RHIBufferDesc &desc)
+    uint32_t FVulkanDevice::GetAllocationSize(const FRHIBufferDesc &desc)
     {
         return 0;
     }
 
-    uint32_t RHIDeviceVK::GetAllocationSize(const RHITextureDesc &desc)
+    uint32_t FVulkanDevice::GetAllocationSize(const FRHITextureDesc &desc)
     {
         auto iter = m_TextureSizeMap.find(desc);
         if (iter != m_TextureSizeMap.end())
@@ -295,28 +295,28 @@ namespace RHI
         return (uint32_t)requires2.memoryRequirements.size;
     }
 
-    bool RHIDeviceVK::DumpMemoryStats(const eastl::string &file)
+    bool FVulkanDevice::DumpMemoryStats(const eastl::string &file)
     {
         return false;
     }
 
-    RHIConstantBufferAllocatorVK *RHIDeviceVK::GetConstantBufferAllocator() const
+    FVulkanConstantBufferAllocator *FVulkanDevice::GetConstantBufferAllocator() const
     {
         uint32_t index = m_FrameID % RHI_MAX_INFLIGHT_FRAMES;
         return m_ConstantBufferAllocators[index];
     }
 
-    uint32_t RHIDeviceVK::AllocateResourceDescriptor(void **desc)
+    uint32_t FVulkanDevice::AllocateResourceDescriptor(void **desc)
     {
         return m_ResourceDesAllocator->Allocate(desc);
     }
 
-    uint32_t RHIDeviceVK::AllocateSamplerDescriptor(void **desc)
+    uint32_t FVulkanDevice::AllocateSamplerDescriptor(void **desc)
     {
         return m_SamplerDesAllocator->Allocate(desc);
     }
 
-    void RHIDeviceVK::FreeResourceDescriptor(uint32_t index)
+    void FVulkanDevice::FreeResourceDescriptor(uint32_t index)
     {
         if (index != RHI_INVALID_RESOURCE)
         {
@@ -324,7 +324,7 @@ namespace RHI
         }
     }
 
-    void RHIDeviceVK::FreeSamplerDescriptor(uint32_t index)
+    void FVulkanDevice::FreeSamplerDescriptor(uint32_t index)
     {
         if (index != RHI_INVALID_RESOURCE)
         {
@@ -332,7 +332,7 @@ namespace RHI
         }
     }
 
-    vk::DeviceAddress RHIDeviceVK::AllocateConstantBuffer(const void *data, size_t dataSize)
+    vk::DeviceAddress FVulkanDevice::AllocateConstantBuffer(const void *data, size_t dataSize)
     {
         void* cpuAddress = nullptr;
         vk::DeviceAddress gpuAddress = 0;
@@ -343,7 +343,7 @@ namespace RHI
         return gpuAddress;
     }
 
-    vk::DeviceSize RHIDeviceVK::AllocateConstantBufferDescriptor(const uint32_t *cbv0, const vk::DescriptorAddressInfoEXT &cbv1, const vk::DescriptorAddressInfoEXT &cbv2)
+    vk::DeviceSize FVulkanDevice::AllocateConstantBufferDescriptor(const uint32_t *cbv0, const vk::DescriptorAddressInfoEXT &cbv1, const vk::DescriptorAddressInfoEXT &cbv2)
     {
         size_t descBufferSize = sizeof(uint32_t) * RHI_MAX_ROOT_CONSTANTS + m_DescBufferProps.robustUniformBufferDescriptorSize * 2;
         void* cpuAddress = nullptr;
@@ -371,11 +371,11 @@ namespace RHI
         return descBufferOffset;
     }
 
-    void RHIDeviceVK::EnqueueDefaultLayoutTransition(RHITexture *texture)
+    void FVulkanDevice::EnqueueDefaultLayoutTransition(FRHITexture *texture)
     {
-        const RHITextureDesc& desc = texture->GetDesc();
+        const FRHITextureDesc& desc = texture->GetDesc();
 
-        if (((RHITextureVK*)texture)->IsSwapchainTexture())
+        if (((FVulkanTexture*)texture)->IsSwapchainTexture())
         {
             m_PendingGraphicsTransitions.emplace_back(texture, RHIAccessPresent);
         }
@@ -397,10 +397,10 @@ namespace RHI
         }
     }
 
-    void RHIDeviceVK::CancelDefaultLayoutTransition(RHITexture *texture)
+    void FVulkanDevice::CancelDefaultLayoutTransition(FRHITexture *texture)
     {
         auto iter = eastl::find_if(m_PendingGraphicsTransitions.begin(), m_PendingGraphicsTransitions.end(),
-        [texture](const eastl::pair<RHITexture*, ERHIAccessFlags>& transition)
+        [texture](const eastl::pair<FRHITexture*, ERHIAccessFlags>& transition)
         {
             return transition.first == texture;
         });
@@ -410,7 +410,7 @@ namespace RHI
         }
 
         iter = eastl::find_if(m_PendingCopyTransitions.begin(), m_PendingCopyTransitions.end(),
-        [texture](const eastl::pair<RHITexture*, ERHIAccessFlags>& transition)
+        [texture](const eastl::pair<FRHITexture*, ERHIAccessFlags>& transition)
         {
             return transition.first == texture;
         });
@@ -420,7 +420,7 @@ namespace RHI
         }
     }
 
-    void RHIDeviceVK::FlushLayoutTransition(ERHICommandQueueType queueType)
+    void FVulkanDevice::FlushLayoutTransition(ERHICommandQueueType queueType)
     {
         uint32_t index = m_FrameID % RHI_MAX_INFLIGHT_FRAMES;
 
@@ -462,7 +462,7 @@ namespace RHI
         }
     }
 
-    void RHIDeviceVK::CreateInstance()
+    void FVulkanDevice::CreateInstance()
     {
         auto supportExtens = vk::enumerateInstanceExtensionProperties();
         auto supportLayers = vk::enumerateInstanceLayerProperties();
@@ -504,7 +504,7 @@ namespace RHI
         m_Instance = vk::createInstance(instanceCI);
     }
 
-    void RHIDeviceVK::CreateDevice()
+    void FVulkanDevice::CreateDevice()
     {
         auto physicalDevices = m_Instance.enumeratePhysicalDevices();
         for (const auto & pd : physicalDevices)
@@ -631,7 +631,7 @@ namespace RHI
         m_ComputeQueue = m_Device.getQueue(m_ComputeQueueIndex, 0);
     }
 
-    vk::Result RHIDeviceVK::CreateVmaAllocator()
+    vk::Result FVulkanDevice::CreateVmaAllocator()
     {
         VmaVulkanFunctions functions = {};
         functions.vkGetInstanceProcAddr = m_DynamicLoader.vkGetInstanceProcAddr;
@@ -649,7 +649,7 @@ namespace RHI
         return (vk::Result)vmaCreateAllocator(&allocatorCI, &m_Allocator);
     }
 
-    void RHIDeviceVK::CreatePipelineLayout()
+    void FVulkanDevice::CreatePipelineLayout()
     {
         eastl::vector<vk::DescriptorType> mutableDescTypes =
         {
@@ -721,7 +721,7 @@ namespace RHI
         m_PipelineLayout = m_Device.createPipelineLayout(pipelineLayoutCI);
     }
 
-    void RHIDeviceVK::FindQueueFamilyIndex()
+    void FVulkanDevice::FindQueueFamilyIndex()
     {
         auto queueFamilyProps = m_PhysicalDevice.getQueueFamilyProperties();
 

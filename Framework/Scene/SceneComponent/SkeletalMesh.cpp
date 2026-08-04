@@ -7,13 +7,13 @@
 
 namespace Scene
 {
-    Skeleton::Skeleton(const eastl::string &name)
+    FSkeleton::FSkeleton(const eastl::string &name)
     {
         m_Name = name;
-        m_pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        m_pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
     }
 
-    void Skeleton::Update(const SkeletalMesh *mesh)
+    void FSkeleton::Update(const FSkeletalMesh *mesh)
     {
         for (size_t i = 0; i < m_Joints.size(); i++)
         {
@@ -25,7 +25,7 @@ namespace Scene
 
     FSkeletalMeshData::~FSkeletalMeshData()
     {
-        Assets::ResourceCache* cache = Assets::ResourceCache::GetInstance();
+        Assets::FResourceCache* cache = Assets::FResourceCache::GetInstance();
 
         cache->ReleaseSceneBuffer(TexCoordBuffer);
         cache->ReleaseSceneBuffer(JointIDBuffer);
@@ -37,20 +37,20 @@ namespace Scene
 
         cache->ReleaseSceneBuffer(IndexBuffer);
 
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
         pRenderer->FreeSceneAnimationBuffer(AnimPositionBuffer);
         pRenderer->FreeSceneAnimationBuffer(AnimNormalBuffer);
         pRenderer->FreeSceneAnimationBuffer(AnimTangentBuffer);
         // pRenderer->FreeSceneAnimationBuffer(PrevAnimPositionBuffer);
     }
 
-    SkeletalMesh::SkeletalMesh(const eastl::string &name)
+    FSkeletalMesh::FSkeletalMesh(const eastl::string &name)
     {
         // m_pRenderer will create on load mesh.
         m_Name = name;
     }
 
-    bool SkeletalMesh::Create()
+    bool FSkeletalMesh::Create()
     {
         for (size_t i = 0; i < m_Nodes.size(); i++)
         {
@@ -63,7 +63,7 @@ namespace Scene
         return true;
     }
 
-    void SkeletalMesh::Tick(float deltaTime)
+    void FSkeletalMesh::Tick(float deltaTime)
     {
         float4x4 T = translation_matrix(m_Position);
         float4x4 R = rotation_matrix(m_Rotation);
@@ -95,7 +95,7 @@ namespace Scene
         }
     }
 
-    void SkeletalMesh::Render(Renderer::RendererBase *pRenderer)
+    void FSkeletalMesh::Render(Renderer::FRendererBase *pRenderer)
     {
         for (size_t i = 0; i < m_Nodes.size(); i++)
         {
@@ -107,12 +107,12 @@ namespace Scene
         }
     }
 
-    bool SkeletalMesh::FrustumCull(const float4 *planes, uint32_t planeCount) const
+    bool FSkeletalMesh::FrustumCull(const float4 *planes, uint32_t planeCount) const
     {
         return ::FrustumCull(planes, planeCount, m_Position, m_Radius);
     }
 
-    void SkeletalMesh::OnGUI()
+    void FSkeletalMesh::OnGUI()
     {
         IVisibleObject::OnGUI();
         
@@ -123,13 +123,13 @@ namespace Scene
         });
     }
 
-    FSkeletalMeshNode *SkeletalMesh::GetNode(uint32_t nodeID) const
+    FSkeletalMeshNode *FSkeletalMesh::GetNode(uint32_t nodeID) const
     {
         assert(nodeID < m_Nodes.size());
         return m_Nodes[nodeID].get();
     }
 
-    void SkeletalMesh::Create(FSkeletalMeshData *mesh)
+    void FSkeletalMesh::Create(FSkeletalMeshData *mesh)
     {
         if (mesh->Material->IsVertexSkinned())
         {
@@ -146,7 +146,7 @@ namespace Scene
         }
     }
 
-    void SkeletalMesh::UpdateNodeTransform(FSkeletalMeshNode *node)
+    void FSkeletalMesh::UpdateNodeTransform(FSkeletalMeshNode *node)
     {
         float4x4 T = translation_matrix(node->Translation);
         float4x4 R = rotation_matrix(node->Rotation);
@@ -163,7 +163,7 @@ namespace Scene
         }
     }
 
-    void SkeletalMesh::UpdateMeshConstants(FSkeletalMeshNode *node)
+    void FSkeletalMesh::UpdateMeshConstants(FSkeletalMeshNode *node)
     {
         for (size_t i = 0; i < node->Meshes.size(); i++)
         {
@@ -214,30 +214,30 @@ namespace Scene
         }
     }
 
-    void SkeletalMesh::Draw(const FSkeletalMeshData *mesh)
+    void FSkeletalMesh::Draw(const FSkeletalMeshData *mesh)
     {
         if (mesh->Material->IsVertexSkinned())
         {
-            Renderer::ComputeBatch& batch = m_pRenderer->AddAnimationBatch();
+            Renderer::FComputeBatch& batch = m_pRenderer->AddAnimationBatch();
             UpdateVertexSkinning(batch, mesh);
         }
-        Renderer::RenderBatch& batch = m_pRenderer->AddBasePassBatch();
+        Renderer::FRenderBatch& batch = m_pRenderer->AddBasePassBatch();
         Draw(batch, mesh, mesh->Material->GetPSO());
 
         if (m_pRenderer->IsEnableMouseHitTest())
         {
-            Renderer::RenderBatch& idBatch = m_pRenderer->AddObjectIDPassBatch();
+            Renderer::FRenderBatch& idBatch = m_pRenderer->AddObjectIDPassBatch();
             Draw(idBatch, mesh, mesh->Material->GetIDPSO());
         }
 
         if (m_ID == m_pRenderer->GetMouseHitObjectID())
         {
-            Renderer::RenderBatch& outlineBatch = m_pRenderer->AddOutlinePassBatch();
+            Renderer::FRenderBatch& outlineBatch = m_pRenderer->AddOutlinePassBatch();
             Draw(outlineBatch, mesh, mesh->Material->GetOutlinePSO());
         }
     }
 
-    void SkeletalMesh::UpdateVertexSkinning(Renderer::ComputeBatch &batch, const FSkeletalMeshData *mesh)
+    void FSkeletalMesh::UpdateVertexSkinning(Renderer::FComputeBatch &batch, const FSkeletalMeshData *mesh)
     {
         batch.Label = mesh->Name.c_str();
         batch.SetPipelineState(mesh->Material->GetVertexSkinningPSO());
@@ -261,7 +261,7 @@ namespace Scene
         batch.Dispatch((mesh->VertexCount + 63) / 64, 1, 1);
     }
 
-    void SkeletalMesh::Draw(Renderer::RenderBatch &batch, const FSkeletalMeshData *mesh, RHI::RHIPipelineState *pPSO)
+    void FSkeletalMesh::Draw(Renderer::FRenderBatch &batch, const FSkeletalMeshData *mesh, RHI::FRHIPipelineState *pPSO)
     {
         uint32_t rootConstants[1] = {
               mesh->InstanceIndex

@@ -66,7 +66,7 @@ namespace Renderer
     }
 
     template<typename T>
-    static inline RHI::RHIShader* GetShader(const RHI::RHIUnorderedAccessViewDesc& uavDesc)
+    static inline RHI::FRHIShader* GetShader(const RHI::FRHIUnorderedAccessViewDesc& uavDesc)
     {
         eastl::string entryPoint = GetEntryPoint(uavDesc.Type);
         eastl::vector<eastl::string> defines;
@@ -79,32 +79,32 @@ namespace Renderer
         {
             defines.push_back(eastl::is_same<T, float>::value ? "UAV_TYPE_FLOAT4" : "UAV_TYPE_UINT4");
         }
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
         return pRenderer->GetShader("ClearUAV.hlsl", entryPoint, RHI::ERHIShaderType::CS, defines);
     }
 
-    static uint3 GetDispatchGroupCount(RHI::RHIResource* resource, const RHI::RHIUnorderedAccessViewDesc& uavDesc)
+    static uint3 GetDispatchGroupCount(RHI::FRHIResource* resource, const RHI::FRHIUnorderedAccessViewDesc& uavDesc)
     {
         switch (uavDesc.Type)
         {
         case RHI::ERHIUnorderedAccessViewType::Texture2D:
         {
-            const RHI::RHITextureDesc& textureDesc = static_cast<RHI::RHITexture*>(resource)->GetDesc();
+            const RHI::FRHITextureDesc& textureDesc = static_cast<RHI::FRHITexture*>(resource)->GetDesc();
             return uint3(DivideRoundingUp(textureDesc.Width, 8), DivideRoundingUp(textureDesc.Height, 8), 1);
         }
         case RHI::ERHIUnorderedAccessViewType::Texture2DArray:
         {
-            const RHI::RHITextureDesc& textureDesc = static_cast<RHI::RHITexture*>(resource)->GetDesc();
+            const RHI::FRHITextureDesc& textureDesc = static_cast<RHI::FRHITexture*>(resource)->GetDesc();
             return uint3(DivideRoundingUp(textureDesc.Width, 8), DivideRoundingUp(textureDesc.Height, 8), textureDesc.ArraySize);
         }
         case RHI::ERHIUnorderedAccessViewType::Texture3D:
         {
-            const RHI::RHITextureDesc& textureDesc = static_cast<RHI::RHITexture*>(resource)->GetDesc();
+            const RHI::FRHITextureDesc& textureDesc = static_cast<RHI::FRHITexture*>(resource)->GetDesc();
             return uint3(DivideRoundingUp(textureDesc.Width, 8), DivideRoundingUp(textureDesc.Height, 8), DivideRoundingUp(textureDesc.Depth, 8));
         }
         case RHI::ERHIUnorderedAccessViewType::TypedBuffer:
         {
-            const RHI::RHIBufferDesc& bufferDesc = static_cast<RHI::RHIBuffer*>(resource)->GetDesc();
+            const RHI::FRHIBufferDesc& bufferDesc = static_cast<RHI::FRHIBuffer*>(resource)->GetDesc();
             uint32_t elementCount = uavDesc.Buffer.Size / bufferDesc.Stride;
             return uint3(DivideRoundingUp(elementCount, 64), 1, 1);
         }
@@ -120,13 +120,13 @@ namespace Renderer
     }
 
     template<typename T>
-    void ClearUAVImpl(RHI::RHICommandList* pCmdList, RHI::RHIResource* resource, RHI::RHIDescriptor* descriptor, const RHI::RHIUnorderedAccessViewDesc& uavDesc, const T* value)
+    void ClearUAVImpl(RHI::FRHICommandList* pCmdList, RHI::FRHIResource* resource, RHI::FRHIDescriptor* descriptor, const RHI::FRHIUnorderedAccessViewDesc& uavDesc, const T* value)
     {
         GPU_EVENT_DEBUG(pCmdList, "ClearUAV");
 
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
 
-        RHI::RHIComputePipelineStateDesc psoDesc;
+        RHI::FRHIComputePipelineStateDesc psoDesc;
         psoDesc.CS = GetShader<T>(uavDesc);
         pCmdList->SetPipelineState(pRenderer->GetPipelineState(psoDesc, "ClearUAV"));
 
@@ -138,12 +138,12 @@ namespace Renderer
         pCmdList->Dispatch(groupCount.x, groupCount.y, groupCount.z);
     }
 
-    void ClearUAV(RHI::RHICommandList *pCmdList, RHI::RHIResource *resource, RHI::RHIDescriptor *descriptor, const RHI::RHIUnorderedAccessViewDesc &uavDesc, const float *value)
+    void ClearUAV(RHI::FRHICommandList *pCmdList, RHI::FRHIResource *resource, RHI::FRHIDescriptor *descriptor, const RHI::FRHIUnorderedAccessViewDesc &uavDesc, const float *value)
     {
         ClearUAVImpl<float>(pCmdList, resource, descriptor, uavDesc, value);
     }
 
-    void ClearUAV(RHI::RHICommandList *pCmdList, RHI::RHIResource *resource, RHI::RHIDescriptor *descriptor, const RHI::RHIUnorderedAccessViewDesc &uavDesc, const uint32_t *value)
+    void ClearUAV(RHI::FRHICommandList *pCmdList, RHI::FRHIResource *resource, RHI::FRHIDescriptor *descriptor, const RHI::FRHIUnorderedAccessViewDesc &uavDesc, const uint32_t *value)
     {
         ClearUAVImpl<uint32_t>(pCmdList, resource, descriptor, uavDesc, value);
     }

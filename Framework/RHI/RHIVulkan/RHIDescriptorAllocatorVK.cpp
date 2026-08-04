@@ -4,7 +4,7 @@
 
 namespace RHI
 {
-    RHIConstantBufferAllocatorVK::RHIConstantBufferAllocatorVK(RHIDeviceVK *device, uint32_t bufferSize)
+    FVulkanConstantBufferAllocator::FVulkanConstantBufferAllocator(FVulkanDevice *device, uint32_t bufferSize)
     {
         m_Device = device;
         m_BufferSize = bufferSize;
@@ -29,12 +29,12 @@ namespace RHI
         m_GPUAddress = m_Device->GetDevice().getBufferAddress(&bufferAddrInfo);
     }
 
-    RHIConstantBufferAllocatorVK::~RHIConstantBufferAllocatorVK()
+    FVulkanConstantBufferAllocator::~FVulkanConstantBufferAllocator()
     {
         vmaDestroyBuffer(m_Device->GetVmaAllocator(), m_Buffer, m_Allocation);
     }
 
-    void RHIConstantBufferAllocatorVK::Allocate(uint32_t size, void **cpuAddress, vk::DeviceAddress *gpuAddress)
+    void FVulkanConstantBufferAllocator::Allocate(uint32_t size, void **cpuAddress, vk::DeviceAddress *gpuAddress)
     {
         assert(m_AllocatedSize + size <= m_BufferSize);
 
@@ -44,12 +44,12 @@ namespace RHI
         m_AllocatedSize += RoundUpPow2(size, 256);
     }
 
-    void RHIConstantBufferAllocatorVK::Reset()
+    void FVulkanConstantBufferAllocator::Reset()
     {
         m_AllocatedSize = 0;
     }
 
-    RHIDescriptorAllocatorVK::RHIDescriptorAllocatorVK(RHIDeviceVK *device, uint32_t descSize, uint32_t descCount, vk::BufferUsageFlags usage)
+    FVulkanDescriptorAllocator::FVulkanDescriptorAllocator(FVulkanDevice *device, uint32_t descSize, uint32_t descCount, vk::BufferUsageFlags usage)
     {
         m_Device = device;
         m_DescriptorSize = descSize;
@@ -73,12 +73,12 @@ namespace RHI
         m_GPUAddress = m_Device->GetDevice().getBufferAddress(&bufferAddrInfo);
     }
 
-    RHIDescriptorAllocatorVK::~RHIDescriptorAllocatorVK()
+    FVulkanDescriptorAllocator::~FVulkanDescriptorAllocator()
     {
         vmaDestroyBuffer(m_Device->GetVmaAllocator(), m_Buffer, m_Allocation);
     }
 
-    uint32_t RHIDescriptorAllocatorVK::Allocate(void **desc)
+    uint32_t FVulkanDescriptorAllocator::Allocate(void **desc)
     {
         uint32_t index = 0;
 
@@ -98,7 +98,7 @@ namespace RHI
         return index;
     }
 
-    void RHIDescriptorAllocatorVK::Free(uint32_t index)
+    void FVulkanDescriptorAllocator::Free(uint32_t index)
     {
         m_FreeDescriptors.push_back(index);
     }

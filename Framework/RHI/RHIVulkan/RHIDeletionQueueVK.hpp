@@ -6,13 +6,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIDeletionQueueVK
+    class FVulkanDeletionQueue
     {
     public:
-        RHIDeletionQueueVK(RHIDeviceVK* device);
-        ~RHIDeletionQueueVK();
+        FVulkanDeletionQueue(FVulkanDevice* device);
+        ~FVulkanDeletionQueue();
 
         void Flush(bool forceDelete = false);
 
@@ -23,7 +23,7 @@ namespace RHI
         void FreeSamplerDescriptor(uint32_t index, uint64_t frameID);
     
     private:
-        RHIDeviceVK* m_Device = nullptr;
+        FVulkanDevice* m_Device = nullptr;
 
         eastl::queue<eastl::pair<vk::Image, uint64_t>>          m_ImageQueue;
         eastl::queue<eastl::pair<vk::ImageView, uint64_t>>      m_ImageViewQueue;

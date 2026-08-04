@@ -12,10 +12,10 @@
 
 namespace Renderer
 {
-    class DXCIncludeHandler : public IDxcIncludeHandler
+    class FDXCIncludeHandler : public IDxcIncludeHandler
     {
     public:
-        DXCIncludeHandler(ShaderCache* pShaderCache, IDxcUtils* pDxcUtils)
+        FDXCIncludeHandler(FShaderCache* pShaderCache, IDxcUtils* pDxcUtils)
             : m_pShaderCache(pShaderCache)
             , m_pDxcUtils(pDxcUtils)
         {}
@@ -67,7 +67,7 @@ namespace Renderer
         }
     
     private:
-        ShaderCache* m_pShaderCache = nullptr;
+        FShaderCache* m_pShaderCache = nullptr;
         IDxcUtils* m_pDxcUtils = nullptr;
         std::atomic<ULONG> m_Ref = 0;
     };
@@ -91,7 +91,7 @@ namespace Renderer
         }
     }
 
-    ShaderCompiler::ShaderCompiler(RendererBase *renderer) : m_pRenderer(renderer)
+    FShaderCompiler::FShaderCompiler(FRendererBase *renderer) : m_pRenderer(renderer)
     {
         HMODULE dxcModule = LoadLibrary(L"dxcompiler.dll");
 
@@ -102,12 +102,12 @@ namespace Renderer
             DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_pDxcUtils));
             DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_pDxcCompiler));
 
-            m_pDxcIncludeHandler = new DXCIncludeHandler(renderer->GetShaderCache(), m_pDxcUtils);
+            m_pDxcIncludeHandler = new FDXCIncludeHandler(renderer->GetShaderCache(), m_pDxcUtils);
             m_pDxcIncludeHandler->AddRef();
         }
     }
 
-    ShaderCompiler::~ShaderCompiler()
+    FShaderCompiler::~FShaderCompiler()
     {
         if (m_pDxcIncludeHandler)
         {
@@ -123,7 +123,7 @@ namespace Renderer
         }
     }
 
-    bool ShaderCompiler::Compile(const eastl::string &source, const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags, eastl::vector<uint8_t> &output)
+    bool FShaderCompiler::Compile(const eastl::string &source, const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags, eastl::vector<uint8_t> &output)
     {
         DxcBuffer sourceBuffer;
         sourceBuffer.Ptr = source.data();

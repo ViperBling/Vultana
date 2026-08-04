@@ -4,10 +4,10 @@
 
 namespace RHI
 {
-    class RHIBuffer : public RHIResource
+    class FRHIBuffer : public FRHIResource
     {
     public:
-        const RHIBufferDesc& GetDesc() const { return m_Desc; }
+        const FRHIBufferDesc& GetDesc() const { return m_Desc; }
         virtual bool IsBuffer() const override { return true; }
         
         virtual void* GetCPUAddress() = 0;
@@ -15,6 +15,6 @@ namespace RHI
         virtual uint32_t GetRequiredStagingBufferSize() const = 0;
 
     protected:
-        RHIBufferDesc m_Desc {};
+        FRHIBufferDesc m_Desc {};
     };
 }

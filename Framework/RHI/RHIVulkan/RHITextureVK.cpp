@@ -8,16 +8,16 @@
 
 namespace RHI
 {
-    RHITextureVK::RHITextureVK(RHIDeviceVK *device, const RHITextureDesc &desc, const eastl::string &name)
+    FVulkanTexture::FVulkanTexture(FVulkanDevice *device, const FRHITextureDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
         m_Name = name;
     }
 
-    RHITextureVK::~RHITextureVK()
+    FVulkanTexture::~FVulkanTexture()
     {
-        auto device = (RHIDeviceVK*)m_pDevice;
+        auto device = (FVulkanDevice*)m_pDevice;
         device->CancelDefaultLayoutTransition(this);
 
         if (!m_bSwapchainImage)
@@ -31,10 +31,10 @@ namespace RHI
         }
     }
 
-    bool RHITextureVK::Create()
+    bool FVulkanTexture::Create()
     {
-        vk::Device deviceHandle = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        VmaAllocator allocator = ((RHIDeviceVK*)m_pDevice)->GetVmaAllocator();
+        vk::Device deviceHandle = ((FVulkanDevice*)m_pDevice)->GetDevice();
+        VmaAllocator allocator = ((FVulkanDevice*)m_pDevice)->GetVmaAllocator();
 
         vk::ImageCreateInfo imageCI = ToVulkanImageCreateInfo(m_Desc);
 
@@ -64,21 +64,21 @@ namespace RHI
             VTNA_LOG_ERROR("[RHITextureVK] Failed to create image");
             return false;
         }
-        auto dynamicLoder = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        auto dynamicLoder = ((FVulkanDevice*)m_pDevice)->GetDynamicLoader();
         SetDebugName(deviceHandle, vk::ObjectType::eImage, (uint64_t)(VkImage)m_Image, m_Name.c_str(), dynamicLoder);
 
         if (m_Allocation)
         {
             vmaSetAllocationName(allocator, m_Allocation, m_Name.c_str());
         }
-        ((RHIDeviceVK*)m_pDevice)->EnqueueDefaultLayoutTransition(this);
+        ((FVulkanDevice*)m_pDevice)->EnqueueDefaultLayoutTransition(this);
 
         return true;
     }
 
-    bool RHITextureVK::Create(vk::Image image)
+    bool FVulkanTexture::Create(vk::Image image)
     {
-        auto device = (RHIDeviceVK*)m_pDevice;
+        auto device = (FVulkanDevice*)m_pDevice;
 
         m_Image = image;
         m_bSwapchainImage = true;
@@ -91,7 +91,7 @@ namespace RHI
         return true;
     }
 
-    vk::ImageView RHITextureVK::GetRenderView(uint32_t mipSlice, uint32_t arraySlice)
+    vk::ImageView FVulkanTexture::GetRenderView(uint32_t mipSlice, uint32_t arraySlice)
     {
         assert(m_Desc.Usage & (RHITextureUsageRenderTarget | RHITextureUsageDepthStencil));
 
@@ -109,19 +109,19 @@ namespace RHI
             imageViewCI.setFormat(ToVulkanFormat(m_Desc.Format, true));
             imageViewCI.setSubresourceRange({ GetAspectFlags(m_Desc.Format), mipSlice, 1, arraySlice, 1 });
 
-            m_RenderViews[index] = ((RHIDeviceVK*)m_pDevice)->GetDevice().createImageView(imageViewCI);
+            m_RenderViews[index] = ((FVulkanDevice*)m_pDevice)->GetDevice().createImageView(imageViewCI);
         }
 
         return m_RenderViews[index];
     }
 
-    uint32_t RHITextureVK::GetRequiredStagingBufferSize() const
+    uint32_t FVulkanTexture::GetRequiredStagingBufferSize() const
     {
-        vk::MemoryRequirements memReq = ((RHIDeviceVK*)m_pDevice)->GetDevice().getImageMemoryRequirements(m_Image);
+        vk::MemoryRequirements memReq = ((FVulkanDevice*)m_pDevice)->GetDevice().getImageMemoryRequirements(m_Image);
         return (uint32_t)memReq.size;
     }
 
-    uint32_t RHITextureVK::GetRowPitch(uint32_t mipLevel) const
+    uint32_t FVulkanTexture::GetRowPitch(uint32_t mipLevel) const
     {
         uint32_t minWidth = GetFormatBlockWidth(m_Desc.Format);
         uint32_t width = eastl::max(minWidth, m_Desc.Width >> mipLevel);
@@ -129,7 +129,7 @@ namespace RHI
         return GetFormatRowPitch(m_Desc.Format, width) * GetFormatBlockHeight(m_Desc.Format);
     }
 
-    void *RHITextureVK::GetSharedHandle() const
+    void *FVulkanTexture::GetSharedHandle() const
     {
         return nullptr;
     }

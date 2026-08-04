@@ -16,13 +16,13 @@
 
 namespace Core
 {
-    VultanaEngine *VultanaEngine::GetEngineInstance()
+    FVultanaEngine *FVultanaEngine::GetEngineInstance()
     {
-        static VultanaEngine engine;
+        static FVultanaEngine engine;
         return &engine;
     }
 
-    void VultanaEngine::Init(void* windowHandle, uint32_t width, uint32_t height)
+    void FVultanaEngine::Init(void* windowHandle, uint32_t width, uint32_t height)
     {
         m_WorkingPath = "../";
         // m_AssetsPath = "../Assets/";
@@ -74,22 +74,22 @@ namespace Core
 
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
-        m_pRenderer = eastl::make_unique<Renderer::RendererBase>();
+        m_pRenderer = eastl::make_unique<Renderer::FRendererBase>();
         if (!m_pRenderer->CreateDevice(renderBackend, m_WndHandle, width, height))
         {
             VTNA_LOG_ERROR("Failed to create renderer device");
             exit(0);
         }
 
-        m_pWorld = eastl::make_unique<Scene::World>();
+        m_pWorld = eastl::make_unique<Scene::FWorld>();
         m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
 
-        m_pEditor = eastl::make_unique<Editor::VultanaEditor>(m_pRenderer.get());
+        m_pEditor = eastl::make_unique<Editor::FVultanaEditor>(m_pRenderer.get());
 
         stm_setup();
     }
 
-    void VultanaEngine::Shutdown()
+    void FVultanaEngine::Shutdown()
     {
         m_pTaskScheduler->WaitforAll();
 
@@ -103,7 +103,7 @@ namespace Core
         spdlog::shutdown();
     }
 
-    void VultanaEngine::Tick()
+    void FVultanaEngine::Tick()
     {
         m_FrameTime = (float)stm_sec(stm_laptime(&m_LastFrameTime));
 
@@ -124,7 +124,7 @@ namespace Core
         }
     }
     
-    VultanaEngine::~VultanaEngine()
+    FVultanaEngine::~FVultanaEngine()
     {
         rpmalloc_finalize();
     }

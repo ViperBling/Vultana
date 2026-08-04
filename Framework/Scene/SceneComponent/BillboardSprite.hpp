@@ -4,21 +4,21 @@
 
 namespace Scene
 {
-    class BillboardSpriteRenderer
+    class FBillboardSpriteRenderer
     {
     public:
-        BillboardSpriteRenderer(Renderer::RendererBase* pRenderer);
-        ~BillboardSpriteRenderer();
+        FBillboardSpriteRenderer(Renderer::FRendererBase* pRenderer);
+        ~FBillboardSpriteRenderer();
 
-        void AddSprite(const float3& position, float size, RenderResources::Texture2D* texture, const float4& color, uint32_t objectID);
+        void AddSprite(const float3& position, float size, RenderResources::FTexture2D* texture, const float4& color, uint32_t objectID);
         void Render();
     
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
-        RHI::RHIPipelineState* m_pSpritePSO = nullptr;
-        RHI::RHIPipelineState* m_pSpriteObjectIDPSO = nullptr;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
+        RHI::FRHIPipelineState* m_pSpritePSO = nullptr;
+        RHI::FRHIPipelineState* m_pSpriteObjectIDPSO = nullptr;
 
-        struct Sprite
+        struct FSprite
         {
             float3 Position;
             float Size;
@@ -29,6 +29,6 @@ namespace Scene
             float Distance;
         };
 
-        eastl::vector<Sprite*> m_Sprites;
+        eastl::vector<FSprite*> m_Sprites;
     };
 }

@@ -7,7 +7,7 @@
 
 namespace RHI
 {
-    RHIShaderResourceViewVK::RHIShaderResourceViewVK(RHIDeviceVK *device, RHIResource *pResource, const RHIShaderResourceViewDesc &desc, const eastl::string &name)
+    FVulkanShaderResourceView::FVulkanShaderResourceView(FVulkanDevice *device, FRHIResource *pResource, const FRHIShaderResourceViewDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Name = name;
@@ -15,18 +15,18 @@ namespace RHI
         m_Desc = desc;
     }
 
-    RHIShaderResourceViewVK::~RHIShaderResourceViewVK()
+    FVulkanShaderResourceView::~FVulkanShaderResourceView()
     {
-        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(m_pDevice);
+        FVulkanDevice *device = static_cast<FVulkanDevice *>(m_pDevice);
         device->Delete(m_ImageView);
         device->FreeResourceDescriptor(m_HeapIndex);
     }
 
-    bool RHIShaderResourceViewVK::Create()
+    bool FVulkanShaderResourceView::Create()
     {
-        vk::Device deviceHandle = static_cast<RHIDeviceVK *>(m_pDevice)->GetDevice();
-        auto dynamicLoader = static_cast<RHIDeviceVK *>(m_pDevice)->GetDynamicLoader();
-        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& descBufferProps = static_cast<RHIDeviceVK *>(m_pDevice)->GetDescriptorBufferProperties();
+        vk::Device deviceHandle = static_cast<FVulkanDevice *>(m_pDevice)->GetDevice();
+        auto dynamicLoader = static_cast<FVulkanDevice *>(m_pDevice)->GetDynamicLoader();
+        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& descBufferProps = static_cast<FVulkanDevice *>(m_pDevice)->GetDescriptorBufferProperties();
 
         size_t descSize = 0;
         vk::DescriptorGetInfoEXT descGetInfo {};
@@ -59,7 +59,7 @@ namespace RHI
 
         switch (m_Desc.Type)
         {
-        case ERHIShaderResourceViewType::Textue2D:
+        case ERHIShaderResourceViewType::Texture2D:
         {
             imageViewCI.setViewType(vk::ImageViewType::e2D);
             m_ImageView = deviceHandle.createImageView(imageViewCI);
@@ -96,13 +96,13 @@ namespace RHI
         }
         case ERHIShaderResourceViewType::StructuredBuffer:
         {
-            const RHIBufferDesc& bufferDesc = static_cast<RHIBuffer*>(m_Resource)->GetDesc();
+            const FRHIBufferDesc& bufferDesc = static_cast<FRHIBuffer*>(m_Resource)->GetDesc();
             assert(bufferDesc.Usage & RHIBufferUsageStructuredBuffer);
             assert(m_Desc.Format == ERHIFormat::Unknown);
             assert(m_Desc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(m_Desc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descBufferInfo.address = static_cast<RHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
+            descBufferInfo.address = static_cast<FRHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
             descBufferInfo.range = m_Desc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
@@ -112,12 +112,12 @@ namespace RHI
         }
         case ERHIShaderResourceViewType::TypedBuffer:
         {
-            const RHIBufferDesc& bufferDesc = static_cast<RHIBuffer*>(m_Resource)->GetDesc();
+            const FRHIBufferDesc& bufferDesc = static_cast<FRHIBuffer*>(m_Resource)->GetDesc();
             assert(bufferDesc.Usage & RHIBufferUsageTypedBuffer);
             assert(m_Desc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(m_Desc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descBufferInfo.address = static_cast<RHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
+            descBufferInfo.address = static_cast<FRHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
             descBufferInfo.range = m_Desc.Buffer.Size;
             descBufferInfo.format = ToVulkanFormat(m_Desc.Format);
 
@@ -128,13 +128,13 @@ namespace RHI
         }
         case ERHIShaderResourceViewType::RawBuffer:
         {
-            const RHIBufferDesc& bufferDesc = static_cast<RHIBuffer*>(m_Resource)->GetDesc();
+            const FRHIBufferDesc& bufferDesc = static_cast<FRHIBuffer*>(m_Resource)->GetDesc();
             assert(bufferDesc.Usage & RHIBufferUsageRawBuffer);
             assert(bufferDesc.Stride % 4 == 0);
             assert(m_Desc.Buffer.Offset % 4 == 0);
             assert(m_Desc.Buffer.Size % 4 == 0);
 
-            descBufferInfo.address = static_cast<RHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
+            descBufferInfo.address = static_cast<FRHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
             descBufferInfo.range = m_Desc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
@@ -147,13 +147,13 @@ namespace RHI
         }
 
         void* pDescriptor = nullptr;
-        m_HeapIndex = static_cast<RHIDeviceVK *>(m_pDevice)->AllocateResourceDescriptor(&pDescriptor);
+        m_HeapIndex = static_cast<FVulkanDevice *>(m_pDevice)->AllocateResourceDescriptor(&pDescriptor);
 
         deviceHandle.getDescriptorEXT(descGetInfo, descSize, pDescriptor, dynamicLoader);
         return true;
     }
 
-    RHIUnorderedAccessViewVK::RHIUnorderedAccessViewVK(RHIDeviceVK *device, RHIResource *pResource, const RHIUnorderedAccessViewDesc &desc, const eastl::string &name)
+    FVulkanUnorderedAccessView::FVulkanUnorderedAccessView(FVulkanDevice *device, FRHIResource *pResource, const FRHIUnorderedAccessViewDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Name = name;
@@ -161,18 +161,18 @@ namespace RHI
         m_Desc = desc;
     }
 
-    RHIUnorderedAccessViewVK::~RHIUnorderedAccessViewVK()
+    FVulkanUnorderedAccessView::~FVulkanUnorderedAccessView()
     {
-        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(m_pDevice);
+        FVulkanDevice *device = static_cast<FVulkanDevice *>(m_pDevice);
         device->Delete(m_ImageView);
         device->FreeResourceDescriptor(m_HeapIndex);
     }
 
-    bool RHIUnorderedAccessViewVK::Create()
+    bool FVulkanUnorderedAccessView::Create()
     {
-        vk::Device deviceHandle = static_cast<RHIDeviceVK *>(m_pDevice)->GetDevice();
-        auto dynamicLoader = static_cast<RHIDeviceVK *>(m_pDevice)->GetDynamicLoader();
-        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& descBufferProps = static_cast<RHIDeviceVK *>(m_pDevice)->GetDescriptorBufferProperties();
+        vk::Device deviceHandle = static_cast<FVulkanDevice *>(m_pDevice)->GetDevice();
+        auto dynamicLoader = static_cast<FVulkanDevice *>(m_pDevice)->GetDynamicLoader();
+        const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& descBufferProps = static_cast<FVulkanDevice *>(m_pDevice)->GetDescriptorBufferProperties();
 
         size_t descSize = 0;
         vk::DescriptorGetInfoEXT descGetInfo {};
@@ -186,7 +186,7 @@ namespace RHI
         vk::ImageViewCreateInfo imageViewCI {};
         if (m_Resource && m_Resource->IsTexture())
         {
-            const RHITextureDesc& textureDesc = static_cast<RHITexture*>(m_Resource)->GetDesc();
+            const FRHITextureDesc& textureDesc = static_cast<FRHITexture*>(m_Resource)->GetDesc();
             assert(textureDesc.Usage & RHITextureUsageUnorderedAccess);
 
             vk::ImageSubresourceRange subresourceRange {};
@@ -231,14 +231,14 @@ namespace RHI
         }
         case ERHIUnorderedAccessViewType::StructuredBuffer:
         {
-            const RHIBufferDesc& bufferDesc = static_cast<RHIBuffer*>(m_Resource)->GetDesc();
+            const FRHIBufferDesc& bufferDesc = static_cast<FRHIBuffer*>(m_Resource)->GetDesc();
             assert(bufferDesc.Usage & RHIBufferUsageStructuredBuffer);
             assert(bufferDesc.Usage & RHIBufferUsageUnorderedAccess);
             assert(m_Desc.Format == ERHIFormat::Unknown);
             assert(m_Desc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(m_Desc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descBufferInfo.address = static_cast<RHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
+            descBufferInfo.address = static_cast<FRHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
             descBufferInfo.range = m_Desc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
@@ -248,13 +248,13 @@ namespace RHI
         }
         case ERHIUnorderedAccessViewType::TypedBuffer:
         {
-            const RHIBufferDesc& bufferDesc = static_cast<RHIBuffer*>(m_Resource)->GetDesc();
+            const FRHIBufferDesc& bufferDesc = static_cast<FRHIBuffer*>(m_Resource)->GetDesc();
             assert(bufferDesc.Usage & RHIBufferUsageTypedBuffer);
             assert(bufferDesc.Usage & RHIBufferUsageUnorderedAccess);
             assert(m_Desc.Buffer.Offset % bufferDesc.Stride == 0);
             assert(m_Desc.Buffer.Size % bufferDesc.Stride == 0);
 
-            descBufferInfo.address = static_cast<RHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
+            descBufferInfo.address = static_cast<FRHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
             descBufferInfo.range = m_Desc.Buffer.Size;
             descBufferInfo.format = ToVulkanFormat(m_Desc.Format);
 
@@ -265,14 +265,14 @@ namespace RHI
         }
         case ERHIUnorderedAccessViewType::RawBuffer:
         {
-            const RHIBufferDesc& bufferDesc = static_cast<RHIBuffer*>(m_Resource)->GetDesc();
+            const FRHIBufferDesc& bufferDesc = static_cast<FRHIBuffer*>(m_Resource)->GetDesc();
             assert(bufferDesc.Usage & RHIBufferUsageRawBuffer);
             assert(bufferDesc.Usage & RHIBufferUsageUnorderedAccess);
             assert(bufferDesc.Stride % 4 == 0);
             assert(m_Desc.Buffer.Offset % 4 == 0);
             assert(m_Desc.Buffer.Size % 4 == 0);
 
-            descBufferInfo.address = static_cast<RHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
+            descBufferInfo.address = static_cast<FRHIBuffer*>(m_Resource)->GetGPUAddress() + m_Desc.Buffer.Offset;
             descBufferInfo.range = m_Desc.Buffer.Size;
 
             descGetInfo.setType(vk::DescriptorType::eStorageBuffer);
@@ -285,13 +285,13 @@ namespace RHI
         }
 
         void* pDescriptor = nullptr;
-        m_HeapIndex = static_cast<RHIDeviceVK *>(m_pDevice)->AllocateResourceDescriptor(&pDescriptor);
+        m_HeapIndex = static_cast<FVulkanDevice *>(m_pDevice)->AllocateResourceDescriptor(&pDescriptor);
 
         deviceHandle.getDescriptorEXT(descGetInfo, descSize, pDescriptor, dynamicLoader);
         return true;
     }
 
-    RHIConstantBufferViewVK::RHIConstantBufferViewVK(RHIDeviceVK *device, RHIBuffer *buffer, const RHIConstantBufferViewDesc &desc, const eastl::string &name)
+    FVulkanConstantBufferView::FVulkanConstantBufferView(FVulkanDevice *device, FRHIBuffer *buffer, const FRHIConstantBufferViewDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Name = name;
@@ -299,13 +299,13 @@ namespace RHI
         m_Desc = desc;
     }
 
-    RHIConstantBufferViewVK::~RHIConstantBufferViewVK()
+    FVulkanConstantBufferView::~FVulkanConstantBufferView()
     {
-        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(m_pDevice);
+        FVulkanDevice *device = static_cast<FVulkanDevice *>(m_pDevice);
         device->FreeResourceDescriptor(m_HeapIndex);
     }
 
-    bool RHIConstantBufferViewVK::Create()
+    bool FVulkanConstantBufferView::Create()
     {
         vk::DescriptorAddressInfoEXT descBufferInfo {};
         descBufferInfo.address = m_Buffer->GetGPUAddress() + m_Desc.Offset;
@@ -316,32 +316,32 @@ namespace RHI
         descGetInfo.setData(&descBufferInfo);
 
         void* pDescriptor = nullptr;
-        m_HeapIndex = static_cast<RHIDeviceVK *>(m_pDevice)->AllocateResourceDescriptor(&pDescriptor);
+        m_HeapIndex = static_cast<FVulkanDevice *>(m_pDevice)->AllocateResourceDescriptor(&pDescriptor);
 
-        vk::Device deviceHandle = static_cast<RHIDeviceVK *>(m_pDevice)->GetDevice();
-        auto dynamicLoader = static_cast<RHIDeviceVK *>(m_pDevice)->GetDynamicLoader();
-        size_t size = static_cast<RHIDeviceVK *>(m_pDevice)->GetDescriptorBufferProperties().robustUniformBufferDescriptorSize;
+        vk::Device deviceHandle = static_cast<FVulkanDevice *>(m_pDevice)->GetDevice();
+        auto dynamicLoader = static_cast<FVulkanDevice *>(m_pDevice)->GetDynamicLoader();
+        size_t size = static_cast<FVulkanDevice *>(m_pDevice)->GetDescriptorBufferProperties().robustUniformBufferDescriptorSize;
 
         deviceHandle.getDescriptorEXT(descGetInfo, size, pDescriptor, dynamicLoader);
 
         return true;
     }
 
-    RHISamplerVK::RHISamplerVK(RHIDeviceVK *device, const RHISamplerDesc &desc, const eastl::string &name)
+    FVulkanSampler::FVulkanSampler(FVulkanDevice *device, const FRHISamplerDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Name = name;
         m_Desc = desc;
     }
 
-    RHISamplerVK::~RHISamplerVK()
+    FVulkanSampler::~FVulkanSampler()
     {
-        RHIDeviceVK *device = static_cast<RHIDeviceVK *>(m_pDevice);
+        FVulkanDevice *device = static_cast<FVulkanDevice *>(m_pDevice);
         device->Delete(m_Sampler);
         device->FreeSamplerDescriptor(m_HeapIndex);
     }
 
-    bool RHISamplerVK::Create()
+    bool FVulkanSampler::Create()
     {
         vk::SamplerReductionModeCreateInfo samplerReductionModeCI {};
         samplerReductionModeCI.setReductionMode(ToVKSamplerReductionMode(m_Desc.ReductionMode));
@@ -378,8 +378,8 @@ namespace RHI
             assert(false);
         }
 
-        vk::Device deviceHandle = static_cast<RHIDeviceVK *>(m_pDevice)->GetDevice();
-        auto dynamicLoader = static_cast<RHIDeviceVK *>(m_pDevice)->GetDynamicLoader();
+        vk::Device deviceHandle = static_cast<FVulkanDevice *>(m_pDevice)->GetDevice();
+        auto dynamicLoader = static_cast<FVulkanDevice *>(m_pDevice)->GetDynamicLoader();
         m_Sampler = deviceHandle.createSampler(samplerCI);
         if (!m_Sampler)
         {
@@ -388,13 +388,13 @@ namespace RHI
         }
 
         void* pDescriptor = nullptr;
-        m_HeapIndex = static_cast<RHIDeviceVK *>(m_pDevice)->AllocateSamplerDescriptor(&pDescriptor);
+        m_HeapIndex = static_cast<FVulkanDevice *>(m_pDevice)->AllocateSamplerDescriptor(&pDescriptor);
 
         vk::DescriptorGetInfoEXT descGetInfo {};
         descGetInfo.setType(vk::DescriptorType::eSampler);
         descGetInfo.data.pSampler = &m_Sampler;
 
-        size_t size = static_cast<RHIDeviceVK *>(m_pDevice)->GetDescriptorBufferProperties().samplerDescriptorSize;
+        size_t size = static_cast<FVulkanDevice *>(m_pDevice)->GetDescriptorBufferProperties().samplerDescriptorSize;
         deviceHandle.getDescriptorEXT(descGetInfo, size, pDescriptor, dynamicLoader);
 
         return true;

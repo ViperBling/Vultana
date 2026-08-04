@@ -4,14 +4,14 @@
 
 namespace RenderResources
 {
-    bool TypedBuffer::Create(RHI::ERHIFormat format, uint32_t elementCount, RHI::ERHIMemoryType memType, bool isUAV)
+    bool FTypedBuffer::Create(RHI::ERHIFormat format, uint32_t elementCount, RHI::ERHIMemoryType memType, bool isUAV)
     {
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
-        RHI::RHIDevice* pDevice = pRenderer->GetDevice();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        RHI::FRHIDevice* pDevice = pRenderer->GetDevice();
 
         uint32_t stride = RHI::GetFormatRowPitch(format, 1);
 
-        RHI::RHIBufferDesc desc;
+        RHI::FRHIBufferDesc desc;
         desc.Stride = stride;
         desc.Size = stride * elementCount;
         desc.Format = format;
@@ -26,7 +26,7 @@ namespace RenderResources
         m_pBuffer.reset(pDevice->CreateBuffer(desc, m_Name));
         if (m_pBuffer == nullptr) return false;
 
-        RHI::RHIShaderResourceViewDesc srvDesc;
+        RHI::FRHIShaderResourceViewDesc srvDesc;
         srvDesc.Format = format;
         srvDesc.Type = RHI::ERHIShaderResourceViewType::TypedBuffer;
         srvDesc.Buffer.Size = stride * elementCount;
@@ -36,7 +36,7 @@ namespace RenderResources
 
         if (isUAV)
         {
-            RHI::RHIUnorderedAccessViewDesc uavDesc;
+            RHI::FRHIUnorderedAccessViewDesc uavDesc;
             uavDesc.Format = format;
             uavDesc.Type = RHI::ERHIUnorderedAccessViewType::TypedBuffer;
             uavDesc.Buffer.Size = stride * elementCount;

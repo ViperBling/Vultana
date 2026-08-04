@@ -3,16 +3,16 @@
 #include "Math.hpp"
 #include "Memory.hpp"
 
-class LinearAllocator
+class FLinearAllocator
 {
 public:
-    LinearAllocator(uint32_t memSize)
+    FLinearAllocator(uint32_t memSize)
     {
         m_pMemory = VTNA_ALLOC(memSize);
         m_MemorySize = memSize;
     }
 
-    ~LinearAllocator()
+    ~FLinearAllocator()
     {
         VTNA_FREE(m_pMemory);
     }

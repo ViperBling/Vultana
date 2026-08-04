@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIBufferVK : public RHIBuffer
+    class FVulkanBuffer : public FRHIBuffer
     {
     public:
-        RHIBufferVK(RHIDeviceVK* device, const RHIBufferDesc& desc, const eastl::string& name);
-        ~RHIBufferVK();
+        FVulkanBuffer(FVulkanDevice* device, const FRHIBufferDesc& desc, const eastl::string& name);
+        ~FVulkanBuffer();
 
         bool Create();
 

@@ -58,16 +58,16 @@ namespace Scene
         }
     }
 
-    World::World()
+    FWorld::FWorld()
     {
-        m_pCamera = eastl::make_unique<Camera>();
+        m_pCamera = eastl::make_unique<FCamera>();
     }
 
-    World::~World()
+    FWorld::~FWorld()
     {
     }
 
-    void World::LoadScene(const eastl::string &file)
+    void FWorld::LoadScene(const eastl::string &file)
     {
         VTNA_LOG_INFO("Loading scene from file: {}", file);
 
@@ -87,20 +87,20 @@ namespace Scene
         }
     }
 
-    void World::AddObject(IVisibleObject *object)
+    void FWorld::AddObject(IVisibleObject *object)
     {
         assert(object != nullptr);
         object->SetID(static_cast<uint32_t>(m_Objects.size()));
         m_Objects.push_back(eastl::unique_ptr<IVisibleObject>(object));
     }
 
-    void World::AddLight(ILight *light)
+    void FWorld::AddLight(ILight *light)
     {
         assert(light != nullptr);
         m_Lights.push_back(eastl::unique_ptr<ILight>(light));
     }
 
-    void World::OnGUI()
+    void FWorld::OnGUI()
     {
         // GUICommand("WorldOutliner", "World", [&]()
         // {
@@ -112,7 +112,7 @@ namespace Scene
         // });
     }
 
-    void World::Tick(float deltaTime)
+    void FWorld::Tick(float deltaTime)
     {
         m_pCamera->Tick(deltaTime);
 
@@ -140,7 +140,7 @@ namespace Scene
         });
         visibleObjects.resize(visibleCount);
 
-        Renderer::RendererBase* pRender = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        Renderer::FRendererBase* pRender = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
         for (auto iter = visibleObjects.begin(); iter != visibleObjects.end(); ++iter)
         {
             (*iter)->Render(pRender);
@@ -148,7 +148,7 @@ namespace Scene
         #pragma endregion : Frustum Culling
     }
 
-    IVisibleObject *World::GetVisibleObject(uint32_t index) const
+    IVisibleObject *FWorld::GetVisibleObject(uint32_t index) const
     {
         if (index >= m_Objects.size())
         {
@@ -157,20 +157,20 @@ namespace Scene
         return m_Objects[index].get();
     }
 
-    ILight *World::GetMainLight()
+    ILight *FWorld::GetMainLight()
     {
         assert(m_pMainLight != nullptr);
         return m_pMainLight;
     }
 
-    void World::ClearScene()
+    void FWorld::ClearScene()
     {
         m_Objects.clear();
         m_Lights.clear();
         m_pMainLight = nullptr;
     }
 
-    void World::CreateSceneObject(tinyxml2::XMLElement *element)
+    void FWorld::CreateSceneObject(tinyxml2::XMLElement *element)
     {
         if (strcmp(element->Value(), "Light") == 0)
         {
@@ -186,7 +186,7 @@ namespace Scene
         }
     }
 
-    void World::CreateLight(tinyxml2::XMLElement *element)
+    void FWorld::CreateLight(tinyxml2::XMLElement *element)
     {
         ILight* light = nullptr;
 
@@ -194,7 +194,7 @@ namespace Scene
         assert(type != nullptr);
         if (strcmp(type->Value(), "Directional") == 0)
         {
-            light = new DirectionalLight();
+            light = new FDirectionalLight();
         }
         else
         {
@@ -218,7 +218,7 @@ namespace Scene
         }
     }
 
-    void World::CreateCamera(tinyxml2::XMLElement *element)
+    void FWorld::CreateCamera(tinyxml2::XMLElement *element)
     {
         const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
         if (position)
@@ -231,15 +231,15 @@ namespace Scene
             m_pCamera->SetRotation(strToFloat3(rotation->Value()));
         }
 
-        Renderer::RendererBase* pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        Renderer::FRendererBase* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
         uint32_t width = pRenderer->GetRenderWidth();
         uint32_t height = pRenderer->GetRenderHeight();
         m_pCamera->SetPerspective(static_cast<float>(width) / height, element->FindAttribute("Fov")->FloatValue(), element->FindAttribute("ZNear")->FloatValue());
     }
 
-    void World::CreateModel(tinyxml2::XMLElement *element)
+    void FWorld::CreateModel(tinyxml2::XMLElement *element)
     {
-        Assets::ModelLoader loader(this);
+        Assets::FModelLoader loader(this);
         loader.LoadModelSettings(element);
         loader.LoadGLTF();
     }

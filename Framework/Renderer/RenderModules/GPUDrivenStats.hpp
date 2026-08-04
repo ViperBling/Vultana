@@ -5,25 +5,25 @@
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 
-    class GPUDrivenStats
+    class FGPUDrivenStats
     {
     public:
-        GPUDrivenStats(RendererBase* pRenderer);
+        FGPUDrivenStats(FRendererBase* pRenderer);
 
-        void Clear(RHI::RHICommandList *pCmdList);
-        void Readback(RHI::RHICommandList *pCmdList);
+        void Clear(RHI::FRHICommandList *pCmdList);
+        void Readback(RHI::FRHICommandList *pCmdList);
         void OnGui();
 
-        RHI::RHIDescriptor* GetStatsBufferUAV() const { return m_pStatsBuffer->GetUAV(); }
+        RHI::FRHIDescriptor* GetStatsBufferUAV() const { return m_pStatsBuffer->GetUAV(); }
         uint32_t GetCounterValue(uint32_t index) const;
 
     private:
-        RendererBase* m_pRenderer = nullptr;
+        FRendererBase* m_pRenderer = nullptr;
 
-        eastl::unique_ptr<RenderResources::TypedBuffer> m_pStatsBuffer;
-        eastl::unique_ptr<RHI::RHIBuffer> m_pReadbackBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RenderResources::FTypedBuffer> m_pStatsBuffer;
+        eastl::unique_ptr<RHI::FRHIBuffer> m_pReadbackBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
         uint32_t m_ReadbackValues[16] = {};
     };

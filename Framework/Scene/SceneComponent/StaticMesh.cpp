@@ -6,14 +6,14 @@
 
 namespace Scene
 {
-    StaticMesh::StaticMesh(const eastl::string &name)
+    FStaticMesh::FStaticMesh(const eastl::string &name)
     {
         m_Name = name;
     }
 
-    StaticMesh::~StaticMesh()
+    FStaticMesh::~FStaticMesh()
     {
-        auto resourceCache = Assets::ResourceCache::GetInstance();
+        auto resourceCache = Assets::FResourceCache::GetInstance();
         resourceCache->ReleaseSceneBuffer(m_PositionBuffer);
         resourceCache->ReleaseSceneBuffer(m_TexCoordBuffer);
         resourceCache->ReleaseSceneBuffer(m_NormalBuffer);
@@ -26,45 +26,45 @@ namespace Scene
         resourceCache->ReleaseSceneBuffer(m_IndexBuffer);
     }
 
-    bool StaticMesh::Create()
+    bool FStaticMesh::Create()
     {
         return true;
     }
 
-    void StaticMesh::Tick(float deltaTime)
+    void FStaticMesh::Tick(float deltaTime)
     {
         UpdateConstants();
         m_InstanceIndex = m_pRenderer->AddInstance(m_InstanceData);
     }
 
-    void StaticMesh::Render(Renderer::RendererBase *pRenderer)
+    void FStaticMesh::Render(Renderer::FRendererBase *pRenderer)
     {
-        Renderer::RenderBatch& batch = pRenderer->AddBasePassBatch();
+        Renderer::FRenderBatch& batch = pRenderer->AddBasePassBatch();
 
         // Draw(batch, m_pMaterial->GetPSO());
         Dispatch(batch, m_pMaterial->GetMeshletPSO());
 
         if (m_pRenderer->IsEnableMouseHitTest())
         {
-            Renderer::RenderBatch& idBatch = m_pRenderer->AddObjectIDPassBatch();
+            Renderer::FRenderBatch& idBatch = m_pRenderer->AddObjectIDPassBatch();
             Draw(idBatch, m_pMaterial->GetIDPSO());
         }
 
         if (m_ID == m_pRenderer->GetMouseHitObjectID())
         {
-            Renderer::RenderBatch& outlineBatch = m_pRenderer->AddOutlinePassBatch();
+            Renderer::FRenderBatch& outlineBatch = m_pRenderer->AddOutlinePassBatch();
             Draw(outlineBatch, m_pMaterial->GetOutlinePSO());
         }
     }
 
-    void StaticMesh::OnGUI()
+    void FStaticMesh::OnGUI()
     {
         IVisibleObject::OnGUI();
 
         m_pMaterial->OnGUI();
     }
 
-    bool StaticMesh::FrustumCull(const float4 *plane, uint32_t planeCount) const
+    bool FStaticMesh::FrustumCull(const float4 *plane, uint32_t planeCount) const
     {
         return ::FrustumCull(plane, planeCount, m_InstanceData.Center, m_InstanceData.Radius);
     }
@@ -84,7 +84,7 @@ namespace Scene
     //     IVisibleObject::SetScale(scale);
     // }
 
-    void StaticMesh::UpdateConstants()
+    void FStaticMesh::UpdateConstants()
     {
         m_pMaterial->UpdateConstants();
 
@@ -119,7 +119,7 @@ namespace Scene
         m_InstanceData.MtxWorldInverseTranspose = transpose(inverse(mtxWorld));
     }
 
-    void StaticMesh::Draw(Renderer::RenderBatch& batch, RHI::RHIPipelineState *pPSO)
+    void FStaticMesh::Draw(Renderer::FRenderBatch& batch, RHI::FRHIPipelineState *pPSO)
     {
         uint32_t rootConsts[1] = { m_InstanceIndex };
 
@@ -130,7 +130,7 @@ namespace Scene
         batch.DrawIndexed(m_IndexCount);
     }
 
-    void StaticMesh::Dispatch(Renderer::RenderBatch &batch, RHI::RHIPipelineState *pPSO)
+    void FStaticMesh::Dispatch(Renderer::FRenderBatch &batch, RHI::FRHIPipelineState *pPSO)
     {
         batch.Label = m_Name.c_str();
         batch.SetPipelineState(pPSO);

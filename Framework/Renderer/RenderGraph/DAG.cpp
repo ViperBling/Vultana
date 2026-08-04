@@ -6,7 +6,7 @@
 
 namespace RG
 {
-    DAGEdge::DAGEdge(DirectedAcyclicGraph &graph, DAGNode *from, DAGNode *to)
+    FDAGEdge::FDAGEdge(FDirectedAcyclicGraph &graph, FDAGNode *from, FDAGNode *to)
         : m_FromNode(from->GetID())
         , m_ToNode(to->GetID())
     {
@@ -16,13 +16,13 @@ namespace RG
         graph.RegisterEdge(this);
     }
 
-    DAGNode::DAGNode(DirectedAcyclicGraph &graph)
+    FDAGNode::FDAGNode(FDirectedAcyclicGraph &graph)
     {
         m_ID = graph.GenerateNodeID();
         graph.RegisterNode(this);
     }
 
-    eastl::string DAGNode::GraphVizify() const
+    eastl::string FDAGNode::GraphVizify() const
     {
         eastl::string str;
         str.reserve(128);
@@ -39,7 +39,7 @@ namespace RG
         return str;
     }
 
-    DAGEdge* DirectedAcyclicGraph::GetEdge(DAGNodeID from, DAGNodeID to) const
+    FDAGEdge* FDirectedAcyclicGraph::GetEdge(DAGNodeID from, DAGNodeID to) const
     {
         for (size_t i = 0; i < m_Edges.size(); ++i)
         {
@@ -48,35 +48,35 @@ namespace RG
         return nullptr;
     }
 
-    void DirectedAcyclicGraph::RegisterNode(DAGNode *node)
+    void FDirectedAcyclicGraph::RegisterNode(FDAGNode *node)
     {
         assert(node->GetID() == m_Nodes.size());
         m_Nodes.push_back(node);
     }
 
-    void DirectedAcyclicGraph::RegisterEdge(DAGEdge * edge)
+    void FDirectedAcyclicGraph::RegisterEdge(FDAGEdge * edge)
     {
         m_Edges.push_back(edge);
     }
 
-    void DirectedAcyclicGraph::Clear()
+    void FDirectedAcyclicGraph::Clear()
     {
         m_Edges.clear();
         m_Nodes.clear();
     }
 
-    void DirectedAcyclicGraph::Cull()
+    void FDirectedAcyclicGraph::Cull()
     {
         // 遍历图中的边，更新节点的引用计数
         for (size_t i = 0; i < m_Edges.size(); ++i)
         {
-            DAGEdge* edge = m_Edges[i];
-            DAGNode* node = m_Nodes[edge->m_FromNode];
+            FDAGEdge* edge = m_Edges[i];
+            FDAGNode* node = m_Nodes[edge->m_FromNode];
             node->m_RefCount++;
         }
 
         // 遍历图中的节点，如果引用计数为0，入栈准备删除
-        eastl::vector<DAGNode*> nodesStack;
+        eastl::vector<FDAGNode*> nodesStack;
         for (size_t i = 0; i < m_Nodes.size(); ++i)
         {
             if (m_Nodes[i]->GetRefCount() == 0)
@@ -87,16 +87,16 @@ namespace RG
 
         while (!nodesStack.empty())
         {
-            DAGNode* node = nodesStack.back();
+            FDAGNode* node = nodesStack.back();
             nodesStack.pop_back();
 
-            eastl::vector<DAGEdge*> incomingEdges;
+            eastl::vector<FDAGEdge*> incomingEdges;
             // 获取当前node的所有入边
             GetIncomingEdges(node, incomingEdges);
 
             for (size_t i = 0; i < incomingEdges.size(); ++i)
             {
-                DAGNode* linkedNode = GetNode(incomingEdges[i]->m_FromNode);
+                FDAGNode* linkedNode = GetNode(incomingEdges[i]->m_FromNode);
                 if (--linkedNode->m_RefCount == 0)
                 {
                     nodesStack.push_back(linkedNode);
@@ -105,12 +105,12 @@ namespace RG
         }
     }
 
-    bool DirectedAcyclicGraph::IsEdgeValid(const DAGEdge *edge) const
+    bool FDirectedAcyclicGraph::IsEdgeValid(const FDAGEdge *edge) const
     {
         return !GetNode(edge->m_FromNode)->IsCulled() && !GetNode(edge->m_ToNode)->IsCulled();
     }
 
-    void DirectedAcyclicGraph::GetIncomingEdges(const DAGNode *node, eastl::vector<DAGEdge *> &edges) const
+    void FDirectedAcyclicGraph::GetIncomingEdges(const FDAGNode *node, eastl::vector<FDAGEdge *> &edges) const
     {
         edges.clear();
 
@@ -123,7 +123,7 @@ namespace RG
         }
     }
 
-    void DirectedAcyclicGraph::GetOutgoingEdges(const DAGNode *node, eastl::vector<DAGEdge *> &edges) const
+    void FDirectedAcyclicGraph::GetOutgoingEdges(const FDAGNode *node, eastl::vector<FDAGEdge *> &edges) const
     {
         edges.clear();
 
@@ -136,7 +136,7 @@ namespace RG
         }
     }
 
-    eastl::string DirectedAcyclicGraph::ExportGraphViz()
+    eastl::string FDirectedAcyclicGraph::ExportGraphViz()
     {
         std::stringstream ssOut;
 
@@ -153,10 +153,10 @@ namespace RG
         ssOut << "\n";
         for (size_t i = 0; i < m_Nodes.size(); i++)
         {
-            DAGNode* node = m_Nodes[i];
+            FDAGNode* node = m_Nodes[i];
             uint32_t id = node->GetID();
 
-            eastl::vector<DAGEdge*> edges;
+            eastl::vector<FDAGEdge*> edges;
             GetOutgoingEdges(node, edges);
 
             auto first = edges.begin();
@@ -169,7 +169,7 @@ namespace RG
                 ssOut << "  N" << id << " -> { ";
                 while (first != pos)
                 {
-                    DAGNode const* ref = GetNode((*first++)->m_ToNode);
+                    FDAGNode const* ref = GetNode((*first++)->m_ToNode);
                     ssOut << "N" << ref->GetID() << " ";
                 }
                 ssOut << "} [color=" << s.c_str() << "2]\n";
@@ -180,7 +180,7 @@ namespace RG
                 ssOut << "  N" << id << " -> { ";
                 while (first != edges.end())
                 {
-                    DAGNode const* ref = GetNode((*first++)->m_ToNode);
+                    FDAGNode const* ref = GetNode((*first++)->m_ToNode);
                     ssOut << "N" << ref->GetID() << " ";
                 }
                 ssOut << "} [color=" << s.c_str() << "4 style=dashed]\n";

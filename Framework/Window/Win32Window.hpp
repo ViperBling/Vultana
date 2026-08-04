@@ -8,7 +8,7 @@
 
 namespace Window
 {
-    struct Win32WindowDesc
+    struct FWin32WindowDesc
     {
         float2 Position = { 0.0f, 0.0f };
         float2 Size = { 1280.0f, 720.0f };
@@ -17,18 +17,18 @@ namespace Window
         eastl::string Title = "VultanaEngine";
     };
 
-    class Win32Window
+    class FWin32Window
     {
     public:
-        Win32Window(const Win32WindowDesc& desc);
-        ~Win32Window();
+        FWin32Window(const FWin32WindowDesc& desc);
+        ~FWin32Window();
 
         void Create();
 
         void* GetHandle() const { return m_Hwnd; }
 
     private:
-        Win32WindowDesc m_Desc;
+        FWin32WindowDesc m_Desc;
         HWND m_Hwnd = nullptr;
     };
 }

@@ -4,19 +4,19 @@
 
 namespace RenderResources
 {
-    RawBuffer::RawBuffer(const eastl::string &name)
+    FRawBuffer::FRawBuffer(const eastl::string &name)
     {
         m_Name = name;
     }
 
-    bool RawBuffer::Create(uint32_t size, RHI::ERHIMemoryType memoryType, bool isUAV)
+    bool FRawBuffer::Create(uint32_t size, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
-        auto pRenderer = Core::VultanaEngine::GetEngineInstance()->GetRenderer();
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
         auto pDevice = pRenderer->GetDevice();
 
         assert(size % 4 == 0);
 
-        RHI::RHIBufferDesc desc;
+        RHI::FRHIBufferDesc desc;
         desc.Stride = 4;
         desc.Size = size;
         desc.Format = RHI::ERHIFormat::R32F;
@@ -33,7 +33,7 @@ namespace RenderResources
             return false;
         }
 
-        RHI::RHIShaderResourceViewDesc srvDesc;
+        RHI::FRHIShaderResourceViewDesc srvDesc;
         srvDesc.Type = RHI::ERHIShaderResourceViewType::RawBuffer;
         srvDesc.Buffer.Offset = 0;
         srvDesc.Buffer.Size = size;
@@ -45,7 +45,7 @@ namespace RenderResources
 
         if (isUAV)
         {
-            RHI::RHIUnorderedAccessViewDesc uavDesc;
+            RHI::FRHIUnorderedAccessViewDesc uavDesc;
             uavDesc.Type = RHI::ERHIUnorderedAccessViewType::RawBuffer;
             uavDesc.Buffer.Offset = 0;
             uavDesc.Buffer.Size = size;

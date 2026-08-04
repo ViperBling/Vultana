@@ -8,9 +8,9 @@
 namespace eastl
 {
     template<>
-    struct hash<RHI::RHIShaderDesc>
+    struct hash<RHI::FRHIShaderDesc>
     {
-        size_t operator()(const RHI::RHIShaderDesc& desc) const
+        size_t operator()(const RHI::FRHIShaderDesc& desc) const
         {
             eastl::string s = desc.File + desc.EntryPoint;
             for (size_t i = 0; i < desc.Defines.size(); i++)
@@ -24,28 +24,28 @@ namespace eastl
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 
-    class ShaderCache
+    class FShaderCache
     {
     public:
-        ShaderCache(RendererBase* renderer);
+        FShaderCache(FRendererBase* renderer);
 
-        RHI::RHIShader* GetShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines, RHI::ERHIShaderCompileFlags flags);
+        RHI::FRHIShader* GetShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines, RHI::ERHIShaderCompileFlags flags);
         eastl::string GetCachedFileContent(const eastl::string& file);
 
         void ReloadShaders();
 
     private:
-        RHI::RHIShader* CreateShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines, RHI::ERHIShaderCompileFlags flags);
-        void RecompileShader(RHI::RHIShader* shader);
+        RHI::FRHIShader* CreateShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines, RHI::ERHIShaderCompileFlags flags);
+        void RecompileShader(RHI::FRHIShader* shader);
 
-        eastl::vector<RHI::RHIShader*> GetShaderList(const eastl::string& file);
-        bool IsFileIncluded(const RHI::RHIShader* shader, const eastl::string& file);
+        eastl::vector<RHI::FRHIShader*> GetShaderList(const eastl::string& file);
+        bool IsFileIncluded(const RHI::FRHIShader* shader, const eastl::string& file);
     
     private:
-        RendererBase* m_pRenderer = nullptr;
-        eastl::hash_map<RHI::RHIShaderDesc, eastl::unique_ptr<RHI::RHIShader>> m_CachedShaders;
+        FRendererBase* m_pRenderer = nullptr;
+        eastl::hash_map<RHI::FRHIShaderDesc, eastl::unique_ptr<RHI::FRHIShader>> m_CachedShaders;
         eastl::hash_map<eastl::string, eastl::string> m_CachedFile;
     };
 }

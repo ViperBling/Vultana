@@ -7,15 +7,15 @@
 
 namespace Editor
 {
-    class VultanaEditor
+    class FVultanaEditor
     {
     public:
-        VultanaEditor(Renderer::RendererBase* pRenderer);
-        ~VultanaEditor();
+        FVultanaEditor(Renderer::FRendererBase* pRenderer);
+        ~FVultanaEditor();
 
         void NewFrame();
         void Tick();
-        void Render(RHI::RHICommandList* pCmdList);
+        void Render(RHI::FRHICommandList* pCmdList);
 
         void AddGUICommand(const eastl::string& window, const eastl::string& section, const eastl::function<void()>& command);
     
@@ -32,8 +32,8 @@ namespace Editor
         void DrawWindow(const eastl::string& window, bool* pOpen);
 
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
-        eastl::unique_ptr<class ImGuiImplement> m_pGUI;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
+        eastl::unique_ptr<class FImGuiImplement> m_pGUI;
 
         bool m_bShowImGuiDemo = false;
         bool m_bResetLayout = false;
@@ -48,16 +48,16 @@ namespace Editor
 
         unsigned int m_DockSpace = 0;
 
-        struct Command
+        struct FCommand
         {
             eastl::string Section;
             eastl::function<void()> Function;
         };
-        using WindowCmd = eastl::vector<Command>;
+        using WindowCmd = eastl::vector<FCommand>;
         eastl::hash_map<eastl::string, WindowCmd> m_Commands;
 
-        eastl::hash_map<RHI::RHIDescriptor*, RenderResources::Texture2D*> m_FileDialogIcons;
-        eastl::vector<RHI::RHIDescriptor*> m_PendingDeletions;
+        eastl::hash_map<RHI::FRHIDescriptor*, RenderResources::FTexture2D*> m_FileDialogIcons;
+        eastl::vector<RHI::FRHIDescriptor*> m_PendingDeletions;
 
         enum class ESelectEditMode
         {
@@ -66,8 +66,8 @@ namespace Editor
             Scale,
         };
         ESelectEditMode m_SelectEditMode = ESelectEditMode::Translate;
-        eastl::unique_ptr<RenderResources::Texture2D> m_pTranslateIcon;
-        eastl::unique_ptr<RenderResources::Texture2D> m_pRotateIcon;
-        eastl::unique_ptr<RenderResources::Texture2D> m_pScaleIcon;
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pTranslateIcon;
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pRotateIcon;
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pScaleIcon;
     };
 }

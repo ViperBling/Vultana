@@ -8,7 +8,7 @@ namespace Utilities
     template <typename F>
     inline void ParallelFor(uint32_t begin, uint32_t end, F func)
     {
-        enki::TaskScheduler* ts = Core::VultanaEngine::GetEngineInstance()->GetTaskScheduler();
+        enki::TaskScheduler* ts = Core::FVultanaEngine::GetEngineInstance()->GetTaskScheduler();
         enki::TaskSet taskSet(end - begin + 1, [&](enki::TaskSetPartition range, uint32_t threadNum)
         {
             for (uint32_t i = range.start; i != range.end; ++i)

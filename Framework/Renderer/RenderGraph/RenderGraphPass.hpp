@@ -7,15 +7,15 @@
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 }
 
 namespace RG
 {
-    class RenderGraph;
-    class RenderGraphResource;
-    class RGEdgeColorAttachment;
-    class RGEdgeDepthAttachment;
+    class FRenderGraph;
+    class FRenderGraphResource;
+    class FRGEdgeColorAttachment;
+    class FRGEdgeDepthAttachment;
 
     enum class RenderPassType
     {
@@ -25,7 +25,7 @@ namespace RG
         Copy
     };
 
-    struct RenderGraphAsyncResolveContext
+    struct FRenderGraphAsyncResolveContext
     {
         eastl::vector<DAGNodeID> ComputeQueuePasses;
         eastl::vector<DAGNodeID> PreGraphicsQueuePasses;
@@ -34,13 +34,13 @@ namespace RG
         uint64_t GraphicsFence = 0;
     };
 
-    struct RenderGraphPassExecuteContext
+    struct FRenderGraphPassExecuteContext
     {
-        Renderer::RendererBase* pRenderer;
-        RHI::RHICommandList* GraphicsCmdList;
-        RHI::RHICommandList* ComputeCmdList;
-        RHI::RHIFence* GraphicsFence;
-        RHI::RHIFence* ComputeFence;
+        Renderer::FRendererBase* pRenderer;
+        RHI::FRHICommandList* GraphicsCmdList;
+        RHI::FRHICommandList* ComputeCmdList;
+        RHI::FRHIFence* GraphicsFence;
+        RHI::FRHIFence* ComputeFence;
 
         uint64_t InitialGraphicsFenceValue;
         uint64_t LastSignalGraphicsFenceValue;
@@ -49,14 +49,14 @@ namespace RG
         uint64_t LastSignalComputeFenceValue;
     };
 
-    class RenderGraphPassBase : public DAGNode
+    class FRenderGraphPassBase : public FDAGNode
     {
     public:
-        RenderGraphPassBase(const eastl::string& name, RenderPassType type, DirectedAcyclicGraph& graph);
+        FRenderGraphPassBase(const eastl::string& name, RenderPassType type, FDirectedAcyclicGraph& graph);
         
-        void ResolveBarriers(const DirectedAcyclicGraph& graph);
-        void ResolveAsyncComputeBarrier(const DirectedAcyclicGraph& graph, RenderGraphAsyncResolveContext& context);
-        void Execute(const RenderGraph& graph, RenderGraphPassExecuteContext& context);
+        void ResolveBarriers(const FDirectedAcyclicGraph& graph);
+        void ResolveAsyncComputeBarrier(const FDirectedAcyclicGraph& graph, FRenderGraphAsyncResolveContext& context);
+        void Execute(const FRenderGraph& graph, FRenderGraphPassExecuteContext& context);
 
         void BeginEvent(const eastl::string& name) { m_EventNames.push_back(name); }
         void EndEvent() { m_EndEventNum++; }
@@ -69,12 +69,12 @@ namespace RG
         virtual const char* GetGraphVizColor() const override { return !IsCulled() ? "darkgoldenrod1" : "darkgoldenrod4"; }
 
     private:
-        void Begin(const RenderGraph& graph, RHI::RHICommandList* pCmdList);
-        void End(RHI::RHICommandList* pCmdList);
+        void Begin(const FRenderGraph& graph, RHI::FRHICommandList* pCmdList);
+        void End(RHI::FRHICommandList* pCmdList);
 
         bool HasRHIRenderPass() const;
 
-        virtual void ExecuteImpl(RHI::RHICommandList* pCmdList) = 0;
+        virtual void ExecuteImpl(RHI::FRHICommandList* pCmdList) = 0;
     
     protected:
         eastl::string m_Name;
@@ -83,25 +83,25 @@ namespace RG
         eastl::vector<eastl::string> m_EventNames;
         uint32_t m_EndEventNum = 0;
 
-        struct ResourceBarrier
+        struct FResourceBarrier
         {
-            RenderGraphResource* Resource;
+            FRenderGraphResource* Resource;
             uint32_t Subresource;
             RHI::ERHIAccessFlags OldState;
             RHI::ERHIAccessFlags NewState;
         };
-        eastl::vector<ResourceBarrier> m_ResourceBarriers;
+        eastl::vector<FResourceBarrier> m_ResourceBarriers;
 
-        struct AliasDiscardBarrier
+        struct FAliasDiscardBarrier
         {
-            RHI::RHIResource* Resource;
+            RHI::FRHIResource* Resource;
             RHI::ERHIAccessFlags AccessBefore;
             RHI::ERHIAccessFlags AccessAfter;
         };
-        eastl::vector<AliasDiscardBarrier> m_AliasDiscardBarriers;
+        eastl::vector<FAliasDiscardBarrier> m_AliasDiscardBarriers;
 
-        RGEdgeColorAttachment* m_pColorRT[RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT] = {};
-        RGEdgeDepthAttachment* m_pDepthRT = nullptr;
+        FRGEdgeColorAttachment* m_pColorRT[RHI::RHI_MAX_COLOR_ATTACHMENT_COUNT] = {};
+        FRGEdgeDepthAttachment* m_pDepthRT = nullptr;
 
         DAGNodeID m_WaitGraphicsPass = UINT32_MAX;
         DAGNodeID m_SignalGraphicsPass = UINT32_MAX;
@@ -111,11 +111,11 @@ namespace RG
     };
 
     template<class T>
-    class RenderGraphPass : public RenderGraphPassBase
+    class TRenderGraphPass : public FRenderGraphPassBase
     {
     public:
-        RenderGraphPass(const eastl::string& name, RenderPassType type, DirectedAcyclicGraph& graph, const eastl::function<void(const T&, RHI::RHICommandList*)>& execute)
-            : RenderGraphPassBase(name, type, graph)
+        TRenderGraphPass(const eastl::string& name, RenderPassType type, FDirectedAcyclicGraph& graph, const eastl::function<void(const T&, RHI::FRHICommandList*)>& execute)
+            : FRenderGraphPassBase(name, type, graph)
         {
             m_Execute = execute;
         }
@@ -124,13 +124,13 @@ namespace RG
         T const* operator->() { return &GetData(); }
     
     private:
-        void ExecuteImpl(RHI::RHICommandList* pCmdList) override
+        void ExecuteImpl(RHI::FRHICommandList* pCmdList) override
         {
             m_Execute(m_Parameters, pCmdList);
         }
     
     protected:
         T m_Parameters;
-        eastl::function<void(const T&, RHI::RHICommandList*)> m_Execute;
+        eastl::function<void(const T&, RHI::FRHICommandList*)> m_Execute;
     };
 }

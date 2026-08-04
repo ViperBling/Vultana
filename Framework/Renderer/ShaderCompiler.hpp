@@ -10,13 +10,13 @@ struct IRRootSignature;
 
 namespace Renderer
 {
-    class RendererBase;
+    class FRendererBase;
 
-    class ShaderCompiler
+    class FShaderCompiler
     {
     public:
-        ShaderCompiler(RendererBase* renderer);
-        ~ShaderCompiler();
+        FShaderCompiler(FRendererBase* renderer);
+        ~FShaderCompiler();
 
         bool Compile(
             const eastl::string& source, 
@@ -28,7 +28,7 @@ namespace Renderer
             eastl::vector<uint8_t>& output);
 
     private:
-        RendererBase* m_pRenderer = nullptr;
+        FRendererBase* m_pRenderer = nullptr;
         IDxcCompiler3* m_pDxcCompiler = nullptr;
         IDxcUtils* m_pDxcUtils = nullptr;
         IDxcIncludeHandler* m_pDxcIncludeHandler = nullptr;

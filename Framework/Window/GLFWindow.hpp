@@ -15,7 +15,7 @@ struct GLFWwindow;
 
 namespace Window
 {
-    struct WindowCreateInfo
+    struct FWindowCreateInfo
     {
         bool TransparentFramebuffer = false;
         bool Resizeable = true;
@@ -25,15 +25,15 @@ namespace Window
         const char* Title = "Vultana";
     };
 
-    class GLFWindow
+    class FGLFWindow
     {
     public:
-        GLFWindow(const WindowCreateInfo& options);
-        GLFWindow(const GLFWindow&) = delete;
-        GLFWindow& operator=(const GLFWindow&) = delete;
-        GLFWindow(GLFWindow&& other) noexcept;
-        GLFWindow& operator=(GLFWindow&& other) noexcept;
-        ~GLFWindow();
+        FGLFWindow(const FWindowCreateInfo& options);
+        FGLFWindow(const FGLFWindow&) = delete;
+        FGLFWindow& operator=(const FGLFWindow&) = delete;
+        FGLFWindow(FGLFWindow&& other) noexcept;
+        FGLFWindow& operator=(FGLFWindow&& other) noexcept;
+        ~FGLFWindow();
 
         GLFWwindow* GetNativeHandle() const { return this->m_Hwnd; }
         HWND GetWin32WindowHandle();
@@ -67,9 +67,9 @@ namespace Window
         float GetTimeSinceCreation() const;
         void SetTimeSinceCreation(float time);
 
-        void OnResize(std::function<void(GLFWindow&, uint32_t width, uint32_t height)> callback);
-        void OnKeyChanged(std::function<void(GLFWindow&, Utility::KeyCode, bool)> callback);
-        void OnMouseChanged(std::function<void(GLFWindow&, Utility::MouseButton, bool)> callback);
+        void OnResize(std::function<void(FGLFWindow&, uint32_t width, uint32_t height)> callback);
+        void OnKeyChanged(std::function<void(FGLFWindow&, Utility::KeyCode, bool)> callback);
+        void OnMouseChanged(std::function<void(FGLFWindow&, Utility::MouseButton, bool)> callback);
         
         void SetContext(GLFWwindow* window);
 
@@ -77,9 +77,9 @@ namespace Window
 
     private:
         GLFWwindow* m_Hwnd = nullptr;
-        std::vector<std::function<void(GLFWindow&, uint32_t width, uint32_t height)>> m_OnResizeCallbacks;
-        std::function<void(GLFWindow&, Utility::KeyCode, bool)> m_OnKeyChanged;
-        std::function<void(GLFWindow&, Utility::MouseButton, bool)> m_OnMouseChanged;
+        std::vector<std::function<void(FGLFWindow&, uint32_t width, uint32_t height)>> m_OnResizeCallbacks;
+        std::function<void(FGLFWindow&, Utility::KeyCode, bool)> m_OnKeyChanged;
+        std::function<void(FGLFWindow&, Utility::MouseButton, bool)> m_OnMouseChanged;
 
         float2 m_LastCursorPosition = { 0.0f, 0.0f };
     };

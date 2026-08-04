@@ -5,47 +5,47 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIGraphicsPipelineStateVK : public RHIPipelineState
+    class FVulkanGraphicsPipelineState : public FRHIPipelineState
     {
     public:
-        RHIGraphicsPipelineStateVK(RHIDeviceVK *device, const RHIGraphicsPipelineStateDesc &desc, const eastl::string &name);
-        ~RHIGraphicsPipelineStateVK();
+        FVulkanGraphicsPipelineState(FVulkanDevice *device, const FRHIGraphicsPipelineStateDesc &desc, const eastl::string &name);
+        ~FVulkanGraphicsPipelineState();
 
         virtual void* GetNativeHandle() const override { return m_Pipeline; }
         virtual bool Create() override;
 
     private:
-        RHIGraphicsPipelineStateDesc m_Desc;
+        FRHIGraphicsPipelineStateDesc m_Desc;
         vk::Pipeline m_Pipeline = VK_NULL_HANDLE;
     };
 
-    class RHIMeshShadingPipelineStateVK : public RHIPipelineState
+    class FVulkanMeshShadingPipelineState : public FRHIPipelineState
     {
     public:
-        RHIMeshShadingPipelineStateVK(RHIDeviceVK *device, const RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name);
-        ~RHIMeshShadingPipelineStateVK();
+        FVulkanMeshShadingPipelineState(FVulkanDevice *device, const FRHIMeshShadingPipelineStateDesc &desc, const eastl::string &name);
+        ~FVulkanMeshShadingPipelineState();
 
         virtual void* GetNativeHandle() const override { return m_Pipeline; }
         virtual bool Create() override;
 
     private:
-        RHIMeshShadingPipelineStateDesc m_Desc;
+        FRHIMeshShadingPipelineStateDesc m_Desc;
         vk::Pipeline m_Pipeline = VK_NULL_HANDLE;
     };
 
-    class RHIComputePipelineStateVK : public RHIPipelineState
+    class FVulkanComputePipelineState : public FRHIPipelineState
     {
     public:
-        RHIComputePipelineStateVK(RHIDeviceVK *device, const RHIComputePipelineStateDesc &desc, const eastl::string &name);
-        ~RHIComputePipelineStateVK();
+        FVulkanComputePipelineState(FVulkanDevice *device, const FRHIComputePipelineStateDesc &desc, const eastl::string &name);
+        ~FVulkanComputePipelineState();
 
         virtual void* GetNativeHandle() const override { return m_Pipeline; }
         virtual bool Create() override;
 
     private:
-        RHIComputePipelineStateDesc m_Desc;
+        FRHIComputePipelineStateDesc m_Desc;
         vk::Pipeline m_Pipeline = VK_NULL_HANDLE;
     };
 }

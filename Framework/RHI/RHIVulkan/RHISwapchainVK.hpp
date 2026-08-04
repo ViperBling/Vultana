@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHISwapchainVK : public RHISwapchain
+    class FVulkanSwapchain : public FRHISwapchain
     {
     public:
-        RHISwapchainVK(RHIDeviceVK* device, const RHISwapchainDesc& desc, const eastl::string& name);
-        ~RHISwapchainVK();
+        FVulkanSwapchain(FVulkanDevice* device, const FRHISwapchainDesc& desc, const eastl::string& name);
+        ~FVulkanSwapchain();
 
         bool Create();
         void Present(vk::Queue queue);
@@ -20,7 +20,7 @@ namespace RHI
 
         virtual void* GetNativeHandle() const override { return m_Swapchain; }
         virtual void AcquireNextBackBuffer() override;
-        virtual RHITexture* GetBackBuffer() const override;
+        virtual FRHITexture* GetBackBuffer() const override;
         virtual bool Resize(uint32_t width, uint32_t height) override;
         virtual void SetVSyncEnabled(bool enabled) override;
 
@@ -40,7 +40,7 @@ namespace RHI
         bool m_bMailboxSupported = false;
 
         uint32_t m_CurrentBackBuffer = 0;
-        eastl::vector<RHITexture*> m_BackBuffers;
+        eastl::vector<FRHITexture*> m_BackBuffers;
 
         int32_t m_FrameSemaphoreIndex = -1;
         eastl::vector<vk::Semaphore> m_AcquireSemaphores;

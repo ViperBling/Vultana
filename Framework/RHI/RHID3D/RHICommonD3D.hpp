@@ -14,13 +14,13 @@
 
 namespace RHI
 {
-    struct D3D12Descriptor
+    struct FD3D12Descriptor
     {
         D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle;
         D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle;
     };
 
-    inline bool IsNullDescriptor(const D3D12Descriptor& desc)
+    inline bool IsNullDescriptor(const FD3D12Descriptor& desc)
     {
         return desc.CPUHandle.ptr == 0 && desc.GPUHandle.ptr == 0;
     }

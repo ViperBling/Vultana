@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIShaderVK : public RHIShader
+    class FVulkanShader : public FRHIShader
     {
     public:
-        RHIShaderVK(RHIDeviceVK* device, const RHIShaderDesc& desc, const eastl::string& name);
-        ~RHIShaderVK();
+        FVulkanShader(FVulkanDevice* device, const FRHIShaderDesc& desc, const eastl::string& name);
+        ~FVulkanShader();
 
         virtual bool Create(eastl::span<uint8_t> data) override;
         virtual void* GetNativeHandle() const override { return m_ShaderModule; }

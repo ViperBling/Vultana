@@ -4,23 +4,23 @@
 
 namespace RHI
 {
-    class RHIResource;
-    class RHIBuffer;
-    class RHITexture;
-    class RHIFence;
-    class RHISwapchain;
-    class RHICommandList;
-    class RHIShader;
-    class RHIPipelineState;
-    class RHIDescriptor;
-    class RHIHeap;
+    class FRHIResource;
+    class FRHIBuffer;
+    class FRHITexture;
+    class FRHIFence;
+    class FRHISwapchain;
+    class FRHICommandList;
+    class FRHIShader;
+    class FRHIPipelineState;
+    class FRHIDescriptor;
+    class FRHIHeap;
 
-    class RHIDevice
+    class FRHIDevice
     {
     public:
-        virtual ~RHIDevice() = default;
+        virtual ~FRHIDevice() = default;
 
-        const RHIDeviceDesc& GetDesc() const { return m_Desc; }
+        const FRHIDeviceDesc& GetDesc() const { return m_Desc; }
         uint64_t GetFrameID() const { return m_FrameID; }
 
         virtual bool Initialize() = 0;
@@ -28,28 +28,28 @@ namespace RHI
         virtual void EndFrame() = 0;
         virtual void* GetNativeHandle() const = 0;
 
-        virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const eastl::string& name) = 0;
-        virtual RHICommandList* CreateCommandList(ERHICommandQueueType queueType, const eastl::string& name) = 0;
-        virtual RHIFence* CreateFence(const eastl::string& name) = 0;
-        virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const eastl::string& name) = 0;
-        virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const eastl::string& name) = 0;
-        virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const eastl::string& name) = 0;
-        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, eastl::span<uint8_t> data, const eastl::string& name) = 0;
-        virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const eastl::string& name) = 0;
-        virtual RHIPipelineState* CreateMeshShadingPipelineState(const RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name) = 0;
-        virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const eastl::string& name) = 0;
-        virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const eastl::string& name) = 0;
-        virtual RHIDescriptor* CreateUnorderedAccessView(RHIResource* resource, const RHIUnorderedAccessViewDesc& desc, const eastl::string& name) = 0;
-        virtual RHIDescriptor* CreateConstantBufferView(RHIBuffer* resource, const RHIConstantBufferViewDesc& desc, const eastl::string& name) = 0;
-        virtual RHIDescriptor* CreateSampler(const RHISamplerDesc& desc, const eastl::string& name) = 0;
+        virtual FRHISwapchain* CreateSwapchain(const FRHISwapchainDesc& desc, const eastl::string& name) = 0;
+        virtual FRHICommandList* CreateCommandList(ERHICommandQueueType queueType, const eastl::string& name) = 0;
+        virtual FRHIFence* CreateFence(const eastl::string& name) = 0;
+        virtual FRHIHeap* CreateHeap(const FRHIHeapDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIBuffer* CreateBuffer(const FRHIBufferDesc& desc, const eastl::string& name) = 0;
+        virtual FRHITexture* CreateTexture(const FRHITextureDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIShader* CreateShader(const FRHIShaderDesc& desc, eastl::span<uint8_t> data, const eastl::string& name) = 0;
+        virtual FRHIPipelineState* CreateGraphicsPipelineState(const FRHIGraphicsPipelineStateDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIPipelineState* CreateMeshShadingPipelineState(const FRHIMeshShadingPipelineStateDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIPipelineState* CreateComputePipelineState(const FRHIComputePipelineStateDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIDescriptor* CreateShaderResourceView(FRHIResource* resource, const FRHIShaderResourceViewDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIDescriptor* CreateUnorderedAccessView(FRHIResource* resource, const FRHIUnorderedAccessViewDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIDescriptor* CreateConstantBufferView(FRHIBuffer* resource, const FRHIConstantBufferViewDesc& desc, const eastl::string& name) = 0;
+        virtual FRHIDescriptor* CreateSampler(const FRHISamplerDesc& desc, const eastl::string& name) = 0;
 
-        virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) = 0;
-        virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) = 0;
+        virtual uint32_t GetAllocationSize(const FRHIBufferDesc& desc) = 0;
+        virtual uint32_t GetAllocationSize(const FRHITextureDesc& desc) = 0;
 
         virtual bool DumpMemoryStats(const eastl::string& filename) = 0;
 
     protected:
-        RHIDeviceDesc m_Desc;
+        FRHIDeviceDesc m_Desc;
         uint64_t m_FrameID = 0;
     };
 }

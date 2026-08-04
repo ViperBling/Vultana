@@ -8,9 +8,9 @@
 
 namespace Renderer
 {
-    HiZBuffer::HiZBuffer(Renderer::RendererBase *pRenderer) : m_pRenderer(pRenderer)
+    FHiZBuffer::FHiZBuffer(Renderer::FRendererBase *pRenderer) : m_pRenderer(pRenderer)
     {
-        RHI::RHIComputePipelineStateDesc computeDesc;
+        RHI::FRHIComputePipelineStateDesc computeDesc;
 
         computeDesc.CS = pRenderer->GetShader("HiZBufferReprojection.hlsl", "DepthReprojectionCS", RHI::ERHIShaderType::CS);
         m_pDepthReprojectionPSO = pRenderer->GetPipelineState(computeDesc, "HZB Depth Reprojection PSO");
@@ -31,7 +31,7 @@ namespace Renderer
         m_pDepthMipFilterMinMaxPSO = pRenderer->GetPipelineState(computeDesc, "HZB Generate Mips MinMax PSO");
     }
 
-    void HiZBuffer::GenerateCullingHZB1stPhase(RG::RenderGraph *rg)
+    void FHiZBuffer::GenerateCullingHZB1stPhase(RG::FRenderGraph *rg)
     {
         RENDER_GRAPH_EVENT(rg, "HiZBuffer::GenerateCullingHZB1stPhase");
 
@@ -39,54 +39,54 @@ namespace Renderer
 
         struct FDepthReprojectionData
         {
-            RG::RGHandle PrevDepth;
-            RG::RGHandle ReprojectedDepth;
+            RG::FRGHandle PrevDepth;
+            RG::FRGHandle ReprojectedDepth;
         };
 
         auto reprojectionPass = rg->AddPass<FDepthReprojectionData>("Depth Reprojection", RG::RenderPassType::Compute,
-            [&](FDepthReprojectionData& data, RG::RGBuilder& builder)
+            [&](FDepthReprojectionData& data, RG::FRGBuilder& builder)
             {
                 data.PrevDepth = builder.Read(m_pRenderer->GetPrevSceneDepthHandle());
 
-                RHI::RHITextureDesc texDesc {};
+                RHI::FRHITextureDesc texDesc {};
                 texDesc.Width = m_HZBSize.x;
                 texDesc.Height = m_HZBSize.y;
                 texDesc.Format = RHI::ERHIFormat::R16F;
                 texDesc.Usage = RHI::RHITextureUsageUnorderedAccess;
 
-                data.ReprojectedDepth = builder.Create<RG::RGTexture>(texDesc, "RT_ReprojectedDepth");
+                data.ReprojectedDepth = builder.Create<RG::FRGTexture>(texDesc, "RT_ReprojectedDepth");
                 data.ReprojectedDepth = builder.Write(data.ReprojectedDepth);
             },
-            [=](const FDepthReprojectionData& data, RHI::RHICommandList* pCmdList)
+            [=](const FDepthReprojectionData& data, RHI::FRHICommandList* pCmdList)
             {
                 ReprojectDepth(pCmdList, rg->GetTexture(data.ReprojectedDepth));
             });
 
         struct FDepthDilationData
         {
-            RG::RGHandle ReprojectedDepth;
-            RG::RGHandle DilatedDepth;
+            RG::FRGHandle ReprojectedDepth;
+            RG::FRGHandle DilatedDepth;
         };
 
-        RG::RGHandle hzb;
+        RG::FRGHandle hzb;
 
         auto dilationPass = rg->AddPass<FDepthDilationData>("Depth Dilation", RG::RenderPassType::Compute,
-            [&](FDepthDilationData& data, RG::RGBuilder& builder)
+            [&](FDepthDilationData& data, RG::FRGBuilder& builder)
             {
                 data.ReprojectedDepth = builder.Read(reprojectionPass->ReprojectedDepth);
 
-                RHI::RHITextureDesc texDesc {};
+                RHI::FRHITextureDesc texDesc {};
                 texDesc.Width = m_HZBSize.x;
                 texDesc.Height = m_HZBSize.y;
                 texDesc.MipLevels = m_HZBMipCount;
                 texDesc.Format = RHI::ERHIFormat::R16F;
                 texDesc.Usage = RHI::RHITextureUsageUnorderedAccess;
 
-                hzb = builder.Create<RG::RGTexture>(texDesc, "RT_1stPhaseHZB");
+                hzb = builder.Create<RG::FRGTexture>(texDesc, "RT_1stPhaseHZB");
 
                 data.DilatedDepth = builder.Write(hzb);
             },
-            [=](const FDepthDilationData& data, RHI::RHICommandList* pCmdList)
+            [=](const FDepthDilationData& data, RHI::FRHICommandList* pCmdList)
             {
                 DilationDepth(pCmdList, 
                     rg->GetTexture(data.ReprojectedDepth), 
@@ -95,11 +95,11 @@ namespace Renderer
 
         struct FBuildHZBData
         {
-            RG::RGHandle HZB;
+            RG::FRGHandle HZB;
         };
 
         rg->AddPass<FBuildHZBData>("Build HZB", RG::RenderPassType::Compute,
-            [&](FBuildHZBData& data, RG::RGBuilder& builder)
+            [&](FBuildHZBData& data, RG::FRGBuilder& builder)
             {
                 data.HZB = builder.Read(dilationPass->DilatedDepth);
 
@@ -109,42 +109,42 @@ namespace Renderer
                     m_CullingHZBMips1stPhase[i] = builder.Write(hzb, i);
                 }
             },
-            [=](const FBuildHZBData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildHZBData& data, RHI::FRHICommandList* pCmdList)
             {
-                RG::RGTexture* pHZB = rg->GetTexture(data.HZB);
+                RG::FRGTexture* pHZB = rg->GetTexture(data.HZB);
                 BuildHZB(pCmdList, pHZB);
             });
     }
 
-    void HiZBuffer::GenerateCullingHZB2ndPhase(RG::RenderGraph *rg, RG::RGHandle depthRT)
+    void FHiZBuffer::GenerateCullingHZB2ndPhase(RG::FRenderGraph *rg, RG::FRGHandle depthRT)
     {
         RENDER_GRAPH_EVENT(rg, "HiZBuffer::GenerateCullingHZB2ndPhase");
 
         struct FInitHZBData
         {
-            RG::RGHandle InputDepthRT;
-            RG::RGHandle HZB;
+            RG::FRGHandle InputDepthRT;
+            RG::FRGHandle HZB;
         };
 
-        RG::RGHandle hzb;
+        RG::FRGHandle hzb;
 
         auto initPass = rg->AddPass<FInitHZBData>("Init HZB", RG::RenderPassType::Compute,
-            [&](FInitHZBData& data, RG::RGBuilder& builder)
+            [&](FInitHZBData& data, RG::FRGBuilder& builder)
             {
                 data.InputDepthRT = builder.Read(depthRT);
 
-                RHI::RHITextureDesc texDesc {};
+                RHI::FRHITextureDesc texDesc {};
                 texDesc.Width = m_HZBSize.x;
                 texDesc.Height = m_HZBSize.y;
                 texDesc.MipLevels = m_HZBMipCount;
                 texDesc.Format = RHI::ERHIFormat::R16F;
                 texDesc.Usage = RHI::RHITextureUsageUnorderedAccess;
 
-                hzb = builder.Create<RG::RGTexture>(texDesc, "RT_2ndPhaseHZB");
+                hzb = builder.Create<RG::FRGTexture>(texDesc, "RT_2ndPhaseHZB");
 
                 data.HZB = builder.Write(hzb);
             },
-            [=](const FInitHZBData& data, RHI::RHICommandList* pCmdList)
+            [=](const FInitHZBData& data, RHI::FRHICommandList* pCmdList)
             {
                 InitHZB(pCmdList, 
                     rg->GetTexture(data.InputDepthRT), 
@@ -153,11 +153,11 @@ namespace Renderer
 
         struct FBuildHZBData
         {
-            RG::RGHandle HZB;
+            RG::FRGHandle HZB;
         };
 
         rg->AddPass<FBuildHZBData>("Build HZB", RG::RenderPassType::Compute,
-            [&](FBuildHZBData& data, RG::RGBuilder& builder)
+            [&](FBuildHZBData& data, RG::FRGBuilder& builder)
             {
                 data.HZB = builder.Read(initPass->HZB);
 
@@ -167,42 +167,42 @@ namespace Renderer
                     m_CullingHZBMips2ndPhase[i] = builder.Write(hzb, i);
                 }
             },
-            [=](const FBuildHZBData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildHZBData& data, RHI::FRHICommandList* pCmdList)
             {
-                RG::RGTexture* pHZB = rg->GetTexture(data.HZB);
+                RG::FRGTexture* pHZB = rg->GetTexture(data.HZB);
                 BuildHZB(pCmdList, pHZB);
             });
     }
 
-    void HiZBuffer::GenerateSceneHZB(RG::RenderGraph *rg, RG::RGHandle depthRT)
+    void FHiZBuffer::GenerateSceneHZB(RG::FRenderGraph *rg, RG::FRGHandle depthRT)
     {
         RENDER_GRAPH_EVENT(rg, "HiZBuffer::GenerateSceneHZB");
 
         struct FInitHZBData
         {
-            RG::RGHandle InputDepthRT;
-            RG::RGHandle HZB;
+            RG::FRGHandle InputDepthRT;
+            RG::FRGHandle HZB;
         };
 
-        RG::RGHandle hzb;
+        RG::FRGHandle hzb;
 
         auto initPass = rg->AddPass<FInitHZBData>("Init Scene HZB", RG::RenderPassType::Compute,
-            [&](FInitHZBData& data, RG::RGBuilder& builder)
+            [&](FInitHZBData& data, RG::FRGBuilder& builder)
             {
                 data.InputDepthRT = builder.Read(depthRT);
 
-                RHI::RHITextureDesc texDesc {};
+                RHI::FRHITextureDesc texDesc {};
                 texDesc.Width = m_HZBSize.x;
                 texDesc.Height = m_HZBSize.y;
                 texDesc.MipLevels = m_HZBMipCount;
                 texDesc.Format = RHI::ERHIFormat::R16F;
                 texDesc.Usage = RHI::RHITextureUsageUnorderedAccess;
 
-                hzb = builder.Create<RG::RGTexture>(texDesc, "RT_SceneHZB");
+                hzb = builder.Create<RG::FRGTexture>(texDesc, "RT_SceneHZB");
 
                 data.HZB = builder.Write(hzb);
             },
-            [=](const FInitHZBData& data, RHI::RHICommandList* pCmdList)
+            [=](const FInitHZBData& data, RHI::FRHICommandList* pCmdList)
             {
                 InitHZB(pCmdList, 
                     rg->GetTexture(data.InputDepthRT), 
@@ -212,11 +212,11 @@ namespace Renderer
 
         struct FBuildHZBData
         {
-            RG::RGHandle HZB;
+            RG::FRGHandle HZB;
         };
 
         rg->AddPass<FBuildHZBData>("Build Scene HZB", RG::RenderPassType::Compute,
-            [&](FBuildHZBData& data, RG::RGBuilder& builder)
+            [&](FBuildHZBData& data, RG::FRGBuilder& builder)
             {
                 data.HZB = builder.Read(initPass->HZB);
 
@@ -226,32 +226,32 @@ namespace Renderer
                     m_SceneHZBMips[i] = builder.Write(hzb, i);
                 }
             },
-            [=](const FBuildHZBData& data, RHI::RHICommandList* pCmdList)
+            [=](const FBuildHZBData& data, RHI::FRHICommandList* pCmdList)
             {
-                RG::RGTexture* pHZB = rg->GetTexture(data.HZB);
+                RG::FRGTexture* pHZB = rg->GetTexture(data.HZB);
                 BuildHZB(pCmdList, pHZB, true);
             });
     }
 
-    RG::RGHandle HiZBuffer::GetCullingHZBMip1stPhase(uint32_t mip) const
+    RG::FRGHandle FHiZBuffer::GetCullingHZBMip1stPhase(uint32_t mip) const
     {
         assert(mip < m_HZBMipCount);
         return m_CullingHZBMips1stPhase[mip];
     }
 
-    RG::RGHandle HiZBuffer::GetCullingHZBMip2ndPhase(uint32_t mip) const
+    RG::FRGHandle FHiZBuffer::GetCullingHZBMip2ndPhase(uint32_t mip) const
     {
         assert(mip < m_HZBMipCount);
         return m_CullingHZBMips2ndPhase[mip];
     }
 
-    RG::RGHandle HiZBuffer::GetSceneHZBMip(uint32_t mip) const
+    RG::FRGHandle FHiZBuffer::GetSceneHZBMip(uint32_t mip) const
     {
         assert(mip < m_HZBMipCount);
         return m_SceneHZBMips[mip];
     }
 
-    void HiZBuffer::CalcHZBSize()
+    void FHiZBuffer::CalcHZBSize()
     {
         uint32_t mipsX = (uint32_t)max(ceilf(log2f((float)m_pRenderer->GetRenderWidth())), 1.0f);
         uint32_t mipsY = (uint32_t)max(ceilf(log2f((float)m_pRenderer->GetRenderHeight())), 1.0f);
@@ -263,7 +263,7 @@ namespace Renderer
         m_HZBSize.y = 1 << (mipsY - 1);
     }
 
-    void HiZBuffer::ReprojectDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectedDepthTexture)
+    void FHiZBuffer::ReprojectDepth(RHI::FRHICommandList* pCmdList, RG::FRGTexture* reprojectedDepthTexture)
     {
         float clearValue[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         pCmdList->ClearUAV(reprojectedDepthTexture->GetTexture(), reprojectedDepthTexture->GetUAV(), clearValue);
@@ -283,7 +283,7 @@ namespace Renderer
         pCmdList->Dispatch(DivideRoundingUp(m_HZBSize.x, 8), DivideRoundingUp(m_HZBSize.y, 8), 1);
     }
 
-    void HiZBuffer::DilationDepth(RHI::RHICommandList* pCmdList, RG::RGTexture* reprojectedDepthSRV, RG::RGTexture* hzbMip0UAV)
+    void FHiZBuffer::DilationDepth(RHI::FRHICommandList* pCmdList, RG::FRGTexture* reprojectedDepthSRV, RG::FRGTexture* hzbMip0UAV)
     {
         pCmdList->SetPipelineState(m_pDepthDilationPSO);
 
@@ -298,11 +298,11 @@ namespace Renderer
         pCmdList->Dispatch(DivideRoundingUp(m_HZBSize.x, 8), DivideRoundingUp(m_HZBSize.y, 8), 1);
     }
 
-    void HiZBuffer::BuildHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* texture, bool minMax)
+    void FHiZBuffer::BuildHZB(RHI::FRHICommandList* pCmdList, RG::FRGTexture* texture, bool minMax)
     {
         pCmdList->SetPipelineState(minMax ? m_pDepthMipFilterMinMaxPSO : m_pDepthMipFilterPSO);
 
-        const RHI::RHITextureDesc &textureDesc = texture->GetTexture()->GetDesc();
+        const RHI::FRHITextureDesc &textureDesc = texture->GetTexture()->GetDesc();
 
         varAU2(dispatchThreadGroupCountXY);
         varAU2(workGroupOffset);
@@ -310,7 +310,7 @@ namespace Renderer
         varAU4(rectInfo) = initAU4(0, 0, textureDesc.Width, textureDesc.Height);
         SpdSetup(dispatchThreadGroupCountXY, workGroupOffset, numWorkGroupsAndMips, rectInfo, textureDesc.MipLevels - 1);
 
-        struct SPDConstants
+        struct FSPDConstants
         {
             uint32_t Mips;
             uint32_t NumWorkGroups;
@@ -323,7 +323,7 @@ namespace Renderer
             uint4 ImgDst[12];
         };
 
-        SPDConstants constants = {};
+        FSPDConstants constants = {};
         constants.NumWorkGroups = numWorkGroupsAndMips[0];
         constants.Mips = numWorkGroupsAndMips[1];
         constants.WorkGroupOffset[0] = workGroupOffset[0];
@@ -346,7 +346,7 @@ namespace Renderer
         pCmdList->Dispatch(dispatchX, dispatchY, 1);
     }
 
-    void HiZBuffer::InitHZB(RHI::RHICommandList* pCmdList, RG::RGTexture* inputDepthSRV, RG::RGTexture* hzbMip0UAV, bool minMax)
+    void FHiZBuffer::InitHZB(RHI::FRHICommandList* pCmdList, RG::FRGTexture* inputDepthSRV, RG::FRGTexture* hzbMip0UAV, bool minMax)
     {
         pCmdList->SetPipelineState(minMax ? m_pInitSceneHZBPSO : m_pInitHZBPSO);
 

@@ -5,13 +5,13 @@
 
 namespace RHI
 {
-    class RHIDeviceVK;
+    class FVulkanDevice;
 
-    class RHIHeapVK : public RHIHeap
+    class FVulkanHeap : public FRHIHeap
     {
     public:
-        RHIHeapVK(RHIDeviceVK* device, const RHIHeapDesc& desc, const eastl::string& name);
-        ~RHIHeapVK();
+        FVulkanHeap(FVulkanDevice* device, const FRHIHeapDesc& desc, const eastl::string& name);
+        ~FVulkanHeap();
 
         bool Create();
 

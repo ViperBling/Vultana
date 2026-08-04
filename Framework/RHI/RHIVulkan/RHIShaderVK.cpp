@@ -4,24 +4,24 @@
 
 namespace RHI
 {
-    RHIShaderVK::RHIShaderVK(RHIDeviceVK *device, const RHIShaderDesc &desc, const eastl::string &name)
+    FVulkanShader::FVulkanShader(FVulkanDevice *device, const FRHIShaderDesc &desc, const eastl::string &name)
     {
         m_pDevice = device;
         m_Desc = desc;
         m_Name = name;
     }
 
-    RHIShaderVK::~RHIShaderVK()
+    FVulkanShader::~FVulkanShader()
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_ShaderModule);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_ShaderModule);
     }
 
-    bool RHIShaderVK::Create(eastl::span<uint8_t> data)
+    bool FVulkanShader::Create(eastl::span<uint8_t> data)
     {
-        ((RHIDeviceVK*)m_pDevice)->Delete(m_ShaderModule);
+        ((FVulkanDevice*)m_pDevice)->Delete(m_ShaderModule);
 
-        auto device = ((RHIDeviceVK*)m_pDevice)->GetDevice();
-        auto dynamicLoader = ((RHIDeviceVK*)m_pDevice)->GetDynamicLoader();
+        auto device = ((FVulkanDevice*)m_pDevice)->GetDevice();
+        auto dynamicLoader = ((FVulkanDevice*)m_pDevice)->GetDynamicLoader();
 
         vk::ShaderModuleCreateInfo shaderCI {};
         shaderCI.setCodeSize(data.size());

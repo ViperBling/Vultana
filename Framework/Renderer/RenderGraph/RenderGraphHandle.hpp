@@ -4,7 +4,7 @@
 
 namespace RG
 {
-    struct RGHandle
+    struct FRGHandle
     {
         uint16_t Index = uint16_t(-1);
         uint16_t Node = uint16_t(-1);

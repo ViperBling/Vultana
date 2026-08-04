@@ -6,7 +6,7 @@
 
 namespace Scene
 {
-    class World;
+    class FWorld;
 }
 
 namespace Assets
@@ -17,21 +17,21 @@ namespace Assets
         PBRSpecularGlossiness
     };
 
-    class MeshMaterial
+    class FMeshMaterial
     {
-        friend class Scene::World;
-        friend class ModelLoader;
+        friend class Scene::FWorld;
+        friend class FModelLoader;
 
     public:
-        ~MeshMaterial();
+        ~FMeshMaterial();
 
-        RHI::RHIPipelineState* GetPSO();
-        RHI::RHIPipelineState* GetIDPSO();
-        RHI::RHIPipelineState* GetOutlinePSO();
+        RHI::FRHIPipelineState* GetPSO();
+        RHI::FRHIPipelineState* GetIDPSO();
+        RHI::FRHIPipelineState* GetOutlinePSO();
 
-        RHI::RHIPipelineState* GetMeshletPSO();
+        RHI::FRHIPipelineState* GetMeshletPSO();
 
-        RHI::RHIPipelineState* GetVertexSkinningPSO();
+        RHI::FRHIPipelineState* GetVertexSkinningPSO();
 
         void UpdateConstants();
         const FModelMaterialConstants* GetMaterialConstants() const { return &m_MaterialCB; }
@@ -50,31 +50,31 @@ namespace Assets
         eastl::string m_Name;
         FModelMaterialConstants m_MaterialCB = {};
 
-        RHI::RHIPipelineState* m_pPSO = nullptr;
-        RHI::RHIPipelineState* m_pIDPSO = nullptr;
-        RHI::RHIPipelineState* m_pOutlinePSO = nullptr;
+        RHI::FRHIPipelineState* m_pPSO = nullptr;
+        RHI::FRHIPipelineState* m_pIDPSO = nullptr;
+        RHI::FRHIPipelineState* m_pOutlinePSO = nullptr;
 
-        RHI::RHIPipelineState* m_pMeshletPSO = nullptr;
+        RHI::FRHIPipelineState* m_pMeshletPSO = nullptr;
 
-        RHI::RHIPipelineState* m_pVertexSkinningPSO = nullptr;
+        RHI::FRHIPipelineState* m_pVertexSkinningPSO = nullptr;
 
         EShadingModel m_ShadingModel = EShadingModel::DefaultPBR;
 
-        RenderResources::Texture2D* m_pDiffuseTexture = nullptr;
-        RenderResources::Texture2D* m_pSpecularGlossinessTexture = nullptr;
+        RenderResources::FTexture2D* m_pDiffuseTexture = nullptr;
+        RenderResources::FTexture2D* m_pSpecularGlossinessTexture = nullptr;
         float3 m_DiffuseColor = float3(1.0f, 1.0f, 1.0f);
         float3 m_SpecularColor = float3(0.0f, 0.0f, 0.0f);
         float m_Glossiness = 0.0f;
 
-        RenderResources::Texture2D* m_pAlbedoTexture = nullptr;
-        RenderResources::Texture2D* m_pMetallicRoughTexture = nullptr;
+        RenderResources::FTexture2D* m_pAlbedoTexture = nullptr;
+        RenderResources::FTexture2D* m_pMetallicRoughTexture = nullptr;
         float3 m_AlbedoColor = float3(1.0f, 1.0f, 1.0f);
         float m_Metallic = 0.0f;
         float m_Roughness = 0.0f;
 
-        RenderResources::Texture2D* m_pNormalTexture = nullptr;
-        RenderResources::Texture2D* m_pEmissiveTexture = nullptr;
-        RenderResources::Texture2D* m_pAOTexture = nullptr;
+        RenderResources::FTexture2D* m_pNormalTexture = nullptr;
+        RenderResources::FTexture2D* m_pEmissiveTexture = nullptr;
+        RenderResources::FTexture2D* m_pAOTexture = nullptr;
         float3 m_EmissiveColor = float3(0.0f, 0.0f, 0.0f);
         float m_AlphaCutout = 0.0f;
         float m_bAlphaTest = false;

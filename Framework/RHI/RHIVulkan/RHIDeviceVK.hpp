@@ -11,9 +11,9 @@
 namespace eastl
 {
     template<>
-    struct hash<RHI::RHITextureDesc>
+    struct hash<RHI::FRHITextureDesc>
     {
-        size_t operator()(const RHI::RHITextureDesc& desc) const
+        size_t operator()(const RHI::FRHITextureDesc& desc) const
         {
             return CityHash64(reinterpret_cast<const char*>(&desc), sizeof(desc));
         }
@@ -22,34 +22,34 @@ namespace eastl
 
 namespace RHI
 {
-    class RHIDeviceVK : public RHIDevice
+    class FVulkanDevice : public FRHIDevice
     {
     public:
-        RHIDeviceVK(const RHIDeviceDesc& desc);
-        ~RHIDeviceVK();
+        FVulkanDevice(const FRHIDeviceDesc& desc);
+        ~FVulkanDevice();
 
         virtual bool Initialize() override;
         virtual void BeginFrame() override;
         virtual void EndFrame() override;
         virtual void* GetNativeHandle() const override { return m_Device; }
 
-        virtual RHISwapchain* CreateSwapchain(const RHISwapchainDesc& desc, const eastl::string& name) override;
-        virtual RHICommandList* CreateCommandList(ERHICommandQueueType queueType, const eastl::string& name) override;
-        virtual RHIFence* CreateFence(const eastl::string& name) override;
-        virtual RHIHeap* CreateHeap(const RHIHeapDesc& desc, const eastl::string& name) override;
-        virtual RHIBuffer* CreateBuffer(const RHIBufferDesc& desc, const eastl::string& name) override;
-        virtual RHITexture* CreateTexture(const RHITextureDesc& desc, const eastl::string& name) override;
-        virtual RHIShader* CreateShader(const RHIShaderDesc& desc, eastl::span<uint8_t> data, const eastl::string& name) override;
-        virtual RHIPipelineState* CreateGraphicsPipelineState(const RHIGraphicsPipelineStateDesc& desc, const eastl::string& name) override;
-        virtual RHIPipelineState* CreateMeshShadingPipelineState(const RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name) override;
-        virtual RHIPipelineState* CreateComputePipelineState(const RHIComputePipelineStateDesc& desc, const eastl::string& name) override;
-        virtual RHIDescriptor* CreateShaderResourceView(RHIResource* resource, const RHIShaderResourceViewDesc& desc, const eastl::string& name) override;
-        virtual RHIDescriptor* CreateUnorderedAccessView(RHIResource* resource, const RHIUnorderedAccessViewDesc& desc, const eastl::string& name) override;
-        virtual RHIDescriptor* CreateConstantBufferView(RHIBuffer* resource, const RHIConstantBufferViewDesc& desc, const eastl::string& name) override;
-        virtual RHIDescriptor* CreateSampler(const RHISamplerDesc& desc, const eastl::string& name) override;
+        virtual FRHISwapchain* CreateSwapchain(const FRHISwapchainDesc& desc, const eastl::string& name) override;
+        virtual FRHICommandList* CreateCommandList(ERHICommandQueueType queueType, const eastl::string& name) override;
+        virtual FRHIFence* CreateFence(const eastl::string& name) override;
+        virtual FRHIHeap* CreateHeap(const FRHIHeapDesc& desc, const eastl::string& name) override;
+        virtual FRHIBuffer* CreateBuffer(const FRHIBufferDesc& desc, const eastl::string& name) override;
+        virtual FRHITexture* CreateTexture(const FRHITextureDesc& desc, const eastl::string& name) override;
+        virtual FRHIShader* CreateShader(const FRHIShaderDesc& desc, eastl::span<uint8_t> data, const eastl::string& name) override;
+        virtual FRHIPipelineState* CreateGraphicsPipelineState(const FRHIGraphicsPipelineStateDesc& desc, const eastl::string& name) override;
+        virtual FRHIPipelineState* CreateMeshShadingPipelineState(const FRHIMeshShadingPipelineStateDesc& desc, const eastl::string& name) override;
+        virtual FRHIPipelineState* CreateComputePipelineState(const FRHIComputePipelineStateDesc& desc, const eastl::string& name) override;
+        virtual FRHIDescriptor* CreateShaderResourceView(FRHIResource* resource, const FRHIShaderResourceViewDesc& desc, const eastl::string& name) override;
+        virtual FRHIDescriptor* CreateUnorderedAccessView(FRHIResource* resource, const FRHIUnorderedAccessViewDesc& desc, const eastl::string& name) override;
+        virtual FRHIDescriptor* CreateConstantBufferView(FRHIBuffer* resource, const FRHIConstantBufferViewDesc& desc, const eastl::string& name) override;
+        virtual FRHIDescriptor* CreateSampler(const FRHISamplerDesc& desc, const eastl::string& name) override;
 
-        virtual uint32_t GetAllocationSize(const RHIBufferDesc& desc) override;
-        virtual uint32_t GetAllocationSize(const RHITextureDesc& desc) override;
+        virtual uint32_t GetAllocationSize(const FRHIBufferDesc& desc) override;
+        virtual uint32_t GetAllocationSize(const FRHITextureDesc& desc) override;
 
         virtual bool DumpMemoryStats(const eastl::string& file) override;
 
@@ -65,9 +65,9 @@ namespace RHI
         vk::Queue GetComputeQueue() const { return m_ComputeQueue; }
         vk::Queue GetCopyQueue() const { return m_CopyQueue; }
         vk::PipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
-        class RHIDescriptorAllocatorVK* GetResourceDescriptorAllocator() const { return m_ResourceDesAllocator; }
-        class RHIDescriptorAllocatorVK* GetSamplerDescriptorAllocator() const { return m_SamplerDesAllocator; }
-        class RHIConstantBufferAllocatorVK* GetConstantBufferAllocator() const;
+        class FVulkanDescriptorAllocator* GetResourceDescriptorAllocator() const { return m_ResourceDesAllocator; }
+        class FVulkanDescriptorAllocator* GetSamplerDescriptorAllocator() const { return m_SamplerDesAllocator; }
+        class FVulkanConstantBufferAllocator* GetConstantBufferAllocator() const;
         const vk::PhysicalDeviceDescriptorBufferPropertiesEXT& GetDescriptorBufferProperties() const { return m_DescBufferProps; }
 
         uint32_t AllocateResourceDescriptor(void** desc);
@@ -81,8 +81,8 @@ namespace RHI
         template<typename T>
         void Delete(T object);
 
-        void EnqueueDefaultLayoutTransition(RHITexture* texture);
-        void CancelDefaultLayoutTransition(RHITexture* texture);
+        void EnqueueDefaultLayoutTransition(FRHITexture* texture);
+        void CancelDefaultLayoutTransition(FRHITexture* texture);
         void FlushLayoutTransition(ERHICommandQueueType queueType);
 
     private:
@@ -110,22 +110,22 @@ namespace RHI
         vk::Queue m_ComputeQueue;
         vk::Queue m_CopyQueue;
 
-        RHIDeletionQueueVK* m_DeferredDeletionQueue = nullptr;
-        RHICommandList* m_TransitionCopyCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
-        RHICommandList* m_TransitionGraphicsCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+        FVulkanDeletionQueue* m_DeferredDeletionQueue = nullptr;
+        FRHICommandList* m_TransitionCopyCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
+        FRHICommandList* m_TransitionGraphicsCmdList[RHI_MAX_INFLIGHT_FRAMES] = {};
 
-        class RHIConstantBufferAllocatorVK* m_ConstantBufferAllocators[RHI_MAX_INFLIGHT_FRAMES] = {};
-        class RHIDescriptorAllocatorVK* m_ResourceDesAllocator = nullptr;
-        class RHIDescriptorAllocatorVK* m_SamplerDesAllocator = nullptr;
+        class FVulkanConstantBufferAllocator* m_ConstantBufferAllocators[RHI_MAX_INFLIGHT_FRAMES] = {};
+        class FVulkanDescriptorAllocator* m_ResourceDesAllocator = nullptr;
+        class FVulkanDescriptorAllocator* m_SamplerDesAllocator = nullptr;
 
-        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> m_PendingGraphicsTransitions;
-        eastl::vector<eastl::pair<RHITexture*, ERHIAccessFlags>> m_PendingCopyTransitions;
+        eastl::vector<eastl::pair<FRHITexture*, ERHIAccessFlags>> m_PendingGraphicsTransitions;
+        eastl::vector<eastl::pair<FRHITexture*, ERHIAccessFlags>> m_PendingCopyTransitions;
 
-        eastl::hash_map<RHITextureDesc, uint32_t> m_TextureSizeMap;
+        eastl::hash_map<FRHITextureDesc, uint32_t> m_TextureSizeMap;
     };
 
     template<typename T>
-    inline void RHIDeviceVK::Delete(T objectHandle)
+    inline void FVulkanDevice::Delete(T objectHandle)
     {
         if (objectHandle != VK_NULL_HANDLE)
         {

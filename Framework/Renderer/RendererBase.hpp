@@ -22,59 +22,59 @@
 
 namespace Window
 {
-    class GLFWindow;
+    class FGLFWindow;
 }
 
 namespace Renderer
 {
-    class PipelineStateCache;
-    class ShaderCompiler;
-    class ShaderCache;
-    class HiZBuffer;
-    class GPUDrivenStats;
+    class FPipelineStateCache;
+    class FShaderCompiler;
+    class FShaderCache;
+    class FHiZBuffer;
+    class FGPUDrivenStats;
 
-    class RendererBase
+    class FRendererBase
     {
     public:
-        RendererBase();
-        ~RendererBase();
+        FRendererBase();
+        ~FRendererBase();
 
         bool CreateDevice(RHI::ERHIRenderBackend backend, void* windowHandle, uint32_t width, uint32_t height);
         virtual void RenderFrame();
         void WaitGPU();
 
         uint64_t GetFrameID() const { return m_pDevice->GetFrameID(); }
-        class PipelineStateCache* GetPipelineStateCache() const { return m_pPipelineStateCache.get(); }
-        class ShaderCompiler* GetShaderCompiler() const { return m_pShaderCompiler.get(); }
-        class ShaderCache* GetShaderCache() const { return m_pShaderCache.get(); }
+        class FPipelineStateCache* GetPipelineStateCache() const { return m_pPipelineStateCache.get(); }
+        class FShaderCompiler* GetShaderCompiler() const { return m_pShaderCompiler.get(); }
+        class FShaderCache* GetShaderCache() const { return m_pShaderCache.get(); }
         uint32_t GetDisplayWidth() const { return m_DisplayWidth; }
         uint32_t GetDisplayHeight() const { return m_DisplayHeight; }
         uint32_t GetRenderWidth() const { return m_RenderWidth; }
         uint32_t GetRenderHeight() const { return m_RenderHeight; }
 
-        RHI::RHIDevice* GetDevice() const { return m_pDevice.get(); }
-        RHI::RHISwapchain* GetSwapchain() const { return m_pSwapchain.get(); }
-        RHI::RHIShader* GetShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines = {}, RHI::ERHIShaderCompileFlags flags = 0);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc& desc, const eastl::string& name);
-        RHI::RHIPipelineState* GetPipelineState(const RHI::RHIComputePipelineStateDesc& desc, const eastl::string& name);
+        RHI::FRHIDevice* GetDevice() const { return m_pDevice.get(); }
+        RHI::FRHISwapchain* GetSwapchain() const { return m_pSwapchain.get(); }
+        RHI::FRHIShader* GetShader(const eastl::string& file, const eastl::string& entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string>& defines = {}, RHI::ERHIShaderCompileFlags flags = 0);
+        RHI::FRHIPipelineState* GetPipelineState(const RHI::FRHIGraphicsPipelineStateDesc& desc, const eastl::string& name);
+        RHI::FRHIPipelineState* GetPipelineState(const RHI::FRHIMeshShadingPipelineStateDesc& desc, const eastl::string& name);
+        RHI::FRHIPipelineState* GetPipelineState(const RHI::FRHIComputePipelineStateDesc& desc, const eastl::string& name);
         void ReloadShaders();
-        RHI::RHIDescriptor* GetPointSampler() const { return m_pPointRepeatSampler.get(); }
-        RHI::RHIDescriptor* GetLinearSampler() const { return m_pBilinearRepeatSampler.get(); }
-        RG::RenderGraph* GetRenderGraph() const { return m_pRenderGraph.get(); }
+        RHI::FRHIDescriptor* GetPointSampler() const { return m_pPointRepeatSampler.get(); }
+        RHI::FRHIDescriptor* GetLinearSampler() const { return m_pBilinearRepeatSampler.get(); }
+        RG::FRenderGraph* GetRenderGraph() const { return m_pRenderGraph.get(); }
 
-        RenderResources::Texture2D* CreateTexture2D(const eastl::string& file, bool srgb);
-        RenderResources::Texture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string& name);
+        RenderResources::FTexture2D* CreateTexture2D(const eastl::string& file, bool srgb);
+        RenderResources::FTexture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string& name);
 
-        RenderResources::IndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
-        RenderResources::StructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
-        RenderResources::RawBuffer* CreateRawBuffer(const void* data, uint32_t size, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+        RenderResources::FIndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);
+        RenderResources::FStructuredBuffer* CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t elementCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
+        RenderResources::FRawBuffer* CreateRawBuffer(const void* data, uint32_t size, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly, bool isUAV = false);
 
-        RHI::RHIBuffer* GetSceneStaticBuffer() const;
+        RHI::FRHIBuffer* GetSceneStaticBuffer() const;
         OffsetAllocator::Allocation AllocateSceneStaticBuffer(const void* data, uint32_t size);
         void FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation);
 
-        RHI::RHIBuffer* GetSceneAnimationBuffer() const;
+        RHI::FRHIBuffer* GetSceneAnimationBuffer() const;
         OffsetAllocator::Allocation AllocateSceneAnimationBuffer(uint32_t size);
         void FreeSceneAnimationBuffer(OffsetAllocator::Allocation allocation);
         
@@ -82,27 +82,27 @@ namespace Renderer
         uint32_t AddInstance(const FInstanceData& instanceData);
         uint32_t GetInstanceCount() const { return m_pGPUScene->GetInstanceCount(); }
 
-        void UploadTexture(RHI::RHITexture* pTexture, const void* pData);
-        void UploadBuffer(RHI::RHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
+        void UploadTexture(RHI::FRHITexture* pTexture, const void* pData);
+        void UploadBuffer(RHI::FRHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
-        void SetupGlobalConstants(RHI::RHICommandList* pCmdList);
+        void SetupGlobalConstants(RHI::FRHICommandList* pCmdList);
 
-        LinearAllocator* GetConstantAllocator() { return m_CBAllocator.get(); }
-        RenderBatch& AddBasePassBatch();
-        ComputeBatch& AddAnimationBatch() { return m_AnimationBatches.emplace_back(*m_CBAllocator); }
-        RenderBatch& AddOutlinePassBatch() { return m_OutlinePassBatches.emplace_back(*m_CBAllocator); }
-        RenderBatch& AddObjectIDPassBatch() { return m_IDPassBatches.emplace_back(*m_CBAllocator); }
-        RenderBatch& AddGUIBatch() { return m_GUIBatches.emplace_back(*m_CBAllocator); }
+        FLinearAllocator* GetConstantAllocator() { return m_CBAllocator.get(); }
+        FRenderBatch& AddBasePassBatch();
+        FComputeBatch& AddAnimationBatch() { return m_AnimationBatches.emplace_back(*m_CBAllocator); }
+        FRenderBatch& AddOutlinePassBatch() { return m_OutlinePassBatches.emplace_back(*m_CBAllocator); }
+        FRenderBatch& AddObjectIDPassBatch() { return m_IDPassBatches.emplace_back(*m_CBAllocator); }
+        FRenderBatch& AddGUIBatch() { return m_GUIBatches.emplace_back(*m_CBAllocator); }
 
         void RequestMouseHitTest(uint32_t x, uint32_t y);
         bool IsEnableMouseHitTest() const { return m_bEnableObjectIDRendering; }
         uint32_t GetMouseHitObjectID() const { return m_MouseHitObjectID; }
 
-        class DeferredBasePass* GetDeferredBasePass() { return m_pDeferredBasePass.get(); }
-        class HiZBuffer* GetHiZBuffer() { return m_pHZB.get(); }
-        class GPUDrivenStats* GetGPUDrivenStats() { return m_pGPUDrivenStats.get(); }
-        RenderResources::TypedBuffer* GetSPDCounterBuffer() { return m_pSPDCounterBuffer.get(); }
-        RG::RGHandle GetPrevSceneDepthHandle() const { return m_PrevSceneDepthHandle; }
+        class FDeferredBasePass* GetDeferredBasePass() { return m_pDeferredBasePass.get(); }
+        class FHiZBuffer* GetHiZBuffer() { return m_pHZB.get(); }
+        class FGPUDrivenStats* GetGPUDrivenStats() { return m_pGPUDrivenStats.get(); }
+        RenderResources::FTypedBuffer* GetSPDCounterBuffer() { return m_pSPDCounterBuffer.get(); }
+        RG::FRGHandle GetPrevSceneDepthHandle() const { return m_PrevSceneDepthHandle; }
         bool IsGPUDrivenStatsEnabled() const { return m_bGPUDrivenStatsEnabled; }
         void SetGPUDrivenStatsEnabled(bool enabled) { m_bGPUDrivenStatsEnabled = enabled; }
         bool IsShowMeshletsEnabled() const { return m_bShowMeshlets; }
@@ -117,27 +117,27 @@ namespace Renderer
         virtual void Render();
         virtual void EndFrame();
 
-        void ObjectIDPass(RG::RGHandle& depth);
-        void OutlinePass(RG::RGHandle& color, RG::RGHandle& depth);
-        void CopyHistoryPass(RG::RGHandle sceneDepth, /* RG::RGHandle sceneNormal, */ RG::RGHandle sceneColor);
+        void ObjectIDPass(RG::FRGHandle& depth);
+        void OutlinePass(RG::FRGHandle& color, RG::FRGHandle& depth);
+        void CopyHistoryPass(RG::FRGHandle sceneDepth, /* RG::RGHandle sceneNormal, */ RG::FRGHandle sceneColor);
 
-        void FlushComputePass(RHI::RHICommandList* pCmdList);
+        void FlushComputePass(RHI::FRHICommandList* pCmdList);
         void ImportPrevFrameTextures();
-        virtual void RenderBackBufferPass(RHI::RHICommandList* pCmdList);
+        virtual void RenderBackBufferPass(RHI::FRHICommandList* pCmdList);
     
     private:
-        void BuildRenderGraph(RG::RGHandle& outputColor, RG::RGHandle& outputDepth);
+        void BuildRenderGraph(RG::FRGHandle& outputColor, RG::FRGHandle& outputDepth);
 
         void MouseHitTest();
 
     private:
-        eastl::unique_ptr<RHI::RHIDevice> m_pDevice;
-        eastl::unique_ptr<RHI::RHISwapchain> m_pSwapchain;
-        eastl::unique_ptr<class PipelineStateCache> m_pPipelineStateCache;
-        eastl::unique_ptr<class ShaderCompiler> m_pShaderCompiler;
-        eastl::unique_ptr<class ShaderCache> m_pShaderCache;
-        eastl::unique_ptr<GPUScene> m_pGPUScene;
-        eastl::unique_ptr<RG::RenderGraph> m_pRenderGraph;
+        eastl::unique_ptr<RHI::FRHIDevice> m_pDevice;
+        eastl::unique_ptr<RHI::FRHISwapchain> m_pSwapchain;
+        eastl::unique_ptr<class FPipelineStateCache> m_pPipelineStateCache;
+        eastl::unique_ptr<class FShaderCompiler> m_pShaderCompiler;
+        eastl::unique_ptr<class FShaderCache> m_pShaderCache;
+        eastl::unique_ptr<FGPUScene> m_pGPUScene;
+        eastl::unique_ptr<RG::FRenderGraph> m_pRenderGraph;
 
         uint32_t m_DisplayWidth;
         uint32_t m_DisplayHeight;
@@ -146,94 +146,94 @@ namespace Renderer
         float m_UpscaleRatio = 1.0f;
         float m_MipBias = 0.0f;
 
-        eastl::unique_ptr<LinearAllocator> m_CBAllocator;
+        eastl::unique_ptr<FLinearAllocator> m_CBAllocator;
 
         uint64_t m_CurrentFrameFenceValue = 0;
         uint64_t m_FrameFenceValue[RHI::RHI_MAX_INFLIGHT_FRAMES] = {};
-        eastl::unique_ptr<RHI::RHIFence> m_pFrameFence;
-        eastl::unique_ptr<RHI::RHICommandList> m_pCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RHI::FRHIFence> m_pFrameFence;
+        eastl::unique_ptr<RHI::FRHICommandList> m_pCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
         uint64_t m_CurrentAsyncComputeFenceValue = 0;
-        eastl::unique_ptr<RHI::RHIFence> m_pAsyncComputeFence;
-        eastl::unique_ptr<RHI::RHICommandList> m_pAsyncComputeCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RHI::FRHIFence> m_pAsyncComputeFence;
+        eastl::unique_ptr<RHI::FRHICommandList> m_pAsyncComputeCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
         uint64_t m_CurrentUploadFenceValue = 0;
-        eastl::unique_ptr<RHI::RHIFence> m_pUploadFence;
-        eastl::unique_ptr<RHI::RHICommandList> m_pUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
-        eastl::unique_ptr<StagingBufferAllocator> m_pStagingBufferAllocators[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<RHI::FRHIFence> m_pUploadFence;
+        eastl::unique_ptr<RHI::FRHICommandList> m_pUploadCmdList[RHI::RHI_MAX_INFLIGHT_FRAMES];
+        eastl::unique_ptr<FStagingBufferAllocator> m_pStagingBufferAllocators[RHI::RHI_MAX_INFLIGHT_FRAMES];
 
-        struct TextureUpload
+        struct FTextureUpload
         {
-            RHI::RHITexture* Texture;
+            RHI::FRHITexture* Texture;
             uint32_t MipLevel;
             uint32_t ArraySlice;
             uint32_t Offset;
-            StagingBuffer SBForUpload;
+            FStagingBuffer SBForUpload;
         };
-        eastl::vector<TextureUpload> m_PendingTextureUpload;
+        eastl::vector<FTextureUpload> m_PendingTextureUpload;
 
-        struct BufferUpload
+        struct FBufferUpload
         {
-            RHI::RHIBuffer* Buffer;
+            RHI::FRHIBuffer* Buffer;
             uint32_t Offset;
-            StagingBuffer SBForUpload;
+            FStagingBuffer SBForUpload;
         };
-        eastl::vector<BufferUpload> m_PendingBufferUpload;
+        eastl::vector<FBufferUpload> m_PendingBufferUpload;
 
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pAniso2xSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pAniso4xSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pAniso8xSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pAniso16xSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pPointRepeatSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pPointClampSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pBilinearRepeatSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pBilinearClampSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pTrilinearRepeatSampler;
-        eastl::unique_ptr<RHI::RHIDescriptor> m_pTrilinearClampSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pAniso2xSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pAniso4xSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pAniso8xSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pAniso16xSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pPointRepeatSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pPointClampSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pBilinearRepeatSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pBilinearClampSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pTrilinearRepeatSampler;
+        eastl::unique_ptr<RHI::FRHIDescriptor> m_pTrilinearClampSampler;
 
-        eastl::unique_ptr<RenderResources::Texture2D> m_pPrevSceneDepthTexture;
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pPrevSceneDepthTexture;
         // eastl::unique_ptr<RenderResources::Texture2D> m_pPrevNormalTexture;
-        eastl::unique_ptr<RenderResources::Texture2D> m_pPrevSceneColorTexture;
-        RG::RGHandle m_PrevSceneDepthHandle;
-        RG::RGHandle m_PrevNormalHandle;
-        RG::RGHandle m_PrevSceneColorHandle;
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pPrevSceneColorTexture;
+        RG::FRGHandle m_PrevSceneDepthHandle;
+        RG::FRGHandle m_PrevNormalHandle;
+        RG::FRGHandle m_PrevSceneColorHandle;
         bool m_bHistoryValid = false;
 
-        eastl::unique_ptr<RenderResources::TypedBuffer> m_pSPDCounterBuffer;
+        eastl::unique_ptr<RenderResources::FTypedBuffer> m_pSPDCounterBuffer;
 
         bool m_bEnableObjectIDRendering = false;
         uint32_t m_MouseX = 0;
         uint32_t m_MouseY = 0;
         uint32_t m_MouseHitObjectID = UINT32_MAX;
-        eastl::unique_ptr<RHI::RHIBuffer> m_pObjectIDBuffer;
+        eastl::unique_ptr<RHI::FRHIBuffer> m_pObjectIDBuffer;
         uint32_t m_ObjectIDRowPitch = 0;
 
-        RG::RGHandle m_OutputColorHandle;
-        RG::RGHandle m_OutputDepthHandle;
+        RG::FRGHandle m_OutputColorHandle;
+        RG::FRGHandle m_OutputDepthHandle;
         
-        RHI::RHIPipelineState* m_pCopyColorPSO = nullptr;
-        RHI::RHIPipelineState* m_pCopyDepthPSO = nullptr;
-        RHI::RHIPipelineState* m_pCopyColorDepthPSO = nullptr;
+        RHI::FRHIPipelineState* m_pCopyColorPSO = nullptr;
+        RHI::FRHIPipelineState* m_pCopyDepthPSO = nullptr;
+        RHI::FRHIPipelineState* m_pCopyColorDepthPSO = nullptr;
 
-        eastl::unique_ptr<class DeferredBasePass> m_pDeferredBasePass;
+        eastl::unique_ptr<class FDeferredBasePass> m_pDeferredBasePass;
 
-        eastl::unique_ptr<class GPUDrivenDebugLine> m_pGPUDrivenDebugLine;
-        eastl::unique_ptr<class HiZBuffer> m_pHZB;
-        eastl::unique_ptr<class GPUDrivenStats> m_pGPUDrivenStats;
+        eastl::unique_ptr<class FGPUDrivenDebugLine> m_pGPUDrivenDebugLine;
+        eastl::unique_ptr<class FHiZBuffer> m_pHZB;
+        eastl::unique_ptr<class FGPUDrivenStats> m_pGPUDrivenStats;
         bool m_bGPUDrivenStatsEnabled = false;
         bool m_bShowMeshlets = false;
 
         // Per-frame transient handles, cached in BuildRenderGraph and resolved in SetupGlobalConstants
-        RG::RGHandle m_CullingHZB1stPhaseHandle;
-        RG::RGHandle m_CullingHZB2ndPhaseHandle;
-        RG::RGHandle m_SceneHZBHandle;
-        RG::RGHandle m_SecondPhaseMeshletListHandle;
-        RG::RGHandle m_SecondPhaseMeshletListCounterHandle;
+        RG::FRGHandle m_CullingHZB1stPhaseHandle;
+        RG::FRGHandle m_CullingHZB2ndPhaseHandle;
+        RG::FRGHandle m_SceneHZBHandle;
+        RG::FRGHandle m_SecondPhaseMeshletListHandle;
+        RG::FRGHandle m_SecondPhaseMeshletListCounterHandle;
 
-        eastl::vector<ComputeBatch> m_AnimationBatches;
+        eastl::vector<FComputeBatch> m_AnimationBatches;
 
-        eastl::vector<RenderBatch> m_OutlinePassBatches;
-        eastl::vector<RenderBatch> m_IDPassBatches;
-        eastl::vector<RenderBatch> m_GUIBatches;
+        eastl::vector<FRenderBatch> m_OutlinePassBatches;
+        eastl::vector<FRenderBatch> m_IDPassBatches;
+        eastl::vector<FRenderBatch> m_GUIBatches;
     };
 }

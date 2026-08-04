@@ -21,17 +21,17 @@
 
 namespace Renderer
 {
-    RendererBase::RendererBase()
+    FRendererBase::FRendererBase()
     {
-        m_pShaderCache = eastl::make_unique<ShaderCache>(this);
-        m_pShaderCompiler = eastl::make_unique<ShaderCompiler>(this);
-        m_pPipelineStateCache = eastl::make_unique<PipelineStateCache>(this);
-        m_CBAllocator = eastl::make_unique<LinearAllocator>(1024 * 1024 * 8);
+        m_pShaderCache = eastl::make_unique<FShaderCache>(this);
+        m_pShaderCompiler = eastl::make_unique<FShaderCompiler>(this);
+        m_pPipelineStateCache = eastl::make_unique<FPipelineStateCache>(this);
+        m_CBAllocator = eastl::make_unique<FLinearAllocator>(1024 * 1024 * 8);
         
-        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&RendererBase::OnWindowResize, this);
+        Core::FVultanaEngine::GetEngineInstance()->OnWindowResizeSignal.connect(&FRendererBase::OnWindowResize, this);
     }
 
-    RendererBase::~RendererBase()
+    FRendererBase::~FRendererBase()
     {
         WaitGPU();
 
@@ -40,17 +40,17 @@ namespace Renderer
             m_pRenderGraph->Clear();
         }
 
-        Core::VultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
+        Core::FVultanaEngine::GetEngineInstance()->OnWindowResizeSignal.disconnect(this);
     }
 
-    bool RendererBase::CreateDevice(RHI::ERHIRenderBackend backend, void *windowHandle, uint32_t width, uint32_t height)
+    bool FRendererBase::CreateDevice(RHI::ERHIRenderBackend backend, void *windowHandle, uint32_t width, uint32_t height)
     {
         m_DisplayWidth = width;
         m_DisplayHeight = height;
         m_RenderWidth = width;
         m_RenderHeight = height;
 
-        RHI::RHIDeviceDesc deviceDesc {};
+        RHI::FRHIDeviceDesc deviceDesc {};
         deviceDesc.RenderBackend = backend;
         m_pDevice.reset(RHI::CreateRHIDevice(deviceDesc));
         if (m_pDevice == nullptr)
@@ -59,7 +59,7 @@ namespace Renderer
             return false;
         }
 
-        RHI::RHISwapchainDesc swapchainDesc {};
+        RHI::FRHISwapchainDesc swapchainDesc {};
         swapchainDesc.Width = width;
         swapchainDesc.Height = height;
         swapchainDesc.WindowHandle = windowHandle;
@@ -84,23 +84,23 @@ namespace Renderer
         {
             eastl::string name = fmt::format("RendererBase::UploadCmdList{}", i).c_str();
             m_pUploadCmdList[i].reset(m_pDevice->CreateCommandList(RHI::ERHICommandQueueType::Copy, name));
-            m_pStagingBufferAllocators[i] = eastl::make_unique<StagingBufferAllocator>(this);
+            m_pStagingBufferAllocators[i] = eastl::make_unique<FStagingBufferAllocator>(this);
         }
 
         CreateCommonResources();
 
-        m_pRenderGraph = eastl::make_unique<RG::RenderGraph>(this);
-        m_pGPUScene = eastl::make_unique<GPUScene>(this);
-        m_pDeferredBasePass = eastl::make_unique<DeferredBasePass>(this);
-        m_pGPUDrivenDebugLine = eastl::make_unique<GPUDrivenDebugLine>(this);
+        m_pRenderGraph = eastl::make_unique<RG::FRenderGraph>(this);
+        m_pGPUScene = eastl::make_unique<FGPUScene>(this);
+        m_pDeferredBasePass = eastl::make_unique<FDeferredBasePass>(this);
+        m_pGPUDrivenDebugLine = eastl::make_unique<FGPUDrivenDebugLine>(this);
 
-        m_pHZB = eastl::make_unique<HiZBuffer>(this);
-        m_pGPUDrivenStats = eastl::make_unique<GPUDrivenStats>(this);
+        m_pHZB = eastl::make_unique<FHiZBuffer>(this);
+        m_pGPUDrivenStats = eastl::make_unique<FGPUDrivenStats>(this);
 
         return true;
     }
 
-    void RendererBase::RenderFrame()
+    void FRendererBase::RenderFrame()
     {
         m_pGPUScene->Update();
 
@@ -114,7 +114,7 @@ namespace Renderer
         MouseHitTest();
     }
 
-    void RendererBase::WaitGPU()
+    void FRendererBase::WaitGPU()
     {
         if (m_pFrameFence)
         {
@@ -122,39 +122,39 @@ namespace Renderer
         }
     }
 
-    RHI::RHIShader *RendererBase::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
+    RHI::FRHIShader *FRendererBase::GetShader(const eastl::string &file, const eastl::string &entryPoint, RHI::ERHIShaderType type, const eastl::vector<eastl::string> &defines, RHI::ERHIShaderCompileFlags flags)
     {
         return m_pShaderCache->GetShader(file, entryPoint, type, defines, flags);
     }
 
-    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
+    RHI::FRHIPipelineState *FRendererBase::GetPipelineState(const RHI::FRHIGraphicsPipelineStateDesc &desc, const eastl::string &name)
     {
         return m_pPipelineStateCache->GetPipelineState(desc, name);
     }
 
-    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
+    RHI::FRHIPipelineState *FRendererBase::GetPipelineState(const RHI::FRHIMeshShadingPipelineStateDesc &desc, const eastl::string &name)
     {
         return m_pPipelineStateCache->GetPipelineState(desc, name);
     }
 
-    RHI::RHIPipelineState *RendererBase::GetPipelineState(const RHI::RHIComputePipelineStateDesc &desc, const eastl::string &name)
+    RHI::FRHIPipelineState *FRendererBase::GetPipelineState(const RHI::FRHIComputePipelineStateDesc &desc, const eastl::string &name)
     {
         return m_pPipelineStateCache->GetPipelineState(desc, name);
     }
 
-    void RendererBase::ReloadShaders()
+    void FRendererBase::ReloadShaders()
     {
         m_pShaderCache->ReloadShaders();
     }
 
-    RenderResources::Texture2D *RendererBase::CreateTexture2D(const eastl::string &file, bool srgb)
+    RenderResources::FTexture2D *FRendererBase::CreateTexture2D(const eastl::string &file, bool srgb)
     {
-        Assets::TextureLoader loader;
+        Assets::FTextureLoader loader;
         if (!loader.Load(file, srgb))
         {
             return nullptr;
         }
-        RenderResources::Texture2D* texture = CreateTexture2D(loader.GetWidth(), loader.GetHeight(), loader.GetMipLevels(), loader.GetFormat(), 0, file);
+        RenderResources::FTexture2D* texture = CreateTexture2D(loader.GetWidth(), loader.GetHeight(), loader.GetMipLevels(), loader.GetFormat(), 0, file);
         if (texture)
         {
             UploadTexture(texture->GetTexture(), loader.GetData());
@@ -162,9 +162,9 @@ namespace Renderer
         return texture;
     }
 
-    RenderResources::Texture2D *RendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string &name)
+    RenderResources::FTexture2D *FRendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string &name)
     {
-        RenderResources::Texture2D* texture = new RenderResources::Texture2D(name);
+        RenderResources::FTexture2D* texture = new RenderResources::FTexture2D(name);
         if (!texture->Create(width, height, levels, format, flags))
         {
             delete texture;
@@ -173,7 +173,7 @@ namespace Renderer
         return texture;
     }
 
-    RenderResources::IndexBuffer *RendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const eastl::string &name, RHI::ERHIMemoryType memoryType)
+    RenderResources::FIndexBuffer *FRendererBase::CreateIndexBuffer(const void *data, uint32_t stride, uint32_t indexCount, const eastl::string &name, RHI::ERHIMemoryType memoryType)
     {
         eastl::vector<uint16_t> u16IndexBuffer;
         if (stride == 1)
@@ -187,7 +187,7 @@ namespace Renderer
             data = u16IndexBuffer.data();
         }
 
-        RenderResources::IndexBuffer* idBuffer = new RenderResources::IndexBuffer(name);
+        RenderResources::FIndexBuffer* idBuffer = new RenderResources::FIndexBuffer(name);
         if (!idBuffer->Create(stride, indexCount, memoryType))
         {
             delete idBuffer;
@@ -201,9 +201,9 @@ namespace Renderer
         return idBuffer;
     }
 
-    RenderResources::StructuredBuffer *RendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const eastl::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    RenderResources::FStructuredBuffer *FRendererBase::CreateStructuredBuffer(const void *data, uint32_t stride, uint32_t elementCount, const eastl::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
-        RenderResources::StructuredBuffer* pBuffer = new RenderResources::StructuredBuffer(name);
+        RenderResources::FStructuredBuffer* pBuffer = new RenderResources::FStructuredBuffer(name);
         if (!pBuffer->Create(stride, elementCount, memoryType, isUAV))
         {
             delete pBuffer;
@@ -216,9 +216,9 @@ namespace Renderer
         return pBuffer;
     }
 
-    RenderResources::RawBuffer *RendererBase::CreateRawBuffer(const void *data, uint32_t size, const eastl::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
+    RenderResources::FRawBuffer *FRendererBase::CreateRawBuffer(const void *data, uint32_t size, const eastl::string &name, RHI::ERHIMemoryType memoryType, bool isUAV)
     {
-        auto buffer = new RenderResources::RawBuffer(name);
+        auto buffer = new RenderResources::FRawBuffer(name);
         if (!buffer->Create(size, memoryType, isUAV))
         {
             delete buffer;
@@ -231,12 +231,12 @@ namespace Renderer
         return buffer;
     }
 
-    RHI::RHIBuffer *RendererBase::GetSceneStaticBuffer() const
+    RHI::FRHIBuffer *FRendererBase::GetSceneStaticBuffer() const
     {
         return m_pGPUScene->GetSceneStaticBuffer();
     }
 
-    OffsetAllocator::Allocation RendererBase::AllocateSceneStaticBuffer(const void *data, uint32_t size)
+    OffsetAllocator::Allocation FRendererBase::AllocateSceneStaticBuffer(const void *data, uint32_t size)
     {
         OffsetAllocator::Allocation allocation = m_pGPUScene->AllocateStaticBuffer(size);
         if (data)
@@ -246,27 +246,27 @@ namespace Renderer
         return allocation;
     }
 
-    void RendererBase::FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation)
+    void FRendererBase::FreeSceneStaticBuffer(OffsetAllocator::Allocation allocation)
     {
         m_pGPUScene->FreeStaticBuffer(allocation);
     }
 
-    RHI::RHIBuffer *RendererBase::GetSceneAnimationBuffer() const
+    RHI::FRHIBuffer *FRendererBase::GetSceneAnimationBuffer() const
     {
         return m_pGPUScene->GetSceneAnimationBuffer();
     }
 
-    OffsetAllocator::Allocation RendererBase::AllocateSceneAnimationBuffer(uint32_t size)
+    OffsetAllocator::Allocation FRendererBase::AllocateSceneAnimationBuffer(uint32_t size)
     {
         return m_pGPUScene->AllocateAnimationBuffer(size);
     }
 
-    void RendererBase::FreeSceneAnimationBuffer(OffsetAllocator::Allocation allocation)
+    void FRendererBase::FreeSceneAnimationBuffer(OffsetAllocator::Allocation allocation)
     {
         m_pGPUScene->FreeAnimationBuffer(allocation);
     }
 
-    uint32_t RendererBase::AllocateSceneConstantBuffer(const void *data, uint32_t size)
+    uint32_t FRendererBase::AllocateSceneConstantBuffer(const void *data, uint32_t size)
     {
         uint32_t address = m_pGPUScene->AllocateConstantBuffer(size);
         if (data)
@@ -277,7 +277,7 @@ namespace Renderer
         return address;
     }
 
-    uint32_t RendererBase::AddInstance(const FInstanceData &instanceData)
+    uint32_t FRendererBase::AddInstance(const FInstanceData &instanceData)
     {
         return m_pGPUScene->AddInstance(instanceData);
     }
@@ -299,15 +299,15 @@ namespace Renderer
         }
     }
 
-    void RendererBase::UploadTexture(RHI::RHITexture* pTexture, const void *pData)
+    void FRendererBase::UploadTexture(RHI::FRHITexture* pTexture, const void *pData)
     {
         uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        StagingBufferAllocator* pAllocator = m_pStagingBufferAllocators[frameIndex].get();
+        FStagingBufferAllocator* pAllocator = m_pStagingBufferAllocators[frameIndex].get();
 
         uint32_t requiredSize = pTexture->GetRequiredStagingBufferSize();
-        StagingBuffer buffer = pAllocator->Allocate(requiredSize);
+        FStagingBuffer buffer = pAllocator->Allocate(requiredSize);
 
-        const RHI::RHITextureDesc& desc = pTexture->GetDesc();
+        const RHI::FRHITextureDesc& desc = pTexture->GetDesc();
 
         char* dstData = (char*)buffer.Buffer->GetCPUAddress() + buffer.Offset;
         uint32_t dstOffset = 0;
@@ -332,7 +332,7 @@ namespace Renderer
 
                 imageCopy((char*)pData + srcOffset, dstData + dstOffset, srcRowPitch, dstRowPitch, rowNum, d);
 
-                TextureUpload upload;
+                FTextureUpload upload;
                 upload.Texture = pTexture;
                 upload.MipLevel = mip;
                 upload.ArraySlice = slice;
@@ -347,27 +347,27 @@ namespace Renderer
 
     }
 
-    void RendererBase::UploadBuffer(RHI::RHIBuffer *pBuffer, const void *pData, uint32_t offset, uint32_t dataSize)
+    void FRendererBase::UploadBuffer(RHI::FRHIBuffer *pBuffer, const void *pData, uint32_t offset, uint32_t dataSize)
     {
         uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        StagingBufferAllocator* pAllocator = m_pStagingBufferAllocators[frameIndex].get();
+        FStagingBufferAllocator* pAllocator = m_pStagingBufferAllocators[frameIndex].get();
 
-        StagingBuffer stagingBuffer = pAllocator->Allocate(dataSize);
+        FStagingBuffer stagingBuffer = pAllocator->Allocate(dataSize);
 
         char* dstData = (char*)stagingBuffer.Buffer->GetCPUAddress() + stagingBuffer.Offset;
         memcpy(dstData, pData, dataSize);
 
-        BufferUpload upload;
+        FBufferUpload upload;
         upload.Buffer = pBuffer;
         upload.Offset = offset;
         upload.SBForUpload = stagingBuffer;
         m_PendingBufferUpload.push_back(upload);
     }
 
-    void RendererBase::SetupGlobalConstants(RHI::RHICommandList *pCmdList)
+    void FRendererBase::SetupGlobalConstants(RHI::FRHICommandList *pCmdList)
     {
-        Scene::World* pWorld = Core::VultanaEngine::GetEngineInstance()->GetWorld();
-        Scene::Camera* pCamera = pWorld->GetCamera();
+        Scene::FWorld* pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
+        Scene::FCamera* pCamera = pWorld->GetCamera();
         Scene::ILight* pMainLight = pWorld->GetMainLight();
 
         FSceneConstants sceneConstants {};
@@ -405,7 +405,7 @@ namespace Renderer
         }
         if (m_SceneHZBHandle.IsValid())
         {
-            RG::RGTexture *pSceneHZB = m_pRenderGraph->GetTexture(m_SceneHZBHandle);
+            RG::FRGTexture *pSceneHZB = m_pRenderGraph->GetTexture(m_SceneHZBHandle);
             sceneConstants.SceneHZBSRV = pSceneHZB->IsUsed() ? pSceneHZB->GetSRV()->GetHeapIndex() : RHI::RHI_INVALID_RESOURCE;
         }
 
@@ -436,7 +436,7 @@ namespace Renderer
         sceneConstants.Aniso8xSampler = m_pAniso8xSampler->GetHeapIndex();
         sceneConstants.Aniso16xSampler = m_pAniso16xSampler->GetHeapIndex();
 
-        sceneConstants.FrameTime = Core::VultanaEngine::GetEngineInstance()->GetDeltaTime();
+        sceneConstants.FrameTime = Core::FVultanaEngine::GetEngineInstance()->GetDeltaTime();
         sceneConstants.FrameIndex = (uint32_t)GetFrameID();
 
         if (pCmdList->GetQueueType() == RHI::ERHICommandQueueType::Graphics)
@@ -447,21 +447,21 @@ namespace Renderer
         pCmdList->SetComputeConstants(2, &sceneConstants, sizeof(FSceneConstants));
     }
 
-    RenderBatch &RendererBase::AddBasePassBatch()
+    FRenderBatch &FRendererBase::AddBasePassBatch()
     {
         return m_pDeferredBasePass->AddBatch();
     }
 
-    void RendererBase::RequestMouseHitTest(uint32_t x, uint32_t y)
+    void FRendererBase::RequestMouseHitTest(uint32_t x, uint32_t y)
     {
         m_MouseX = x;
         m_MouseY = y;
         m_bEnableObjectIDRendering = true;
     }
 
-    void RendererBase::CreateCommonResources()
+    void FRendererBase::CreateCommonResources()
     {
-        RHI::RHISamplerDesc samplerDesc {};
+        RHI::FRHISamplerDesc samplerDesc {};
         m_pPointRepeatSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::PointRepeatSampler"));
 
         samplerDesc.MinFilter = RHI::ERHIFilter::Linear;
@@ -505,11 +505,11 @@ namespace Renderer
         samplerDesc.MaxAnisotropy = 16.0f;
         m_pAniso16xSampler.reset(m_pDevice->CreateSampler(samplerDesc, "RendererBase::Aniso16xSampler"));
 
-        m_pSPDCounterBuffer = eastl::make_unique<RenderResources::TypedBuffer>("RendererBase::SPDCounterBuffer");
+        m_pSPDCounterBuffer = eastl::make_unique<RenderResources::FTypedBuffer>("RendererBase::SPDCounterBuffer");
         const bool spdCounterCreated = m_pSPDCounterBuffer->Create(RHI::ERHIFormat::R32UI, 1, RHI::ERHIMemoryType::GPUOnly, true);
         assert(spdCounterCreated && "Failed to create SPD counter buffer");
 
-        RHI::RHIGraphicsPipelineStateDesc copyPSODesc;
+        RHI::FRHIGraphicsPipelineStateDesc copyPSODesc;
         copyPSODesc.VS = GetShader("Copy.hlsl", "VSMain", RHI::ERHIShaderType::VS);
         copyPSODesc.PS = GetShader("Copy.hlsl", "PSMain", RHI::ERHIShaderType::PS);
         copyPSODesc.DepthStencilState.bDepthWrite = false;
@@ -523,12 +523,12 @@ namespace Renderer
         copyPSODesc.DepthStencilState.DepthFunc = RHI::RHICompareFunc::Always;
         m_pCopyColorDepthPSO = GetPipelineState(copyPSODesc, "CopyColorDepthPSO");
 
-        RHI::RHIComputePipelineStateDesc computePSODesc;
+        RHI::FRHIComputePipelineStateDesc computePSODesc;
         computePSODesc.CS = GetShader("Copy.hlsl", "CopyDepthCS", RHI::ERHIShaderType::CS);
         m_pCopyDepthPSO = GetPipelineState(computePSODesc, "CopyDepthPSO");
     }
 
-    void RendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
+    void FRendererBase::OnWindowResize(void* wndHandle, uint32_t width, uint32_t height)
     {
         WaitGPU();
         
@@ -542,28 +542,28 @@ namespace Renderer
         }
     }
 
-    void RendererBase::BeginFrame()
+    void FRendererBase::BeginFrame()
     {
         uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
         m_pFrameFence->Wait(m_FrameFenceValue[frameIndex]);
 
         m_pDevice->BeginFrame();
 
-        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        RHI::FRHICommandList* pCmdList = m_pCmdList[frameIndex].get();
         pCmdList->ResetAllocator();
         pCmdList->Begin();
 
-        RHI::RHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
+        RHI::FRHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
         pComputeCmdList->ResetAllocator();
         pComputeCmdList->Begin();
     }
 
-    void RendererBase::UploadResource()
+    void FRendererBase::UploadResource()
     {
         if (m_PendingTextureUpload.empty() && m_PendingBufferUpload.empty()) return;
 
         uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHICommandList* pUploadeCmdList = m_pUploadCmdList[frameIndex].get();
+        RHI::FRHICommandList* pUploadeCmdList = m_pUploadCmdList[frameIndex].get();
         pUploadeCmdList->ResetAllocator();
         pUploadeCmdList->Begin();
 
@@ -572,13 +572,13 @@ namespace Renderer
             
             for (size_t i = 0; i < m_PendingBufferUpload.size(); i++)
             {
-                const BufferUpload& upload = m_PendingBufferUpload[i];
+                const FBufferUpload& upload = m_PendingBufferUpload[i];
                 pUploadeCmdList->CopyBuffer(upload.SBForUpload.Buffer, upload.Buffer, upload.SBForUpload.Offset, upload.Offset, upload.SBForUpload.Size);
             }
 
             for (size_t i = 0; i < m_PendingTextureUpload.size(); i++)
             {
-                const TextureUpload& upload = m_PendingTextureUpload[i];
+                const FTextureUpload& upload = m_PendingTextureUpload[i];
                 pUploadeCmdList->CopyBufferToTexture(upload.SBForUpload.Buffer, upload.Texture, upload.MipLevel, upload.ArraySlice, upload.SBForUpload.Offset + upload.Offset);
             }
         }
@@ -587,14 +587,14 @@ namespace Renderer
         pUploadeCmdList->Signal(m_pUploadFence.get(), ++m_CurrentUploadFenceValue);
         pUploadeCmdList->Submit();
 
-        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        RHI::FRHICommandList* pCmdList = m_pCmdList[frameIndex].get();
         pCmdList->Wait(m_pUploadFence.get(), m_CurrentUploadFenceValue);
 
         if (m_pDevice->GetDesc().RenderBackend == RHI::ERHIRenderBackend::Vulkan)
         {
             for (size_t i = 0; i < m_PendingTextureUpload.size(); i++)
             {
-                const TextureUpload& upload = m_PendingTextureUpload[i];
+                const FTextureUpload& upload = m_PendingTextureUpload[i];
                 pCmdList->TextureBarrier(upload.Texture, CalcSubresource(upload.Texture->GetDesc(), upload.MipLevel, upload.ArraySlice), RHI::RHIAccessCopyDst, RHI::RHIAccessMaskSRV);
             }
         }
@@ -603,11 +603,11 @@ namespace Renderer
         m_PendingTextureUpload.clear();
     }
 
-    void RendererBase::Render()
+    void FRendererBase::Render()
     {
         uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
-        RHI::RHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
+        RHI::FRHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        RHI::FRHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
 
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", m_pDevice->GetFrameID()).c_str());
 
@@ -631,11 +631,11 @@ namespace Renderer
         RenderBackBufferPass(pCmdList);
     }
 
-    void RendererBase::EndFrame()
+    void FRendererBase::EndFrame()
     {
         uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
-        RHI::RHICommandList* pCmdList = m_pCmdList[frameIndex].get();
-        RHI::RHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
+        RHI::FRHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+        RHI::FRHICommandList* pComputeCmdList = m_pAsyncComputeCmdList[frameIndex].get();
 
         pComputeCmdList->End();
         pCmdList->End();
@@ -657,7 +657,7 @@ namespace Renderer
         m_pDevice->EndFrame();
     }
 
-    void RendererBase::FlushComputePass(RHI::RHICommandList *pCmdList)
+    void FRendererBase::FlushComputePass(RHI::FRHICommandList *pCmdList)
     {
         if (!m_AnimationBatches.empty())
         {
@@ -672,20 +672,20 @@ namespace Renderer
         }
     }
 
-    void RendererBase::RenderBackBufferPass(RHI::RHICommandList *pCmdList)
+    void FRendererBase::RenderBackBufferPass(RHI::FRHICommandList *pCmdList)
     {
         m_pSwapchain->AcquireNextBackBuffer();
         pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
 
-        RG::RGTexture* pColorRT = m_pRenderGraph->GetTexture(m_OutputColorHandle);
-        RG::RGTexture* pDepthRT = m_pRenderGraph->GetTexture(m_OutputDepthHandle);
+        RG::FRGTexture* pColorRT = m_pRenderGraph->GetTexture(m_OutputColorHandle);
+        RG::FRGTexture* pDepthRT = m_pRenderGraph->GetTexture(m_OutputDepthHandle);
 
         {
             GPU_EVENT_DEBUG(pCmdList, "RenderBackBufferPass");
 
             m_pGPUDrivenDebugLine->PrepareForDraw(pCmdList);
 
-            RHI::RHIRenderPassDesc renderPassDesc {};
+            RHI::FRHIRenderPassDesc renderPassDesc {};
             renderPassDesc.Color[0].Texture = m_pSwapchain->GetBackBuffer();
             renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
             renderPassDesc.Depth.Texture = pDepthRT->GetTexture();
@@ -713,7 +713,7 @@ namespace Renderer
             }
 
             m_pGPUDrivenDebugLine->Draw(pCmdList);
-            Core::VultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
+            Core::FVultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
 
             pCmdList->EndRenderPass();
             pCmdList->TextureBarrier(pDepthRT->GetTexture(), 0, RHI::RHIAccessDSVReadOnly, RHI::RHIAccessDSV);
@@ -721,7 +721,7 @@ namespace Renderer
         pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
     }
 
-    void RendererBase::MouseHitTest()
+    void FRendererBase::MouseHitTest()
     {
         if (m_bEnableObjectIDRendering)
         {

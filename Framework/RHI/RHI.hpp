@@ -14,7 +14,7 @@
 
 namespace RHI
 {
-    RHIDevice* CreateRHIDevice(const RHIDeviceDesc& desc);
+    FRHIDevice* CreateRHIDevice(const FRHIDeviceDesc& desc);
     // Get the row pitch of a format
     uint32_t GetFormatRowPitch(ERHIFormat format, uint32_t width);
     // Get the block size of a compressed format
@@ -25,26 +25,26 @@ namespace RHI
     bool IsStencilFormat(ERHIFormat format);
     bool IsSRGBFormat(ERHIFormat format);
     // Calculate the subresource index
-    uint32_t CalcSubresource(const RHITextureDesc& desc, uint32_t mipLevel, uint32_t arraySlice);
+    uint32_t CalcSubresource(const FRHITextureDesc& desc, uint32_t mipLevel, uint32_t arraySlice);
     // Decompose a subresource into mip level and array slice
-    void DecomposeSubresource(const RHITextureDesc& desc, uint32_t subresource, uint32_t& mipLevel, uint32_t& arraySlice);
+    void DecomposeSubresource(const FRHITextureDesc& desc, uint32_t subresource, uint32_t& mipLevel, uint32_t& arraySlice);
 
-    class RenderEvent
+    class FRenderEvent
     {
     public:
-        RenderEvent(RHICommandList* cmdList, const eastl::string& eventName) : m_pCmdList(cmdList)
+        FRenderEvent(FRHICommandList* cmdList, const eastl::string& eventName) : m_pCmdList(cmdList)
         {
             m_pCmdList->BeginEvent(eventName);
         }
 
-        ~RenderEvent()
+        ~FRenderEvent()
         {
             m_pCmdList->EndEvent();
         }
     
     private:
-        RHICommandList* m_pCmdList = nullptr;
+        FRHICommandList* m_pCmdList = nullptr;
     };
 }
 
-#define GPU_EVENT_DEBUG(pCmdList, eventName) RHI::RenderEvent __render_event__(pCmdList, eventName)
+#define GPU_EVENT_DEBUG(pCmdList, eventName) RHI::FRenderEvent __render_event__(pCmdList, eventName)

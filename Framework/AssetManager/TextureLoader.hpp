@@ -4,11 +4,11 @@
 
 namespace Assets
 {
-    class TextureLoader
+    class FTextureLoader
     {
     public:
-        TextureLoader() = default;
-        ~TextureLoader();
+        FTextureLoader() = default;
+        ~FTextureLoader();
 
         bool Load(const eastl::string& filename, bool srgb);
 

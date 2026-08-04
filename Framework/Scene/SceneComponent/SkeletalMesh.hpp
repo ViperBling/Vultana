@@ -4,26 +4,26 @@
 
 namespace Assets
 {
-    class MeshMaterial;
-    class ModelLoader;
+    class FMeshMaterial;
+    class FModelLoader;
 }
 
 namespace Scene
 {
-    class SkeletalMesh;
-    class Animation;
+    class FSkeletalMesh;
+    class FAnimation;
 
-    class Skeleton
+    class FSkeleton
     {
-        friend class Assets::ModelLoader;
+        friend class Assets::FModelLoader;
         
     public:
-        Skeleton(const eastl::string& name);
-        void Update(const SkeletalMesh* mesh);
+        FSkeleton(const eastl::string& name);
+        void Update(const FSkeletalMesh* mesh);
         uint32_t GetJointMatricesAddress() const { return m_JointMatricesAddress; }
 
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
         eastl::string m_Name;
         eastl::vector<uint32_t> m_Joints;
         eastl::vector<float4x4> m_InverseBindMatrices;
@@ -37,7 +37,7 @@ namespace Scene
         eastl::string Name;
         uint32_t NodeID;
 
-        eastl::unique_ptr<Assets::MeshMaterial> Material;
+        eastl::unique_ptr<Assets::FMeshMaterial> Material;
 
         OffsetAllocator::Allocation TexCoordBuffer;
         OffsetAllocator::Allocation JointIDBuffer;
@@ -82,16 +82,16 @@ namespace Scene
         float4x4 GlobalTransform;
     };
 
-    class SkeletalMesh : public IVisibleObject
+    class FSkeletalMesh : public IVisibleObject
     {
-        friend class Assets::ModelLoader;
+        friend class Assets::FModelLoader;
 
     public:
-        SkeletalMesh(const eastl::string& name);
+        FSkeletalMesh(const eastl::string& name);
 
         virtual bool Create() override;
         virtual void Tick(float deltaTime) override;
-        virtual void Render(Renderer::RendererBase* pRenderer) override;
+        virtual void Render(Renderer::FRendererBase* pRenderer) override;
         virtual bool FrustumCull(const float4* planes, uint32_t planeCount) const override;
         virtual void OnGUI() override;
 
@@ -104,16 +104,16 @@ namespace Scene
         void UpdateMeshConstants(FSkeletalMeshNode* node);
 
         void Draw(const FSkeletalMeshData* mesh);
-        void UpdateVertexSkinning(Renderer::ComputeBatch& batch, const FSkeletalMeshData* mesh);
-        void Draw(Renderer::RenderBatch& batch, const FSkeletalMeshData* mesh, RHI::RHIPipelineState* pPSO);
+        void UpdateVertexSkinning(Renderer::FComputeBatch& batch, const FSkeletalMeshData* mesh);
+        void Draw(Renderer::FRenderBatch& batch, const FSkeletalMeshData* mesh, RHI::FRHIPipelineState* pPSO);
 
     private:
-        Renderer::RendererBase* m_pRenderer = nullptr;
+        Renderer::FRendererBase* m_pRenderer = nullptr;
 
         float4x4 m_MtxWorld;
 
-        eastl::unique_ptr<Skeleton> m_pSkeleton;
-        eastl::unique_ptr<Animation> m_pAnimation;
+        eastl::unique_ptr<FSkeleton> m_pSkeleton;
+        eastl::unique_ptr<FAnimation> m_pAnimation;
 
         eastl::vector<eastl::unique_ptr<FSkeletalMeshNode>> m_Nodes;
         eastl::vector<uint32_t> m_RootNodes;
