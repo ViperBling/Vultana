@@ -1,9 +1,16 @@
 #pragma once
 
 #include "Renderer/RendererBase.hpp"
+#include "Editor/Commands/CommandHistory.hpp"
+#include "Editor/Commands/TransformCommand.hpp"
 
 #include <EASTL/hash_map.h>
 #include <EASTL/functional.h>
+
+namespace Scene 
+{
+    class IVisibleObject;
+}
 
 namespace Editor
 {
@@ -69,5 +76,11 @@ namespace Editor
         eastl::unique_ptr<RenderResources::FTexture2D> m_pTranslateIcon;
         eastl::unique_ptr<RenderResources::FTexture2D> m_pRotateIcon;
         eastl::unique_ptr<RenderResources::FTexture2D> m_pScaleIcon;
+
+        // ---- Undo/Redo（Editor::Commands）----
+        Editor::Commands::FCommandHistory m_EditHistory;
+        bool m_bGizmoDragging = false;
+        Scene::IVisibleObject* m_GizmoDragTarget = nullptr;
+        Editor::Commands::FTransformSnapshot m_GizmoDragStart;
     };
 }

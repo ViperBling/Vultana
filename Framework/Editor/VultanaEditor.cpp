@@ -1,9 +1,12 @@
 #include "VultanaEditor.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "Editor/ImGUIImplement.hpp"
+#include "Editor/Commands/ObjectEditableTarget.hpp"
 #include "Renderer/RendererBase.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
+
+#include <EASTL/memory.h>
 
 #include "ImFileDialog/ImFileDialog.h"
 
@@ -61,6 +64,28 @@ namespace Editor
         {
             ImVec2 mousePos = io.MouseClickedPos[0];
             m_pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
+        }
+
+        // Undo/Redo Shortcut: Ctrl + Z / Ctrl + Y / Ctrl + Shift + Z
+        if (!io.WantCaptureKeyboard && !m_bGizmoDragging)
+        {
+            const bool ctrl = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
+            if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Z, false))
+            {
+                const bool shift = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
+                if (shift)
+                {
+                    m_EditHistory.Redo();
+                }
+                else
+                {
+                    m_EditHistory.Undo();
+                }
+            }
+            else if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y))
+            {
+                m_EditHistory.Redo();
+            }
         }
 
         BuildDockLayout();
@@ -176,6 +201,18 @@ namespace Editor
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Edit"))
+            {
+                if (ImGui::MenuItem("Undo", "Ctrl+Z", false, m_EditHistory.GetUndoCount() > 0))
+                {
+                    m_EditHistory.Undo();
+                }
+                if (ImGui::MenuItem("Redo", "Ctrl+Y", false, m_EditHistory.GetRedoCount() > 0))
+                {
+                    m_EditHistory.Redo();
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Debug"))
             {
                 if (ImGui::MenuItem("GPU Driven Stats", "", &m_bShowGPUDrivenStats))
@@ -227,6 +264,7 @@ namespace Editor
             {
                 eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
                 Core::FVultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
+                m_EditHistory.Clear();
             }
             ifd::FileDialog::Instance().Close();
         }
@@ -242,7 +280,20 @@ namespace Editor
         auto pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
 
         auto pSelectedObject = pWorld->GetVisibleObject(m_pRenderer->GetMouseHitObjectID());
-        if (pSelectedObject == nullptr) return;
+        if (pSelectedObject == nullptr)
+        {
+            m_bGizmoDragging = false;
+            m_GizmoDragTarget = nullptr;
+            return;
+        }
+
+        const bool usingGizmo = ImGuizmo::IsUsing();
+        if (usingGizmo && !m_bGizmoDragging)
+        {
+            m_bGizmoDragging = true;
+            m_GizmoDragTarget = pSelectedObject;
+            m_GizmoDragStart = Editor::Commands::FObjectEditableTarget(*pSelectedObject).GetTransform();
+        }
 
         float3 position = pSelectedObject->GetPosition();
         float3 rotation = RotationAngles(pSelectedObject->GetRotation());
@@ -281,8 +332,27 @@ namespace Editor
         pSelectedObject->SetPosition(position);
         pSelectedObject->SetRotation(RotationQuat(rotation));
         pSelectedObject->SetScale(scale);
-        
+
         pSelectedObject->OnGUI();
+
+        if (m_bGizmoDragging && !usingGizmo)
+        {
+            // Dragging ended → push command to history
+            m_bGizmoDragging = false;
+            if (m_GizmoDragTarget == pSelectedObject)
+            {
+                Editor::Commands::FObjectEditableTarget finalTarget(*m_GizmoDragTarget);
+                // Click handle but no change → do not push command
+                if (!Editor::Commands::TransformEqual(m_GizmoDragStart, finalTarget.GetTransform()))
+                {
+                    m_EditHistory.Push(eastl::make_unique<Editor::Commands::FSetTransformCommand>(
+                        eastl::make_unique<Editor::Commands::FObjectEditableTarget>(*m_GizmoDragTarget),
+                        m_GizmoDragStart,
+                        finalTarget.GetTransform()));
+                }
+            }
+            m_GizmoDragTarget = nullptr;
+        }
     }
 
     void FVultanaEditor::DrawFrameStats()
