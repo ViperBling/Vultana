@@ -9,6 +9,7 @@
         "entt",
         "fmt",
         "glfw3",
+        "gtest",
         "linalg",
         "meshoptimizer",
         "sigslot",
