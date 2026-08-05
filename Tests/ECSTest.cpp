@@ -1,6 +1,6 @@
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/ProcessorBase.hpp"
-#include "Scene/ECS/Fragments.hpp"
+#include "Scene/ECS/Components.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Editor/Commands/EntityEditableTarget.hpp"
@@ -33,7 +33,7 @@ private:
 static entt::entity CreateTransformEntity(FEntitySubsystem& ecs, float3 pos, float4 rot, float3 scale)
 {
     entt::entity e = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FTransformFragment>(e, pos, rot, scale);
+    ecs.GetRegistry().emplace<FTransformComponent>(e, pos, rot, scale);
     return e;
 }
 
@@ -52,7 +52,7 @@ TEST(ECSTest, CreateEntity_AssignsPickID)
 {
     FEntitySubsystem ecs;
     entt::entity e = ecs.CreateEntity();
-    auto *pickID = ecs.GetRegistry().try_get<FPickIDFragment>(e);
+    auto *pickID = ecs.GetRegistry().try_get<FPickIDComponent>(e);
     ASSERT_NE(pickID, nullptr);
     EXPECT_GT(pickID->PickID, 0u);
     EXPECT_LT(pickID->PickID, 10000000u); // MAX_PICK_ID = 9999999
@@ -127,9 +127,9 @@ TEST(ECSTest, View_All_ReturnsMatchedEntities)
     FEntitySubsystem ecs;
     entt::entity e1 = ecs.CreateEntity();
     entt::entity e2 = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FNameFragment>(e1);
+    ecs.GetRegistry().emplace<FNameComponent>(e1);
     int count = 0;
-    for (auto e : ecs.GetRegistry().view<FNameFragment>())
+    for (auto e : ecs.GetRegistry().view<FNameComponent>())
         ++count;
     EXPECT_EQ(count, 1);
 }
@@ -212,7 +212,7 @@ TEST(ECSTest, EntityEditableTarget_GetSetTransform_Roundtrip)
 {
     FEntitySubsystem ecs;
     entt::entity e = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FTransformFragment>(e);
+    ecs.GetRegistry().emplace<FTransformComponent>(e);
     Editor::Commands::FEntityEditableTarget target(ecs, e);
     Editor::Commands::FTransformSnapshot newVal;
     newVal.Position = float3(10.0f, 20.0f, 30.0f);
@@ -227,25 +227,25 @@ TEST(ECSTest, FSetTransformCommand_UndoRedo)
 {
     FEntitySubsystem ecs;
     entt::entity e = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FTransformFragment>(e);
+    ecs.GetRegistry().emplace<FTransformComponent>(e);
     auto target = eastl::make_unique<Editor::Commands::FEntityEditableTarget>(ecs, e);
     auto before = target->GetTransform();
     Editor::Commands::FTransformSnapshot after;
     after.Position = float3(5.0f, 5.0f, 5.0f);
     auto cmd = eastl::make_unique<Editor::Commands::FSetTransformCommand>(eastl::move(target), before, after);
     cmd->Redo();
-    EXPECT_EQ(ecs.GetRegistry().get<FTransformFragment>(e).Position.x, 5.0f);
+    EXPECT_EQ(ecs.GetRegistry().get<FTransformComponent>(e).Position.x, 5.0f);
     cmd->Undo();
-    EXPECT_EQ(ecs.GetRegistry().get<FTransformFragment>(e).Position.x, 0.0f);
+    EXPECT_EQ(ecs.GetRegistry().get<FTransformComponent>(e).Position.x, 0.0f);
 }
 
 TEST(ECSTest, FEntitySnapshot_SnapAndRestore)
 {
     FEntitySubsystem ecs;
     entt::entity e = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FTransformFragment>(e, float3(1, 2, 3), float4(0, 0, 0, 1), float3(1, 1, 1));
-    ecs.GetRegistry().emplace<FNameFragment>(e);
-    ecs.GetRegistry().get<FNameFragment>(e).SetName("Test");
+    ecs.GetRegistry().emplace<FTransformComponent>(e, float3(1, 2, 3), float4(0, 0, 0, 1), float3(1, 1, 1));
+    ecs.GetRegistry().emplace<FNameComponent>(e);
+    ecs.GetRegistry().get<FNameComponent>(e).SetName("Test");
     auto snap = ecs.SnapEntity(e);
     EXPECT_TRUE(snap.Transform.has_value());
     ecs.DestroyEntityDeferred(e);
@@ -253,7 +253,7 @@ TEST(ECSTest, FEntitySnapshot_SnapAndRestore)
     EXPECT_FALSE(ecs.GetRegistry().valid(e));
     ecs.ApplyEntitySnapshot(snap);
     EXPECT_TRUE(ecs.GetRegistry().valid(e));
-    EXPECT_EQ(ecs.GetRegistry().get<FTransformFragment>(e).Position.x, 1.0f);
+    EXPECT_EQ(ecs.GetRegistry().get<FTransformComponent>(e).Position.x, 1.0f);
 }
 
 TEST(ECSTest, ResurrectEntity_AfterDestroy)
@@ -276,7 +276,7 @@ TEST(ECSTest, Hierarchy_SingleRoot_WorldTransform)
     entt::entity e = CreateTransformEntity(ecs, float3(10, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
-    auto* w = ecs.GetRegistry().try_get<FWorldTransformFragment>(e);
+    auto* w = ecs.GetRegistry().try_get<FWorldTransformComponent>(e);
     ASSERT_NE(w, nullptr);
     EXPECT_EQ(w->MtxWorld[3].x, 10.0f);
 }
@@ -289,27 +289,27 @@ TEST(ECSTest, Hierarchy_ParentChild_L2W)
     ecs.SetParent(c, p);
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
-    EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformFragment>(c).MtxWorld[3].x, 15.0f, 0.001f);
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformComponent>(c).MtxWorld[3].x, 15.0f, 0.001f);
 }
 
 TEST(ECSTest, Hierarchy_NonUniformScale_Bounds)
 {
     FEntitySubsystem ecs;
     entt::entity e = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(2, 1, 1));
-    ecs.GetRegistry().emplace<FBoundingSphereFragment>(e, float3(0, 0, 0), 5.0f);
+    ecs.GetRegistry().emplace<FBoundingSphereComponent>(e, float3(0, 0, 0), 5.0f);
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
-    EXPECT_NEAR(ecs.GetRegistry().get<FWorldBoundingSphereFragment>(e).Radius, 10.0f, 0.001f);
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldBoundingSphereComponent>(e).Radius, 10.0f, 0.001f);
 }
 
 TEST(ECSTest, Hierarchy_InvalidParent_Removed)
 {
     FEntitySubsystem ecs;
     entt::entity c = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
-    ecs.GetRegistry().emplace<FParentFragment>(c, entt::entity{9999});
+    ecs.GetRegistry().emplace<FParentComponent>(c, entt::entity{9999});
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
-    EXPECT_EQ(ecs.GetRegistry().try_get<FParentFragment>(c), nullptr);
+    EXPECT_EQ(ecs.GetRegistry().try_get<FParentComponent>(c), nullptr);
 }
 
 TEST(ECSTest, Hierarchy_SelfReference_Rejected)
@@ -317,7 +317,7 @@ TEST(ECSTest, Hierarchy_SelfReference_Rejected)
     FEntitySubsystem ecs;
     entt::entity e = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
     ecs.SetParent(e, e);
-    EXPECT_EQ(ecs.GetRegistry().try_get<FParentFragment>(e), nullptr);
+    EXPECT_EQ(ecs.GetRegistry().try_get<FParentComponent>(e), nullptr);
 }
 
 TEST(ECSTest, Hierarchy_ParentDeleted_OrphanBecomesRoot)
@@ -329,31 +329,31 @@ TEST(ECSTest, Hierarchy_ParentDeleted_OrphanBecomesRoot)
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.DestroyEntityDeferred(p);
     ecs.Tick(0.0f);
-    EXPECT_EQ(ecs.GetRegistry().try_get<FParentFragment>(c), nullptr);
+    EXPECT_EQ(ecs.GetRegistry().try_get<FParentComponent>(c), nullptr);
 }
 
 TEST(ECSTest, Culling_InsideFrustum_Visible)
 {
     FEntitySubsystem ecs;
     entt::entity e = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FWorldBoundingSphereFragment>(e, float3(0, 0, 0), 1.0f);
-    ecs.GetRegistry().emplace<FVisibilityFragment>(e);
+    ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(e, float3(0, 0, 0), 1.0f);
+    ecs.GetRegistry().emplace<FVisibilityComponent>(e);
     float4 fp[6] = {{0, 0, 1, 0.99f}, {0, 0, -1, 999}, {1, 0, 0, 1}, {-1, 0, 0, 1}, {0, 1, 0, 1}, {0, -1, 0, 1}};
     ecs.RegisterProcessor(eastl::make_unique<FCullingProcessor>(fp, 6, Tests::ParallelForFunc));
     ecs.Tick(0.0f);
-    EXPECT_TRUE(ecs.GetRegistry().get<FVisibilityFragment>(e).bFrustumVisible);
+    EXPECT_TRUE(ecs.GetRegistry().get<FVisibilityComponent>(e).bFrustumVisible);
 }
 
 TEST(ECSTest, Culling_OutsideFrustum_NotVisible)
 {
     FEntitySubsystem ecs;
     entt::entity e = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FWorldBoundingSphereFragment>(e, float3(1000, 1000, 1000), 1.0f);
-    ecs.GetRegistry().emplace<FVisibilityFragment>(e);
+    ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(e, float3(1000, 1000, 1000), 1.0f);
+    ecs.GetRegistry().emplace<FVisibilityComponent>(e);
     float4 fp[6] = {{0, 0, 1, 0.99f}, {0, 0, -1, 999}, {1, 0, 0, 1}, {-1, 0, 0, 1}, {0, 1, 0, 1}, {0, -1, 0, 1}};
     ecs.RegisterProcessor(eastl::make_unique<FCullingProcessor>(fp, 6, Tests::ParallelForFunc));
     ecs.Tick(0.0f);
-    EXPECT_FALSE(ecs.GetRegistry().get<FVisibilityFragment>(e).bFrustumVisible);
+    EXPECT_FALSE(ecs.GetRegistry().get<FVisibilityComponent>(e).bFrustumVisible);
 }
 
 TEST(ECSTest, SetParent_GetChildren_Consistency)
@@ -376,5 +376,5 @@ TEST(ECSTest, Hierarchy_MultipleLevels_L2W)
     ecs.SetParent(c, p);
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
-    EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformFragment>(c).MtxWorld[3].x, 18.0f, 0.001f);
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformComponent>(c).MtxWorld[3].x, 18.0f, 0.001f);
 }

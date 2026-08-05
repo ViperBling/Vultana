@@ -1,6 +1,6 @@
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/EntitySubsystem.hpp"
-#include "Scene/ECS/Fragments.hpp"
+#include "Scene/ECS/Components.hpp"
 #include "Utilities/ParallelFor.hpp"
 #include "CullingProcessor.hpp"
 
@@ -22,10 +22,10 @@ namespace Scene::ECS
         if (!m_FrustumPlanes || m_PlaneCount == 0)
             return;
         auto& registry = subsystem.GetRegistry();
-        auto view = registry.view<FWorldBoundingSphereFragment, FVisibilityFragment>();
+        auto view = registry.view<FWorldBoundingSphereComponent, FVisibilityComponent>();
         eastl::vector<entt::entity> entities;
         entities.reserve(view.size_hint());
-        view.each([&entities](entt::entity entity, const FWorldBoundingSphereFragment&, const FVisibilityFragment&)
+        view.each([&entities](entt::entity entity, const FWorldBoundingSphereComponent&, const FVisibilityComponent&)
         {
             entities.push_back(entity);
         });
@@ -35,8 +35,8 @@ namespace Scene::ECS
         auto cullFunc = [&](uint32_t i)
         {
             auto entity = entities[i];
-            auto& bounds = view.get<FWorldBoundingSphereFragment>(entity);
-            auto& visibility = view.get<FVisibilityFragment>(entity);
+            auto& bounds = view.get<FWorldBoundingSphereComponent>(entity);
+            auto& visibility = view.get<FVisibilityComponent>(entity);
             visibility.bFrustumVisible = SphereFrustumCull(m_FrustumPlanes, m_PlaneCount, bounds.Center, bounds.Radius);
         };
 

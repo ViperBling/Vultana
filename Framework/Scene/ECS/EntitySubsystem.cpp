@@ -23,7 +23,7 @@ namespace Scene::ECS
             pickID = 1;
             m_NextPickID = 2;
         }
-        m_Registry.emplace<FPickIDFragment>(entity, pickID);
+        m_Registry.emplace<FPickIDComponent>(entity, pickID);
         m_PickIDToEntity[pickID] = entity;
         return entity;
     }
@@ -32,9 +32,9 @@ namespace Scene::ECS
     {
         if (!m_Registry.valid(entity))
             return;
-        auto* pickIDFrag = m_Registry.try_get<FPickIDFragment>(entity);
-        if (pickIDFrag)
-            m_PickIDToEntity.erase(pickIDFrag->PickID);
+        auto* pickIDComp = m_Registry.try_get<FPickIDComponent>(entity);
+        if (pickIDComp)
+            m_PickIDToEntity.erase(pickIDComp->PickID);
         m_PendingDestroy.push_back(entity);
     }
 
@@ -47,7 +47,7 @@ namespace Scene::ECS
             pickID = 1;
             m_NextPickID = 2;
         }
-        m_Registry.emplace<FPickIDFragment>(entity, pickID);
+        m_Registry.emplace<FPickIDComponent>(entity, pickID);
         m_PickIDToEntity[pickID] = entity;
         return entity;
     }
@@ -65,8 +65,8 @@ namespace Scene::ECS
 
     uint32_t FEntitySubsystem::GetPickID(entt::entity entity) const
     {
-        auto* pickIDFrag = m_Registry.try_get<FPickIDFragment>(entity);
-        return pickIDFrag ? pickIDFrag->PickID : 0;
+        auto* pickIDComp = m_Registry.try_get<FPickIDComponent>(entity);
+        return pickIDComp ? pickIDComp->PickID : 0;
     }
 
     void FEntitySubsystem::RegisterProcessor(eastl::unique_ptr<FProcessorBase> processor)
@@ -97,9 +97,9 @@ namespace Scene::ECS
     {
         FEntitySnapshot snapshot;
         snapshot.Entity = entity;
-        auto* pickID = m_Registry.try_get<FPickIDFragment>(entity);
+        auto* pickID = m_Registry.try_get<FPickIDComponent>(entity);
         snapshot.PickID = pickID ? pickID->PickID : 0;
-        auto* transform = m_Registry.try_get<FTransformFragment>(entity);
+        auto* transform = m_Registry.try_get<FTransformComponent>(entity);
         if (transform)
         {
             FEntitySnapshot::FTransformData transformData;
@@ -108,7 +108,7 @@ namespace Scene::ECS
             transformData.Scale = transform->Scale;
             snapshot.Transform = transformData;
         }
-        auto* name = m_Registry.try_get<FNameFragment>(entity);
+        auto* name = m_Registry.try_get<FNameComponent>(entity);
         if (name)
         {
             FEntitySnapshot::FNameData nameData;
@@ -126,22 +126,22 @@ namespace Scene::ECS
             ResurrectEntity(entity);
             if (snapshot.PickID > 0)
             {
-                m_Registry.emplace<FPickIDFragment>(entity, snapshot.PickID);
+                m_Registry.emplace<FPickIDComponent>(entity, snapshot.PickID);
                 m_PickIDToEntity[snapshot.PickID] = entity;
             }
         }
         if (snapshot.Transform.has_value())
         {
             const auto& transformData = snapshot.Transform.value();
-            m_Registry.emplace_or_replace<FTransformFragment>(entity, transformData.Position, transformData.Rotation, transformData.Scale);
+            m_Registry.emplace_or_replace<FTransformComponent>(entity, transformData.Position, transformData.Rotation, transformData.Scale);
         }
         if (snapshot.Name.has_value())
         {
-            m_Registry.emplace_or_replace<FNameFragment>(entity);
-            auto* nameFrag = m_Registry.try_get<FNameFragment>(entity);
-            if (nameFrag)
+            m_Registry.emplace_or_replace<FNameComponent>(entity);
+            auto* nameComp = m_Registry.try_get<FNameComponent>(entity);
+            if (nameComp)
             {
-                memcpy(nameFrag->Name, snapshot.Name.value().Name, sizeof(nameFrag->Name));
+                memcpy(nameComp->Name, snapshot.Name.value().Name, sizeof(nameComp->Name));
             }
         }
     }
@@ -158,22 +158,22 @@ namespace Scene::ECS
         if (entity == parent) return;
         if (parent == entt::null)
         {
-            m_Registry.remove<FParentFragment>(entity);
+            m_Registry.remove<FParentComponent>(entity);
         }
         else
         {
             if (!m_Registry.valid(parent)) return;
-            m_Registry.emplace_or_replace<FParentFragment>(entity, parent);
+            m_Registry.emplace_or_replace<FParentComponent>(entity, parent);
         }
     }
 
     eastl::vector<entt::entity> FEntitySubsystem::GetChildren(entt::entity entity) const
     {
         eastl::vector<entt::entity> children;
-        auto view = m_Registry.view<FParentFragment>();
+        auto view = m_Registry.view<FParentComponent>();
         for (auto e : view)
         {
-            if (view.get<FParentFragment>(e).Parent == entity)
+            if (view.get<FParentComponent>(e).Parent == entity)
                 children.push_back(e);
         }
         return children;

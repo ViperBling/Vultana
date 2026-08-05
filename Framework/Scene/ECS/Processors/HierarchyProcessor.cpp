@@ -1,6 +1,6 @@
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/EntitySubsystem.hpp"
-#include "Scene/ECS/Fragments.hpp"
+#include "Scene/ECS/Components.hpp"
 #include "Utilities/Math.hpp"
 #include "Utilities/Log.hpp"
 
@@ -24,15 +24,15 @@ namespace Scene::ECS
             eastl::vector<entt::entity> Children;
         };
         eastl::hash_map<entt::id_type, FChildList> adjacencyList;
-        auto parentView = registry.view<FParentFragment>();
+        auto parentView = registry.view<FParentComponent>();
         for (auto entity : parentView)
         {
-            auto& parentFrag = parentView.get<FParentFragment>(entity);
-            entt::entity parent = parentFrag.Parent;
+            auto& parentComp = parentView.get<FParentComponent>(entity);
+            entt::entity parent = parentComp.Parent;
             if (parent == entt::null) continue; // Skip if no parent
             if (!registry.valid(parent))
             {
-                registry.remove<FParentFragment>(entity);
+                registry.remove<FParentComponent>(entity);
                 continue; // Skip if parent is invalid
             }
             adjacencyList[entt::to_integral(parent)].Children.push_back(entity);
@@ -41,7 +41,7 @@ namespace Scene::ECS
         // 2. Detect cycles in the hierarchy using DFS and break them if found
         using VisitState = eastl::hash_map<entt::id_type, uint8_t>;
         VisitState visitState;
-        auto rootView = registry.view<FTransformFragment>(entt::exclude_t<FParentFragment>());
+        auto rootView = registry.view<FTransformComponent>(entt::exclude_t<FParentComponent>());
 
         std::function<bool(entt::entity, VisitState&, entt::entity&)> detectCycle;
         detectCycle = [&](entt::entity entity, VisitState& state, entt::entity& cycleRoot) -> bool
@@ -74,7 +74,7 @@ namespace Scene::ECS
             {
                 VTNA_LOG_WARN("HierarchyProcessor: cycle detected near entity {}, breaking", entt::to_integral(cycleRoot));
                 eastl::vector<entt::entity> cycleEntities;
-                for (auto en : registry.view<FParentFragment>())
+                for (auto en : registry.view<FParentComponent>())
                 {
                     auto id = entt::to_integral(en);
                     auto it = visitState.find(id);
@@ -89,7 +89,7 @@ namespace Scene::ECS
                     for (entt::entity e : cycleEntities)
                     {
                         if (e != *minIt)
-                            registry.remove<FParentFragment>(e);
+                            registry.remove<FParentComponent>(e);
                     }
                 }
             }
@@ -99,7 +99,7 @@ namespace Scene::ECS
         std::function<void(entt::entity, const float4x4&)> processEntity;
         processEntity = [&](entt::entity entity, const float4x4& parentWorld)
         {
-            auto* localTF = registry.try_get<FTransformFragment>(entity);
+            auto* localTF = registry.try_get<FTransformComponent>(entity);
             if (!localTF)
             {
                 auto adjIt = adjacencyList.find(entt::to_integral(entity));
@@ -114,19 +114,19 @@ namespace Scene::ECS
             float4x4 localMtx = mul(T, mul(R, S));
             float4x4 worldMtx = mul(parentWorld, localMtx);
 
-            registry.emplace_or_replace<FWorldTransformFragment>(entity);
-            auto* worldTF = registry.try_get<FWorldTransformFragment>(entity);
+            registry.emplace_or_replace<FWorldTransformComponent>(entity);
+            auto* worldTF = registry.try_get<FWorldTransformComponent>(entity);
             if (worldTF)
             {
                 worldTF->MtxWorld = worldMtx;
                 worldTF->MtxWorldInvTranspose = transpose(inverse(worldMtx));
             }
 
-            auto* localBounds = registry.try_get<FBoundingSphereFragment>(entity);
+            auto* localBounds = registry.try_get<FBoundingSphereComponent>(entity);
             if (localBounds && worldTF)
             {
-                registry.emplace_or_replace<FWorldBoundingSphereFragment>(entity);
-                auto *worldBounds = registry.try_get<FWorldBoundingSphereFragment>(entity);
+                registry.emplace_or_replace<FWorldBoundingSphereComponent>(entity);
+                auto *worldBounds = registry.try_get<FWorldBoundingSphereComponent>(entity);
                 if (worldBounds)
                 {
                     float4 centerWS = mul(worldMtx, float4(localBounds->Center, 1.0f));

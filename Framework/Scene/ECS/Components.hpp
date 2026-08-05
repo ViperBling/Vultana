@@ -9,13 +9,13 @@
 namespace Scene::ECS
 {
     // ===== Pick ID ===== //
-    struct FPickIDFragment
+    struct FPickIDComponent
     {
         uint32_t PickID = 0;
     };
 
     // ===== Name ===== //
-    struct FNameFragment
+    struct FNameComponent
     {
         char Name[64] = {};
 
@@ -27,7 +27,7 @@ namespace Scene::ECS
     };
 
     // ===== Transform ===== //
-    struct FTransformFragment
+    struct FTransformComponent
     {
         float3 Position = float3(0.0f);
         float4 Rotation = float4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -35,54 +35,54 @@ namespace Scene::ECS
     };
 
     // ===== Parent ===== //
-    struct FParentFragment
+    struct FParentComponent
     {
         entt::entity Parent = entt::null;
     };
 
     // ===== World Transform ===== //
-    struct FWorldTransformFragment
+    struct FWorldTransformComponent
     {
         float4x4 MtxWorld             = float4x4(1.0f);
         float4x4 MtxWorldInvTranspose = float4x4(1.0f);
     };
 
     // ===== Bounding Sphere ===== //
-    struct FBoundingSphereFragment
+    struct FBoundingSphereComponent
     {
         float3 Center = float3(0.0f);
         float  Radius = 0.0f;
     };
 
     // ===== World Bounding Sphere ===== //
-    struct FWorldBoundingSphereFragment
+    struct FWorldBoundingSphereComponent
     {
         float3 Center = float3(0.0f);
         float  Radius = 0.0f;
     };
 
     // ===== Bounding Box ===== //
-    struct FBoundingBoxFragment
+    struct FBoundingBoxComponent
     {
         float3 Min = float3(0.0f);
         float3 Max = float3(0.0f);
     };
 
     // ===== World Bounding Box ===== //
-    struct FWorldBoundingBoxFragment
+    struct FWorldBoundingBoxComponent
     {
         float3 Min = float3(0.0f);
         float3 Max = float3(0.0f);
     };
 
     // ===== Visibility ===== //
-    struct FVisibilityFragment
+    struct FVisibilityComponent
     {
         bool bFrustumVisible = false;
     };
 
     // ===== GUID ===== //
-    struct FSceneGUIDFragment
+    struct FSceneGUIDComponent
     {
         uint64_t GUID = 0;
     };

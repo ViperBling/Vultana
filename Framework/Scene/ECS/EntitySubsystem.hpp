@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Scene/ECS/ProcessorBase.hpp"
-#include "Scene/ECS/Fragments.hpp"
+#include "Scene/ECS/Components.hpp"
 
 #include <entt/entt.hpp>
 #include <EASTL/vector.h>

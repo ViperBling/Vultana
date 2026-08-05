@@ -2,7 +2,7 @@
 
 #include "Editor/Commands/TransformCommand.hpp"
 #include "Scene/ECS/EntitySubsystem.hpp"
-#include "Scene/ECS/Fragments.hpp"
+#include "Scene/ECS/Components.hpp"
 #include <cstdint>
 
 namespace Editor::Commands
@@ -14,7 +14,7 @@ namespace Editor::Commands
         FTransformSnapshot GetTransform() const override
         {
             FTransformSnapshot snapshot;
-            auto* transform = m_EntitySubsystem.GetRegistry().try_get<Scene::ECS::FTransformFragment>(m_Entity);
+            auto* transform = m_EntitySubsystem.GetRegistry().try_get<Scene::ECS::FTransformComponent>(m_Entity);
             if (transform)
             {
                 snapshot.Position = transform->Position;
@@ -26,7 +26,7 @@ namespace Editor::Commands
 
         void SetTransform(const FTransformSnapshot &snapshot) override
         {
-            m_EntitySubsystem.GetRegistry().emplace_or_replace<Scene::ECS::FTransformFragment>(
+            m_EntitySubsystem.GetRegistry().emplace_or_replace<Scene::ECS::FTransformComponent>(
                 m_Entity, snapshot.Position,
                 float4(snapshot.Rotation.x, snapshot.Rotation.y, snapshot.Rotation.z, snapshot.Rotation.w),
                 snapshot.Scale);
