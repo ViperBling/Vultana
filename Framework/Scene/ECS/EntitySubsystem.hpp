@@ -64,6 +64,7 @@ namespace Scene::ECS
         // ==== Layer Operations ==== //
         void SetParent(entt::entity entity, entt::entity parent);
         eastl::vector<entt::entity> GetChildren(entt::entity entity) const;
+        void NotifyParentRemoved(entt::entity entity);
 
         // ===== Query Operations ===== //
         uint32_t GetEntityCount() const;
@@ -78,5 +79,6 @@ namespace Scene::ECS
         uint32_t m_NextPickID = 1;
         static constexpr uint32_t MAX_PICK_ID = 9999999;
         eastl::vector<entt::entity> m_PendingDestroy;
+        eastl::hash_map<entt::id_type, eastl::vector<entt::entity>> m_ChildrenMap;
     };
 }

@@ -32,6 +32,7 @@ namespace Scene::ECS
             if (parent == entt::null) continue; // Skip if no parent
             if (!registry.valid(parent))
             {
+                subsystem.NotifyParentRemoved(entity);
                 registry.remove<FParentComponent>(entity);
                 continue; // Skip if parent is invalid
             }
@@ -89,7 +90,10 @@ namespace Scene::ECS
                     for (entt::entity e : cycleEntities)
                     {
                         if (e != *minIt)
+                        {
+                            subsystem.NotifyParentRemoved(e);
                             registry.remove<FParentComponent>(e);
+                        }
                     }
                 }
             }

@@ -156,6 +156,21 @@ namespace Scene::ECS
     {
         if (!m_Registry.valid(entity)) return;
         if (entity == parent) return;
+
+        // Remove from old parent's children list
+        auto* oldParentComp = m_Registry.try_get<FParentComponent>(entity);
+        if (oldParentComp)
+        {
+            auto oldId = entt::to_integral(oldParentComp->Parent);
+            auto it = m_ChildrenMap.find(oldId);
+            if (it != m_ChildrenMap.end())
+            {
+                it->second.erase_first(entity);
+                if (it->second.empty())
+                    m_ChildrenMap.erase(it);
+            }
+        }
+
         if (parent == entt::null)
         {
             m_Registry.remove<FParentComponent>(entity);
@@ -164,19 +179,30 @@ namespace Scene::ECS
         {
             if (!m_Registry.valid(parent)) return;
             m_Registry.emplace_or_replace<FParentComponent>(entity, parent);
+            m_ChildrenMap[entt::to_integral(parent)].push_back(entity);
+        }
+    }
+
+    void FEntitySubsystem::NotifyParentRemoved(entt::entity entity)
+    {
+        auto* parentComp = m_Registry.try_get<FParentComponent>(entity);
+        if (!parentComp) return;
+        auto parentId = entt::to_integral(parentComp->Parent);
+        auto it = m_ChildrenMap.find(parentId);
+        if (it != m_ChildrenMap.end())
+        {
+            it->second.erase_first(entity);
+            if (it->second.empty())
+                m_ChildrenMap.erase(it);
         }
     }
 
     eastl::vector<entt::entity> FEntitySubsystem::GetChildren(entt::entity entity) const
     {
-        eastl::vector<entt::entity> children;
-        auto view = m_Registry.view<FParentComponent>();
-        for (auto e : view)
-        {
-            if (view.get<FParentComponent>(e).Parent == entity)
-                children.push_back(e);
-        }
-        return children;
+        auto it = m_ChildrenMap.find(entt::to_integral(entity));
+        if (it != m_ChildrenMap.end())
+            return it->second;
+        return {};
     }
 
     uint32_t FEntitySubsystem::GetEntityCount() const
@@ -189,7 +215,32 @@ namespace Scene::ECS
     {
         for (entt::entity entity : m_PendingDestroy)
         {
-            if (m_Registry.valid(entity)) m_Registry.destroy(entity);
+            if (!m_Registry.valid(entity)) continue;
+
+            // Remove entity from its parent's children list
+            auto* parentComp = m_Registry.try_get<FParentComponent>(entity);
+            if (parentComp)
+            {
+                auto parentId = entt::to_integral(parentComp->Parent);
+                auto pit = m_ChildrenMap.find(parentId);
+                if (pit != m_ChildrenMap.end())
+                {
+                    pit->second.erase_first(entity);
+                    if (pit->second.empty())
+                        m_ChildrenMap.erase(pit);
+                }
+            }
+
+            // Detach all children before destroying the parent
+            auto cit = m_ChildrenMap.find(entt::to_integral(entity));
+            if (cit != m_ChildrenMap.end())
+            {
+                for (auto child : cit->second)
+                    m_Registry.remove<FParentComponent>(child);
+                m_ChildrenMap.erase(cit);
+            }
+
+            m_Registry.destroy(entity);
         }
         m_PendingDestroy.clear();
     }

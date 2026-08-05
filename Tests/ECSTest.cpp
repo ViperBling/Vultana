@@ -339,7 +339,7 @@ TEST(ECSTest, Culling_InsideFrustum_Visible)
     ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(e, float3(0, 0, 0), 1.0f);
     ecs.GetRegistry().emplace<FVisibilityComponent>(e);
     float4 fp[6] = {{0, 0, 1, 0.99f}, {0, 0, -1, 999}, {1, 0, 0, 1}, {-1, 0, 0, 1}, {0, 1, 0, 1}, {0, -1, 0, 1}};
-    ecs.RegisterProcessor(eastl::make_unique<FCullingProcessor>(fp, 6, Tests::ParallelForFunc));
+    ecs.RegisterProcessor(eastl::make_unique<FCullingProcessor>(eastl::span<const float4>{fp, 6}, Tests::ParallelForFunc));
     ecs.Tick(0.0f);
     EXPECT_TRUE(ecs.GetRegistry().get<FVisibilityComponent>(e).bFrustumVisible);
 }
@@ -351,7 +351,7 @@ TEST(ECSTest, Culling_OutsideFrustum_NotVisible)
     ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(e, float3(1000, 1000, 1000), 1.0f);
     ecs.GetRegistry().emplace<FVisibilityComponent>(e);
     float4 fp[6] = {{0, 0, 1, 0.99f}, {0, 0, -1, 999}, {1, 0, 0, 1}, {-1, 0, 0, 1}, {0, 1, 0, 1}, {0, -1, 0, 1}};
-    ecs.RegisterProcessor(eastl::make_unique<FCullingProcessor>(fp, 6, Tests::ParallelForFunc));
+    ecs.RegisterProcessor(eastl::make_unique<FCullingProcessor>(eastl::span<const float4>{fp, 6}, Tests::ParallelForFunc));
     ecs.Tick(0.0f);
     EXPECT_FALSE(ecs.GetRegistry().get<FVisibilityComponent>(e).bFrustumVisible);
 }

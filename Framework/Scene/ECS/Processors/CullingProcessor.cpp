@@ -6,11 +6,10 @@
 
 namespace Scene::ECS
 {
-    inline bool SphereFrustumCull(const float4* planes, uint32_t planeCount, const float3& center, float radius)
+    inline bool SphereFrustumCull(eastl::span<const float4> planes, const float3& center, float radius)
     {
-        for (uint32_t i = 0; i < planeCount; ++i)
+        for (auto& p : planes)
         {
-            const float4& p = planes[i];
             if (p.x * center.x + p.y * center.y + p.z * center.z + p.w <= -radius)
                 return false;
         }
@@ -19,7 +18,7 @@ namespace Scene::ECS
 
     void FCullingProcessor::Process(FEntitySubsystem& subsystem, float deltaTime)
     {
-        if (!m_FrustumPlanes || m_PlaneCount == 0)
+        if (m_FrustumPlanes.empty())
             return;
         auto& registry = subsystem.GetRegistry();
         auto view = registry.view<FWorldBoundingSphereComponent, FVisibilityComponent>();
@@ -37,18 +36,12 @@ namespace Scene::ECS
             auto entity = entities[i];
             auto& bounds = view.get<FWorldBoundingSphereComponent>(entity);
             auto& visibility = view.get<FVisibilityComponent>(entity);
-            visibility.bFrustumVisible = SphereFrustumCull(m_FrustumPlanes, m_PlaneCount, bounds.Center, bounds.Radius);
+            visibility.bFrustumVisible = SphereFrustumCull(m_FrustumPlanes, bounds.Center, bounds.Radius);
         };
 
         if (m_ParallelFor)
             m_ParallelFor(static_cast<uint32_t>(entities.size()), cullFunc);
         else
             Utilities::ParallelFor(static_cast<uint32_t>(entities.size()), cullFunc);
-    }
-
-    void FCullingProcessor::SetFrustumPlanes(const float4 *planes, uint32_t count)
-    {
-        m_FrustumPlanes = planes;
-        m_PlaneCount = count;
     }
 }
