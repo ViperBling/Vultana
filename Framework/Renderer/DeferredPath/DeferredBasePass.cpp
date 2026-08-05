@@ -51,11 +51,6 @@ namespace Renderer
         RG::FRGHandle OutDepthRT;
     };
 
-    static inline uint32_t RoundUpTo(uint32_t a, uint32_t b)
-    {
-        return (a / b + 1) * b;
-    }
-
     FDeferredBasePass::FDeferredBasePass(FRendererBase *pRenderer) : m_pRenderer(pRenderer)
     {
         RHI::FRHIComputePipelineStateDesc computeDesc {};
@@ -88,9 +83,9 @@ namespace Renderer
 
         MergeBatches();
 
-        uint32_t maxDispatchNum = RoundUpTo((uint32_t)m_IndirectBatches.size(), 65536 / sizeof(uint32_t));
-        uint32_t maxInstanceNum = RoundUpTo(m_pRenderer->GetInstanceCount(), 65536 / sizeof(uint8_t));
-        uint32_t maxMeshletNum = RoundUpTo(m_TotalMeshletCount, 65536 / sizeof(uint2));
+        uint32_t maxDispatchNum = RoundUp((uint32_t)m_IndirectBatches.size(), 65536 / sizeof(uint32_t));
+        uint32_t maxInstanceNum = RoundUp(m_pRenderer->GetInstanceCount(), 65536 / sizeof(uint8_t));
+        uint32_t maxMeshletNum = RoundUp(m_TotalMeshletCount, 65536 / sizeof(uint2));
 
         FHiZBuffer *pHZB = m_pRenderer->GetHiZBuffer();
 
@@ -260,8 +255,8 @@ namespace Renderer
 
         FHiZBuffer *pHZB = m_pRenderer->GetHiZBuffer();
 
-        uint32_t maxDispatchNum = RoundUpTo((uint32_t)m_IndirectBatches.size(), 65536 / sizeof(uint32_t));
-        uint32_t maxInstanceNum = RoundUpTo(m_pRenderer->GetInstanceCount(), 65536 / sizeof(uint8_t));
+        uint32_t maxDispatchNum = RoundUp((uint32_t)m_IndirectBatches.size(), 65536 / sizeof(uint32_t));
+        uint32_t maxInstanceNum = RoundUp(m_pRenderer->GetInstanceCount(), 65536 / sizeof(uint8_t));
 
         struct FBuildCullingCommandData
         {

@@ -6,6 +6,7 @@
 
 #include <utility>
 #include <cassert>
+#include <cmath>
 
 using namespace linalg;
 using namespace linalg::aliases;
@@ -198,6 +199,12 @@ inline void Decompose(const float4x4& matrix, float3& translation, float3& rotat
 inline float Sign(float x)
 {
     return float((x > 0) - (x < 0));
+}
+
+template<class T>
+inline T Abs(T value)
+{
+    return std::abs(value);
 }
 
 inline bool NearlyEqual(float a, float b)

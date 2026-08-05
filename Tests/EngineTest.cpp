@@ -4,7 +4,6 @@
 
 #include "Core/VultanaEngine.hpp"
 #include "Window/GLFWindow.hpp"
-#include "Scene/ModelLoader.hpp"
 #include "Scene/World.hpp"
 
 

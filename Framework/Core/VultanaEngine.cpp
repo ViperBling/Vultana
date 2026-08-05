@@ -81,6 +81,7 @@ namespace Core
             exit(0);
         }
 
+        m_pEntitySystem = eastl::make_unique<Scene::ECS::FEntitySubsystem>();
         m_pWorld = eastl::make_unique<Scene::FWorld>();
         m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
 
@@ -97,6 +98,7 @@ namespace Core
         m_pEditor.reset();
         
         m_pTaskScheduler.reset();
+        m_pEntitySystem.reset();
 
         m_pRenderer.reset();
 

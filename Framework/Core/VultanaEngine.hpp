@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Scene/World.hpp"
+#include "Scene/ECS/EntitySubsystem.hpp"
 #include "Editor/VultanaEditor.hpp"
 #include "Renderer/RendererBase.hpp"
 
@@ -32,6 +33,7 @@ namespace Core
         Renderer::FRendererBase* GetRenderer() const { return m_pRenderer.get(); }
         Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
+        Scene::ECS::FEntitySubsystem *GetEntitySystem() const { return m_pEntitySystem.get(); }
 
         void* GetWindowHandle() const { return m_WndHandle; }
         float GetDeltaTime() const { return m_FrameTime; }
@@ -50,6 +52,7 @@ namespace Core
         eastl::unique_ptr<Scene::FWorld> m_pWorld;
         eastl::unique_ptr<Renderer::FRendererBase> m_pRenderer;
         eastl::unique_ptr<Editor::FVultanaEditor> m_pEditor;
+        eastl::unique_ptr<Scene::ECS::FEntitySubsystem> m_pEntitySystem;
 
         eastl::unique_ptr<class enki::TaskScheduler> m_pTaskScheduler;
 

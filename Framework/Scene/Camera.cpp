@@ -220,14 +220,14 @@ namespace Scene
                 moveForward |= io.MouseWheel > 0.0f;
                 moveBackward |= io.MouseWheel < 0.0f;
 
-                moveSpeed *= abs(io.MouseWheel) * m_MoveSpeed;
+                moveSpeed *= Abs(io.MouseWheel) * m_MoveSpeed;
             }
             if (ImGui::IsMouseDragging(1) && ImGui::IsKeyDown(ImGuiKey_LeftAlt))
             {
                 moveForward |= io.MouseDelta.y > 0.0f;
                 moveBackward |= io.MouseDelta.y < 0.0f;
 
-                moveSpeed *= abs(io.MouseDelta.y);
+                moveSpeed *= Abs(io.MouseDelta.y);
             }
         }
 

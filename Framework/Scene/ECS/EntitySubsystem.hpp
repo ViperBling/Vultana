@@ -66,12 +66,7 @@ namespace Scene::ECS
         eastl::vector<entt::entity> GetChildren(entt::entity entity) const;
 
         // ===== Query Operations ===== //
-        // EnTT 3.16 removed registry::size(); live entities = total slots minus recycled (free list)
-        uint32_t GetEntityCount() const
-        {
-            const auto* entityStorage = m_Registry.storage<entt::entity>();
-            return static_cast<uint32_t>(entityStorage->size() - entityStorage->free_list());
-        }
+        uint32_t GetEntityCount() const;
 
     private:
         void FlushPendingDestroy();

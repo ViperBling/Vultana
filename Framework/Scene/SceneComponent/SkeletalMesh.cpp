@@ -198,7 +198,7 @@ namespace Scene
             auto node = GetNode(mesh->NodeID);
             float4x4 mtxNodeWorld = mul(m_MtxWorld, node->GlobalTransform);
 
-            mesh->InstanceData.Scale = max(max(abs(m_Scale.x), abs(m_Scale.y)), abs(m_Scale.z)) * m_BoundScaleFactor;
+            mesh->InstanceData.Scale = max(max(Abs(m_Scale.x), Abs(m_Scale.y)), Abs(m_Scale.z)) * m_BoundScaleFactor;
             mesh->InstanceData.Center = mul(m_MtxWorld, float4(mesh->Center, 1.0)).xyz();
             mesh->InstanceData.Radius = mesh->Radius * mesh->InstanceData.Scale;
             m_Radius = max(m_Radius, mesh->InstanceData.Radius);

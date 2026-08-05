@@ -105,7 +105,7 @@ namespace Scene
         m_InstanceData.bVertexAnimation = false;
         m_InstanceData.MaterialDataAddress = m_pRenderer->AllocateSceneConstantBuffer((void*)m_pMaterial->GetMaterialConstants(), sizeof(FModelMaterialConstants));
         m_InstanceData.ObjectID = m_ID;
-        m_InstanceData.Scale = eastl::max(eastl::max(abs(m_Scale.x), abs(m_Scale.y)), abs(m_Scale.z));
+        m_InstanceData.Scale = eastl::max(eastl::max(Abs(m_Scale.x), Abs(m_Scale.y)), Abs(m_Scale.z));
 
         float4x4 T = translation_matrix(m_Position);
         float4x4 R = rotation_matrix(m_Rotation);
