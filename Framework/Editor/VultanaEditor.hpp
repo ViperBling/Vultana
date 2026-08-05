@@ -77,7 +77,7 @@ namespace Editor
         eastl::unique_ptr<RenderResources::FTexture2D> m_pRotateIcon;
         eastl::unique_ptr<RenderResources::FTexture2D> m_pScaleIcon;
 
-        // ---- Undo/Redo（Editor::Commands）----
+        // ---- Undo/Redo(Editor::Commands)----
         Editor::Commands::FCommandHistory m_EditHistory;
         bool m_bGizmoDragging = false;
         Scene::IVisibleObject* m_GizmoDragTarget = nullptr;

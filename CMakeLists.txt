@@ -9,6 +9,10 @@ project(Vultana C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Source files are UTF-8 without BOM (Chinese comments etc.); without this,
+# MSVC decodes them as the system ANSI code page (936/GBK) and warns C4819.
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
 set (OutputBinary ${CMAKE_CURRENT_SOURCE_DIR}/Binary)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OutputBinary})
 

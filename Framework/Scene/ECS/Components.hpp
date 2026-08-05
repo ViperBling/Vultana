@@ -2,8 +2,8 @@
 
 #include "Utilities/Math.hpp"
 #include <cstdint>
-#include <cstring>
 
+#include <EASTL/string.h>
 #include <entt/entt.hpp>
 
 namespace Scene::ECS
@@ -86,4 +86,44 @@ namespace Scene::ECS
     {
         uint64_t GUID = 0;
     };
+
+    // ===== Resource Handle ===== //
+    struct FMeshResourceHandle
+    {
+        uint32_t Index = UINT32_MAX;
+        uint32_t Generation = 0;
+        bool IsValid() const { return Index != UINT32_MAX; }
+        bool operator==(const FMeshResourceHandle& o) const { return Index == o.Index && Generation == o.Generation; }
+        bool operator!=(const FMeshResourceHandle& o) const { return !(*this == o); }
+    };
+
+    struct FMaterialResourceHandle
+    {
+        uint32_t Index = UINT32_MAX;
+        uint32_t Generation = 0;
+        bool IsValid() const { return Index != UINT32_MAX; }
+    };
+
+    struct FModelAssetHandle
+    {
+        uint32_t Index = UINT32_MAX;
+        uint32_t Generation = 0;
+        bool IsValid() const { return Index != UINT32_MAX; }
+    };
+
+    struct FMeshRendererComponent
+    {
+        FMeshResourceHandle MeshHandle;
+        FMaterialResourceHandle MaterialHandle;
+        uint32_t MeshletCount = 0;
+        bool bSkinned = false;
+    };
+
+    struct FModelInstanceComponent
+    {
+        FModelAssetHandle ModelHandle;
+        eastl::string ModelPath;
+    };
+
+    struct FSelectedTag {};
 }

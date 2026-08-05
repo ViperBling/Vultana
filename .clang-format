@@ -1,0 +1,21 @@
+# Vultana house style — 与现有代码约定对齐：
+#   - 4 空格缩进，命名空间内容也缩进（LLVM 默认 2 空格，必须显式覆盖）
+#   - Allman 花括号（函数/控制流花括号独占一行；else 独占一行）
+#   - 指针/引用左对齐：auto* p、const float& r（DerivePointerAlignment 关闭，
+#     避免 clang-format 按文件内容猜风格导致同一仓库里 auto* p / auto *p 混用）
+#   - 单语句 if 保持单行；类内短函数保持单行
+#   - 不强制 80 列、不重排 #include
+BasedOnStyle: LLVM
+IndentWidth: 4
+ContinuationIndentWidth: 4
+NamespaceIndentation: All
+AccessModifierOffset: -4
+PointerAlignment: Left
+DerivePointerAlignment: false
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: true
+AlignConsecutiveDeclarations: false
+ColumnLimit: 0
+SortIncludes: false
+FixNamespaceComments: true
