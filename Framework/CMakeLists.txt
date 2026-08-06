@@ -3,7 +3,7 @@ set(BinaryPath ${PROJECT_SOURCE_DIR}/Binary)
 set(SourcePath ${PROJECT_SOURCE_DIR}/Framework)
 set(ExternalPath ${PROJECT_SOURCE_DIR}/External)
 
-# find_package(assimp CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(cityhash CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
@@ -21,6 +21,8 @@ find_path(LINALG_INCLUDE_DIRS "linalg.h")
 find_path(SIGSLOT_INCLUDE_DIRS "sigslot.h")
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 
+file(GLOB_RECURSE AssetCooker_Head          ${SourcePath}/AssetCooker/*.hpp)
+file(GLOB_RECURSE AssetCooker_Src           ${SourcePath}/AssetCooker/*.cpp)
 file(GLOB_RECURSE AssetManager_Head       ${SourcePath}/AssetManager/*.hpp)
 file(GLOB_RECURSE AssetManager_Src        ${SourcePath}/AssetManager/*.cpp)
 file(GLOB_RECURSE Common_Head             ${SourcePath}/Common/*.hpp)
@@ -42,6 +44,7 @@ file(GLOB_RECURSE Utilities_Head          ${SourcePath}/Utilities/*.hpp)
 file(GLOB_RECURSE Utilities_Src           ${SourcePath}/Utilities/*.cpp)
 
 add_library(FrameworkLib STATIC 
+    ${AssetCooker_Head}  ${AssetCooker_Src}
     ${AssetManager_Head} ${AssetManager_Src}
     ${Common_Head}       ${Common_Src}
     ${Core_Head}         ${Core_Src}
