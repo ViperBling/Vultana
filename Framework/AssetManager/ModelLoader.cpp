@@ -10,6 +10,8 @@
 #include "Utilities/Memory.hpp"
 #include "Utilities/String.hpp"
 
+#include "Common/Meshlet.hlsli"   // FMeshlet:CPU/GPU 共享的 meshlet 剔除结构(36B)
+
 #define CGLTF_IMPLEMENTATION
 #include <cgltf/cgltf.h>
 
@@ -376,47 +378,24 @@ namespace Assets
             meshletTriangles16.push_back(meshletTriangles[i]);
         }
 
-        struct FMeshletBound
-        {
-            float3 Center;
-            float Radius;
-
-            union
-            {
-                struct 
-                {
-                    int8_t AxisX;
-                    int8_t AxisY;
-                    int8_t AxisZ;
-                    int8_t Cutoff;
-                };
-                uint32_t Cone;
-            };
-
-            uint VertexCount;
-            uint TriangleCount;
-
-            uint vertexOffset;
-            uint triangleOffset;
-        };
-        eastl::vector<FMeshletBound> meshletBounds(meshletCount);
+        eastl::vector<FMeshlet> meshletBounds(meshletCount);
 
         for (size_t i = 0; i < meshletCount; i++)
         {
             const meshopt_Meshlet& meshlet = meshlets[i];
             meshopt_Bounds meshoptBounds = meshopt_computeMeshletBounds(&meshletVertices[meshlet.vertex_offset], &meshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, (const float*)posVertices, remappedVertexCount, posStride);
 
-            FMeshletBound bound;
+            FMeshlet bound;
             bound.Center = float3(meshoptBounds.center);
-            bound.Radius = meshoptBounds.radius;    
+            bound.Radius = meshoptBounds.radius;
             bound.AxisX = meshoptBounds.cone_axis_s8[0];
             bound.AxisY = meshoptBounds.cone_axis_s8[1];
             bound.AxisZ = meshoptBounds.cone_axis_s8[2];
             bound.Cutoff = meshoptBounds.cone_cutoff_s8;
             bound.VertexCount = meshlet.vertex_count;
             bound.TriangleCount = meshlet.triangle_count;
-            bound.vertexOffset = meshlet.vertex_offset;
-            bound.triangleOffset = meshlet.triangle_offset;
+            bound.VertexOffset = meshlet.vertex_offset;
+            bound.TriangleOffset = meshlet.triangle_offset;
 
             meshletBounds[i] = bound;
         }
@@ -465,7 +444,7 @@ namespace Assets
         }
 
         mesh->m_MeshletCount = (uint32_t)meshletCount;
-        mesh->m_MeshletBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(FMeshletBound) * (uint32_t)meshletBounds.size());
+        mesh->m_MeshletBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletBuffer", meshletBounds.data(), sizeof(FMeshlet) * (uint32_t)meshletBounds.size());
         mesh->m_MeshletIndicesBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletIndicesBuffer", meshletTriangles16.data(), sizeof(unsigned short) * (uint32_t)meshletTriangles16.size());
         mesh->m_MeshletVertexBuffer = resourceCache->GetSceneBuffer("Model(" + m_File + " " + name + ")_MeshletVertexBuffer", meshletVertices.data(), sizeof(unsigned int) * (uint32_t)meshletVertices.size());
 
@@ -802,7 +781,7 @@ namespace Assets
         material->m_AlphaCutout = gltfMaterial->alpha_cutoff;
         material->m_bAlphaTest = gltfMaterial->alpha_mode == cgltf_alpha_mode_mask;
         material->m_bAlphaBlend = gltfMaterial->alpha_mode == cgltf_alpha_mode_blend;
-        material->m_bFrontFaceCCW = gltfMaterial->double_sided;
+        material->m_bDoubleSided = gltfMaterial->double_sided;
 
         return material;
     }
