@@ -116,36 +116,39 @@ namespace Scene
     {
         m_pCamera->Tick(deltaTime);
 
-        for (auto iter = m_Objects.begin(); iter != m_Objects.end(); ++iter)
+        if (!m_bUseECSBackend)
         {
-            (*iter)->Tick(deltaTime);
-        }
-
-        for (auto iter = m_Lights.begin(); iter != m_Lights.end(); ++iter)
-        {
-            (*iter)->Tick(deltaTime);
-        }
-
-        #pragma region : Frustum Culling
-        eastl::vector<IVisibleObject*> visibleObjects(m_Objects.size());
-        eastl::atomic<uint32_t> visibleCount = 0;
-        
-        Utilities::ParallelFor((uint32_t)m_Objects.size(), [&](uint32_t i)
-        {
-            if (m_Objects[i]->FrustumCull(m_pCamera->GetFrustumPlanes(), 6))
+            for (auto iter = m_Objects.begin(); iter != m_Objects.end(); ++iter)
             {
-                uint32_t idx = visibleCount.fetch_add(1);
-                visibleObjects[idx] = m_Objects[i].get();
+                (*iter)->Tick(deltaTime);
             }
-        });
-        visibleObjects.resize(visibleCount);
 
-        Renderer::FRendererBase* pRender = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
-        for (auto iter = visibleObjects.begin(); iter != visibleObjects.end(); ++iter)
-        {
-            (*iter)->Render(pRender);
+            for (auto iter = m_Lights.begin(); iter != m_Lights.end(); ++iter)
+            {
+                (*iter)->Tick(deltaTime);
+            }
+
+            #pragma region : Frustum Culling
+            eastl::vector<IVisibleObject*> visibleObjects(m_Objects.size());
+            eastl::atomic<uint32_t> visibleCount = 0;
+
+            Utilities::ParallelFor((uint32_t)m_Objects.size(), [&](uint32_t i)
+            {
+                if (m_Objects[i]->FrustumCull(m_pCamera->GetFrustumPlanes(), 6))
+                {
+                    uint32_t idx = visibleCount.fetch_add(1);
+                    visibleObjects[idx] = m_Objects[i].get();
+                }
+            });
+            visibleObjects.resize(visibleCount);
+
+            Renderer::FRendererBase* pRender = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+            for (auto iter = visibleObjects.begin(); iter != visibleObjects.end(); ++iter)
+            {
+                (*iter)->Render(pRender);
+            }
+            #pragma endregion : Frustum Culling
         }
-        #pragma endregion : Frustum Culling
     }
 
     IVisibleObject *FWorld::GetVisibleObject(uint32_t index) const
@@ -239,6 +242,32 @@ namespace Scene
 
     void FWorld::CreateModel(tinyxml2::XMLElement *element)
     {
+        if (m_bUseECSBackend)
+        {
+            auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+            auto* factory = pEngine->GetEntityFactory();
+            auto* registry = pEngine->GetAssetRegistry();
+            const tinyxml2::XMLAttribute* file = element->FindAttribute("File");
+            if (!file) return;
+            eastl::string assetPath = pEngine->GetAssetsPath() + file->Value();
+            auto assetHandle = registry->ImportModel(assetPath);
+            entt::entity root = factory->CreateModelInstance(assetHandle, assetPath);
+
+            auto& reg = pEngine->GetEntitySystem()->GetRegistry();
+            reg.emplace_or_replace<Scene::ECS::FTransformComponent>(root);
+            auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(root);
+            if (tf)
+            {
+                const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
+                if (position) tf->Position = strToFloat3(position->Value());
+                const tinyxml2::XMLAttribute* rotation = element->FindAttribute("Rotation");
+                if (rotation) tf->Rotation = RotationQuat(strToFloat3(rotation->Value()));
+                const tinyxml2::XMLAttribute* scale = element->FindAttribute("Scale");
+                if (scale) tf->Scale = strToFloat3(scale->Value());
+            }
+            return;
+        }
+
         Assets::FModelLoader loader(this);
         loader.LoadModelSettings(element);
         loader.LoadGLTF();

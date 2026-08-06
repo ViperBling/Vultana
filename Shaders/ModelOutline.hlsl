@@ -17,7 +17,7 @@ FVSOutput VSMain(uint vertexID : SV_VertexID)
     float3 normalOS = vtx.Normal;
 
     float4 positionWS = mul(instanceData.MtxWorld, positionOS);
-    float3 normalWS =  mul(instanceData.MtxWorldInverseTranspose, float4(normalOS, 0.0f)).xyz;
+    float3 normalWS =  mul(instanceData.MtxWorldInvTranspose, float4(normalOS, 0.0f)).xyz;
 
     FVSOutput vsOut = (FVSOutput)0;
     vsOut.PositionCS = mul(GetCameraConstants().MtxViewProjection, positionWS);

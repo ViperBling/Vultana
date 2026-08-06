@@ -31,6 +31,9 @@ namespace Scene
         IVisibleObject* GetVisibleObject(uint32_t index) const;
         ILight* GetMainLight();
 
+        void SetUseECSBackend(bool enabled) { m_bUseECSBackend = enabled; }
+        bool IsUseECSBackend() const { return m_bUseECSBackend; }
+
     private:
         void ClearScene();
 
@@ -45,5 +48,7 @@ namespace Scene
         eastl::vector<eastl::unique_ptr<IVisibleObject>> m_Objects;
         eastl::vector<eastl::unique_ptr<ILight>> m_Lights;
         ILight* m_pMainLight = nullptr;
+
+        bool m_bUseECSBackend = false;
     };
 }

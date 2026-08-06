@@ -66,8 +66,8 @@ FVertexOutput GetVertexOutput(uint instanceID, uint vertexID)
     vsOut.PositionCS = mul(GetCameraConstants().MtxViewProjection, positionWS);
     vsOut.PositionWS = positionWS.xyz;
     vsOut.TexCoord = vtx.TexCoord;
-    vsOut.NormalWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Normal, 0.0f)).xyz);
-    vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInverseTranspose, float4(vtx.Tangent.xyz, 0.0f)).xyz);
+    vsOut.NormalWS = normalize(mul(instanceData.MtxWorldInvTranspose, float4(vtx.Normal, 0.0f)).xyz);
+    vsOut.TangentWS = normalize(mul(instanceData.MtxWorldInvTranspose, float4(vtx.Tangent.xyz, 0.0f)).xyz);
     vsOut.BiTangentWS = normalize(cross(vsOut.NormalWS, vsOut.TangentWS)) * vtx.Tangent.w;
 
     vsOut.ClipPos = mul(GetCameraConstants().MtxViewProjection, positionWS);

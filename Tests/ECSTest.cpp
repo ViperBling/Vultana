@@ -3,10 +3,14 @@
 #include "Scene/ECS/Components.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
+#include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
+#include "Scene/ECS/RenderSink.hpp"
+#include "Scene/ECS/EntityFactory.hpp"
 #include "Editor/Commands/EntityEditableTarget.hpp"
 #include "Editor/Commands/CommandHistory.hpp"
 #include "Editor/Commands/TransformCommand.hpp"
 
+#include "Tests/FakeAssetRegistry.hpp"
 #include "Tests/TestUtilities.hpp"
 
 #include <gtest/gtest.h>
@@ -377,4 +381,123 @@ TEST(ECSTest, Hierarchy_MultipleLevels_L2W)
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
     EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformComponent>(c).MtxWorld[3].x, 18.0f, 0.001f);
+}
+
+// ============================================================
+//  Render Submission
+// ============================================================
+
+class FFakeRenderSink : public Scene::ECS::ISceneRenderSink
+{
+public:
+    eastl::vector<uint32_t> AddedInstances;
+    eastl::vector<Scene::ECS::FRenderBatchInput> BaseBatches;
+    uint32_t NextPickID = 0;
+    bool bMouseHitTest = false;
+
+    uint32_t AddInstance(const FInstanceData& instanceData) override
+    {
+        AddedInstances.push_back(instanceData.ObjectID);
+        return static_cast<uint32_t>(AddedInstances.size() - 1);
+    }
+
+    void AddBasePassBatch(const Scene::ECS::FRenderBatchInput& input) override { BaseBatches.push_back(input); }
+    void AddObjectIDBatch(const Scene::ECS::FRenderBatchInput&) override {}
+    void AddOutlineBatch(const Scene::ECS::FRenderBatchInput&) override {}
+    uint32_t AllocateMaterialConstants(const void*, uint32_t) override { return 0; }
+    uint32_t GetSelectedPickID() const override { return NextPickID; }
+    bool IsEnableMouseHitTest() const override { return bMouseHitTest; }
+    void AddAnimationBatch(const Scene::ECS::FAnimationBatchInput&) override {}
+};
+
+TEST(ECSTest, AssetRegistry_ImportModel)
+{
+    FFakeAssetRegistry reg;
+    auto h = reg.ImportModel("test.gltf");
+    EXPECT_TRUE(h.IsValid());
+    auto h2 = reg.ImportModel("test.gltf");
+    EXPECT_EQ(h2.Index, h.Index);
+}
+
+TEST(ECSTest, AssetRegistry_AcquireMesh)
+{
+    FFakeAssetRegistry reg;
+    auto model = reg.ImportModel("test.gltf");
+    auto mesh = reg.AcquireMesh(model, 0, 0);
+    EXPECT_TRUE(mesh.IsValid());
+    EXPECT_EQ(reg.GetMeshAcquireCount(0), 1u);
+}
+
+TEST(ECSTest, AssetRegistry_InvalidHandle)
+{
+    Scene::ECS::FMeshResourceHandle invalid;
+    EXPECT_FALSE(invalid.IsValid());
+}
+
+TEST(ECSTest, AssetRegistry_GetModelInfo)
+{
+    FFakeAssetRegistry reg;
+    auto h = reg.ImportModel("test.gltf");
+    auto info = reg.GetModelInfo(h);
+    EXPECT_EQ(info.ModelPath, "test.gltf");
+}
+
+TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    FFakeRenderSink fakeSink;
+
+    entt::entity e = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(e);
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(e);
+    EXPECT_EQ(fakeSink.AddedInstances.size(), 0u);
+}
+
+TEST(ECSTest, RenderSubmission_VisibleEntityGetsBaseBatch)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    FFakeRenderSink fakeSink;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    auto meshHandle = fakeReg.AcquireMesh(model, 0, 0);
+
+    entt::entity e = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(e);
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(e);
+    ecs.GetRegistry().emplace<Scene::ECS::FVisibilityComponent>(e, true);
+    ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(e, meshHandle, Scene::ECS::FMaterialResourceHandle{}, 0u, false);
+
+    auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
+    processor->Process(ecs, 0.0f);
+
+    EXPECT_EQ(fakeSink.AddedInstances.size(), 1u);
+    EXPECT_EQ(fakeSink.BaseBatches.size(), 1u);
+}
+
+TEST(ECSTest, EntityFactory_CreateEmpty)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+
+    entt::entity e = factory.CreateEmpty("TestEntity");
+    EXPECT_TRUE(ecs.GetRegistry().valid(e));
+    auto* name = ecs.GetRegistry().try_get<Scene::ECS::FNameComponent>(e);
+    ASSERT_NE(name, nullptr);
+    EXPECT_EQ(strcmp(name->Name, "TestEntity"), 0);
+}
+
+TEST(ECSTest, EntityFactory_CreateModelInstance)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    entt::entity root = factory.CreateModelInstance(model, "test.gltf");
+    EXPECT_TRUE(ecs.GetRegistry().valid(root));
+    EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FModelInstanceComponent>(root));
+    EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FTransformComponent>(root));
 }

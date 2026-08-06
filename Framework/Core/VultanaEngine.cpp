@@ -2,7 +2,13 @@
 #include "Editor/VultanaEditor.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
+#include "AssetManager/SceneAssetRegistry.hpp"
+#include "Renderer/ECSRenderBridge.hpp"
+#include "Scene/ECS/Processors/CullingProcessor.hpp"
+#include "Scene/ECS/Processors/HierarchyProcessor.hpp"
+#include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
 
+#include <EASTL/span.h>
 #include <rpmalloc/rpmalloc.h>
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -71,6 +77,8 @@ namespace Core
 
         m_AssetsPath = configIni.GetValue("Vultana", "AssetsPath");
         m_ShaderPath = configIni.GetValue("Vultana", "ShaderPath");
+        const char* sceneBackend = configIni.GetValue("World", "SceneBackend", "Legacy");
+        m_bUseECSBackend = (strcmp(sceneBackend, "ECS") == 0);
 
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
@@ -82,8 +90,19 @@ namespace Core
         }
 
         m_pEntitySystem = eastl::make_unique<Scene::ECS::FEntitySubsystem>();
+        m_pAssetRegistry = eastl::make_unique<Assets::FSceneAssetRegistry>(m_pRenderer.get());
+        m_pRenderSink = eastl::make_unique<Renderer::FECSRenderBridge>(m_pRenderer.get(), static_cast<Assets::FSceneAssetRegistry*>(m_pAssetRegistry.get()));
+        m_pEntityFactory = eastl::make_unique<Scene::ECS::FEntityFactory>(*m_pEntitySystem, *m_pAssetRegistry);
+
         m_pWorld = eastl::make_unique<Scene::FWorld>();
         m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
+
+        if (m_bUseECSBackend)
+        {
+            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FHierarchyProcessor>());
+            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_pWorld->GetCamera()->GetFrustumPlanes(), 6)));
+            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(*m_pRenderSink, *m_pAssetRegistry));
+        }
 
         m_pEditor = eastl::make_unique<Editor::FVultanaEditor>(m_pRenderer.get());
 
@@ -96,9 +115,13 @@ namespace Core
 
         m_pWorld.reset();
         m_pEditor.reset();
-        
-        m_pTaskScheduler.reset();
+
+        m_pEntityFactory.reset();
+        m_pRenderSink.reset();
+        m_pAssetRegistry.reset();
         m_pEntitySystem.reset();
+
+        m_pTaskScheduler.reset();
 
         m_pRenderer.reset();
 
@@ -122,6 +145,10 @@ namespace Core
         {
             m_pEditor->Tick();
             m_pWorld->Tick(m_FrameTime);
+            if (m_bUseECSBackend)
+            {
+                m_pEntitySystem->Tick(m_FrameTime);
+            }
             m_pRenderer->RenderFrame();
         }
     }

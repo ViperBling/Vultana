@@ -43,8 +43,8 @@ namespace Scene::ECS
     // ===== World Transform ===== //
     struct FWorldTransformComponent
     {
-        float4x4 MtxWorld             = float4x4(1.0f);
-        float4x4 MtxWorldInvTranspose = float4x4(1.0f);
+        float4x4 MtxWorld             = float4x4({identity});
+        float4x4 MtxWorldInvTranspose = float4x4({identity});
     };
 
     // ===== Bounding Sphere ===== //
@@ -102,6 +102,8 @@ namespace Scene::ECS
         uint32_t Index = UINT32_MAX;
         uint32_t Generation = 0;
         bool IsValid() const { return Index != UINT32_MAX; }
+        bool operator==(const FMaterialResourceHandle& o) const { return Index == o.Index && Generation == o.Generation; }
+        bool operator!=(const FMaterialResourceHandle& o) const { return !(*this == o); }
     };
 
     struct FModelAssetHandle
@@ -109,6 +111,8 @@ namespace Scene::ECS
         uint32_t Index = UINT32_MAX;
         uint32_t Generation = 0;
         bool IsValid() const { return Index != UINT32_MAX; }
+        bool operator==(const FModelAssetHandle& o) const { return Index == o.Index && Generation == o.Generation; }
+        bool operator!=(const FModelAssetHandle& o) const { return !(*this == o); }
     };
 
     struct FMeshRendererComponent

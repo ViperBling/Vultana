@@ -1,9 +1,13 @@
 #pragma once
 
 #include "Scene/World.hpp"
-#include "Scene/ECS/EntitySubsystem.hpp"
 #include "Editor/VultanaEditor.hpp"
 #include "Renderer/RendererBase.hpp"
+#include "Scene/ECS/EntitySubsystem.hpp"
+#include "Scene/ECS/EntityFactory.hpp"
+#include "Scene/ECS/AssetRegistry.hpp"
+#include "Scene/ECS/RenderSink.hpp"
+#include "Renderer/ECSRenderBridge.hpp"
 
 #include <sigslot/signal.hpp>
 #include <iostream>
@@ -34,6 +38,10 @@ namespace Core
         Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
         Scene::ECS::FEntitySubsystem *GetEntitySystem() const { return m_pEntitySystem.get(); }
+        Scene::ECS::IAssetRegistry* GetAssetRegistry() const { return m_pAssetRegistry.get(); }
+        Scene::ECS::ISceneRenderSink* GetRenderSink() const { return m_pRenderSink.get(); }
+        Scene::ECS::FEntityFactory* GetEntityFactory() const { return m_pEntityFactory.get(); }
+        bool IsUseECSBackend() const { return m_bUseECSBackend; }
 
         void* GetWindowHandle() const { return m_WndHandle; }
         float GetDeltaTime() const { return m_FrameTime; }
@@ -52,7 +60,6 @@ namespace Core
         eastl::unique_ptr<Scene::FWorld> m_pWorld;
         eastl::unique_ptr<Renderer::FRendererBase> m_pRenderer;
         eastl::unique_ptr<Editor::FVultanaEditor> m_pEditor;
-        eastl::unique_ptr<Scene::ECS::FEntitySubsystem> m_pEntitySystem;
 
         eastl::unique_ptr<class enki::TaskScheduler> m_pTaskScheduler;
 
@@ -64,6 +71,12 @@ namespace Core
         eastl::string m_WorkingPath;
         eastl::string m_AssetsPath;
         eastl::string m_ShaderPath;
+
+        eastl::unique_ptr<Scene::ECS::FEntitySubsystem> m_pEntitySystem;
+        eastl::unique_ptr<Scene::ECS::IAssetRegistry> m_pAssetRegistry;
+        eastl::unique_ptr<Scene::ECS::ISceneRenderSink> m_pRenderSink;
+        eastl::unique_ptr<Scene::ECS::FEntityFactory> m_pEntityFactory;
+        bool m_bUseECSBackend = false;
     };
 } // namespace Vultana
 

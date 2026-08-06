@@ -33,7 +33,7 @@ struct FInstanceData
     // uint bShowNormal;
 
     float4x4 MtxWorld;
-    float4x4 MtxWorldInverseTranspose;
+    float4x4 MtxWorldInvTranspose;
 };
 
 #ifndef __cplusplus

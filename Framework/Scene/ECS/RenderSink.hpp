@@ -13,7 +13,7 @@ namespace Scene::ECS
     struct FRenderBatchInput
     {
         uint32_t InstanceIndex  = 0;
-        uint32_t MeshletIndex   = 0;
+        uint32_t MeshletCount = 0;
         float3   Center         = float3(0.0f);
         float    Radius         = 0.0f;
         FMaterialResourceHandle MaterialHandle;

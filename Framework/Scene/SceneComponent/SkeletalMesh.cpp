@@ -204,7 +204,7 @@ namespace Scene
             m_Radius = max(m_Radius, mesh->InstanceData.Radius);
 
             mesh->InstanceData.MtxWorld = isSkinnedMesh ? m_MtxWorld : mtxNodeWorld;
-            mesh->InstanceData.MtxWorldInverseTranspose = transpose(inverse(mesh->InstanceData.MtxWorld));
+            mesh->InstanceData.MtxWorldInvTranspose = transpose(inverse(mesh->InstanceData.MtxWorld));
 
             mesh->InstanceIndex = m_pRenderer->AddInstance(mesh->InstanceData);
         }

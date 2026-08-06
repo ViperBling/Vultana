@@ -116,7 +116,7 @@ namespace Scene
         m_InstanceData.Radius = m_Radius * m_InstanceData.Scale;
 
         m_InstanceData.MtxWorld = mtxWorld;
-        m_InstanceData.MtxWorldInverseTranspose = transpose(inverse(mtxWorld));
+        m_InstanceData.MtxWorldInvTranspose = transpose(inverse(mtxWorld));
     }
 
     void FStaticMesh::Draw(Renderer::FRenderBatch& batch, RHI::FRHIPipelineState *pPSO)
