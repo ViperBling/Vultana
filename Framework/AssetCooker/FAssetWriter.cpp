@@ -297,7 +297,6 @@ namespace Assets
             writer.WriteF32(mat.AlphaCutout);
             writer.WriteBool(mat.bAlphaTest);
             writer.WriteBool(mat.bAlphaBlend);
-            writer.WriteBool(mat.bFrontFaceCCW);
             writer.WriteBool(mat.bDoubleSided);
         }
 
@@ -311,6 +310,7 @@ namespace Assets
             writer.WritePod(node.Translation);
             writer.WritePod(node.Rotation);
             writer.WritePod(node.Scale);
+            writer.WriteBool(node.bFrontFaceCCW);   // per-node winding (Slice 2 review)
             writer.WriteVector(node.Primitives);
         }
         writer.WriteVector(payload.RootNodes);

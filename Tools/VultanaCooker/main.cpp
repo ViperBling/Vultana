@@ -76,8 +76,8 @@ namespace
                 m.DiffuseColor != n.DiffuseColor || m.SpecularColor != n.SpecularColor ||
                 m.Glossiness != n.Glossiness || m.EmissiveColor != n.EmissiveColor ||
                 m.AlphaCutout != n.AlphaCutout || m.bAlphaTest != n.bAlphaTest ||
-                m.bAlphaBlend != n.bAlphaBlend || m.bFrontFaceCCW != n.bFrontFaceCCW ||
-                m.bDoubleSided != n.bDoubleSided || m.Textures.size() != n.Textures.size())
+                m.bAlphaBlend != n.bAlphaBlend || m.bDoubleSided != n.bDoubleSided ||
+                m.Textures.size() != n.Textures.size())
             {
                 printf("  [FAIL] material %zu mismatch\n", i);
                 return false;
@@ -101,7 +101,7 @@ namespace
             const Assets::FAssetNode& n = modelB.Nodes[i];
             if (m.Name != n.Name || m.Parent != n.Parent || m.Children != n.Children ||
                 m.Translation != n.Translation || m.Rotation != n.Rotation || m.Scale != n.Scale ||
-                m.Primitives != n.Primitives)
+                m.bFrontFaceCCW != n.bFrontFaceCCW || m.Primitives != n.Primitives)
             {
                 printf("  [FAIL] node %zu mismatch\n", i);
                 return false;
@@ -225,6 +225,7 @@ namespace
         root.Parent = -1;
         root.Translation = float3(0.0f, 1.0f, 0.0f);
         root.Scale = float3(2.0f, 2.0f, 2.0f);
+        root.bFrontFaceCCW = true;   // exercise the per-node winding field in roundtrip
         root.Primitives.push_back(0);
         src.Nodes.push_back(root);
         src.RootNodes.push_back(0);

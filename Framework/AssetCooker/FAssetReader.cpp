@@ -269,7 +269,7 @@ namespace Assets
                 return false;
             }
             if (!reader.ReadBool(mat.bAlphaTest) || !reader.ReadBool(mat.bAlphaBlend) ||
-                !reader.ReadBool(mat.bFrontFaceCCW) || !reader.ReadBool(mat.bDoubleSided))
+                !reader.ReadBool(mat.bDoubleSided))
             {
                 return false;
             }
@@ -278,9 +278,9 @@ namespace Assets
 
         // ---- Node table ----
         uint32_t nodeCount = 0;
-        if (!reader.ReadU32(nodeCount) || nodeCount > (reader.GetSize() - reader.GetOffset()) / 56)
+        if (!reader.ReadU32(nodeCount) || nodeCount > (reader.GetSize() - reader.GetOffset()) / 57)
         {
-            return false; // A node is at least 56B (Name 4 + Parent 4 + Children 4 + TRS 40 + Primitives 4)
+            return false; // A node is at least 57B (Name 4 + Parent 4 + Children 4 + TRS 40 + bFrontFaceCCW 1 + Primitives 4)
         }
         outPayload.Nodes.clear();
         outPayload.Nodes.reserve(nodeCount);
@@ -303,7 +303,8 @@ namespace Assets
                 }
                 assetNode.Children.push_back(child);
             }
-            if (!reader.ReadPod(assetNode.Translation) || !reader.ReadPod(assetNode.Rotation) || !reader.ReadPod(assetNode.Scale) || !reader.ReadVector(assetNode.Primitives))
+            if (!reader.ReadPod(assetNode.Translation) || !reader.ReadPod(assetNode.Rotation) || !reader.ReadPod(assetNode.Scale) ||
+                !reader.ReadBool(assetNode.bFrontFaceCCW) || !reader.ReadVector(assetNode.Primitives))
             {
                 return false;
             }

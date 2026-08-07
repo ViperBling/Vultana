@@ -153,11 +153,13 @@ namespace Assets
         float AlphaCutout          = 0.0f;
         bool bAlphaTest            = false;
         bool bAlphaBlend           = false;
-        bool bFrontFaceCCW         = false;
         bool bDoubleSided          = false;
     };
 
     // Node (written for both static and skeletal; stores model-local TRS, no instance-level m_MtxWorld)
+    // bFrontFaceCCW lives here, not on the material: front-face winding is a per-node property
+    // (a mirrored node transform flips triangle winding), while FMaterial/PSO is per-material.
+    // The rasterizer state is still built from the material at load time (Slice 3 feeds this in).
     struct FAssetNode
     {
         eastl::string Name;
@@ -166,6 +168,7 @@ namespace Assets
         float3 Translation      = float3(0.0f);
         float4 Rotation         = float4(0.0f, 0.0f, 0.0f, 1.0f);
         float3 Scale            = float3(1.0f);
+        bool bFrontFaceCCW      = false; // true = front face is counter-clockwise (determinant(mtx) > 0)
         eastl::vector<int32_t> Primitives; // M6: primitive indices attached to this node (node->mesh one-to-many; sole mesh reference, old MeshIndex leftover removed)
     };
 
@@ -218,7 +221,8 @@ namespace Assets
     // header alone, unknown sections can be skipped, downstream append-only section growth.
     // Variable-length source info is demoted to the Metadata section.
 
-    static constexpr uint32_t kAssetCookerVersion = 1;
+    // v2: bFrontFaceCCW moved from FAssetMaterial to FAssetNode (per-node winding).
+    static constexpr uint32_t kAssetCookerVersion = 2;
     static constexpr uint32_t kAssetHeaderSize = 48;
 
     enum class EAssetSection : uint32_t
