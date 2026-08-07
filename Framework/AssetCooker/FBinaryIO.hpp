@@ -27,6 +27,7 @@ namespace Assets
         void WriteU64(uint64_t v) { Write(&v, sizeof(v)); }
         void WriteF32(float v) { Write(&v, sizeof(v)); }
         void WriteU8(uint8_t v) { Write(&v, sizeof(v)); }
+        void WriteBool(bool v) { WriteU8(v ? 1u : 0u); }
         void WriteString(const eastl::string& str)
         {
             uint32_t length = static_cast<uint32_t>(str.size());
@@ -100,6 +101,8 @@ namespace Assets
         bool ReadI32(int32_t& v) { return Read(&v, sizeof(v)); }
         bool ReadU64(uint64_t& v) { return Read(&v, sizeof(v)); }
         bool ReadF32(float& v) { return Read(&v, sizeof(v)); }
+        bool ReadU8(uint8_t& v) { return Read(&v, sizeof(v)); }
+        bool ReadBool(bool& v) { uint8_t b = 0; if (!ReadU8(b)) return false; v = (b != 0); return true; }
 
         bool ReadString(eastl::string& s)
         {

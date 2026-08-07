@@ -8,7 +8,7 @@ target_include_directories(VultanaEngine PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 find_package(GTest CONFIG REQUIRED)
 
 # --- Command Test ---
-add_executable(UnitTests MainTest.cpp EditCommandTest.cpp ${SHADER_FILES})
+add_executable(UnitTests MainTest.cpp EditCommandTest.cpp AssetIOTest.cpp ${SHADER_FILES})
 target_link_libraries(UnitTests FrameworkLib GTest::gtest)
 target_include_directories(UnitTests PUBLIC ${PROJECT_SOURCE_DIR}/Framework)
 add_custom_target(RunUnitTests COMMAND UnitTests)
