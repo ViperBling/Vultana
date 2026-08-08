@@ -221,8 +221,13 @@ namespace Assets
     // header alone, unknown sections can be skipped, downstream append-only section growth.
     // Variable-length source info is demoted to the Metadata section.
 
-    // v2: bFrontFaceCCW moved from FAssetMaterial to FAssetNode (per-node winding).
-    static constexpr uint32_t kAssetCookerVersion = 2;
+    // Cooker format is pre-1.0: encoded as (major << 16) | minor, printed "0.2".
+    // v0.1 = Slice 1 layout; v0.2 = bFrontFaceCCW moved from FAssetMaterial to FAssetNode
+    // (per-node winding). Bump minor on layout changes; bump major only when the format
+    // stabilizes at 1.0.
+    static constexpr uint32_t kAssetCookerMajorVersion = 0;
+    static constexpr uint32_t kAssetCookerMinorVersion = 2;
+    static constexpr uint32_t kAssetCookerVersion = (kAssetCookerMajorVersion << 16) | kAssetCookerMinorVersion;
     static constexpr uint32_t kAssetHeaderSize = 48;
 
     enum class EAssetSection : uint32_t

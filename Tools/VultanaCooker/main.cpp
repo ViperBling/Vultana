@@ -1,7 +1,6 @@
 #include "AssetCooker/FAssetReader.hpp"
 #include "AssetCooker/FAssetWriter.hpp"
-
-// #include "Common/Meshlet.hlsli"
+#include "AssetCooker/FVultanaCooker.hpp"
 
 #include <rpmalloc/rpmalloc.h>
 #include <cstdio>
@@ -15,6 +14,7 @@ namespace
         printf("Usage:\n");
         printf("  VultanaCooker roundtrip [outPath]   write a synthetic model .vasset, read it back and compare\n");
         printf("  VultanaCooker info <path>           print asset header + payload summary\n");
+        printf("  VultanaCooker cook <srcPath> [dstPath]  cook a glTF model into a .vasset\n");
     }
 
     bool CompareModel(const Assets::FModelCookedData& modelA, const Assets::FModelCookedData& modelB)
@@ -301,7 +301,7 @@ namespace
             return 1;
         }
         printf("magic:   0x%08X (expected 0x%08X)\n", header.Magic, FVAssetHeader::MagicConst);
-        printf("version: %u  cooker: %u\n", header.Version, header.CookerVersion);
+        printf("version: %u  cooker: %u.%u\n", header.Version, header.CookerVersion >> 16, header.CookerVersion & 0xFFFFu);
         printf("type:    %s\n", header.Type == EAssetType::Model ? "Model" : header.Type == EAssetType::Texture ? "Texture" : "Unknown");
         printf("source:  %s (mtime=%llu size=%llu)\n", header.SourcePath.c_str(), (unsigned long long)header.SourceMTime, (unsigned long long)header.SourceSize);
         printf("refs:    %u\n", (uint32_t)header.References.size());
@@ -352,6 +352,30 @@ namespace
         printf("INFO OK\n");
         return 0;
     }
+
+    int RunCook(const char* srcPath, const char* dstPath)
+    {
+        using namespace Assets;
+        if (dstPath == nullptr)
+        {
+            eastl::string derived = srcPath;
+            const size_t dot = derived.find_last_of('.');
+            const size_t slash = derived.find_last_of('/');
+            if (dot != eastl::string::npos && (slash == eastl::string::npos || dot > slash))
+            {
+                derived.erase(dot);
+            }
+            derived += ".vasset";
+            return RunCook(srcPath, derived.c_str());
+        }
+        if (!FVultanaCooker::CookModel(srcPath, dstPath))
+        {
+            printf("COOK FAIL: %s\n", srcPath);
+            return 1;
+        }
+        printf("COOK OK: %s -> %s\n", srcPath, dstPath);
+        return 0;
+    }
 }
 
 int main(int argc, char* argv[])
@@ -380,6 +404,17 @@ int main(int argc, char* argv[])
             else
             {
                 result = RunInfo(argv[2]);
+            }
+        }
+        else if (cmd == "cook")
+        {
+            if (argc < 3)
+            {
+                PrintUsage();
+            }
+            else
+            {
+                result = RunCook(argv[2], argc >= 4 ? argv[3] : nullptr);
             }
         }
         else

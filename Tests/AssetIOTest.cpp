@@ -1,5 +1,7 @@
 #include "AssetCooker/FAssetReader.hpp"
 #include "AssetCooker/FAssetWriter.hpp"
+#include "AssetCooker/FVultanaCooker.hpp"
+#include "AssetCooker/FAssetReader.hpp"
 
 #include <gtest/gtest.h>
 
@@ -53,6 +55,11 @@ namespace
         std::ofstream os(path, std::ios::binary | std::ios::trunc);
         os.write((const char*)buf.data(), (std::streamsize)buf.size());
     }
+
+    const char* kCookDst = "assetcook_test.vasset";
+    const char* kBoxSrc = "../Assets/Models/Box/glTF-Embedded/Box.gltf";
+    const char* kMechDroneSrc = "../Assets/Models/MechDrone/scene.gltf";
+
 } // namespace
 
 TEST(AssetIO, Roundtrip)
@@ -102,4 +109,78 @@ TEST(AssetIO, ForgedHugeCount)
     FBinaryReader r(blob.data(), blob.size());
     eastl::vector<uint8_t> out;
     EXPECT_FALSE(r.ReadBlob(out)); // M8: insufficient remaining bytes -> false, no resize, no crash
+}
+
+// ----------- Asset Cooker ------------------ //
+TEST(AssetCook, CookBoxProducesExpectedTopology)
+{
+    using namespace Assets;
+    ASSERT_TRUE(FVultanaCooker::CookModel(kBoxSrc, kCookDst, /*bSilent=*/true));
+
+    FVAssetHeader header;
+    FModelCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadModel(kCookDst, header, payload));
+    EXPECT_EQ(payload.Meshes.size(), 1u);
+    EXPECT_EQ(payload.Nodes.size(), 2u);
+    EXPECT_EQ(payload.Materials.size(), 1u);
+    EXPECT_EQ(payload.Meshes[0].MaterialIndex, 0);
+    EXPECT_GT(payload.Meshes[0].MeshletCount, 0u); // static mesh must have meshlets
+    EXPECT_FALSE(payload.Meshes[0].bSkeletal);
+}
+
+TEST(AssetCook, CookIsDeterministic)
+{
+    using namespace Assets;
+    // Cook twice and require byte-identical output. This is the only automated guard
+    // against the uninitialized-keyframe-.w bug that would otherwise make
+    // ContentHash change on every cook.
+    ASSERT_TRUE(FVultanaCooker::CookModel(kBoxSrc, kCookDst, /*bSilent=*/true));
+    std::ifstream first(kCookDst, std::ios::binary | std::ios::ate);
+    const size_t size1 = (size_t)first.tellg();
+    eastl::vector<uint8_t> buf1(size1);
+    first.seekg(0);
+    first.read((char*)buf1.data(), size1);
+    first.close();
+
+    ASSERT_TRUE(FVultanaCooker::CookModel(kBoxSrc, kCookDst, /*bSilent=*/true));
+    std::ifstream second(kCookDst, std::ios::binary | std::ios::ate);
+    const size_t size2 = (size_t)second.tellg();
+    eastl::vector<uint8_t> buf2(size2);
+    second.seekg(0);
+    second.read((char*)buf2.data(), size2);
+    second.close();
+
+    EXPECT_EQ(size1, size2);
+    if (size1 == size2)
+    {
+        EXPECT_EQ(memcmp(buf1.data(), buf2.data(), size1), 0);
+    }
+}
+
+TEST(AssetCook, CookSkeletalHasNoMeshlets)
+{
+    using namespace Assets;
+    ASSERT_TRUE(FVultanaCooker::CookModel(kMechDroneSrc, kCookDst, /*bSilent=*/true));
+
+    FVAssetHeader header;
+    FModelCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadModel(kCookDst, header, payload));
+
+    bool foundSkeletal = false;
+    for (const FMeshCookedData& mesh : payload.Meshes)
+    {
+        if (mesh.bSkeletal)
+        {
+            foundSkeletal = true;
+            EXPECT_EQ(mesh.MeshletCount, 0u); // skeletal meshes never get meshlets
+            bool hasJoints = false;
+            for (const FMeshCookedData::FStream& s : mesh.Streams)
+            {
+                if (s.Type == EVertexStreamType::Joints) hasJoints = true;
+            }
+            EXPECT_TRUE(hasJoints);
+        }
+    }
+    EXPECT_TRUE(foundSkeletal);
+    EXPECT_GT(payload.Skeleton.Joints.size(), 0u);
 }

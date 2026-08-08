@@ -123,7 +123,8 @@ namespace Assets
         
         uint32_t type = 0;
         if (!reader.ReadU32(outHeader.Version) || outHeader.Version != FVAssetHeader::CurrentVersion ||
-            !reader.ReadU32(outHeader.CookerVersion) || !reader.ReadU32(type) ||
+            !reader.ReadU32(outHeader.CookerVersion) || outHeader.CookerVersion != kAssetCookerVersion ||
+            !reader.ReadU32(type) ||
             !reader.ReadU32(outHeader.SectionCount) || !reader.ReadU32(outHeader.Reserved) ||
             !reader.ReadU64(outHeader.PayloadOffset) || !reader.ReadU64(outHeader.PayloadSize) ||
             !reader.ReadU64(outHeader.ContentHash))

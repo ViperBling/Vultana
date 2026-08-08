@@ -12,7 +12,6 @@
 
 #include "Common/Meshlet.hlsli"   // FMeshlet:CPU/GPU 共享的 meshlet 剔除结构(36B)
 
-#define CGLTF_IMPLEMENTATION
 #include <cgltf/cgltf.h>
 
 #include <tinyxml2/tinyxml2.h>
