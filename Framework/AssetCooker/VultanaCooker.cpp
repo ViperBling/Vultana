@@ -138,6 +138,19 @@ namespace Assets
             return false;
         }
 
+        // Cooked products may live in a nested mirror tree (Assets/CookedAssets/...);
+        // create the destination directory on demand before writing.
+        const std::filesystem::path dstParent = std::filesystem::path(dstPath.c_str()).parent_path();
+        if (!dstParent.empty())
+        {
+            std::error_code ec;
+            std::filesystem::create_directories(dstParent, ec);
+            if (ec)
+            {
+                if (!bSilent) VTNA_LOG_ERROR("[Cooker] Failed to create output directory {}: {}", dstParent.string(), ec.message());
+                return false;
+            }
+        }
         if (!FAssetWriter::Write(dstPath, header, payload))
         {
             if (!bSilent) VTNA_LOG_ERROR("[Cooker] Failed to write {}", dstPath);

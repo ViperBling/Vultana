@@ -370,9 +370,9 @@ TEST(AssetPath, TextureSourceRoundtrip)
     const eastl::string cooked = Assets::FAssetPathUtils::MakeCookedTexturePath("textures/albedo.png", ETextureUsage::BaseColor);
     EXPECT_EQ(cooked, "textures/albedo.png.BaseColor.vasset");
     EXPECT_EQ(FAssetPathUtils::GetTextureSourcePath(cooked), "textures/albedo.png");
-    // S3-16: model product keeps the source extension.
     EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("Models/Box/glTF-Embedded/Box.gltf"), "Models/Box/glTF-Embedded/Box.gltf.vasset");
-    // S3-18 edge cases: a source name containing a dot, and a usage suffix appearing mid-name.
+    EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("../Assets/Models/Box/glTF-Embedded/Box.gltf"), "../Assets/CookedAssets/Models/Box/glTF-Embedded/Box.gltf.vasset");
+    EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("D:/x/y/Sponza.gltf"), "D:/x/y/Sponza.gltf.vasset");
     EXPECT_EQ(FAssetPathUtils::GetTextureSourcePath("textures/albedo.2k.png.BaseColor.vasset"), "textures/albedo.2k.png");
     EXPECT_EQ(FAssetPathUtils::GetTextureSourcePath("textures/albedo.Normal.png.Normal.vasset"), "textures/albedo.Normal.png");
 }

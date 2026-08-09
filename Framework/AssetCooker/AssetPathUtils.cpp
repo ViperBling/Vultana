@@ -36,8 +36,17 @@ namespace Assets
 
     eastl::string FAssetPathUtils::MakeCookedModelPath(const eastl::string& srcPath)
     {
-        // Extension kept: "Sponza.gltf" -> "Sponza.gltf.vasset". A blind extension
-        // erase would also collide Box.gltf/Box.glb and contradict the texture rule.
+        // Cooked products live in a single mirror tree under Assets/CookedAssets/ (the
+        // assets-relative directory is preserved, extension kept: "Sponza.gltf" ->
+        // "CookedAssets/.../Sponza.gltf.vasset"; a blind extension erase would collide
+        // Box.gltf/Box.glb). Sources outside the assets root — absolute paths, or strings
+        // already assets-relative without the "../Assets/" prefix — fall back to the
+        // legacy side-by-side product so callers passing either form keep working.
+        const eastl::string rel = MakeAssetsRelative(srcPath, "../Assets/");
+        if (rel != srcPath)
+        {
+            return "../Assets/CookedAssets/" + rel + ".vasset";
+        }
         return srcPath + ".vasset";
     }
 

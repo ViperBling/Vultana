@@ -268,7 +268,7 @@ namespace Assets
     // (per-node winding). Bump minor on layout changes; bump major only when the format
     // stabilizes at 1.0.
     static constexpr uint32_t kAssetCookerMajorVersion = 0;
-    static constexpr uint32_t kAssetCookerMinorVersion = 3;
+    static constexpr uint32_t kAssetCookerMinorVersion = 4;
     static constexpr uint32_t kAssetCookerVersion = (kAssetCookerMajorVersion << 16) | kAssetCookerMinorVersion;
     static constexpr uint32_t kAssetHeaderSize = 48;
 
