@@ -1,6 +1,7 @@
-#include "AssetCooker/FAssetReader.hpp"
-#include "AssetCooker/FAssetWriter.hpp"
-#include "AssetCooker/FVultanaCooker.hpp"
+#include "AssetCooker/AssetPathUtils.hpp"
+#include "AssetCooker/AssetReader.hpp"
+#include "AssetCooker/AssetWriter.hpp"
+#include "AssetCooker/VultanaCooker.hpp"
 
 #include <rpmalloc/rpmalloc.h>
 #include <cstdio>
@@ -12,9 +13,10 @@ namespace
     {
         printf("VultanaCooker — Vultana asset cook tool (Slice 1)\n");
         printf("Usage:\n");
-        printf("  VultanaCooker roundtrip [outPath]   write a synthetic model .vasset, read it back and compare\n");
-        printf("  VultanaCooker info <path>           print asset header + payload summary\n");
-        printf("  VultanaCooker cook <srcPath> [dstPath]  cook a glTF model into a .vasset\n");
+        printf("  VultanaCooker roundtrip [outPath]             write a synthetic model .vasset, read it back and compare\n");
+        printf("  VultanaCooker info <path>                     print asset header + payload summary\n");
+        printf("  VultanaCooker cook <srcPath> [dstPath]        cook a glTF model into a .vasset\n");
+        printf("  VultanaCooker uptodate <srcPath> [dstPath]    check source vs cooked freshness\n");
     }
 
     bool CompareModel(const Assets::FModelCookedData& modelA, const Assets::FModelCookedData& modelB)
@@ -71,7 +73,7 @@ namespace
         {
             const Assets::FAssetMaterial& m = modelA.Materials[i];
             const Assets::FAssetMaterial& n = modelB.Materials[i];
-            if (m.Name != n.Name || m.WorkFlow != n.WorkFlow || m.ShadingModel != n.ShadingModel ||
+            if (m.Name != n.Name || m.WorkFlow != n.WorkFlow ||
                 m.AlbedoColor != n.AlbedoColor || m.Metallic != n.Metallic || m.Roughness != n.Roughness ||
                 m.DiffuseColor != n.DiffuseColor || m.SpecularColor != n.SpecularColor ||
                 m.Glossiness != n.Glossiness || m.EmissiveColor != n.EmissiveColor ||
@@ -195,12 +197,18 @@ namespace
         uint16_t joints[] = {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3};
         jointStream.Data.assign((uint8_t*)joints, (uint8_t*)joints + sizeof(joints));
         skeletalMesh.Streams.push_back(eastl::move(jointStream));
+
+        FMeshCookedData::FStream sPosStream;
+        sPosStream.Type = EVertexStreamType::Position;
+        sPosStream.Stride = sizeof(float3);
+        float sPositions[] = {0, 0, 0, 1, 0, 0, 0, 1, 0};
+        sPosStream.Data.assign((uint8_t*)sPositions, (uint8_t*)sPositions + sizeof(sPositions));
+        skeletalMesh.Streams.push_back(eastl::move(sPosStream));
         src.Meshes.push_back(eastl::move(skeletalMesh));
 
         FAssetMaterial mat;
         mat.Name = "SyntheticMaterial";
         mat.WorkFlow = EMaterialWorkFlow::PBRMetallicRoughness;
-        mat.ShadingModel = EShadingModel::DefaultPBR;
         mat.AlbedoColor = float3(0.8f, 0.1f, 0.5f);
         mat.Metallic = 0.2f;
         mat.Roughness = 0.7f;
@@ -329,17 +337,14 @@ namespace
                        (uint32_t)m.Streams.size(), m.MeshletCount);
                 for (size_t s = 0; s < m.Streams.size(); s++)
                 {
-                    printf("       stream[%zu] type=%u stride=%u bytes=%u\n",
-                           s, (uint32_t)m.Streams[s].Type, m.Streams[s].Stride,
-                           (uint32_t)m.Streams[s].Data.size());
+                    printf("       stream[%zu] type=%u stride=%u bytes=%u\n", s, (uint32_t)m.Streams[s].Type, m.Streams[s].Stride, (uint32_t)m.Streams[s].Data.size());
                 }
             }
             printf("materials: %u\n", (uint32_t)payload.Materials.size());
             for (size_t i = 0; i < payload.Materials.size(); i++)
             {
                 const FAssetMaterial& mat = payload.Materials[i];
-                printf("  [%zu] %s textures=%u shading=%u\n", i, mat.Name.c_str(),
-                       (uint32_t)mat.Textures.size(), (uint32_t)mat.ShadingModel);
+                printf("  [%zu] %s textures=%u\n", i, mat.Name.c_str(), (uint32_t)mat.Textures.size());
             }
             printf("nodes: %u roots: %u joints: %u anims: %u\n",
                    (uint32_t)payload.Nodes.size(), (uint32_t)payload.RootNodes.size(),
@@ -358,14 +363,7 @@ namespace
         using namespace Assets;
         if (dstPath == nullptr)
         {
-            eastl::string derived = srcPath;
-            const size_t dot = derived.find_last_of('.');
-            const size_t slash = derived.find_last_of('/');
-            if (dot != eastl::string::npos && (slash == eastl::string::npos || dot > slash))
-            {
-                derived.erase(dot);
-            }
-            derived += ".vasset";
+            const eastl::string derived = FAssetPathUtils::MakeCookedModelPath(srcPath);
             return RunCook(srcPath, derived.c_str());
         }
         if (!FVultanaCooker::CookModel(srcPath, dstPath))
@@ -374,6 +372,14 @@ namespace
             return 1;
         }
         printf("COOK OK: %s -> %s\n", srcPath, dstPath);
+        return 0;
+    }
+
+    int RunUpToDate(const char* srcPath, const char* dstPath)
+    {
+        using namespace Assets;
+        const eastl::string cooked = dstPath ? dstPath : FAssetPathUtils::MakeCookedModelPath(srcPath);
+        printf("UPTODATE: %s (cooked=%s)\n", FVultanaCooker::IsUpToDate(srcPath, cooked) ? "yes" : "no", cooked.c_str());
         return 0;
     }
 }
@@ -415,6 +421,17 @@ int main(int argc, char* argv[])
             else
             {
                 result = RunCook(argv[2], argc >= 4 ? argv[3] : nullptr);
+            }
+        }
+        else if (cmd == "uptodate")
+        {
+            if (argc < 3)
+            {
+                PrintUsage();
+            }
+            else
+            {
+                result = RunUpToDate(argv[2], argc >= 4 ? argv[3] : nullptr);
             }
         }
         else

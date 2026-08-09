@@ -1,0 +1,21 @@
+#pragma once
+
+#include "AssetCooker/VAssetTypes.hpp" // ETextureUsage
+
+#include <EASTL/string.h>
+
+namespace Assets
+{
+    class FAssetPathUtils
+    {
+    public:
+        static eastl::string NormalizeAssetPath(const eastl::string& path);
+        static eastl::string MakeAssetsRelative(const eastl::string& path, const eastl::string& assetsPath);
+        static eastl::string MakeCookedModelPath(const eastl::string& srcPath);
+        static eastl::string MakeCookedTexturePath(const eastl::string& srcPath, ETextureUsage usage);
+        static eastl::string GetTextureSourcePath(const eastl::string& cookedPath);
+
+    private:
+        static eastl::string TextureUsageSuffix(ETextureUsage usage);
+    };
+} // namespace Assets

@@ -24,6 +24,12 @@ namespace Scene
 
     void FAnimation::UpdateChannel(FSkeletalMesh *mesh, const FAnimationChannel &channel)
     {
+        // N4: a channel without keyframes must not reach the size()-1 loop bound below
+        // (size_t underflow) nor the KeyFrames[0] fallback (empty-vector dereference).
+        if (channel.KeyFrames.empty())
+        {
+            return;
+        }
         eastl::pair<float, float4> lowerFrame;
         eastl::pair<float, float4> upperFrame;
 

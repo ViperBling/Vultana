@@ -1,4 +1,4 @@
-#include "AssetCooker/FAssetWriter.hpp"
+#include "AssetCooker/AssetWriter.hpp"
 
 #include <city.h>
 #include <fstream>
@@ -153,54 +153,72 @@ namespace Assets
             return false;
         struct _stat64 cookedStat = {};
         if (_stat64(cookedPath.c_str(), &cookedStat) != 0)
-            return false;
-        
-        eastl::vector<uint8_t> cookedHeaderBuf;
-        if (!ReadFileHeadToBuffer(cookedPath, kAssetHeaderSize, cookedHeaderBuf) || cookedHeaderBuf.size() < kAssetHeaderSize)
-            return false;
-        
-        FBinaryReader reader(cookedHeaderBuf.data(), cookedHeaderBuf.size());
-        uint32_t magic = 0, version = 0, cookerVersion = 0, type = 0, sectionCount = 0, reserved = 0;
-        uint64_t mtime = 0, size = 0;
+            return false; 
 
-        if (!reader.ReadU32(magic) || magic != FVAssetHeader::MagicConst ||
-            !reader.ReadU32(version) || version != FVAssetHeader::CurrentVersion ||
-            !reader.ReadU32(cookerVersion) || cookerVersion != kAssetCookerVersion ||
-            !reader.ReadU32(type) || !reader.ReadU32(sectionCount) || !reader.ReadU32(reserved))
+        // Pass 1: read the fixed header only, enough to validate magic/version and get sectionCount.
+        eastl::vector<uint8_t> headerBuf;
+        if (!ReadFileHeadToBuffer(cookedPath, kAssetHeaderSize, headerBuf) || headerBuf.size() < kAssetHeaderSize)
+            return false;
+
+        FBinaryReader headerReader(headerBuf.data(), headerBuf.size());
+        uint32_t magic = 0, version = 0, cookerVersion = 0, type = 0, sectionCount = 0, reserved = 0;
+        if (!headerReader.ReadU32(magic) || magic != FVAssetHeader::MagicConst ||
+            !headerReader.ReadU32(version) || version != FVAssetHeader::CurrentVersion ||
+            !headerReader.ReadU32(cookerVersion) || cookerVersion != kAssetCookerVersion ||
+            !headerReader.ReadU32(type) || !headerReader.ReadU32(sectionCount) || !headerReader.ReadU32(reserved))
         {
             return false;
         }
         if (sectionCount > 1024)
             return false;
-        
+
+        // Pass 2: header + section table; walk the table to find the Metadata (offset, size).
         const uint32_t headBytes = kAssetHeaderSize + sectionCount * kSectionDescSize;
-        eastl::vector<uint8_t> full;
-        if (!ReadFileHeadToBuffer(cookedPath, headBytes, full) || full.size() < headBytes)
+        eastl::vector<uint8_t> tableBuf;
+        if (!ReadFileHeadToBuffer(cookedPath, headBytes, tableBuf) || tableBuf.size() < headBytes)
             return false;
-        
-        FBinaryReader fullReader(full.data(), full.size());
-        if (!fullReader.Seek(kAssetHeaderSize))
+
+        FBinaryReader tableReader(tableBuf.data(), tableBuf.size());
+        if (!tableReader.Seek(kAssetHeaderSize))
             return false;
-        
+
+        uint64_t metaOffset = 0, metaSize = 0;
+        bool foundMeta = false;
         for (uint32_t i = 0; i < sectionCount; ++i)
         {
             uint32_t sectionType = 0, sectionReserved = 0;
             uint64_t sectionOffset = 0, sectionSize = 0;
-            if (!fullReader.ReadU32(sectionType) || !fullReader.ReadU32(sectionReserved) ||
-                !fullReader.ReadU64(sectionOffset) || !fullReader.ReadU64(sectionSize))
+            if (!tableReader.ReadU32(sectionType) || !tableReader.ReadU32(sectionReserved) ||
+                !tableReader.ReadU64(sectionOffset) || !tableReader.ReadU64(sectionSize))
             {
                 return false;
             }
             if ((EAssetSection)sectionType == EAssetSection::Metadata)
             {
-                if (sectionSize < 16 || sectionOffset + 16 > full.size())
-                    return false;
-                FBinaryReader metaReader(full.data() + sectionOffset, sectionSize);
-                if (!metaReader.ReadU64(mtime) || !metaReader.ReadU64(size))
-                    return false;
+                metaOffset = sectionOffset;
+                metaSize = sectionSize;
+                foundMeta = true;
                 break;
             }
         }
+        if (!foundMeta || metaSize < 16)
+            return false;
+
+        // Pass 3: read through the end of the Metadata section, then index it by its absolute
+        // file offset (the section DATA lives after the fixed header + table — the old bug read
+        // only headBytes and indexed by sectionOffset, which always fell outside the buffer).
+        const uint64_t metaEnd = metaOffset + metaSize;
+        if (metaEnd > UINT32_MAX)
+            return false;
+        eastl::vector<uint8_t> metaBuf;
+        if (!ReadFileHeadToBuffer(cookedPath, static_cast<uint32_t>(metaEnd), metaBuf) || metaBuf.size() < metaEnd)
+            return false;
+
+        FBinaryReader metaReader(metaBuf.data() + metaOffset, metaSize);
+        uint64_t mtime = 0, size = 0;
+        if (!metaReader.ReadU64(mtime) || !metaReader.ReadU64(size))
+            return false;
+
         return mtime == static_cast<uint64_t>(srcStat.st_mtime) && size == static_cast<uint64_t>(srcStat.st_size);
     }
 
@@ -275,7 +293,6 @@ namespace Assets
         {
             writer.WriteString(mat.Name);
             writer.WriteU32((uint32_t)mat.WorkFlow);
-            writer.WriteU32((uint32_t)mat.ShadingModel);
             writer.WriteU32((uint32_t)mat.Textures.size());
             for (const FAssetTextureRef& tex : mat.Textures)
             {

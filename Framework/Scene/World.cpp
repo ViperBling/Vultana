@@ -270,6 +270,13 @@ namespace Scene
 
         Assets::FModelLoader loader(this);
         loader.LoadModelSettings(element);
-        loader.LoadGLTF();
+        if (m_bUseCookedAssets)
+        {
+            loader.Load();
+        }
+        else
+        {
+            loader.LoadGLTF();
+        }
     }
 }

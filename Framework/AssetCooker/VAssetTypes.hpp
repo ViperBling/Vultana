@@ -11,6 +11,77 @@
 
 namespace Assets
 {
+    // ---------------------------------------------------------------------------
+    // Serialized record-size lower bound (compile-time). The .vasset payload records
+    // are written field-by-field (FBinaryWriter); the *minimum* bytes a record can
+    // occupy is the sum of its fixed-size fields, with variable-length fields
+    // (strings / vectors) counted as their 4B length/count prefix only. The reader
+    // uses this as a sanity divisor so a corrupt count can't drive an over-allocation.
+    // Field lists below are the single source of truth for both the struct members
+    // and the size constants: add/remove a material/texture/mesh field in the list
+    // and kMin*RecordSize follows automatically (static_asserts pin the current
+    // values, see FAssetReader.cpp).
+    namespace detail
+    {
+        template <typename T> struct DiskMinSize { static constexpr uint32_t Value = 4; };          // enums / int32 / uint32 / float
+        template <> struct DiskMinSize<bool>       { static constexpr uint32_t Value = 1; };
+        template <> struct DiskMinSize<uint64_t>   { static constexpr uint32_t Value = 8; };
+        template <> struct DiskMinSize<linalg::vec<float, 2>> { static constexpr uint32_t Value = 8; };  // float2
+        template <> struct DiskMinSize<linalg::vec<float, 3>> { static constexpr uint32_t Value = 12; }; // float3
+        template <> struct DiskMinSize<linalg::vec<float, 4>> { static constexpr uint32_t Value = 16; }; // float4
+        template <> struct DiskMinSize<linalg::mat<float, 4, 4>> { static constexpr uint32_t Value = 64; }; // float4x4
+        template <> struct DiskMinSize<eastl::string> { static constexpr uint32_t Value = 4; };    // 4B length prefix
+        template <typename T> struct DiskMinSize<eastl::vector<T>> { static constexpr uint32_t Value = 4; }; // 4B count prefix
+    }
+
+    // Field-list macros: X(Name, Type, [= Default]) invoked with VTNA_DECLARE_MEMBER
+    // (struct member) or VTNA_DISK_SUM (record size). Order MUST match the serialization
+    // order in FAssetWriter.cpp / FAssetReader.cpp.
+    #define VTNA_DECLARE_MEMBER(Name, Type, ...) Type Name __VA_ARGS__;
+    #define VTNA_DISK_SUM(Name, Type, ...) + Assets::detail::DiskMinSize<Type>::Value
+
+    #define VTNA_TEXREF_FIELDS(X)                                            \
+        X(RelativePath, eastl::string)                                       \
+        X(Usage, ETextureUsage, = ETextureUsage::BaseColor)                  \
+        X(bSRGB, bool, = true)                                               \
+        X(bHasTransform, bool, = false)                                      \
+        X(Offset, float2, = float2(0.0f))                                    \
+        X(Scale, float2, = float2(1.0f))                                     \
+        X(Rotation, float, = 0.0f)
+
+    #define VTNA_MATERIAL_FIELDS(X)                                          \
+        X(Name, eastl::string)                                               \
+        X(WorkFlow, EMaterialWorkFlow, = EMaterialWorkFlow::PBRMetallicRoughness) \
+        X(Textures, eastl::vector<FAssetTextureRef>)                         \
+        X(AlbedoColor, float3, = float3(1.0f))                               \
+        X(Metallic, float, = 0.0f)                                           \
+        X(Roughness, float, = 0.0f)                                          \
+        X(DiffuseColor, float3, = float3(1.0f))                              \
+        X(SpecularColor, float3, = float3(0.0f))                             \
+        X(Glossiness, float, = 0.0f)                                         \
+        X(EmissiveColor, float3, = float3(0.0f))                             \
+        X(AlphaCutout, float, = 0.0f)                                        \
+        X(bAlphaTest, bool, = false)                                         \
+        X(bAlphaBlend, bool, = false)                                        \
+        X(bDoubleSided, bool, = false)
+
+    #define VTNA_MESH_FIELDS(X)                                              \
+        X(Name, eastl::string)                                               \
+        X(MaterialIndex, int32_t, = -1)                                      \
+        X(Center, float3, = float3(0.0f))                                    \
+        X(Radius, float, = 0.0f)                                             \
+        X(IndexCount, uint32_t, = 0)                                         \
+        X(VertexCount, uint32_t, = 0)                                        \
+        X(IndexStride, uint32_t, = 2)                                        \
+        X(IndexData, eastl::vector<uint8_t>)                                 \
+        X(bSkeletal, bool, = false)                                          \
+        X(bSkeletalAnim, bool, = false)                                      \
+        X(Streams, eastl::vector<FStream>)                                   \
+        X(MeshletCount, uint32_t, = 0)                                       \
+        X(MeshletBounds, eastl::vector<FMeshlet>)                            \
+        X(MeshletIndexData, eastl::vector<uint8_t>)                          \
+        X(MeshletVertexData, eastl::vector<uint8_t>)
+
     // [0..48)    FVAssetHeader fixed header (all fixed offsets, no variable length)
     // [48..)     FAssetSectionDesc × SectionCount (24B each)
     // [align16)  section 0: Metadata (source stats/path/references)
@@ -85,75 +156,34 @@ namespace Assets
         PBRSpecularGlossiness = 1,
     };
 
-    enum class EShadingModel : uint32_t
+    // Vertex stream (namespace scope so the serialized-size field list below can reference
+    // it outside the struct; FMeshCookedData::FStream alias keeps existing call sites).
+    struct FStream
     {
-        DefaultPBR = 0,
-        // Unlit / Cloth / Clearcoat 
+        EVertexStreamType Type = EVertexStreamType::Position;
+        uint32_t Stride = 0;
+        eastl::vector<uint8_t> Data;
     };
 
     // Mesh Payload
     struct FMeshCookedData
     {
-        eastl::string Name;
-        int32_t MaterialIndex   = -1;
-        float3 Center           = float3(0.0f);
-        float Radius            = 0.0f;
-        uint32_t IndexCount     = 0;
-        uint32_t VertexCount    = 0;
-        uint32_t IndexStride    = 2;
-        eastl::vector<uint8_t> IndexData;
-        bool bSkeletal          = false;
-        bool bSkeletalAnim      = false;
+        using FStream = ::Assets::FStream; // compatibility alias (was a nested struct)
 
-        struct FStream
-        {
-            EVertexStreamType Type = EVertexStreamType::Position;
-            uint32_t Stride = 0;
-            eastl::vector<uint8_t> Data;
-        };
-        eastl::vector<FStream> Streams;
-
-        // bSkeletal == false
-        uint32_t MeshletCount = 0;
-        eastl::vector<FMeshlet> MeshletBounds;
-        eastl::vector<uint8_t> MeshletIndexData;
-        eastl::vector<uint8_t> MeshletVertexData;
+        // bSkeletal == false: Meshlet* fields below are static-mesh only
+        VTNA_MESH_FIELDS(VTNA_DECLARE_MEMBER)
     };
 
     // Texture reference; RelativePath stores the .vasset output path (relative to AssetsPath)
     struct FAssetTextureRef
     {
-        eastl::string RelativePath;
-        ETextureUsage Usage     = ETextureUsage::BaseColor;
-        bool bSRGB              = true;
-        bool bHasTransform      = false;
-        float2 Offset           = float2(0.0f);
-        float2 Scale            = float2(1.0f);
-        float Rotation          = 0.0f;
+        VTNA_TEXREF_FIELDS(VTNA_DECLARE_MEMBER)
     };
 
     // Material table entry
     struct FAssetMaterial
     {
-        eastl::string Name;
-        EMaterialWorkFlow WorkFlow = EMaterialWorkFlow::PBRMetallicRoughness;
-        EShadingModel ShadingModel = EShadingModel::DefaultPBR;
-        eastl::vector<FAssetTextureRef> Textures;
-
-        // PBR metallic-roughness:
-        float3 AlbedoColor         = float3(1.0f);
-        float Metallic             = 0.0f;
-        float Roughness            = 0.0f;
-        // PBR specular-glossiness:
-        float3 DiffuseColor        = float3(1.0f);
-        float3 SpecularColor       = float3(0.0f);
-        float Glossiness           = 0.0f;
-        // General:
-        float3 EmissiveColor       = float3(0.0f);
-        float AlphaCutout          = 0.0f;
-        bool bAlphaTest            = false;
-        bool bAlphaBlend           = false;
-        bool bDoubleSided          = false;
+        VTNA_MATERIAL_FIELDS(VTNA_DECLARE_MEMBER)
     };
 
     // Node (written for both static and skeletal; stores model-local TRS, no instance-level m_MtxWorld)
@@ -203,6 +233,18 @@ namespace Assets
         eastl::vector<FAssetAnimation> Animations;
     };
 
+    // ---------------------------------------------------------------------------
+    // Record-size lower bounds, derived from the field lists above (FAssetReader.cpp
+    // uses them as sanity divisors). Adding/removing a field in the lists updates
+    // these automatically; the asserts pin the layout changes from Slice 3 §4.6 M8.
+    constexpr uint32_t kMinMeshRecordSize       = 0 VTNA_MESH_FIELDS(VTNA_DISK_SUM);
+    constexpr uint32_t kMinMaterialRecordSize   = 0 VTNA_MATERIAL_FIELDS(VTNA_DISK_SUM);
+    constexpr uint32_t kMinTextureRefRecordSize = 0 VTNA_TEXREF_FIELDS(VTNA_DISK_SUM);
+
+    static_assert(kMinMeshRecordSize == 62,       "mesh record layout changed (expected 62; Slice 3 4.6 M8)");
+    static_assert(kMinMaterialRecordSize == 79,   "material record layout changed (expected 79; Slice 3 4.6 M8, ShadingModel removed)");
+    static_assert(kMinTextureRefRecordSize == 30, "texture ref record layout changed (expected 30; Slice 3 4.6 M8)");
+
     // ETexture payload
     struct FTextureCookedData
     {
@@ -226,7 +268,7 @@ namespace Assets
     // (per-node winding). Bump minor on layout changes; bump major only when the format
     // stabilizes at 1.0.
     static constexpr uint32_t kAssetCookerMajorVersion = 0;
-    static constexpr uint32_t kAssetCookerMinorVersion = 2;
+    static constexpr uint32_t kAssetCookerMinorVersion = 3;
     static constexpr uint32_t kAssetCookerVersion = (kAssetCookerMajorVersion << 16) | kAssetCookerMinorVersion;
     static constexpr uint32_t kAssetHeaderSize = 48;
 

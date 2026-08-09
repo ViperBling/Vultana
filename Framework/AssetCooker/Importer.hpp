@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AssetCooker/FVAssetTypes.hpp"
+#include "AssetCooker/VAssetTypes.hpp"
 #include "Utilities/Math.hpp"
 
 #include <EASTL/string.h>
@@ -35,7 +35,6 @@ namespace Assets
     {
         eastl::string Name;
         EMaterialWorkFlow WorkFlow = EMaterialWorkFlow::PBRMetallicRoughness;
-        EShadingModel ShadingModel = EShadingModel::DefaultPBR;
         eastl::vector<FAssetTextureRef> Textures;
 
         float3 AlbedoColor      = float3(1.0f);

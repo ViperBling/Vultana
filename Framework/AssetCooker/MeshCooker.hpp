@@ -1,7 +1,7 @@
 #pragma once
 
-#include "AssetCooker/FVAssetTypes.hpp"
-#include "AssetCooker/FImporter.hpp"
+#include "AssetCooker/VAssetTypes.hpp"
+#include "AssetCooker/Importer.hpp"
 
 namespace Assets
 {

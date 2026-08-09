@@ -1,4 +1,5 @@
-#include "AssetCooker/FMeshCooker.hpp"
+#include "AssetCooker/MeshCooker.hpp"
+#include "Utilities/Log.hpp"
 #include "Utilities/Math.hpp"
 
 #include <meshoptimizer.h>
@@ -181,6 +182,20 @@ namespace Assets
 
         if (in.IndexData.empty())
         {
+            return false;
+        }
+
+        for (const FImportVertexStream& s : in.Streams)
+        {
+            if (s.Stride == 0 || s.Data.size() < static_cast<size_t>(s.Stride) * in.VertexCount)
+            {
+                VTNA_LOG_WARN("[MeshCooker] stream type {} too short ({}B < stride {} * count {}); rejecting mesh '{}'", static_cast<int>(s.Type), s.Data.size(), s.Stride, in.VertexCount, in.Name);
+                return false;
+            }
+        }
+        if (in.IndexCount % 3 != 0)
+        {
+            VTNA_LOG_WARN("[MeshCooker] index count {} not divisible by 3; rejecting mesh '{}'", in.IndexCount, in.Name);
             return false;
         }
 

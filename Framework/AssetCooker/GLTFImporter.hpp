@@ -1,6 +1,7 @@
 #pragma once
 
-#include "AssetCooker/FImporter.hpp"
+#include "AssetCooker/Importer.hpp"
+#include "AssetCooker/AssetPathUtils.hpp"
 
 #include <EASTL/string.h>
 #include <EASTL/vector.h>

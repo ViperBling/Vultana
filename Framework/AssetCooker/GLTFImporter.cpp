@@ -1,3 +1,4 @@
+#include "AssetCooker/AssetPathUtils.hpp"
 #include "AssetCooker/GLTFImporter.hpp"
 
 #include <cgltf/cgltf.h>
@@ -25,33 +26,38 @@ namespace
         return determinant(mtx) > 0.0f;
     }
 
-    // "<imageName>.<Usage>.vasset" suffix; a switch with a default so new ETextureUsage
-    // values are caught by the compiler instead of silently producing a path with no suffix.
-    eastl::string UsageSuffix(Assets::ETextureUsage usage)
+    // Resolve the raw byte range of an accessor's data with a bounds check against the
+    // containing buffer. Returns nullptr (and logs) when the accessor has no buffer view
+    // (legal per glTF: data is all zeros) or the range falls outside the buffer.
+    const uint8_t* GetAccessorData(const cgltf_accessor* accessor, size_t& outByteCount)
     {
-        switch (usage)
+        if (accessor == nullptr || accessor->buffer_view == nullptr || accessor->buffer_view->buffer == nullptr) 
+            return nullptr;
+        const cgltf_buffer* buffer = accessor->buffer_view->buffer;
+        // Stride * count can itself overflow uint64 on hostile values; guard before widening
+        // (a zero stride is rejected by LoadBufferStream before this is reached).
+        if (accessor->stride != 0 && accessor->count > SIZE_MAX / accessor->stride)
         {
-        case Assets::ETextureUsage::BaseColor:          return ".BaseColor.vasset";
-        case Assets::ETextureUsage::MetallicRoughness:  return ".MetallicRoughness.vasset";
-        case Assets::ETextureUsage::Normal:             return ".Normal.vasset";
-        case Assets::ETextureUsage::Emissive:           return ".Emissive.vasset";
-        case Assets::ETextureUsage::AmbientOcclusion:   return ".AmbientOcclusion.vasset";
-        case Assets::ETextureUsage::Diffuse:            return ".Diffuse.vasset";
-        case Assets::ETextureUsage::SpecularGlossiness: return ".SpecularGlossiness.vasset";
-        default:
-            assert(false);
-            return ".Unknown.vasset";
+            VTNA_LOG_WARN("[GLTFImporter] accessor stride {} * count {} overflows", accessor->stride, accessor->count);
+            return nullptr;
         }
+        const uint64_t start = static_cast<uint64_t>(accessor->buffer_view->offset) + accessor->offset;
+        const uint64_t byteCount = static_cast<uint64_t>(accessor->stride) * accessor->count;
+        if (start + byteCount > buffer->size)
+        {
+            VTNA_LOG_WARN("[GLTFImporter] accessor range out of bounds ({} + {} > {}B buffer)", start, byteCount, buffer->size);
+            return nullptr;
+        }
+        outByteCount = static_cast<size_t>(byteCount);
+        return reinterpret_cast<const uint8_t*>(buffer->data) + start;
     }
 
     // Copy an accessor's bytes into a vertex stream; optionally flip Z (RH->LH).
     // Rejects sparse and interleaved accessors (a cooker must not silently bake wrong bytes).
     bool LoadBufferStream(const cgltf_accessor* accessor, bool convertToLH, Assets::FImportVertexStream& outStream)
     {
-        if (accessor == nullptr || accessor->buffer_view == nullptr || accessor->buffer_view->buffer == nullptr)
-        {
+        if (accessor == nullptr)
             return false;
-        }
         // Sparse accessors need cgltf_accessor_unpack_floats; interleaved buffer views
         // (stride > component sum) would copy neighboring attribute bytes. Reject both.
         if (accessor->is_sparse)
@@ -60,23 +66,32 @@ namespace
             return false;
         }
         const uint32_t stride = static_cast<uint32_t>(accessor->stride);
-
         // Element size = components × component size (e.g. float3 = 12B). Interleaved buffer
         // views have stride > this; reject them instead of baking neighboring bytes.
         const uint32_t elementSize = static_cast<uint32_t>(cgltf_calc_size(accessor->type, accessor->component_type));
-        if (stride > elementSize)
+        if (stride == 0 || stride > elementSize)
         {
-            VTNA_LOG_WARN("[GLTFImporter] interleaved buffer view not supported; skipping stream");
+            // stride == 0 happens for invalid type/component_type (cgltf_calc_size returns 0);
+            // the old assert(stride >= sizeof(float3)) was Debug-only and wrote a null pointer
+            // in Release. An offline tool must reject, not crash.
+            VTNA_LOG_WARN("[GLTFImporter] accessor stride {} unsupported (element {}B); skipping stream", stride, elementSize);
             return false;
         }
+        if (convertToLH && stride < sizeof(float3))
+        {
+            VTNA_LOG_WARN("[GLTFImporter] position stream stride {} < 12B; skipping", stride);
+            return false;
+        }
+        size_t byteCount = 0;
+        const uint8_t* src = GetAccessorData(accessor, byteCount);
+        if (src == nullptr)
+            return false;
 
-        const uint8_t* src = reinterpret_cast<const uint8_t*>(accessor->buffer_view->buffer->data) + accessor->buffer_view->offset + accessor->offset;
         outStream.Stride = stride;
-        outStream.Data.assign(src, src + stride * accessor->count);
+        outStream.Data.assign(src, src + byteCount);
 
         if (convertToLH)
         {
-            assert(stride >= sizeof(float3));
             for (cgltf_size i = 0; i < accessor->count; ++i)
             {
                 float3& v = *reinterpret_cast<float3*>(outStream.Data.data() + stride * i);
@@ -143,18 +158,18 @@ namespace
         {
             // Embedded image (buffer_view): synthesize a stable name so the ref is still
             // recorded and Slice 5 can cook it out of the buffer view.
-            ref.RelativePath = srcDir + (image->name ? image->name : "embedded") + UsageSuffix(usage);
+            ref.RelativePath = Assets::FAssetPathUtils::MakeCookedTexturePath(srcDir + (image->name ? image->name : "embedded"), usage);
         }
         else if (strncmp(image->uri, "data:", 5) == 0)
         {
-            ref.RelativePath = srcDir + (image->name ? image->name : "inline") + UsageSuffix(usage);
+            ref.RelativePath = Assets::FAssetPathUtils::MakeCookedTexturePath(srcDir + (image->name ? image->name : "inline"), usage);
         }
         else
         {
             eastl::string uri = image->uri;
-            cgltf_decode_uri(uri.begin()); // in-place percent-decode (%20 etc.)
+            cgltf_decode_uri(uri.begin());              // in-place percent-decode (%20 etc.)
             uri.resize(strlen(uri.c_str()));
-            ref.RelativePath = srcDir + uri + UsageSuffix(usage);
+            ref.RelativePath = Assets::FAssetPathUtils::MakeCookedTexturePath(srcDir + uri, usage);
         }
         mat.Textures.push_back(ref);
     }
@@ -182,11 +197,17 @@ namespace Assets
         }
         if (cgltf_validate(data) != cgltf_result_success)
         {
-            VTNA_LOG_WARN("[GLTFImporter] cgltf_validate reported issues for {}", srcPath);
+            VTNA_LOG_ERROR("[GLTFImporter] cgltf_validate failed for {}; refusing to cook", srcPath);
+            cgltf_free(data);
+            return false;
         }
 
         const size_t lastSlash = srcPath.find_last_of('/');
-        const eastl::string srcDir = (lastSlash == eastl::string::npos) ? "" : srcPath.substr(0, lastSlash + 1);
+        const eastl::string rawSrcDir = (lastSlash == eastl::string::npos) ? "" : srcPath.substr(0, lastSlash + 1);
+        // A: normalize to AssetsPath-relative ("../Assets/Models/Sponza/glTF/" -> "Models/Sponza/glTF/").
+        // The CLI and engine both resolve sources under "../Assets/"; the assets root is
+        // intentionally not a parameter here (Slice 3 keeps Import's signature untouched).
+        const eastl::string srcDir = FAssetPathUtils::MakeAssetsRelative(rawSrcDir, "../Assets/");
 
         // One pass over the parsed data, one stage per FImportResult section.
         LoadMaterials(data, srcDir, out);
@@ -444,29 +465,56 @@ namespace Assets
                 out.Joints.push_back(static_cast<int32_t>(cgltf_node_index(data, skin->joints[i])));
             }
             const cgltf_accessor* accessor = skin->inverse_bind_matrices;
-            if (accessor != nullptr && accessor->buffer_view != nullptr)
+            if (accessor != nullptr)
             {
-                out.InverseBindMatrices.resize(accessor->count);
-                const size_t size = accessor->stride * accessor->count;
-                memcpy(out.InverseBindMatrices.data(), reinterpret_cast<const char*>(accessor->buffer_view->buffer->data) + accessor->buffer_view->offset + accessor->offset, size);
-                for (cgltf_size i = 0; i < accessor->count; i++)
+                const bool bValidIBM = accessor->type == cgltf_type_mat4
+                    && accessor->component_type == cgltf_component_type_r_32f
+                    && accessor->stride >= sizeof(float4x4)
+                    && accessor->count == skin->joints_count;
+
+                if (!bValidIBM)
                 {
-                    float3 translation;
-                    float4 rotation;
-                    float3 scale;
-                    Decompose(out.InverseBindMatrices[i], translation, rotation, scale);
-                    translation.z = -translation.z;
-                    rotation.z = -rotation.z;
-                    rotation.w = -rotation.w;
-                    float4x4 T = translation_matrix(translation);
-                    float4x4 R = rotation_matrix(rotation);
-                    float4x4 S = scaling_matrix(scale);
-                    out.InverseBindMatrices[i] = mul(T, mul(R, S));
+                    VTNA_LOG_WARN("[GLTFImporter] inverse_bind_matrices layout unsupported (type={} comp={} stride={} count={} joints={}); falling back to identity",
+                                  static_cast<int>(accessor->type), static_cast<int>(accessor->component_type),
+                                  accessor->stride, accessor->count, skin->joints_count);
+                    out.InverseBindMatrices.resize(skin->joints_count, float4x4({identity}));
+                }
+                else
+                {
+                    size_t byteCount = 0;
+                    const uint8_t* src = GetAccessorData(accessor, byteCount);
+                    if (src == nullptr)
+                    {
+                        out.InverseBindMatrices.resize(skin->joints_count, float4x4({identity}));
+                    }
+                    else
+                    {
+                        out.InverseBindMatrices.resize(accessor->count);
+                        // Per-entry copy honoring a possible interleaved stride: never memcpy
+                        // stride*count bytes into a 64B/count buffer.
+                        for (cgltf_size i = 0; i < accessor->count; i++)
+                        {
+                            memcpy(&out.InverseBindMatrices[i], src + accessor->stride * i, sizeof(float4x4));
+                        }
+                        for (cgltf_size i = 0; i < accessor->count; i++)
+                        {
+                            float3 translation;
+                            float4 rotation;
+                            float3 scale;
+                            Decompose(out.InverseBindMatrices[i], translation, rotation, scale);
+                            translation.z = -translation.z;
+                            rotation.z = -rotation.z;
+                            rotation.w = -rotation.w;
+                            float4x4 T = translation_matrix(translation);
+                            float4x4 R = rotation_matrix(rotation);
+                            float4x4 S = scaling_matrix(scale);
+                            out.InverseBindMatrices[i] = mul(T, mul(R, S));
+                        }
+                    }
                 }
             }
             else
             {
-                // inverse_bind_matrices is optional in glTF; default to identity.
                 out.InverseBindMatrices.resize(skin->joints_count, float4x4({identity}));
             }
         }
@@ -524,9 +572,14 @@ namespace Assets
                     break;
                 }
 
-                const char* timeData = reinterpret_cast<const char*>(timeAccessor->buffer_view->buffer->data) + timeAccessor->buffer_view->offset + timeAccessor->offset;
-                const char* valueData = reinterpret_cast<const char*>(valueAccessor->buffer_view->buffer->data) + valueAccessor->buffer_view->offset + valueAccessor->offset;
-
+                size_t timeBytes = 0, valueBytes = 0;
+                const uint8_t* timeData = GetAccessorData(timeAccessor, timeBytes);
+                const uint8_t* valueData = GetAccessorData(valueAccessor, valueBytes);
+                if (timeData == nullptr || valueData == nullptr)
+                {
+                    VTNA_LOG_WARN("[GLTFImporter] channel {} accessor has no buffer view; skipped", c);
+                    continue;
+                }
                 for (cgltf_size k = 0; k < timeAccessor->count; k++)
                 {
                     float time = 0.0f;
@@ -536,13 +589,18 @@ namespace Assets
                     channel.KeyFrames.push_back(eastl::make_pair(time, value));
                 }
 
-                if (!channel.KeyFrames.empty())
+                if (channel.KeyFrames.empty())
                 {
-                    const float duration = anim.TimeDuration;
-                    const float first = channel.KeyFrames.front().first;
-                    const float last = channel.KeyFrames.back().first;
-                    anim.TimeDuration = eastl::max(duration, eastl::max(0.0f, last - first));
+                    VTNA_LOG_WARN("[GLTFImporter] channel {} produced no keyframes; skipped", c);
+                    continue;
                 }
+
+                // TimeDuration is the wrap point FAnimation::Update relies on to loop the
+                // play head; a 0 duration would grow m_CurrentAnimTime unbounded and freeze
+                // at the first frame after one pass. Accumulate the max over channels.
+                const float first = channel.KeyFrames.front().first;
+                const float last = channel.KeyFrames.back().first;
+                anim.TimeDuration = eastl::max(anim.TimeDuration, eastl::max(0.0f, last - first));
                 anim.Channels.push_back(eastl::move(channel));
             }
             out.Animations.push_back(eastl::move(anim));

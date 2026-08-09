@@ -95,6 +95,8 @@ namespace Core
         m_pEntityFactory = eastl::make_unique<Scene::ECS::FEntityFactory>(*m_pEntitySystem, *m_pAssetRegistry);
 
         m_pWorld = eastl::make_unique<Scene::FWorld>();
+        const char* modelLoadPath = configIni.GetValue("World", "ModelLoadPath", "Asset");
+        m_pWorld->SetUseCookedAssets(strcmp(modelLoadPath, "Asset") == 0);
         m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
 
         if (m_bUseECSBackend)

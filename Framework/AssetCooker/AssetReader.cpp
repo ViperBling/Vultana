@@ -1,6 +1,8 @@
-#include "AssetCooker/FAssetReader.hpp"
+#include "AssetCooker/AssetReader.hpp"
+#include "AssetCooker/AssetValidate.hpp"
 
 #include <city.h>
+#include "AssetReader.hpp"
 
 namespace
 {
@@ -20,27 +22,32 @@ namespace Assets
         return ReadHeaderRegion(r, outHeader);
     }
 
-    bool FAssetReader::ReadModel(const eastl::string& path, FVAssetHeader& outHeader, FModelCookedData& outPayload)
+    EAssetReadResult FAssetReader::ReadModelChecked(const eastl::string& path, FVAssetHeader& outHeader, FModelCookedData& outPayload)
     {
+        eastl::vector<uint8_t> head;
+        if (!ReadFileHeadToBuffer(path, kAssetHeaderSize, head) || head.size() < kAssetHeaderSize)
+            return EAssetReadResult::NotFound;
+
+        FBinaryReader headReader(head.data(), head.size());
+        uint32_t magic = 0, version = 0, cookerVersion = 0;
+        if (!headReader.ReadU32(magic) || !headReader.ReadU32(version) || !headReader.ReadU32(cookerVersion))
+            return EAssetReadResult::Corrupt;
+        if (magic != FVAssetHeader::MagicConst)
+            return EAssetReadResult::BadMagic;
+        if (version != FVAssetHeader::CurrentVersion || cookerVersion != kAssetCookerVersion)
+            return EAssetReadResult::VersionMismatch;
+
+        // Full read + parse + payload hash + cross-reference validation.
         eastl::vector<uint8_t> data;
         if (!ReadFileToBuffer(path, data))
-        {
-            return false;
-        }
+            return EAssetReadResult::NotFound;
         FBinaryReader reader(data.data(), data.size());
-        if (!ReadHeaderRegion(reader, outHeader))
-        {
-            return false;
-        }
-        if (outHeader.Type != EAssetType::Model)
-        {
-            return false;
-        }
-        // Re-walk the section table to locate the Model section
+        if (!ReadHeaderRegion(reader, outHeader) || outHeader.Type != EAssetType::Model)
+            return EAssetReadResult::Corrupt;
+
+        // Re-walk the section table to locate the Model section.
         if (!reader.Seek(kAssetHeaderSize))
-        {
-            return false;
-        }
+            return EAssetReadResult::Corrupt;
         for (uint32_t i = 0; i < outHeader.SectionCount; i++)
         {
             uint32_t secType = 0, secReserved = 0;
@@ -48,19 +55,33 @@ namespace Assets
             if (!reader.ReadU32(secType) || !reader.ReadU32(secReserved) ||
                 !reader.ReadU64(secOffset) || !reader.ReadU64(secSize))
             {
-                return false;
+                return EAssetReadResult::Corrupt;
             }
             if ((EAssetSection)secType != EAssetSection::Model)
-            {
                 continue;
-            }
-            if (!reader.Seek((size_t)secOffset))
-            {
-                return false;
-            }
-            return ReadModelPayload(reader, outPayload);
+
+            // ContentHash covers the Model section's serialized bytes (FAssetWriter::Write:70).
+            // A half-written file survives the length checks but fails here (S2-7).
+            if (secOffset + secSize > data.size())
+                return EAssetReadResult::Corrupt;
+            const uint64_t actualHash = CityHash64(reinterpret_cast<const char*>(data.data() + secOffset), static_cast<size_t>(secSize));
+            if (actualHash != outHeader.ContentHash)
+                return EAssetReadResult::Corrupt;
+
+            if (!reader.Seek(static_cast<size_t>(secOffset)))
+                return EAssetReadResult::Corrupt;
+            if (!ReadModelPayload(reader, outPayload))
+                return EAssetReadResult::Corrupt;
+            if (!ValidateModel(outPayload, "ReadModelChecked"))
+                return EAssetReadResult::Corrupt;
+            return EAssetReadResult::Ok;
         }
-        return false; // no Model section
+        return EAssetReadResult::Corrupt; // no Model section
+    }
+
+    bool FAssetReader::ReadModel(const eastl::string& path, FVAssetHeader& outHeader, FModelCookedData& outPayload)
+    {
+        return ReadModelChecked(path, outHeader, outPayload) == EAssetReadResult::Ok;
     }
 
     bool FAssetReader::ReadTexture(const eastl::string& path, FVAssetHeader& outHeader, FTextureCookedData& outPayload)
@@ -157,7 +178,8 @@ namespace Assets
                 return false;
             }
             uint32_t refCount = 0;
-            if (!reader.ReadU32(refCount) || refCount > (reader.GetSize() - reader.GetOffset()) / 2)
+            // A reference is at least 4B (string length prefix; M8: 2 was too lax for a corrupt file)
+            if (!reader.ReadU32(refCount) || refCount > (reader.GetSize() - reader.GetOffset()) / 4)
             {
                 return false;
             }
@@ -181,7 +203,7 @@ namespace Assets
     {
         // ---- Meshes ----
         uint32_t meshCount = 0;
-        if (!reader.ReadU32(meshCount) || meshCount > (reader.GetSize() - reader.GetOffset()) / 60)
+        if (!reader.ReadU32(meshCount) || meshCount > (reader.GetSize() - reader.GetOffset()) / kMinMeshRecordSize)
         {
             return false;
         }
@@ -228,24 +250,23 @@ namespace Assets
 
         // ---- Material table ----
         uint32_t materialCount = 0;
-        if (!reader.ReadU32(materialCount) || materialCount > (reader.GetSize() - reader.GetOffset()) / 96)
+        if (!reader.ReadU32(materialCount) || materialCount > (reader.GetSize() - reader.GetOffset()) / kMinMaterialRecordSize)
         {
-            return false; // A material serializes to at least 84B
+            return false; // M8: a corrupt count must not drive an unbounded reserve below
         }
         outPayload.Materials.clear();
         outPayload.Materials.reserve(materialCount);
         for (uint32_t i = 0; i < materialCount; i++)
         {
             FAssetMaterial mat;
-            uint32_t workflow = 0, shadingModel = 0, textureCount = 0;
+            uint32_t workflow = 0, textureCount = 0;
             if (!reader.ReadString(mat.Name) || !reader.ReadU32(workflow) ||
-                !reader.ReadU32(shadingModel) || !reader.ReadU32(textureCount) ||
-                textureCount > (reader.GetSize() - reader.GetOffset()) / 36)
+                !reader.ReadU32(textureCount) ||
+                textureCount > (reader.GetSize() - reader.GetOffset()) / kMinTextureRefRecordSize)
             {
-                return false; // A texture ref is at least 30B (path 4 + usage 4 + srgb/transform 2 + offset/scale 16 + rotation 4)
+                return false;
             }
             mat.WorkFlow = (EMaterialWorkFlow)workflow;
-            mat.ShadingModel = (EShadingModel)shadingModel;
             mat.Textures.reserve(textureCount);
             for (uint32_t t = 0; t < textureCount; t++)
             {

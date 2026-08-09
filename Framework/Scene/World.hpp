@@ -34,6 +34,9 @@ namespace Scene
         void SetUseECSBackend(bool enabled) { m_bUseECSBackend = enabled; }
         bool IsUseECSBackend() const { return m_bUseECSBackend; }
 
+        void SetUseCookedAssets(bool enabled) { m_bUseCookedAssets = enabled; }
+        bool IsUseCookedAssets() const { return m_bUseCookedAssets; }
+
     private:
         void ClearScene();
 
@@ -50,5 +53,6 @@ namespace Scene
         ILight* m_pMainLight = nullptr;
 
         bool m_bUseECSBackend = false;
+        bool m_bUseCookedAssets = false;
     };
 }

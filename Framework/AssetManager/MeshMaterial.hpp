@@ -77,7 +77,7 @@ namespace Assets
         RenderResources::FTexture2D* m_pAOTexture = nullptr;
         float3 m_EmissiveColor = float3(0.0f, 0.0f, 0.0f);
         float m_AlphaCutout = 0.0f;
-        float m_bAlphaTest = false;
+        bool m_bAlphaTest = false;
 
         bool m_bAlphaBlend = false;
         bool m_bSkeletalAnim = false;

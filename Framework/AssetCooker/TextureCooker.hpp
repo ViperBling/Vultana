@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AssetCooker/FVAssetTypes.hpp"
+#include "AssetCooker/VAssetTypes.hpp"
 
 #include <EASTL/string.h>
 

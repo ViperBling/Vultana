@@ -1,14 +1,23 @@
-#include "ModelLoader.hpp"
+#include "AssetManager/ModelLoader.hpp"
+#include "AssetManager/MeshMaterial.hpp"
+#include "AssetManager/AssetManager.hpp"
+#include "AssetManager/AssetFormatMapping.hpp"
+
+#include "AssetCooker/AssetPathUtils.hpp"
+#include "AssetCooker/AssetValidate.hpp"
+#include "AssetCooker/VAssetTypes.hpp"
+
+#include "Scene/SceneComponent/Animation.hpp"
 #include "Scene/SceneComponent/Animation.hpp"
 #include "Scene/SceneComponent/StaticMesh.hpp"
 #include "Scene/SceneComponent/SkeletalMesh.hpp"
-#include "MeshMaterial.hpp"
 #include "ResourceCache.hpp"
 #include "Core/VultanaEngine.hpp"
 
 #include "Utilities/Log.hpp"
 #include "Utilities/Memory.hpp"
 #include "Utilities/String.hpp"
+#include "Utilities/Math.hpp"
 
 #include "Common/Meshlet.hlsli"   // FMeshlet:CPU/GPU 共享的 meshlet 剔除结构(36B)
 
@@ -19,7 +28,7 @@
 
 #include <cassert>
 
-inline float3 strToFloat3(const eastl::string& str)
+inline float3 StrToFloat3(const eastl::string& str)
 {
     eastl::vector<float> v;
     v.reserve(3);
@@ -93,6 +102,14 @@ inline uint32_t GetNodeIndex(const cgltf_data* data, const cgltf_node* node)
     return 0;
 }
 
+float4x4 LocalTransform(const Assets::FAssetNode& node)
+{
+    const float4x4 T = translation_matrix(node.Translation);
+    const float4x4 R = rotation_matrix(node.Rotation);
+    const float4x4 S = scaling_matrix(node.Scale);
+    return mul(T, mul(R, S));
+}
+
 namespace Assets
 {
     FModelLoader::FModelLoader(Scene::FWorld *pWorld)
@@ -117,17 +134,17 @@ namespace Assets
         const tinyxml2::XMLAttribute* positionAttr = element->FindAttribute("Position");
         if (positionAttr)
         {
-            m_Position = strToFloat3(positionAttr->Value());
+            m_Position = StrToFloat3(positionAttr->Value());
         }
         const tinyxml2::XMLAttribute* rotationAttr = element->FindAttribute("Rotation");
         if (rotationAttr)
         {
-            m_Rotation = RotationQuat(strToFloat3(rotationAttr->Value()));
+            m_Rotation = RotationQuat(StrToFloat3(rotationAttr->Value()));
         }
         const tinyxml2::XMLAttribute* scaleAttr = element->FindAttribute("Scale");
         if (scaleAttr)
         {
-            m_Scale = strToFloat3(scaleAttr->Value());
+            m_Scale = StrToFloat3(scaleAttr->Value());
         }
 
         float4x4 T = translation_matrix(m_Position);
@@ -187,7 +204,346 @@ namespace Assets
         cgltf_free(data);
     }
 
-    void FModelLoader::LoadStaticMeshNode(const cgltf_data* data, cgltf_node *node, const float4x4 &parentMtx)
+    void FModelLoader::Load()
+    {
+        const eastl::string srcPath = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + m_File;
+
+        FAssetManager assetManager(m_pWorld);
+        FVAssetHeader header;
+        FModelCookedData model;
+        if (!assetManager.LoadModel(srcPath, header, model))
+        {
+            VTNA_LOG_ERROR("[ModelLoader::Load] failed to load {}", srcPath);
+            return;
+        }
+
+        if (!model.Animations.empty())
+        {
+            LoadSkeletalModel(model);
+        }
+        else
+        {
+            LoadStaticModel(model);
+        }
+    }
+
+    void FModelLoader::LoadStaticModel(const FModelCookedData& model)
+    {
+        // Compose the XML instance transform (m_MtxWorld) with the node hierarchy — the legacy
+        // LoadStaticMeshNode DFS equivalent (parentMtx * localToParent).
+        eastl::vector<float4x4> world(model.Nodes.size(), float4x4({identity}));
+        eastl::vector<int32_t> stack;
+
+        eastl::vector<uint8_t> visited(model.Nodes.size(), 0);
+        for (int32_t root : model.RootNodes)
+        {
+            world[static_cast<size_t>(root)] = mul(m_MtxWorld, LocalTransform(model.Nodes[static_cast<size_t>(root)]));
+            visited[static_cast<size_t>(root)] = 1;
+            stack.push_back(root);
+        }
+
+        while (!stack.empty())
+        {
+            const int32_t n = stack.back();
+            stack.pop_back();
+            const FAssetNode& node = model.Nodes[static_cast<size_t>(n)];
+            for (int32_t child : node.Children)
+            {
+                world[static_cast<size_t>(child)] = mul(world[static_cast<size_t>(n)], LocalTransform(model.Nodes[static_cast<size_t>(child)]));
+                visited[static_cast<size_t>(child)] = 1;
+                stack.push_back(child);
+            }
+        }
+
+        for (size_t n = 0; n < model.Nodes.size(); ++n)
+        {
+            if (!visited[n])
+                continue;
+            const FAssetNode& node = model.Nodes[n];
+            if (node.Primitives.empty())
+                continue;
+
+            float3 pos;
+            float4 rot;
+            float3 scale;
+            Decompose(world[n], pos, rot, scale);
+
+            for (int32_t prim : node.Primitives)
+            {
+                const FMeshCookedData& cooked = model.Meshes[static_cast<size_t>(prim)];
+                const FAssetMaterial* assetMat =
+                    (cooked.MaterialIndex >= 0) ? &model.Materials[static_cast<size_t>(cooked.MaterialIndex)] : nullptr;
+                BuildStaticMesh(cooked, assetMat, node.bFrontFaceCCW, pos, rot, scale);
+            }
+        }
+    }
+
+    void FModelLoader::LoadSkeletalModel(const FModelCookedData& model)
+    {
+        auto* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        Scene::FSkeletalMesh* skeletalMesh = new Scene::FSkeletalMesh(m_File);
+        skeletalMesh->m_pRenderer = pRenderer;
+
+        // Animation drives node transforms (FSkeletalMesh::Tick calls m_pAnimation->Update).
+        // Animated-but-not-skinned models (BusterDrone) have an animation but no skeleton;
+        // mesh->Material->IsVertexSkinned() stays false, so no compute skinning runs.
+        if (!model.Animations.empty())
+        {
+            skeletalMesh->m_pAnimation.reset(BuildAnimation(model.Animations[0]));
+        }
+        if (!model.Skeleton.Joints.empty())
+        {
+            skeletalMesh->m_pSkeleton.reset(BuildSkeleton(model.Skeleton));
+        }
+
+        skeletalMesh->m_Nodes.reserve(model.Nodes.size());
+        for (size_t i = 0; i < model.Nodes.size(); ++i)
+        {
+            skeletalMesh->m_Nodes.emplace_back(BuildSkeletalNode(model.Nodes[i], static_cast<int32_t>(i), model));
+        }
+        for (int32_t root : model.RootNodes)
+        {
+            skeletalMesh->m_RootNodes.push_back(static_cast<uint32_t>(root));
+        }
+
+        skeletalMesh->SetPosition(m_Position);
+        skeletalMesh->SetRotation(m_Rotation);
+        skeletalMesh->SetScale(m_Scale);
+        skeletalMesh->Create();
+        m_pWorld->AddObject(skeletalMesh);
+    }
+
+    Scene::FStaticMesh* FModelLoader::BuildStaticMesh(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bFrontFaceCCW, const float3& pos, const quaternion& rot, const float3& scale)
+    {
+        Scene::FStaticMesh* mesh = new Scene::FStaticMesh(m_File + " " + cooked.Name);
+        mesh->m_pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        auto* cache = FResourceCache::GetInstance();
+        const eastl::string key = "Model(" + m_File + " " + cooked.Name + ")"; // same key space as the legacy path
+
+        mesh->m_IndexBuffer = cache->GetSceneBuffer(key + "_IndexBuffer", cooked.IndexData.data(), static_cast<uint32_t>(cooked.IndexData.size()));
+        mesh->m_IndexBufferFormat = ToIndexFormat(cooked.IndexStride);
+        mesh->m_IndexCount = cooked.IndexCount;
+        mesh->m_VertexCount = cooked.VertexCount;
+
+        for (const FMeshCookedData::FStream& stream : cooked.Streams)
+        {
+            const uint32_t bytes = static_cast<uint32_t>(stream.Data.size());
+            switch (stream.Type)
+            {
+            case EVertexStreamType::Position:
+                mesh->m_PositionBuffer = cache->GetSceneBuffer(key + "_PositionBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::TexCoord:
+                mesh->m_TexCoordBuffer = cache->GetSceneBuffer(key + "_TexCoordBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Normal:
+                mesh->m_NormalBuffer = cache->GetSceneBuffer(key + "_NormalBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Tangent:
+                mesh->m_TangentBuffer = cache->GetSceneBuffer(key + "_TangentBuffer", stream.Data.data(), bytes);
+                break;
+            default:
+                break; // Joints/Weights never reach the static path
+            }
+        }
+
+        mesh->m_MeshletCount = cooked.MeshletCount;
+        mesh->m_MeshletBuffer = cache->GetSceneBuffer(key + "_MeshletBuffer", cooked.MeshletBounds.data(), static_cast<uint32_t>(sizeof(FMeshlet) * cooked.MeshletBounds.size()));
+        mesh->m_MeshletIndicesBuffer = cache->GetSceneBuffer(key + "_MeshletIndicesBuffer", cooked.MeshletIndexData.data(), static_cast<uint32_t>(cooked.MeshletIndexData.size()));
+        mesh->m_MeshletVertexBuffer = cache->GetSceneBuffer(key + "_MeshletVertexBuffer", cooked.MeshletVertexData.data(), static_cast<uint32_t>(cooked.MeshletVertexData.size()));
+
+        mesh->m_Center = cooked.Center;
+        mesh->m_Radius = cooked.Radius;
+
+        mesh->m_pMaterial.reset(BuildMaterial(assetMat, /*bSkeletalAnim=*/false, bFrontFaceCCW));
+        mesh->SetPosition(pos);
+        mesh->SetRotation(rot);
+        mesh->SetScale(scale);
+        mesh->Create();
+        m_pWorld->AddObject(mesh);
+        return mesh;
+    }
+
+    Scene::FSkeletalMeshNode* FModelLoader::BuildSkeletalNode(const FAssetNode& node, int32_t nodeIndex, const FModelCookedData& model)
+    {
+        Scene::FSkeletalMeshNode* skeletalNode = new Scene::FSkeletalMeshNode;
+        skeletalNode->Name = node.Name;
+        skeletalNode->ID = static_cast<uint32_t>(nodeIndex);
+        skeletalNode->Parent = static_cast<uint32_t>(node.Parent);
+        for (int32_t child : node.Children)
+            skeletalNode->Children.push_back(static_cast<uint32_t>(child));
+        skeletalNode->Translation = node.Translation;
+        skeletalNode->Rotation = node.Rotation;
+        skeletalNode->Scale = node.Scale;
+
+        for (int32_t prim : node.Primitives)
+        {
+            const FMeshCookedData& cooked = model.Meshes[static_cast<size_t>(prim)];
+            const FAssetMaterial* assetMat =
+                (cooked.MaterialIndex >= 0) ? &model.Materials[static_cast<size_t>(cooked.MaterialIndex)] : nullptr;
+            // bSkeletalAnim is per-mesh (node->skin at cook time); bFrontFaceCCW is per-node.
+            Scene::FSkeletalMeshData* meshData = BuildSkeletalMeshData(cooked, assetMat, cooked.bSkeletalAnim, node.bFrontFaceCCW);
+            meshData->NodeID = skeletalNode->ID;
+            skeletalNode->Meshes.emplace_back(meshData);
+        }
+        return skeletalNode;
+    }
+
+    Scene::FSkeletalMeshData* FModelLoader::BuildSkeletalMeshData(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bSkeletalAnim, bool bFrontFaceCCW)
+    {
+        Scene::FSkeletalMeshData* mesh = new Scene::FSkeletalMeshData;
+        mesh->Name = m_File + "_" + cooked.Name;
+        auto* cache = FResourceCache::GetInstance();
+        const eastl::string key = "Model(" + m_File + "_" + cooked.Name + ")"; // underscore: legacy skeletal key space
+
+        mesh->IndexBuffer = cache->GetSceneBuffer(key + "_IndexBuffer", cooked.IndexData.data(), static_cast<uint32_t>(cooked.IndexData.size()));
+        mesh->IndexBufferFormat = ToIndexFormat(cooked.IndexStride);
+        mesh->IndexCount = cooked.IndexCount;
+        mesh->VertexCount = cooked.VertexCount;
+        mesh->Center = cooked.Center;
+        mesh->Radius = cooked.Radius;
+
+        for (const FMeshCookedData::FStream& stream : cooked.Streams)
+        {
+            const uint32_t bytes = static_cast<uint32_t>(stream.Data.size());
+            switch (stream.Type)
+            {
+            case EVertexStreamType::Position:
+                mesh->StaticPositionBuffer = cache->GetSceneBuffer(key + "_PositionBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::TexCoord:
+                mesh->TexCoordBuffer = cache->GetSceneBuffer(key + "_TexCoordBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Normal:
+                mesh->StaticNormalBuffer = cache->GetSceneBuffer(key + "_NormalBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Tangent:
+                mesh->StaticTangentBuffer = cache->GetSceneBuffer(key + "_TangentBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Joints:
+                mesh->JointIDBuffer = cache->GetSceneBuffer(key + "_JointIDBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Weights:
+                mesh->JointWeightBuffer = cache->GetSceneBuffer(key + "_JointWeightBuffer", stream.Data.data(), bytes);
+                break;
+            }
+        }
+        mesh->Material.reset(BuildMaterial(assetMat, bSkeletalAnim, bFrontFaceCCW));
+        return mesh;
+    }
+
+    FMeshMaterial* FModelLoader::BuildMaterial(const FAssetMaterial* assetMat, bool bSkeletalAnim, bool bFrontFaceCCW)
+    {
+        FMeshMaterial* material = new FMeshMaterial;
+        material->m_bSkeletalAnim = bSkeletalAnim;
+        material->m_bFrontFaceCCW = bFrontFaceCCW;
+        if (assetMat == nullptr)
+        {
+            return material; // untextured primitive: engine defaults
+        }
+        material->m_Name = assetMat->Name;
+        material->m_WorkFlow = ToEngineWorkFlow(assetMat->WorkFlow);
+        material->m_AlbedoColor = assetMat->AlbedoColor;
+        material->m_Metallic = assetMat->Metallic;
+        material->m_Roughness = assetMat->Roughness;
+        material->m_DiffuseColor = assetMat->DiffuseColor;
+        material->m_SpecularColor = assetMat->SpecularColor;
+        material->m_Glossiness = assetMat->Glossiness;
+        material->m_EmissiveColor = assetMat->EmissiveColor;
+        material->m_AlphaCutout = assetMat->AlphaCutout;
+        material->m_bAlphaTest = assetMat->bAlphaTest;
+        material->m_bAlphaBlend = assetMat->bAlphaBlend;
+        material->m_bDoubleSided = assetMat->bDoubleSided;
+
+        auto* textureCache = FResourceCache::GetInstance();
+        const eastl::string assetsPath = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath();
+        for (const FAssetTextureRef& ref : assetMat->Textures)
+        {
+            const eastl::string srcTex = assetsPath + FAssetPathUtils::GetTextureSourcePath(ref.RelativePath);
+            switch (ref.Usage)
+            {
+            case ETextureUsage::BaseColor:
+                material->m_pAlbedoTexture = textureCache->GetTexture2D(srcTex, ref.bSRGB);
+                material->m_MaterialCB.AlbedoTexture = BuildTextureInfo(material->m_pAlbedoTexture, ref);
+                break;
+            case ETextureUsage::Normal:
+                material->m_pNormalTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_MaterialCB.NormalTexture = BuildTextureInfo(material->m_pNormalTexture, ref);
+                break;
+            case ETextureUsage::Emissive:
+                material->m_pEmissiveTexture = textureCache->GetTexture2D(srcTex, ref.bSRGB);
+                material->m_MaterialCB.EmissiveTexture = BuildTextureInfo(material->m_pEmissiveTexture, ref);
+                break;
+            case ETextureUsage::AmbientOcclusion:
+                material->m_pAOTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_MaterialCB.AmbientOcclusionTexture = BuildTextureInfo(material->m_pAOTexture, ref);
+                break;
+            case ETextureUsage::MetallicRoughness:
+                material->m_pMetallicRoughTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_MaterialCB.MetallicRoughnessTexture = BuildTextureInfo(material->m_pMetallicRoughTexture, ref);
+                break;
+            case ETextureUsage::Diffuse:
+                material->m_pDiffuseTexture = textureCache->GetTexture2D(srcTex, ref.bSRGB);
+                material->m_MaterialCB.DiffuseTexture = BuildTextureInfo(material->m_pDiffuseTexture, ref);
+                break;
+            case ETextureUsage::SpecularGlossiness:
+                material->m_pSpecularGlossinessTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_MaterialCB.SpecularGlossinessTexture = BuildTextureInfo(material->m_pSpecularGlossinessTexture, ref);
+                break;
+            default:
+                break;
+            }
+        }
+        return material;
+    }
+
+    FMaterialTextureInfo FModelLoader::BuildTextureInfo(const RenderResources::FTexture2D* texture, const FAssetTextureRef& ref)
+    {
+        FMaterialTextureInfo info;
+        if (texture)
+        {
+            info.Index = texture->GetSRV()->GetHeapIndex();
+            info.Width = texture->GetTexture()->GetDesc().Width;
+            info.Height = texture->GetTexture()->GetDesc().Height;
+            if (ref.bHasTransform)
+            {
+                info.IsTransform = true;
+                info.Offset = ref.Offset;
+                info.Scale = ref.Scale;
+                info.Rotation = ref.Rotation;
+            }
+        }
+        return info;
+    }
+
+    Scene::FAnimation* FModelLoader::BuildAnimation(const FAssetAnimation& anim)
+    {
+        Scene::FAnimation* animation = new Scene::FAnimation(anim.Name);
+        animation->m_Channels.reserve(anim.Channels.size());
+        for (const FAssetAnimationChannel& channel : anim.Channels)
+        {
+            Scene::FAnimationChannel out;
+            out.TargetNode = static_cast<uint32_t>(channel.TargetNode);
+            out.Mode = ToChannelMode(channel.Mode);
+            out.KeyFrames = channel.KeyFrames;
+            animation->m_Channels.push_back(eastl::move(out));
+        }
+        animation->m_TimeDuration = anim.TimeDuration;
+        return animation;
+    }
+
+    Scene::FSkeleton* FModelLoader::BuildSkeleton(const FAssetSkeleton& skeleton)
+    {
+        Scene::FSkeleton* out = new Scene::FSkeleton("Skeleton");
+        out->m_Joints.reserve(skeleton.Joints.size());
+        for (int32_t joint : skeleton.Joints)
+            out->m_Joints.push_back(static_cast<uint32_t>(joint));
+        out->m_InverseBindMatrices = skeleton.InverseBindMatrices;
+        out->m_JointMatrices.resize(skeleton.Joints.size());
+        return out;
+    }
+
+    void FModelLoader::LoadStaticMeshNode(const cgltf_data* data, cgltf_node* node, const float4x4& parentMtx)
     {
         float4x4 mtxLocalToParent;
         GetTransform(node, mtxLocalToParent);

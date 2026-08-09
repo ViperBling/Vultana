@@ -1,8 +1,10 @@
-#include "AssetCooker/FVultanaCooker.hpp"
-#include "AssetCooker/FAssetWriter.hpp"
-#include "AssetCooker/FImporter.hpp"
+#include "AssetCooker/VultanaCooker.hpp"
+#include "AssetCooker/AssetPathUtils.hpp"
+#include "AssetCooker/AssetValidate.hpp"
+#include "AssetCooker/AssetWriter.hpp"
+#include "AssetCooker/Importer.hpp"
 #include "AssetCooker/GLTFImporter.hpp"
-#include "AssetCooker/FMeshCooker.hpp"
+#include "AssetCooker/MeshCooker.hpp"
 
 #include "Utilities/Log.hpp"
 
@@ -11,24 +13,23 @@
 
 #include <sys/stat.h>
 #include <filesystem>
-#include "FVultanaCooker.hpp"
 
 namespace
 {
-    eastl::string NormalizeSourcePath(const eastl::string& srcPath)
-    {
-        const eastl::string prefix = "../Assets/";
-        if (srcPath.compare(0, prefix.size(), prefix) == 0)
-        {
-            return srcPath.substr(prefix.size());
-        }
-        return srcPath;
-    }
+    // eastl::string NormalizeSourcePath(const eastl::string& srcPath)
+    // {
+    //     const eastl::string prefix = "../Assets/";
+    //     if (srcPath.compare(0, prefix.size(), prefix) == 0)
+    //     {
+    //         return srcPath.substr(prefix.size());
+    //     }
+    //     return srcPath;
+    // }
 }
 
 namespace Assets
 {
-    bool Assets::FVultanaCooker::CookModel(const eastl::string& srcPath, const eastl::string& dstPath, bool bSilent)
+    bool Assets::FVultanaCooker::CookModel(const eastl::string& srcPath, const eastl::string& dstPath, bool bSilent, const eastl::string& assetsPath)
     {
         FGLTFImporter importer;
         FImportResult result;
@@ -36,7 +37,7 @@ namespace Assets
         {
             if (!bSilent)
             {
-                VTNA_LOG_ERROR("[Cooker] Failed to import model: %s", srcPath.c_str());
+                VTNA_LOG_ERROR("[Cooker] Failed to import model: {}", srcPath);
             }
             return false;
         }
@@ -57,7 +58,7 @@ namespace Assets
                 continue;
             }
             primRemap[i] = static_cast<int32_t>(payload.Meshes.size());
-            payload.Meshes.push_back(mesh);
+            payload.Meshes.push_back(eastl::move(mesh));
         }
         if (payload.Meshes.empty())
         {
@@ -89,7 +90,6 @@ namespace Assets
             FAssetMaterial material;
             material.Name = mat.Name;
             material.WorkFlow = mat.WorkFlow;
-            material.ShadingModel = mat.ShadingModel;
             material.Textures = mat.Textures;
             material.AlbedoColor = mat.AlbedoColor;
             material.Metallic = mat.Metallic;
@@ -110,7 +110,7 @@ namespace Assets
 
         // Header: canonical source path + stat + refs
         FVAssetHeader header;
-        header.SourcePath = NormalizeSourcePath(srcPath);
+        header.SourcePath = FAssetPathUtils::MakeAssetsRelative(srcPath, assetsPath);
         struct _stat64 st = {};
         if (_stat64(srcPath.c_str(), &st) == 0)
         {
@@ -131,6 +131,12 @@ namespace Assets
 
         std::error_code ec;
         std::filesystem::create_directories(std::filesystem::path(dstPath.c_str()).parent_path(), ec);
+
+        if (!ValidateModel(payload, "CookModel"))
+        {
+            if (!bSilent) VTNA_LOG_ERROR("[Cooker] Cooked model failed validation: {}", srcPath);
+            return false;
+        }
 
         if (!FAssetWriter::Write(dstPath, header, payload))
         {
