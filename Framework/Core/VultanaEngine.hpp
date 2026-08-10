@@ -1,12 +1,15 @@
 #pragma once
 
-#include "Scene/World.hpp"
+#include "AssetManager/AssetManager.hpp"
 #include "Editor/VultanaEditor.hpp"
-#include "Renderer/RendererBase.hpp"
+
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/EntityFactory.hpp"
 #include "Scene/ECS/AssetRegistry.hpp"
 #include "Scene/ECS/RenderSink.hpp"
+#include "Scene/World.hpp"
+
+#include "Renderer/RendererBase.hpp"
 #include "Renderer/ECSRenderBridge.hpp"
 
 #include <sigslot/signal.hpp>
@@ -37,6 +40,7 @@ namespace Core
         Renderer::FRendererBase* GetRenderer() const { return m_pRenderer.get(); }
         Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
+        Assets::FAssetManager* GetAssetManager() const { return m_pAssetManager.get(); }
         Scene::ECS::FEntitySubsystem *GetEntitySystem() const { return m_pEntitySystem.get(); }
         Scene::ECS::IAssetRegistry* GetAssetRegistry() const { return m_pAssetRegistry.get(); }
         Scene::ECS::ISceneRenderSink* GetRenderSink() const { return m_pRenderSink.get(); }
@@ -62,6 +66,7 @@ namespace Core
         eastl::unique_ptr<Editor::FVultanaEditor> m_pEditor;
 
         eastl::unique_ptr<class enki::TaskScheduler> m_pTaskScheduler;
+        eastl::unique_ptr<Assets::FAssetManager> m_pAssetManager;
 
         void* m_WndHandle = nullptr;
 

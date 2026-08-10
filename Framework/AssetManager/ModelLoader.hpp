@@ -1,9 +1,11 @@
 #pragma once
+#include "AssetCooker/VAssetTypes.hpp"
+#include "AssetManager/AssetManager.hpp"
 
 #include "Utilities/Math.hpp"
-#include "AssetCooker/VAssetTypes.hpp" // FMeshCookedData / FModelCookedData (Slice 3)
-#include "RHI/RHICommon.hpp"           // RHI::RHI_INVALID_RESOURCE (FMaterialTextureInfo ctor)
-#include "Common/ModelConstants.hlsli"  // FMaterialTextureInfo (BuildTextureInfo returns by value)
+
+#include "RHI/RHICommon.hpp"
+#include "Common/ModelConstants.hlsli"
 #include "Utilities/Math.hpp"
 
 #include <iostream>
@@ -11,6 +13,7 @@
 #include <string>
 
 #include <EASTL/string.h>
+#include <EASTL/shared_ptr.h>
 
 namespace tinyxml2
 {
@@ -43,8 +46,8 @@ namespace Scene
 namespace Assets
 {
     class FMeshMaterial;
-    
-    class FModelLoader
+
+    class FModelLoader : public eastl::enable_shared_from_this<FModelLoader>
     {
     public:
         FModelLoader(Scene::FWorld* pWorld);
@@ -52,19 +55,21 @@ namespace Assets
 
         void LoadModelSettings(tinyxml2::XMLElement* element);
         void LoadGLTF(const char* gltfFile = nullptr);
-        void Load();
+        void RequestLoad();
+
+        static FMeshMaterial* BuildMaterial(const FAssetMaterial* assetMat, bool bSkeletalAnim, bool bFrontFaceCCW);
+        static FMaterialTextureInfo BuildTextureInfo(const RenderResources::FTexture2D* texture, const FAssetTextureRef& ref);
 
     private:
         // -------- Slice 3: built from FModelCookedData (no cgltf) -------- //
         void LoadStaticModel(const FModelCookedData& model);
         void LoadSkeletalModel(const FModelCookedData& model);
-        
+        void OnModelReady(Assets::FModelLoadResult&& result);
+
         Scene::FStaticMesh* BuildStaticMesh(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bFrontFaceCCW, const float3& pos, const quaternion& rot, const float3& scale);
         Scene::FSkeletalMeshNode* BuildSkeletalNode(const FAssetNode& node, int32_t nodeIndex, const FModelCookedData& model);
         Scene::FSkeletalMeshData* BuildSkeletalMeshData(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bSkeletalAnim, bool bFrontFaceCCW);
-        FMeshMaterial* BuildMaterial(const FAssetMaterial* assetMat, bool bSkeletalAnim, bool bFrontFaceCCW);
-        
-        FMaterialTextureInfo BuildTextureInfo(const RenderResources::FTexture2D* texture, const FAssetTextureRef& ref);
+
         Scene::FAnimation* BuildAnimation(const FAssetAnimation& anim);
         Scene::FSkeleton* BuildSkeleton(const FAssetSkeleton& skeleton);
 

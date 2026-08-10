@@ -107,11 +107,70 @@ namespace Renderer
         BuildRenderGraph(m_OutputColorHandle, m_OutputDepthHandle);
 
         BeginFrame();
+        FirePhaseHooks(ERenderPhase::BeforeUpload);
         UploadResource();
         Render();
+        FirePhaseHooks(ERenderPhase::AfterRender);
         EndFrame();
+        FirePhaseHooks(ERenderPhase::AfterEndFrame);
 
         MouseHitTest();
+    }
+
+    void FRendererBase::RenderLoadingFrame()
+    {
+        FirePhaseHooks(ERenderPhase::BeforeBeginFrame);
+        BeginFrame();
+        FirePhaseHooks(ERenderPhase::BeforeUpload);
+        UploadResource();
+
+        uint32_t frameIndex = m_pDevice->GetFrameID() % RHI::RHI_MAX_INFLIGHT_FRAMES;
+        RHI::FRHICommandList* pCmdList = m_pCmdList[frameIndex].get();
+
+        // 加载帧专用 D32F 深度(ImGui PSO 要求);render graph 不碰它,barrier 由本 pass 管理。
+        const RHI::FRHITextureDesc& bbDesc = m_pSwapchain->GetBackBuffer()->GetDesc();
+        if (m_pLoadingDepth == nullptr ||
+            m_pLoadingDepth->GetTexture()->GetDesc().Width != bbDesc.Width ||
+            m_pLoadingDepth->GetTexture()->GetDesc().Height != bbDesc.Height)
+        {
+            m_pLoadingDepth.reset(CreateTexture2D(bbDesc.Width, bbDesc.Height, 1, RHI::ERHIFormat::D32F,
+                                                  RHI::RHITextureUsageDepthStencil, "LoadingFrameDepth"));
+        }
+        if (m_pLoadingDepth == nullptr)
+        {
+            EndFrame(); // 错误路径:直接结束,不触发 AfterEndFrame
+            return;
+        }
+
+        m_pSwapchain->AcquireNextBackBuffer();
+        pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessPresent, RHI::RHIAccessRTV);
+        pCmdList->TextureBarrier(m_pLoadingDepth->GetTexture(), 0, RHI::RHIAccessDiscard, RHI::RHIAccessDSV);
+
+        {
+            GPU_EVENT_DEBUG(pCmdList, "LoadingFrame");
+
+            RHI::FRHIRenderPassDesc renderPassDesc{};
+            renderPassDesc.Color[0].Texture = m_pSwapchain->GetBackBuffer();
+            renderPassDesc.Color[0].LoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+            renderPassDesc.Color[0].StoreOp = RHI::ERHIRenderPassStoreOp::Store;
+            renderPassDesc.Depth.Texture = m_pLoadingDepth->GetTexture();
+            renderPassDesc.Depth.DepthLoadOp = RHI::ERHIRenderPassLoadOp::Clear;
+            renderPassDesc.Depth.DepthStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
+            renderPassDesc.Depth.StencilLoadOp = RHI::ERHIRenderPassLoadOp::DontCare;
+            renderPassDesc.Depth.StencilStoreOp = RHI::ERHIRenderPassStoreOp::DontCare;
+            // bReadOnly 必须为 false:barrier 把深度转成 eDepthStencilAttachmentOptimal(RHIAccessDSV),
+            // bReadOnly=true 会让 BeginRendering 声明 eDepthStencilReadOnlyOptimal —— 布局不匹配 + 对
+            // read-only 附件做 LOAD_OP_CLEAR 写入,每帧 Vulkan validation error(审查 #10)。
+            // ImGui PSO 的 bDepthWrite=false,深度附件只是为满足 DepthStencilFormat=D32F 存在。
+            renderPassDesc.Depth.bReadOnly = false;
+            pCmdList->BeginRenderPass(renderPassDesc);
+            Core::FVultanaEngine::GetEngineInstance()->GetEditor()->Render(pCmdList);
+            pCmdList->EndRenderPass();
+        }
+
+        pCmdList->TextureBarrier(m_pSwapchain->GetBackBuffer(), 0, RHI::RHIAccessRTV, RHI::RHIAccessPresent);
+        EndFrame();
+        FirePhaseHooks(ERenderPhase::AfterEndFrame);
     }
 
     void FRendererBase::WaitGPU()
@@ -457,6 +516,12 @@ namespace Renderer
         m_MouseX = x;
         m_MouseY = y;
         m_bEnableObjectIDRendering = true;
+    }
+
+    void FRendererBase::RegisterFrameHook(ERenderPhase phase, FRenderPhaseHook hook)
+    {
+        assert(phase < ERenderPhase::Count);
+        m_PhaseHooks[static_cast<size_t>(phase)].push_back(eastl::move(hook));
     }
 
     void FRendererBase::CreateCommonResources()

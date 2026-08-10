@@ -23,6 +23,7 @@ namespace Scene::ECS
         uint32_t IndexBufferAddress         = 0;
         uint32_t IndexStride                = 2;
         uint32_t IndexCount                 = 0;
+        uint32_t VertexCount                = 0;
         float3 Center = float3(0.0f);
         float Radius = 0.0f;
         bool IsValid() const { return MeshletCount > 0; }
@@ -43,6 +44,8 @@ namespace Scene::ECS
         float3   Scale          = float3(1.0f);
         int32_t  ParentIndex    = -1;
         uint32_t MeshIndex      = UINT32_MAX;
+        eastl::vector<uint32_t> Primitives;
+        bool bFrontFaceCCW = false;
     };
 
     struct FModelAssetInfo
@@ -50,6 +53,14 @@ namespace Scene::ECS
         eastl::string ModelPath;
         eastl::vector<FModelNodeInfo> Nodes;
         uint32_t PrimitiveCount = 0;
+    };
+
+    enum class EAssetState : uint32_t
+    {
+        Pending = 0,
+        Loading = 1,
+        Ready = 2,
+        Failed = 3,
     };
 
     class IAssetRegistry
@@ -64,6 +75,8 @@ namespace Scene::ECS
         virtual FMeshGPUData GetMeshData(FMeshResourceHandle handle) const = 0;
         virtual FMaterialGPUData GetMaterialData(FMaterialResourceHandle handle) const = 0;
         virtual FModelAssetInfo GetModelInfo(FModelAssetHandle handle) const = 0;
+        virtual EAssetState GetState(FModelAssetHandle handle) const = 0;
+        bool IsReady(FModelAssetHandle handle) const { return GetState(handle) == EAssetState::Ready; }
         virtual void FrameFencePassed(uint64_t frameID) = 0;
     };
 }

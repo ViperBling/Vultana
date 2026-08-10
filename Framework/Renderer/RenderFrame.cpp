@@ -49,6 +49,14 @@ namespace Renderer
         m_pRenderGraph->Compile();
     }
 
+    void FRendererBase::FirePhaseHooks(ERenderPhase phase)
+    {
+        for (const auto& hook : m_PhaseHooks[static_cast<size_t>(phase)])
+        {
+            if (hook) hook();
+        }
+    }
+
     void FRendererBase::ObjectIDPass(RG::FRGHandle &depth)
     {
         if (!m_bEnableObjectIDRendering) return;

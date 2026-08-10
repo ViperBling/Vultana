@@ -15,6 +15,9 @@
 #include "Utilities/Utility.hpp"
 #include "Utilities/Math.hpp"
 
+#include <EASTL/functional.h>
+#include <EASTL/vector.h>
+
 #include <iostream>
 #include <deque>
 #include <memory>
@@ -33,6 +36,15 @@ namespace Renderer
     class FHiZBuffer;
     class FGPUDrivenStats;
 
+    enum class ERenderPhase : uint32_t
+    {
+        BeforeBeginFrame,   // Before frame work begins (no GPU operations)
+        BeforeUpload,       // After BeginFrame (fence wait), before UploadResource — only allowed to create GPU resources / queue uploads (B6)
+        AfterRender,        // After RenderGraph execution, before EndFrame
+        AfterEndFrame,      // Present + fence signal
+        Count,
+    };
+
     class FRendererBase
     {
     public:
@@ -41,6 +53,7 @@ namespace Renderer
 
         bool CreateDevice(RHI::ERHIRenderBackend backend, void* windowHandle, uint32_t width, uint32_t height);
         virtual void RenderFrame();
+        void RenderLoadingFrame();
         void WaitGPU();
 
         uint64_t GetFrameID() const { return m_pDevice->GetFrameID(); }
@@ -108,6 +121,9 @@ namespace Renderer
         bool IsShowMeshletsEnabled() const { return m_bShowMeshlets; }
         void SetShowMeshletsEnabled(bool enabled) { m_bShowMeshlets = enabled; }
 
+        using FRenderPhaseHook = eastl::function<void()>;
+        void RegisterFrameHook(ERenderPhase phase, FRenderPhaseHook hook);
+
     protected:
         virtual void CreateCommonResources();
         void OnWindowResize(void* wndHandle, uint32_t width, uint32_t height);
@@ -127,6 +143,7 @@ namespace Renderer
     
     private:
         void BuildRenderGraph(RG::FRGHandle& outputColor, RG::FRGHandle& outputDepth);
+        void FirePhaseHooks(ERenderPhase phase);
 
         void MouseHitTest();
 
@@ -190,6 +207,9 @@ namespace Renderer
         eastl::unique_ptr<RHI::FRHIDescriptor> m_pBilinearClampSampler;
         eastl::unique_ptr<RHI::FRHIDescriptor> m_pTrilinearRepeatSampler;
         eastl::unique_ptr<RHI::FRHIDescriptor> m_pTrilinearClampSampler;
+
+        eastl::vector<eastl::function<void()>> m_PhaseHooks[static_cast<size_t>(ERenderPhase::Count)];
+        eastl::unique_ptr<RenderResources::FTexture2D> m_pLoadingDepth;
 
         eastl::unique_ptr<RenderResources::FTexture2D> m_pPrevSceneDepthTexture;
         // eastl::unique_ptr<RenderResources::Texture2D> m_pPrevNormalTexture;

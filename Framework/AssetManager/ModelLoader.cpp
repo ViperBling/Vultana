@@ -27,6 +27,7 @@
 #include <meshoptimizer.h>
 
 #include <cassert>
+#include "ModelLoader.hpp"
 
 inline float3 StrToFloat3(const eastl::string& str)
 {
@@ -204,27 +205,16 @@ namespace Assets
         cgltf_free(data);
     }
 
-    void FModelLoader::Load()
+    void FModelLoader::RequestLoad()
     {
         const eastl::string srcPath = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + m_File;
 
-        FAssetManager assetManager(m_pWorld);
-        FVAssetHeader header;
-        FModelCookedData model;
-        if (!assetManager.LoadModel(srcPath, header, model))
+        auto self = shared_from_this();
+        Core::FVultanaEngine::GetEngineInstance()->GetAssetManager()->RequestModel(srcPath,
+        [self](Assets::FModelLoadResult&& result)
         {
-            VTNA_LOG_ERROR("[ModelLoader::Load] failed to load {}", srcPath);
-            return;
-        }
-
-        if (!model.Animations.empty() || !model.Skeleton.Joints.empty())
-        {
-            LoadSkeletalModel(model);
-        }
-        else
-        {
-            LoadStaticModel(model);
-        }
+            self->OnModelReady(eastl::move(result));
+        });
     }
 
     void FModelLoader::LoadStaticModel(const FModelCookedData& model)
@@ -311,6 +301,24 @@ namespace Assets
         skeletalMesh->SetScale(m_Scale);
         skeletalMesh->Create();
         m_pWorld->AddObject(skeletalMesh);
+    }
+
+    void FModelLoader::OnModelReady(Assets::FModelLoadResult&& result)
+    {
+        if (!result.bSuccess || !result.Payload)
+        {
+            VTNA_LOG_ERROR("[ModelLoader::Load] failed to load {}", result.SrcPath);
+            return;
+        }
+        const FModelCookedData& model = *result.Payload;
+        if (!model.Animations.empty())
+        {
+            LoadSkeletalModel(model);
+        }
+        else
+        {
+            LoadStaticModel(model);
+        }
     }
 
     Scene::FStaticMesh* FModelLoader::BuildStaticMesh(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bFrontFaceCCW, const float3& pos, const quaternion& rot, const float3& scale)

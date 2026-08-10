@@ -371,7 +371,7 @@ TEST(AssetPath, TextureSourceRoundtrip)
     EXPECT_EQ(cooked, "textures/albedo.png.BaseColor.vasset");
     EXPECT_EQ(FAssetPathUtils::GetTextureSourcePath(cooked), "textures/albedo.png");
     EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("Models/Box/glTF-Embedded/Box.gltf"), "Models/Box/glTF-Embedded/Box.gltf.vasset");
-    EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("../Assets/Models/Box/glTF-Embedded/Box.gltf"), "../Assets/CookedAssets/Models/Box/glTF-Embedded/Box.gltf.vasset");
+    EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("../Assets/Models/Box/glTF-Embedded/Box.gltf"), "../Content/Models/Box/glTF-Embedded/Box.gltf.vasset");
     EXPECT_EQ(FAssetPathUtils::MakeCookedModelPath("D:/x/y/Sponza.gltf"), "D:/x/y/Sponza.gltf.vasset");
     EXPECT_EQ(FAssetPathUtils::GetTextureSourcePath("textures/albedo.2k.png.BaseColor.vasset"), "textures/albedo.2k.png");
     EXPECT_EQ(FAssetPathUtils::GetTextureSourcePath("textures/albedo.Normal.png.Normal.vasset"), "textures/albedo.Normal.png");
@@ -394,4 +394,133 @@ TEST(AssetValidate, RejectsOversizedBlob)
     mesh.Streams.push_back(eastl::move(pos));
     payload.Meshes.push_back(eastl::move(mesh));
     EXPECT_FALSE(ValidateModel(payload, "test"));
+}
+
+// ----------- AssetAsync (Slice 4) ---------- //
+#include "AssetManager/AssetManager.hpp"
+#include <enkiTS/TaskScheduler.h>
+#include <rpmalloc/rpmalloc.h>
+
+namespace
+{
+    const char* kAsyncSrc = "assetcook_async_src.gltf";
+    const char* kAsyncSrc2 = "assetcook_async_src2.gltf";
+
+    void ConfigureAndInitTestScheduler(enki::TaskScheduler& ts)
+    {
+        enki::TaskSchedulerConfig tsConfig;
+        tsConfig.profilerCallbacks.threadStart = [](uint32_t) { rpmalloc_thread_initialize(); };
+        tsConfig.profilerCallbacks.threadStop = [](uint32_t) { rpmalloc_thread_finalize(1); };
+        ts.Initialize(tsConfig);
+    }
+
+    void CopyBoxSource(const char* dst)
+    {
+        std::ifstream src(kBoxSrc, std::ios::binary);
+        std::ofstream copy(dst, std::ios::binary);
+        copy << src.rdbuf();
+    }
+}
+
+TEST(AssetAsync, LoadsModelOnWorkerAndDrainsOnMainThread)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    bool fired = false;
+    bool success = false;
+    uint32_t meshCount = 0;
+    manager.RequestModel(kAsyncSrc, 
+    [&](FModelLoadResult&& r)
+    {
+        fired = true;
+        success = r.bSuccess;
+        if (r.Payload) meshCount = (uint32_t)r.Payload->Meshes.size(); 
+    });
+
+    ts.WaitforAll();           // worker completes and pushes the ready result
+    manager.DrainReadyQueue(); // main thread fires the callback
+    EXPECT_TRUE(fired);
+    EXPECT_TRUE(success);
+    EXPECT_EQ(meshCount, 1u); // Box: 1 mesh
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, DeferredInFlightRequestSharesPayload)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc2);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FModelLoadResult r1;
+    FModelLoadResult r2;
+    manager.RequestModel(kAsyncSrc2, [&](FModelLoadResult&& r)
+                         { r1 = eastl::move(r); });
+    manager.RequestModel(kAsyncSrc2, [&](FModelLoadResult&& r)
+                         { r2 = eastl::move(r); }); // in-flight dedup
+
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    EXPECT_TRUE(r1.bSuccess);
+    EXPECT_TRUE(r2.bSuccess);
+    ASSERT_TRUE(r1.Payload && r2.Payload);
+    EXPECT_EQ(r1.Payload.get(), r2.Payload.get()); // same payload, no double cook / read
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, CacheHitCompletesWithoutWorker)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FModelLoadResult r1;
+    FModelLoadResult r2;
+    manager.RequestModel(kAsyncSrc, [&](FModelLoadResult&& r)
+                         { r1 = eastl::move(r); });
+    ts.WaitforAll(); // worker done, entry cached, result queued
+    manager.RequestModel(kAsyncSrc, [&](FModelLoadResult&& r)
+                         { r2 = eastl::move(r); }); // cache hit
+    manager.DrainReadyQueue();
+
+    EXPECT_TRUE(r1.bSuccess);
+    EXPECT_TRUE(r2.bSuccess);
+    ASSERT_TRUE(r1.Payload && r2.Payload);
+    EXPECT_EQ(r1.Payload.get(), r2.Payload.get());
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, FailedLoadReportsFailure)
+{
+    using namespace Assets;
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    bool fired = false;
+    bool success = true;
+    manager.RequestModel("no_such_model_asset.gltf", [&](FModelLoadResult&& r)
+                         {
+        fired = true;
+        success = r.bSuccess; });
+
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    EXPECT_TRUE(fired);
+    EXPECT_FALSE(success);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
 }

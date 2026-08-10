@@ -78,6 +78,11 @@ public:
 
     void FrameFencePassed(uint64_t) override {}
 
+    Scene::ECS::EAssetState GetState(Scene::ECS::FModelAssetHandle) const override
+    {
+        return Scene::ECS::EAssetState::Ready;
+    }
+
     uint32_t GetMeshAcquireCount(uint32_t assetIdx) const
     {
         if (assetIdx < m_Models.size()) 

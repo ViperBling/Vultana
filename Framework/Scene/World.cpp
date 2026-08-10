@@ -1,8 +1,12 @@
-#include "World.hpp"
-#include "SceneComponent/Lights/DirectionalLight.hpp"
-#include "Renderer/RendererBase.hpp"
-#include "Core/VultanaEngine.hpp"
+#include "Scene/World.hpp"
 #include "AssetManager/ModelLoader.hpp"
+#include "AssetManager/ModelLoaderECS.hpp"
+
+#include "Core/VultanaEngine.hpp"
+#include "Renderer/RendererBase.hpp"
+
+#include "SceneComponent/Lights/DirectionalLight.hpp"
+
 #include "Utilities/Math.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
@@ -253,30 +257,29 @@ namespace Scene
             auto assetHandle = registry->ImportModel(assetPath);
             entt::entity root = factory->CreateModelInstance(assetHandle, assetPath);
 
-            auto& reg = pEngine->GetEntitySystem()->GetRegistry();
-            reg.emplace_or_replace<Scene::ECS::FTransformComponent>(root);
-            auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(root);
-            if (tf)
-            {
-                const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
-                if (position) tf->Position = strToFloat3(position->Value());
-                const tinyxml2::XMLAttribute* rotation = element->FindAttribute("Rotation");
-                if (rotation) tf->Rotation = RotationQuat(strToFloat3(rotation->Value()));
-                const tinyxml2::XMLAttribute* scale = element->FindAttribute("Scale");
-                if (scale) tf->Scale = strToFloat3(scale->Value());
-            }
+            float3 pos = float3(0.0f);
+            quaternion rot = quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+            float3 scale = float3(1.0f);
+            const tinyxml2::XMLAttribute* position = element->FindAttribute("Position");
+            if (position) pos = strToFloat3(position->Value());
+            const tinyxml2::XMLAttribute* rotation = element->FindAttribute("Rotation");
+            if (rotation) rot = RotationQuat(strToFloat3(rotation->Value()));
+            const tinyxml2::XMLAttribute* scaleAttr = element->FindAttribute("Scale");
+            if (scaleAttr) scale = strToFloat3(scaleAttr->Value());
+
+            Assets::FModelLoaderECS::LoadModelAsync(assetPath, assetHandle, *factory, root, pos, rot, scale);
             return;
         }
 
-        Assets::FModelLoader loader(this);
-        loader.LoadModelSettings(element);
+        auto loader = eastl::make_shared<Assets::FModelLoader>(this);
+        loader->LoadModelSettings(element);
         if (m_bUseCookedAssets)
         {
-            loader.Load();
+            loader->RequestLoad();
         }
         else
         {
-            loader.LoadGLTF();
+            loader->LoadGLTF();
         }
     }
 }

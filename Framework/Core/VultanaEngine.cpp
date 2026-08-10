@@ -98,6 +98,9 @@ namespace Core
             exit(0);
         }
 
+        m_pRenderer->RegisterFrameHook(Renderer::ERenderPhase::BeforeUpload,
+            [this]() { m_pAssetManager->DrainReadyQueue(); });
+
         m_pEntitySystem = eastl::make_unique<Scene::ECS::FEntitySubsystem>();
         m_pAssetRegistry = eastl::make_unique<Assets::FSceneAssetRegistry>(m_pRenderer.get());
         m_pRenderSink = eastl::make_unique<Renderer::FECSRenderBridge>(m_pRenderer.get(), static_cast<Assets::FSceneAssetRegistry*>(m_pAssetRegistry.get()));
@@ -107,6 +110,7 @@ namespace Core
         const char* modelLoadPath = configIni.GetValue("World", "ModelLoadPath", "Asset");
         m_pWorld->SetUseCookedAssets(strcmp(modelLoadPath, "Asset") == 0);
         m_pWorld->SetUseECSBackend(m_bUseECSBackend);
+        m_pAssetManager = eastl::make_unique<Assets::FAssetManager>(m_pWorld.get(), m_pTaskScheduler.get());
         m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
 
         if (m_bUseECSBackend)
@@ -134,6 +138,7 @@ namespace Core
         m_pEntitySystem.reset();
 
         m_pTaskScheduler.reset();
+        m_pAssetManager.reset();
 
         m_pRenderer.reset();
 
@@ -155,13 +160,25 @@ namespace Core
         }
         else
         {
-            m_pEditor->Tick();
-            m_pWorld->Tick(m_FrameTime);
-            if (m_bUseECSBackend)
+            if (m_pAssetManager->HasPendingRequests())
             {
-                m_pEntitySystem->Tick(m_FrameTime);
+                ImGui::Begin("Asset Loading", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+                ImGui::Text("Loading assets... %u pending", m_pAssetManager->GetPendingRequestCount());
+                ImGui::End();
+                m_pEditor->Tick();
+                m_pRenderer->RenderLoadingFrame();
             }
-            m_pRenderer->RenderFrame();
+            else
+            {
+                m_pEditor->Tick();
+                m_pWorld->Tick(m_FrameTime);
+                if (m_bUseECSBackend)
+                {
+                    m_pEntitySystem->Tick(m_FrameTime);
+                }
+                m_pRenderer->RenderFrame();
+            }
+            m_pAssetRegistry->FrameFencePassed(m_pRenderer->GetFrameID());
         }
     }
     
