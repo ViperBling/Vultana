@@ -200,6 +200,7 @@ namespace Renderer
         bool m_bHistoryValid = false;
 
         eastl::unique_ptr<RenderResources::FTypedBuffer> m_pSPDCounterBuffer;
+        bool m_bSPDCounterInitialized = false;
 
         bool m_bEnableObjectIDRendering = false;
         uint32_t m_MouseX = 0;

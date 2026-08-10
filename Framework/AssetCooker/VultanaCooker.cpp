@@ -14,23 +14,11 @@
 #include <sys/stat.h>
 #include <filesystem>
 
-namespace
-{
-    // eastl::string NormalizeSourcePath(const eastl::string& srcPath)
-    // {
-    //     const eastl::string prefix = "../Assets/";
-    //     if (srcPath.compare(0, prefix.size(), prefix) == 0)
-    //     {
-    //         return srcPath.substr(prefix.size());
-    //     }
-    //     return srcPath;
-    // }
-}
-
 namespace Assets
 {
     bool Assets::FVultanaCooker::CookModel(const eastl::string& srcPath, const eastl::string& dstPath, bool bSilent, const eastl::string& assetsPath)
     {
+        const eastl::string& assetsRoot = assetsPath.empty() ? FAssetPathUtils::GetAssetsRootPath() : assetsPath;
         FGLTFImporter importer;
         FImportResult result;
         if (!importer.Import(srcPath, result))
@@ -110,7 +98,7 @@ namespace Assets
 
         // Header: canonical source path + stat + refs
         FVAssetHeader header;
-        header.SourcePath = FAssetPathUtils::MakeAssetsRelative(srcPath, assetsPath);
+        header.SourcePath = FAssetPathUtils::MakeAssetsRelative(srcPath, assetsRoot);
         struct _stat64 st = {};
         if (_stat64(srcPath.c_str(), &st) == 0)
         {

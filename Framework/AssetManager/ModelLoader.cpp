@@ -217,7 +217,7 @@ namespace Assets
             return;
         }
 
-        if (!model.Animations.empty())
+        if (!model.Animations.empty() || !model.Skeleton.Joints.empty())
         {
             LoadSkeletalModel(model);
         }

@@ -10,7 +10,7 @@ namespace Assets
     class FVultanaCooker
     {
     public:
-        static bool CookModel(const eastl::string& srcPath, const eastl::string& dstPath, bool bSilent = false, const eastl::string& assetsPath = "../Assets/");
+        static bool CookModel(const eastl::string& srcPath, const eastl::string& dstPath, bool bSilent = false, const eastl::string& assetsPath = "");
         static bool CookTexture(const eastl::string& srcPath, const eastl::string& dstPath);
         static bool IsUpToDate(const eastl::string& srcPath, const eastl::string& dstPath);
     };

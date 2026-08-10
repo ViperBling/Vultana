@@ -1,12 +1,18 @@
 #include "VultanaEngine.hpp"
-#include "Editor/VultanaEditor.hpp"
-#include "Utilities/Log.hpp"
-#include "Utilities/String.hpp"
+
+#include "AssetCooker/AssetPathUtils.hpp"
+#include "AssetManager/AssetManager.hpp"
 #include "AssetManager/SceneAssetRegistry.hpp"
+
+#include "Editor/VultanaEditor.hpp"
+
 #include "Renderer/ECSRenderBridge.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
+
+#include "Utilities/Log.hpp"
+#include "Utilities/String.hpp"
 
 #include <EASTL/span.h>
 #include <rpmalloc/rpmalloc.h>
@@ -80,6 +86,9 @@ namespace Core
         const char* sceneBackend = configIni.GetValue("World", "SceneBackend", "Legacy");
         m_bUseECSBackend = (strcmp(sceneBackend, "ECS") == 0);
 
+        Assets::FAssetPathUtils::SetAssetsRootPath(m_AssetsPath);
+        Assets::FAssetPathUtils::SetContentRootPath(configIni.GetValue("Vultana", "ContentPath", "../Content/"));
+
         RHI::ERHIRenderBackend renderBackend = RHI::ERHIRenderBackend::Vulkan;
 
         m_pRenderer = eastl::make_unique<Renderer::FRendererBase>();
@@ -97,6 +106,7 @@ namespace Core
         m_pWorld = eastl::make_unique<Scene::FWorld>();
         const char* modelLoadPath = configIni.GetValue("World", "ModelLoadPath", "Asset");
         m_pWorld->SetUseCookedAssets(strcmp(modelLoadPath, "Asset") == 0);
+        m_pWorld->SetUseECSBackend(m_bUseECSBackend);
         m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
 
         if (m_bUseECSBackend)

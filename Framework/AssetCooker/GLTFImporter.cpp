@@ -207,7 +207,7 @@ namespace Assets
         // A: normalize to AssetsPath-relative ("../Assets/Models/Sponza/glTF/" -> "Models/Sponza/glTF/").
         // The CLI and engine both resolve sources under "../Assets/"; the assets root is
         // intentionally not a parameter here (Slice 3 keeps Import's signature untouched).
-        const eastl::string srcDir = FAssetPathUtils::MakeAssetsRelative(rawSrcDir, "../Assets/");
+        const eastl::string srcDir = FAssetPathUtils::MakeAssetsRelative(rawSrcDir, FAssetPathUtils::GetAssetsRootPath());
 
         // One pass over the parsed data, one stage per FImportResult section.
         LoadMaterials(data, srcDir, out);

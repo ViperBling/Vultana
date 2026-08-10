@@ -70,13 +70,16 @@ namespace Scene
         float4x4 S = scaling_matrix(m_Scale);
         m_MtxWorld = mul(T, mul(R, S));
 
-        if (m_bResetAnim)
+        if (m_pAnimation)
         {
-            m_pAnimation->ResetAnimation();
-        }
-        if (m_bAnimated || (m_bResetAnim && !m_bAnimated))
-        {
-            m_pAnimation->Update(this, deltaTime);
+            if (m_bResetAnim)
+            {
+                m_pAnimation->ResetAnimation();
+            }
+            if (m_bAnimated || (m_bResetAnim && !m_bAnimated))
+            {
+                m_pAnimation->Update(this, deltaTime);
+            }
         }
 
         for (size_t i = 0; i < m_RootNodes.size(); i++)

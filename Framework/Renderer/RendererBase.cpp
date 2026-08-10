@@ -611,11 +611,12 @@ namespace Renderer
 
         GPU_EVENT_DEBUG(pCmdList, fmt::format("Render Frame {}", m_pDevice->GetFrameID()).c_str());
 
-        if (m_pDevice->GetFrameID() == 0)
+        if (!m_bSPDCounterInitialized)
         {
             pCmdList->BufferBarrier(m_pSPDCounterBuffer->GetBuffer(), RHI::RHIAccessComputeUAV, RHI::RHIAccessCopyDst);
             pCmdList->WriteBuffer(m_pSPDCounterBuffer->GetBuffer(), 0, 0);
             pCmdList->BufferBarrier(m_pSPDCounterBuffer->GetBuffer(), RHI::RHIAccessCopyDst, RHI::RHIAccessComputeUAV);
+            m_bSPDCounterInitialized = true;
         }
 
         m_pGPUDrivenDebugLine->Clear(pCmdList);

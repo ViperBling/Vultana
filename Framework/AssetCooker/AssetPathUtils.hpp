@@ -9,6 +9,11 @@ namespace Assets
     class FAssetPathUtils
     {
     public:
+        static void SetAssetsRootPath(const eastl::string& path);
+        static const eastl::string& GetAssetsRootPath();
+        static void SetContentRootPath(const eastl::string& path);
+        static const eastl::string& GetContentRootPath();
+        
         static eastl::string NormalizeAssetPath(const eastl::string& path);
         static eastl::string MakeAssetsRelative(const eastl::string& path, const eastl::string& assetsPath);
         static eastl::string MakeCookedModelPath(const eastl::string& srcPath);

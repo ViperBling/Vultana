@@ -213,6 +213,7 @@ namespace Assets
     bool FMeshCooker::CookSkeletal(const FImportPrimitive& in, FMeshCookedData& out)
     {
         // Skeletal: no meshopt remap, no meshlet (matches old LoadSkeletalMeshData).
+        if (in.VertexCount == 0) return false;
         out.VertexCount = in.VertexCount;
         out.IndexData = in.IndexData;
         for (const FImportVertexStream& s : in.Streams)

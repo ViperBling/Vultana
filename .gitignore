@@ -44,4 +44,4 @@ AIOut
 !AIOut/
 /docs
 # Cooked asset products (mirror tree, regenerated on demand)
-Assets/CookedAssets/
+Content/

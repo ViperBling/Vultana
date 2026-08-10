@@ -79,7 +79,7 @@ target_compile_definitions(FrameworkLib PUBLIC
     EASTL_USER_DEFINED_ALLOCATOR=1
     _CRT_SECURE_NO_WARNINGS
     NOMINMAX
-    $<IF:$<CONFIG:Debug>,VULTANA_WITH_COOKER=1,VULTANA_WITH_COOKER=0>
+    VULTANA_WITH_COOKER=1
 )
 
 target_link_libraries(FrameworkLib PRIVATE

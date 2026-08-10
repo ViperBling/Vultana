@@ -1,17 +1,54 @@
 #include "AssetCooker/AssetPathUtils.hpp"
 
+#include <EASTL/string.h>
 #include <cassert>
 #include <cstring>
 
 namespace Assets
 {
+    eastl::string& GetAssetsRootMutable()
+    {
+        static eastl::string root = "../Assets/";
+        return root;
+    }
+
+    eastl::string& GetContentRootMutable()
+    {
+        static eastl::string root = "../Content/";
+        return root;
+    }
+    
+    void FAssetPathUtils::SetAssetsRootPath(const eastl::string& path)
+    {
+        GetAssetsRootMutable() = path;
+    }
+
+    const eastl::string& FAssetPathUtils::GetAssetsRootPath()
+    {
+        // Default
+        static eastl::string root = "../Assets/";
+        return root;
+    }
+
+    void FAssetPathUtils::SetContentRootPath(const eastl::string& path)
+    {
+        GetContentRootMutable() = path;
+    }
+
+    const eastl::string& FAssetPathUtils::GetContentRootPath()
+    {
+        // Default
+        static eastl::string root = "../Content/";
+        return root;
+    }
+
     eastl::string FAssetPathUtils::NormalizeAssetPath(const eastl::string& path)
     {
         eastl::string result = path;
         for (char& c : result)
             if (c == '\\')
                 c = '/';
-        while (result.compare(0, 3, "../") == 0)
+        if (result.compare(0, 3, "../") == 0)
             result.erase(0, 3);
         return result;
     }
@@ -19,7 +56,7 @@ namespace Assets
     eastl::string FAssetPathUtils::MakeAssetsRelative(const eastl::string& path, const eastl::string& assetsPath)
     {
         eastl::string normalized = NormalizeAssetPath(path);
-        eastl::string assets = NormalizeAssetPath(assetsPath);
+        const eastl::string assets = NormalizeAssetPath(assetsPath);
         if (normalized.compare(0, assets.size(), assets) == 0)
         {
             normalized.erase(0, assets.size());
@@ -27,25 +64,19 @@ namespace Assets
                 normalized.erase(0, 1);
             return normalized;
         }
-        // Fallback: strip a literal "../Assets/" prefix (CLI passes CWD-relative paths).
-        constexpr const char* kAssetsPrefix = "../Assets/";
-        if (normalized.compare(0, strlen(kAssetsPrefix), kAssetsPrefix) == 0)
-            return normalized.substr(strlen(kAssetsPrefix));
         return normalized;
     }
 
     eastl::string FAssetPathUtils::MakeCookedModelPath(const eastl::string& srcPath)
     {
-        // Cooked products live in a single mirror tree under Assets/CookedAssets/ (the
-        // assets-relative directory is preserved, extension kept: "Sponza.gltf" ->
-        // "CookedAssets/.../Sponza.gltf.vasset"; a blind extension erase would collide
-        // Box.gltf/Box.glb). Sources outside the assets root — absolute paths, or strings
-        // already assets-relative without the "../Assets/" prefix — fall back to the
-        // legacy side-by-side product so callers passing either form keep working.
-        const eastl::string rel = MakeAssetsRelative(srcPath, "../Assets/");
-        if (rel != srcPath)
+        const eastl::string normalized = NormalizeAssetPath(srcPath);
+        const eastl::string assetsRoot = NormalizeAssetPath(FAssetPathUtils::GetAssetsRootPath());
+        if (normalized.compare(0, assetsRoot.size(), assetsRoot) == 0)
         {
-            return "../Assets/CookedAssets/" + rel + ".vasset";
+            eastl::string rel = normalized.substr(assetsRoot.size());
+            while (!rel.empty() && rel[0] == '/')
+                rel.erase(0, 1);
+            return FAssetPathUtils::GetContentRootPath() + rel + ".vasset";
         }
         return srcPath + ".vasset";
     }
