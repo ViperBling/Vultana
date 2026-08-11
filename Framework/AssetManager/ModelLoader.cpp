@@ -27,7 +27,6 @@
 #include <meshoptimizer.h>
 
 #include <cassert>
-#include "ModelLoader.hpp"
 
 inline float3 StrToFloat3(const eastl::string& str)
 {
@@ -310,8 +309,18 @@ namespace Assets
             VTNA_LOG_ERROR("[ModelLoader::Load] failed to load {}", result.SrcPath);
             return;
         }
-        const FModelCookedData& model = *result.Payload;
-        if (!model.Animations.empty())
+        m_PendingModel = eastl::move(result.Payload);
+        Core::FVultanaEngine::GetEngineInstance()->GetAssetManager()->RequestModelTextures(*m_PendingModel, 
+        [self = shared_from_this()]()
+        { 
+            self->OnModelTexturesReady(); 
+        });
+    }
+
+    void FModelLoader::OnModelTexturesReady()
+    {
+        const FModelCookedData& model = *m_PendingModel;
+        if (!model.Animations.empty() || !model.Skeleton.Joints.empty())
         {
             LoadSkeletalModel(model);
         }
@@ -319,6 +328,7 @@ namespace Assets
         {
             LoadStaticModel(model);
         }
+        m_PendingModel.reset();
     }
 
     Scene::FStaticMesh* FModelLoader::BuildStaticMesh(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bFrontFaceCCW, const float3& pos, const quaternion& rot, const float3& scale)
@@ -464,38 +474,46 @@ namespace Assets
         material->m_bDoubleSided = assetMat->bDoubleSided;
 
         auto* textureCache = FResourceCache::GetInstance();
-        const eastl::string assetsPath = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath();
+        auto resolveTexture = [&](const FAssetTextureRef& ref) -> RenderResources::FTexture2D*
+        {
+            const eastl::string srcRel = FAssetPathUtils::GetTextureSourcePath(ref.RelativePath);
+            if (FAssetPathUtils::IsDDSSource(srcRel))
+            {
+                return textureCache->GetTexture2D(Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + srcRel, ref.bSRGB);
+            }
+            return textureCache->GetTexture2DProductReady(FAssetPathUtils::GetContentRootPath() + ref.RelativePath);
+        };
+
         for (const FAssetTextureRef& ref : assetMat->Textures)
         {
-            const eastl::string srcTex = assetsPath + FAssetPathUtils::GetTextureSourcePath(ref.RelativePath);
             switch (ref.Usage)
             {
             case ETextureUsage::BaseColor:
-                material->m_pAlbedoTexture = textureCache->GetTexture2D(srcTex, ref.bSRGB);
+                material->m_pAlbedoTexture = resolveTexture(ref);
                 material->m_MaterialCB.AlbedoTexture = BuildTextureInfo(material->m_pAlbedoTexture, ref);
                 break;
             case ETextureUsage::Normal:
-                material->m_pNormalTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_pNormalTexture = resolveTexture(ref);
                 material->m_MaterialCB.NormalTexture = BuildTextureInfo(material->m_pNormalTexture, ref);
                 break;
             case ETextureUsage::Emissive:
-                material->m_pEmissiveTexture = textureCache->GetTexture2D(srcTex, ref.bSRGB);
+                material->m_pEmissiveTexture = resolveTexture(ref);
                 material->m_MaterialCB.EmissiveTexture = BuildTextureInfo(material->m_pEmissiveTexture, ref);
                 break;
             case ETextureUsage::AmbientOcclusion:
-                material->m_pAOTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_pAOTexture = resolveTexture(ref);
                 material->m_MaterialCB.AmbientOcclusionTexture = BuildTextureInfo(material->m_pAOTexture, ref);
                 break;
             case ETextureUsage::MetallicRoughness:
-                material->m_pMetallicRoughTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_pMetallicRoughTexture = resolveTexture(ref);
                 material->m_MaterialCB.MetallicRoughnessTexture = BuildTextureInfo(material->m_pMetallicRoughTexture, ref);
                 break;
             case ETextureUsage::Diffuse:
-                material->m_pDiffuseTexture = textureCache->GetTexture2D(srcTex, ref.bSRGB);
+                material->m_pDiffuseTexture = resolveTexture(ref);
                 material->m_MaterialCB.DiffuseTexture = BuildTextureInfo(material->m_pDiffuseTexture, ref);
                 break;
             case ETextureUsage::SpecularGlossiness:
-                material->m_pSpecularGlossinessTexture = textureCache->GetTexture2D(srcTex, false);
+                material->m_pSpecularGlossinessTexture = resolveTexture(ref);
                 material->m_MaterialCB.SpecularGlossinessTexture = BuildTextureInfo(material->m_pSpecularGlossinessTexture, ref);
                 break;
             default:

@@ -1,7 +1,6 @@
 #include "Scene/ECS/EntityFactory.hpp"
 #include "Scene/ECS/Components.hpp"
 #include "Utilities/Log.hpp"
-#include "EntityFactory.hpp"
 
 namespace Scene::ECS
 {

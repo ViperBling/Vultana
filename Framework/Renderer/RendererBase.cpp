@@ -21,6 +21,33 @@
 
 namespace Renderer
 {
+    RHI::ERHIFormat ToRHIFormat(Assets::ETextureFormat format)
+    {
+        switch (format)
+        {
+        case Assets::ETextureFormat::RGBA32F:    return RHI::ERHIFormat::RGBA32F;
+        case Assets::ETextureFormat::RGBA16F:    return RHI::ERHIFormat::RGBA16F;
+        case Assets::ETextureFormat::RGBA8UNORM: return RHI::ERHIFormat::RGBA8UNORM;
+        case Assets::ETextureFormat::RGBA8SRGB:  return RHI::ERHIFormat::RGBA8SRGB;
+        case Assets::ETextureFormat::RG16F:      return RHI::ERHIFormat::RG16F;
+        case Assets::ETextureFormat::RG8UNORM:   return RHI::ERHIFormat::RG8UNORM;
+        case Assets::ETextureFormat::R32F:       return RHI::ERHIFormat::R32F;
+        case Assets::ETextureFormat::R16F:       return RHI::ERHIFormat::R16F;
+        case Assets::ETextureFormat::R8UNORM:    return RHI::ERHIFormat::R8UNORM;
+        case Assets::ETextureFormat::D32F:       return RHI::ERHIFormat::D32F;
+        case Assets::ETextureFormat::BC1UNORM:   return RHI::ERHIFormat::BC1UNORM;
+        case Assets::ETextureFormat::BC1SRGB:    return RHI::ERHIFormat::BC1SRGB;
+        case Assets::ETextureFormat::BC3UNORM:   return RHI::ERHIFormat::BC3UNORM;
+        case Assets::ETextureFormat::BC3SRGB:    return RHI::ERHIFormat::BC3SRGB;
+        case Assets::ETextureFormat::BC4UNORM:   return RHI::ERHIFormat::BC4UNORM;
+        case Assets::ETextureFormat::BC5UNORM:   return RHI::ERHIFormat::BC5UNORM;
+        case Assets::ETextureFormat::BC6HU16F:   return RHI::ERHIFormat::BC6U16F;
+        case Assets::ETextureFormat::BC7UNORM:   return RHI::ERHIFormat::BC7UNORM;
+        case Assets::ETextureFormat::BC7SRGB:    return RHI::ERHIFormat::BC7SRGB;
+        default:                                 return RHI::ERHIFormat::Unknown;
+        }
+    }
+
     FRendererBase::FRendererBase()
     {
         m_pShaderCache = eastl::make_unique<FShaderCache>(this);
@@ -221,6 +248,22 @@ namespace Renderer
         return texture;
     }
 
+    RenderResources::FTexture2D* FRendererBase::CreateTexture2D(const Assets::FTextureCookedData& payload, const eastl::string& name)
+    {
+        const RHI::ERHIFormat format = ToRHIFormat(payload.Format);
+        if (format == RHI::ERHIFormat::Unknown)
+        {
+            VTNA_LOG_ERROR("[Renderer] unsupported cooked texture format {} for {}", (uint32_t)payload.Format, name);
+            return nullptr;
+        }
+        RenderResources::FTexture2D* texture = CreateTexture2D(payload.Width, payload.Height, payload.MipLevels, format, 0, name);
+        if (texture)
+        {
+            UploadTexture(texture->GetTexture(), payload.MipData.data());
+        }
+        return texture;
+    }
+
     RenderResources::FTexture2D *FRendererBase::CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string &name)
     {
         RenderResources::FTexture2D* texture = new RenderResources::FTexture2D(name);
@@ -380,8 +423,8 @@ namespace Renderer
         {
             for (uint32_t mip = 0; mip < desc.MipLevels; ++mip)
             {
-                uint32_t w = max(desc.Width >> mip, minWidth);
-                uint32_t h = max(desc.Height >> mip, minHeight);
+                uint32_t w = RHI::GetFormatMipDim(desc.Width, mip, minWidth);
+                uint32_t h = RHI::GetFormatMipDim(desc.Height, mip, minHeight);
                 uint32_t d = max(desc.Depth >> mip, 1u);
 
                 uint32_t srcRowPitch = GetFormatRowPitch(desc.Format, w) * GetFormatBlockHeight(desc.Format);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AssetCooker/VAssetTypes.hpp"
+
 #include "RenderGraph/RenderGraph.hpp"
 #include "RenderResources/IndexBuffer.hpp"
 #include "RenderResources/RawBuffer.hpp"
@@ -77,6 +79,7 @@ namespace Renderer
         RG::FRenderGraph* GetRenderGraph() const { return m_pRenderGraph.get(); }
 
         RenderResources::FTexture2D* CreateTexture2D(const eastl::string& file, bool srgb);
+        RenderResources::FTexture2D* CreateTexture2D(const Assets::FTextureCookedData& payload, const eastl::string& name);
         RenderResources::FTexture2D* CreateTexture2D(uint32_t width, uint32_t height, uint32_t levels, RHI::ERHIFormat format, RHI::ERHITextureUsageFlags flags, const eastl::string& name);
 
         RenderResources::FIndexBuffer* CreateIndexBuffer(const void* data, uint32_t stride, uint32_t indexCount, const eastl::string& name, RHI::ERHIMemoryType memoryType = RHI::ERHIMemoryType::GPUOnly);

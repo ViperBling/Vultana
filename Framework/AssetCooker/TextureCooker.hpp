@@ -9,6 +9,10 @@ namespace Assets
     class FTextureCooker
     {
     public:
-        static bool Cook(const eastl::string& srcPath, const eastl::string& dstPath);
+        // Decode srcPath (STB) -> full mip chain -> BCn (ispc_texcomp) or float -> FTextureCookedData.
+        // bSRGB is implied by usage (BaseColor/Emissive/Diffuse are sRGB; everything else linear).
+        // Returns false and logs on any failure (missing file, decode error, oversize payload).
+        static bool Cook(const eastl::string& srcPath, ETextureUsage usage, FTextureCookedData& outPayload);
+        static bool IsSRGBUsage(ETextureUsage usage);
     };
 }

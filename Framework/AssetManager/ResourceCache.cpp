@@ -1,5 +1,9 @@
-#include "ResourceCache.hpp"
+#include "AssetManager/ResourceCache.hpp"
+#include "AssetCooker/AssetPathUtils.hpp"
+
 #include "Core/VultanaEngine.hpp"
+
+#include "Utilities/Log.hpp"
 
 namespace Assets
 {
@@ -46,6 +50,49 @@ namespace Assets
             }
         }
         assert(false);
+    }
+
+    RenderResources::FTexture2D* FResourceCache::GetTexture2DProduct(const eastl::string& productPath, const Assets::FTextureCookedData& payload)
+    {
+        const eastl::string key = FAssetPathUtils::NormalizeAssetPath(productPath);
+        auto iter = m_CachedTexture2D.find(key);
+        if (iter != m_CachedTexture2D.end())
+        {
+            iter->second.RefCount++;
+            return (RenderResources::FTexture2D*)iter->second.Data;
+        }
+        auto pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+        FResource texture;
+        texture.RefCount = 1;
+        texture.Data = pRenderer->CreateTexture2D(payload, key);
+        m_CachedTexture2D.insert(eastl::make_pair(key, texture));
+
+        return (RenderResources::FTexture2D*)texture.Data;
+    }
+
+    RenderResources::FTexture2D* FResourceCache::GetTexture2DProductReady(const eastl::string& productPath)
+    {
+        const eastl::string key = FAssetPathUtils::NormalizeAssetPath(productPath);
+        auto iter = m_CachedTexture2D.find(key);
+        if (iter == m_CachedTexture2D.end())
+        {
+            return nullptr;
+        }
+        iter->second.RefCount++;
+        return (RenderResources::FTexture2D*)iter->second.Data;
+    }
+
+    void FResourceCache::ReleaseAllTextures()
+    {
+        for (auto iter = m_CachedTexture2D.begin(); iter != m_CachedTexture2D.end(); iter++)
+        {
+            if (iter->second.RefCount != 1)
+            {
+                VTNA_LOG_WARN("[ResourceCache] {} still held by {} consumer(s) at teardown", iter->first, iter->second.RefCount - 1);
+            }
+            delete (RenderResources::FTexture2D*)iter->second.Data;
+        }
+        m_CachedTexture2D.clear();
     }
 
     OffsetAllocator::Allocation FResourceCache::GetSceneBuffer(const eastl::string &name, const void *data, uint32_t size)

@@ -6,7 +6,6 @@
 
 #include "Common/ModelConstants.hlsli"
 #include "Utilities/Log.hpp"
-#include "SceneAssetRegistry.hpp"
 
 namespace Assets
 {

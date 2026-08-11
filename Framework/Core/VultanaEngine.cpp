@@ -2,6 +2,7 @@
 
 #include "AssetCooker/AssetPathUtils.hpp"
 #include "AssetManager/AssetManager.hpp"
+#include "AssetManager/ResourceCache.hpp"
 #include "AssetManager/SceneAssetRegistry.hpp"
 
 #include "Editor/VultanaEditor.hpp"
@@ -139,6 +140,8 @@ namespace Core
 
         m_pTaskScheduler.reset();
         m_pAssetManager.reset();
+
+        Assets::FResourceCache::GetInstance()->ReleaseAllTextures();
 
         m_pRenderer.reset();
 

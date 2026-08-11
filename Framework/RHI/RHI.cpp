@@ -104,6 +104,14 @@ namespace RHI
         }
     }
 
+    uint32_t GetFormatMipDim(uint32_t baseDim, uint32_t mip, uint32_t blockSize)
+    {
+        if (baseDim == 0) return 0;
+        const uint32_t d = baseDim >> mip;
+        if (blockSize <= 1) return d < 1 ? 1 : d;
+        return d <= blockSize ? blockSize : (d & ~3u);
+    }
+
     uint32_t GetFormatBlockWidth(ERHIFormat format)
     {
         if (format >= ERHIFormat::BC1UNORM && format <= ERHIFormat::BC7SRGB)

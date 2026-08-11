@@ -23,7 +23,7 @@ namespace Assets
         static EAssetReadResult ReadModelChecked(const eastl::string& path, FVAssetHeader& outHeader, FModelCookedData& outPayload);
         // Thin wrapper over ReadModelChecked for existing call sites (tests, Cooker).
         static bool ReadModel(const eastl::string& path, FVAssetHeader& outHeader, FModelCookedData& outPayload);
-        // Reads the full ETexture payload (used by Slice 5).
+        static EAssetReadResult ReadTextureChecked(const eastl::string& path, FVAssetHeader& outHeader, FTextureCookedData& outPayload);
         static bool ReadTexture(const eastl::string& path, FVAssetHeader& outHeader, FTextureCookedData& outPayload);
 
     private:

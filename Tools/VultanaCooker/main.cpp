@@ -17,6 +17,7 @@ namespace
         printf("  VultanaCooker info <path>                     print asset header + payload summary\n");
         printf("  VultanaCooker cook <srcPath> [dstPath]        cook a glTF model into a .vasset\n");
         printf("  VultanaCooker uptodate <srcPath> [dstPath]    check source vs cooked freshness\n");
+        printf("  VultanaCooker cooktex <srcPath> [usage]       cook an image into a texture .vasset (usage: BaseColor|MetallicRoughness|Normal|Emissive|AmbientOcclusion|Diffuse|SpecularGlossiness)\n");
     }
 
     bool CompareModel(const Assets::FModelCookedData& modelA, const Assets::FModelCookedData& modelB)
@@ -352,7 +353,16 @@ namespace
         }
         else if (header.Type == EAssetType::Texture)
         {
-            printf("(texture payload display lands in Slice 5)\n");
+            FTextureCookedData payload;
+            FVAssetHeader header2;
+            if (!FAssetReader::ReadTexture(path, header2, payload))
+            {
+                printf("INFO FAIL: texture payload parse failed\n");
+                return 1;
+            }
+            printf("texture: %ux%u mips=%u array=%u depth=%u format=%u type=%u bytes=%llu\n",
+                   payload.Width, payload.Height, payload.MipLevels, payload.ArraySize, payload.Depth,
+                   (uint32_t)payload.Format, (uint32_t)payload.Type, (unsigned long long)payload.MipData.size());
         }
         printf("INFO OK\n");
         return 0;
@@ -380,6 +390,52 @@ namespace
         using namespace Assets;
         const eastl::string cooked = dstPath ? dstPath : FAssetPathUtils::MakeCookedModelPath(srcPath);
         printf("UPTODATE: %s (cooked=%s)\n", FVultanaCooker::IsUpToDate(srcPath, cooked) ? "yes" : "no", cooked.c_str());
+        return 0;
+    }
+
+    bool TextureUsageFromName(const char* name, Assets::ETextureUsage& outUsage)
+    {
+        struct FNameMap
+        {
+            const char* Name;
+            Assets::ETextureUsage Usage;
+        };
+        static const FNameMap kMap[] = {
+            {"BaseColor", Assets::ETextureUsage::BaseColor},
+            {"MetallicRoughness", Assets::ETextureUsage::MetallicRoughness},
+            {"Normal", Assets::ETextureUsage::Normal},
+            {"Emissive", Assets::ETextureUsage::Emissive},
+            {"AmbientOcclusion", Assets::ETextureUsage::AmbientOcclusion},
+            {"Diffuse", Assets::ETextureUsage::Diffuse},
+            {"SpecularGlossiness", Assets::ETextureUsage::SpecularGlossiness},
+        };
+        for (const FNameMap& m : kMap)
+        {
+            if (strcmp(name, m.Name) == 0)
+            {
+                outUsage = m.Usage;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int RunCookTex(const char* srcPath, const char* usageName)
+    {
+        using namespace Assets;
+        ETextureUsage usage = ETextureUsage::BaseColor;
+        if (usageName != nullptr && !TextureUsageFromName(usageName, usage))
+        {
+            printf("COOKTEX FAIL: unknown usage '%s'\n", usageName);
+            return 1;
+        }
+        const eastl::string dstPath = FAssetPathUtils::GetContentRootPath() + FAssetPathUtils::MakeCookedTexturePath(srcPath, usage);
+        if (!FVultanaCooker::CookTexture(srcPath, dstPath))
+        {
+            printf("COOKTEX FAIL: %s\n", srcPath);
+            return 1;
+        }
+        printf("COOKTEX OK: %s -> %s\n", srcPath, dstPath.c_str());
         return 0;
     }
 }
@@ -432,6 +488,17 @@ int main(int argc, char* argv[])
             else
             {
                 result = RunUpToDate(argv[2], argc >= 4 ? argv[3] : nullptr);
+            }
+        }
+        else if (cmd == "cooktex")
+        {
+            if (argc < 3)
+            {
+                PrintUsage();
+            }
+            else
+            {
+                result = RunCookTex(argv[2], argc >= 4 ? argv[3] : nullptr);
             }
         }
         else

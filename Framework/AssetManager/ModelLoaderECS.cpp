@@ -28,11 +28,21 @@ namespace Assets
                 return;
             }
 
-            registry->PopulateModel(assetHandle, *result.Payload);
+            // Slice 5 (M3): hold the payload and defer PopulateModel + hierarchy creation until
+            // every texture ref is ready (all completions land on the main thread). The payload
+            // is captured by value (shared_ptr) so it outlives the drain.
+            const eastl::string srcPath = result.SrcPath;
+            auto payload = result.Payload;
+            pEngine->GetAssetManager()->RequestModelTextures(*payload,
+            [pEngine, &factory, assetHandle, rootEntity, position, rotation, scale, payload, srcPath]()
+            {
+                auto* registry = static_cast<FSceneAssetRegistry*>(pEngine->GetAssetRegistry());
+                registry->PopulateModel(assetHandle, *payload);
 
-            const Scene::ECS::FModelAssetInfo info = registry->GetModelInfo(assetHandle);
-            factory.CreateModelHierarchy(assetHandle, info, rootEntity, position, rotation, scale);
-            VTNA_LOG_INFO("[ModelLoaderECS] loaded {} ({} nodes, {} primitives)", result.SrcPath, info.Nodes.size(), info.PrimitiveCount);
+                const Scene::ECS::FModelAssetInfo info = registry->GetModelInfo(assetHandle);
+                factory.CreateModelHierarchy(assetHandle, info, rootEntity, position, rotation, scale);
+                VTNA_LOG_INFO("[ModelLoaderECS] loaded {} ({} nodes, {} primitives)", srcPath, info.Nodes.size(), info.PrimitiveCount);
+            });
         });
     }
 } // namespace Assets

@@ -23,15 +23,15 @@ namespace Assets
     // values, see FAssetReader.cpp).
     namespace detail
     {
-        template <typename T> struct DiskMinSize { static constexpr uint32_t Value = 4; };          // enums / int32 / uint32 / float
+        template <typename T> struct DiskMinSize { static constexpr uint32_t Value = 4; };                      // enums / int32 / uint32 / float
         template <> struct DiskMinSize<bool>       { static constexpr uint32_t Value = 1; };
         template <> struct DiskMinSize<uint64_t>   { static constexpr uint32_t Value = 8; };
-        template <> struct DiskMinSize<linalg::vec<float, 2>> { static constexpr uint32_t Value = 8; };  // float2
-        template <> struct DiskMinSize<linalg::vec<float, 3>> { static constexpr uint32_t Value = 12; }; // float3
-        template <> struct DiskMinSize<linalg::vec<float, 4>> { static constexpr uint32_t Value = 16; }; // float4
-        template <> struct DiskMinSize<linalg::mat<float, 4, 4>> { static constexpr uint32_t Value = 64; }; // float4x4
-        template <> struct DiskMinSize<eastl::string> { static constexpr uint32_t Value = 4; };    // 4B length prefix
-        template <typename T> struct DiskMinSize<eastl::vector<T>> { static constexpr uint32_t Value = 4; }; // 4B count prefix
+        template <> struct DiskMinSize<linalg::vec<float, 2>> { static constexpr uint32_t Value = 8; };         // float2
+        template <> struct DiskMinSize<linalg::vec<float, 3>> { static constexpr uint32_t Value = 12; };        // float3
+        template <> struct DiskMinSize<linalg::vec<float, 4>> { static constexpr uint32_t Value = 16; };        // float4
+        template <> struct DiskMinSize<linalg::mat<float, 4, 4>> { static constexpr uint32_t Value = 64; };     // float4x4
+        template <> struct DiskMinSize<eastl::string> { static constexpr uint32_t Value = 4; };                 // 4B length prefix
+        template <typename T> struct DiskMinSize<eastl::vector<T>> { static constexpr uint32_t Value = 4; };    // 4B count prefix
     }
 
     // Field-list macros: X(Name, Type, [= Default]) invoked with VTNA_DECLARE_MEMBER
@@ -308,4 +308,75 @@ namespace Assets
         eastl::string SourcePath;
         eastl::vector<eastl::string> References; // .vasset output paths of dependencies
     };
+
+    inline uint32_t GetTextureFormatBlockWidth(ETextureFormat format)
+    {
+        return format >= ETextureFormat::BC1UNORM && format <= ETextureFormat::BC7SRGB ? 4 : 1;
+    }
+
+    inline uint32_t GetTextureFormatBlockHeight(ETextureFormat format)
+    {
+        return format >= ETextureFormat::BC1UNORM && format <= ETextureFormat::BC7SRGB ? 4 : 1;
+    }
+
+    inline uint32_t GetTextureFormatRowPitch(ETextureFormat format, uint32_t width)
+    {
+        switch (format)
+        {
+        case ETextureFormat::RGBA32F:               return width * 16;
+        case ETextureFormat::RGBA16F:               return width * 8;
+        case ETextureFormat::RGBA8UNORM:
+        case ETextureFormat::RGBA8SRGB:             return width * 4;
+        case ETextureFormat::RG16F:                 return width * 4;
+        case ETextureFormat::RG8UNORM:              return width * 2;
+        case ETextureFormat::R32F:                  return width * 4;
+        case ETextureFormat::R16F:                  return width * 2;
+        case ETextureFormat::R8UNORM:               return width;
+        case ETextureFormat::D32F:                  return width * 4;
+        case ETextureFormat::BC1UNORM:
+        case ETextureFormat::BC1SRGB:
+        case ETextureFormat::BC4UNORM:              return width / 2;
+        case ETextureFormat::BC3UNORM:
+        case ETextureFormat::BC3SRGB:
+        case ETextureFormat::BC5UNORM:
+        case ETextureFormat::BC6HU16F:
+        case ETextureFormat::BC7UNORM:
+        case ETextureFormat::BC7SRGB:               return width;
+        default:                                    return 0;
+        }
+    }
+
+    // Bytes of one mip of the given source dims, laid out as UploadTexture expects:
+    // tightly packed block rows, dims clamped to the block size (BC floors at 4x4).
+    inline uint32_t GetTextureFormatMipSize(ETextureFormat format, uint32_t width, uint32_t height, uint32_t depth = 1)
+    {
+        const uint32_t blockW = GetTextureFormatBlockWidth(format);
+        const uint32_t blockH = GetTextureFormatBlockHeight(format);
+        const uint32_t w = width < blockW ? blockW : width;
+        const uint32_t h = height < blockH ? blockH : height;
+        return GetTextureFormatRowPitch(format, w) * blockH * (h / blockH) * depth;
+    }
+
+    inline uint32_t GetTextureMipDim(uint32_t baseDim, uint32_t mip, uint32_t blockSize)
+    {
+        if (baseDim == 0) return 0;
+        const uint32_t d = baseDim >> mip;
+        if (blockSize <= 1) return d < 1 ? 1 : d;
+        return d <= blockSize ? blockSize : (d & ~3u); // Align4Down; base mip0 is already 4-aligned
+    }
+
+    constexpr uint32_t kMaxTextureMipLevels = 20; // 1M^2 texture; shared by cook + validate
+
+    inline uint32_t GetTextureMipLevels(uint32_t baseW, uint32_t baseH, uint32_t blockSize)
+    {
+        uint32_t levels = 0;
+        for (uint32_t mip = 0; mip < kMaxTextureMipLevels; ++mip)
+        {
+            ++levels;
+            if (GetTextureMipDim(baseW, mip, blockSize) <= blockSize &&
+                GetTextureMipDim(baseH, mip, blockSize) <= blockSize)
+                break;
+        }
+        return levels;
+    }
 }

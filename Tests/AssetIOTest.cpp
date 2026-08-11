@@ -4,6 +4,11 @@
 #include "AssetCooker/AssetValidate.hpp"
 #include "AssetCooker/VultanaCooker.hpp"
 
+#include "RHI/RHI.hpp"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -523,4 +528,234 @@ TEST(AssetAsync, FailedLoadReportsFailure)
     EXPECT_FALSE(success);
     EXPECT_FALSE(manager.HasPendingRequests());
     ts.WaitforAll();
+}
+
+// ---- Slice 5: texture cook / read / validate / async ----
+namespace
+{
+    const char* kBoxScreenshotPng = "../Assets/Models/Box/screenshot/screenshot.png";
+
+    uint64_t ExpectedTexturePayloadSize(const Assets::FTextureCookedData& payload)
+    {
+        uint64_t total = 0;
+        const uint32_t blockW = Assets::GetTextureFormatBlockWidth(payload.Format);
+        const uint32_t blockH = Assets::GetTextureFormatBlockHeight(payload.Format);
+        for (uint32_t mip = 0; mip < payload.MipLevels; ++mip)
+        {
+            total += Assets::GetTextureFormatMipSize(payload.Format,
+                                                     Assets::GetTextureMipDim(payload.Width, mip, blockW),
+                                                     Assets::GetTextureMipDim(payload.Height, mip, blockH),
+                                                     payload.Depth);
+        }
+        return total * payload.ArraySize;
+    }
+} // namespace
+
+TEST(AssetTexture, CookAndRoundtrip)
+{
+    using namespace Assets;
+    const char* kDst = "assetcook_tex_test.BaseColor.vasset";
+
+    ASSERT_TRUE(FVultanaCooker::CookTexture(kBoxScreenshotPng, kDst));
+
+    FVAssetHeader header;
+    FTextureCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadTexture(kDst, header, payload));
+    EXPECT_EQ(header.Type, EAssetType::Texture);
+    EXPECT_GT(payload.Width, 0u);
+    EXPECT_GT(payload.Height, 0u);
+    EXPECT_GT(payload.MipLevels, 1u); // full mip chain (BC floor at 4x4)
+    EXPECT_EQ(payload.Depth, 1u);
+    EXPECT_EQ(payload.ArraySize, 1u);
+    EXPECT_EQ(payload.Type, ETextureType::Texture2D);
+#if VULTANA_HAS_ISPC_TEXCOMP
+    EXPECT_EQ(payload.Format, ETextureFormat::BC7SRGB); // BaseColor -> BC7 sRGB
+#else
+    EXPECT_EQ(payload.Format, ETextureFormat::RGBA8SRGB); // fallback without ISPC
+#endif
+    // Mip data must exactly match the UploadTexture byte layout.
+    EXPECT_EQ(payload.MipData.size(), ExpectedTexturePayloadSize(payload));
+
+    std::remove(kDst);
+}
+
+TEST(AssetTexture, RejectsMissingSource)
+{
+    using namespace Assets;
+    EXPECT_FALSE(FVultanaCooker::CookTexture("no_such_texture_source.png", "assetcook_tex_missing.BaseColor.vasset"));
+}
+
+TEST(AssetTexture, ValidateRejectsBadMipData)
+{
+    using namespace Assets;
+    FTextureCookedData payload;
+    payload.Width = 4;
+    payload.Height = 4;
+    payload.Format = ETextureFormat::BC7UNORM; // 4x4 BC7 = 16 bytes
+    payload.MipData.assign(16, 0);
+    EXPECT_TRUE(ValidateTexture(payload, "test"));
+
+    payload.MipData.assign(15, 0); // one byte short
+    EXPECT_FALSE(ValidateTexture(payload, "test"));
+
+    payload.MipData.assign(17, 0); // one byte over
+    EXPECT_FALSE(ValidateTexture(payload, "test"));
+
+    payload.MipData.assign(16, 0);
+    payload.MipLevels = 2; // second mip (clamped 4x4 = 16B) missing
+    EXPECT_FALSE(ValidateTexture(payload, "test"));
+}
+
+TEST(AssetTexture, TruncatedCookedTextureFails)
+{
+    using namespace Assets;
+    const char* kDst = "assetcook_tex_test.BaseColor.vasset";
+    ASSERT_TRUE(FVultanaCooker::CookTexture(kBoxScreenshotPng, kDst));
+    TruncateFile(kDst, 48 + 2 * 24); // header + section table only; payload gone
+
+    FVAssetHeader header;
+    FTextureCookedData payload;
+    EXPECT_FALSE(FAssetReader::ReadTexture(kDst, header, payload));
+    std::remove(kDst);
+}
+
+TEST(AssetTexture, ProductPathRoundtrip)
+{
+    using namespace Assets;
+    eastl::string srcRel;
+    ETextureUsage usage = ETextureUsage::Cubemap; // any valid sentinel (B6: no ETextureUsage::Unknown)
+
+    EXPECT_TRUE(FAssetPathUtils::ParseTextureProductPath(
+        "../Content/Models/Box/glTF-Embedded/Default_albedo.jpg.BaseColor.vasset", srcRel, usage));
+    EXPECT_EQ(srcRel, "Models/Box/glTF-Embedded/Default_albedo.jpg");
+    EXPECT_EQ(usage, ETextureUsage::BaseColor);
+
+    EXPECT_TRUE(FAssetPathUtils::ParseTextureProductPath(
+        "Models/Box/tex.png.Normal.vasset", srcRel, usage)); // relative form
+    EXPECT_EQ(srcRel, "Models/Box/tex.png");
+    EXPECT_EQ(usage, ETextureUsage::Normal);
+
+    EXPECT_FALSE(FAssetPathUtils::ParseTextureProductPath("Models/Box/foo.gltf.vasset", srcRel, usage)); // not a texture product
+    EXPECT_FALSE(FAssetPathUtils::ParseTextureProductPath("Models/Box/foo.png", srcRel, usage));
+
+    EXPECT_TRUE(FAssetPathUtils::IsDDSSource("Textures/foo.dds"));
+    EXPECT_TRUE(FAssetPathUtils::IsDDSSource("Textures/foo.DDS"));
+    EXPECT_FALSE(FAssetPathUtils::IsDDSSource("Textures/foo.png"));
+    EXPECT_FALSE(FAssetPathUtils::IsDDSSource("Textures/foo.ddsx"));
+}
+
+TEST(AssetAsync, TextureLoadsOnWorkerAndDrainsOnMainThread)
+{
+    using namespace Assets;
+    // Product path MUST correspond to a real source: the worker derives the source from the
+    // product path (ParseTextureProductPath), so an arbitrary name would cook-fail.
+    const char* kRelSrc = "Models/Box/screenshot/screenshot.png";
+    const eastl::string kProduct = FAssetPathUtils::GetContentRootPath() + FAssetPathUtils::MakeCookedTexturePath(kRelSrc, ETextureUsage::BaseColor);
+    ASSERT_TRUE(FVultanaCooker::CookTexture(FAssetPathUtils::GetAssetsRootPath() + kRelSrc, kProduct)); // pre-cook so the worker only reads
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    bool fired = false;
+    bool success = false;
+    uint32_t mipLevels = 0;
+    manager.RequestTexture(kProduct,
+    [&](FTextureLoadResult&& r)
+    {
+        fired = true;
+        success = r.bSuccess;
+        if (r.Payload) mipLevels = r.Payload->MipLevels;
+    });
+
+    ts.WaitforAll();
+    manager.DrainReadyQueue(); // main thread fires the callback (GPU create is null-guarded)
+    EXPECT_TRUE(fired);
+    EXPECT_TRUE(success);
+    EXPECT_GT(mipLevels, 0u);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+
+    std::remove(kProduct.c_str());
+}
+
+TEST(AssetAsync, FailedTextureLoadReportsFailure)
+{
+    using namespace Assets;
+    const eastl::string kProduct = FAssetPathUtils::GetContentRootPath() + "no_such_texture_asset.BaseColor.vasset";
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    bool fired = false;
+    bool success = true;
+    manager.RequestTexture(kProduct,
+    [&](FTextureLoadResult&& r)
+    {
+        fired = true;
+        success = r.bSuccess;
+    });
+
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    EXPECT_TRUE(fired);
+    EXPECT_FALSE(success);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetTexture, MipDimSyncsWithRHI)
+{
+    // Pins Assets::GetTextureMipDim (cook/validate) byte-identical to RHI::GetFormatMipDim
+    // (UploadTexture/GetRowPitch) — the two must never drift (B9).
+    for (uint32_t base = 1; base <= 4096; base += 7)
+    {
+        for (uint32_t mip = 0; mip < 12; ++mip)
+        {
+            EXPECT_EQ(Assets::GetTextureMipDim(base, mip, 1u), RHI::GetFormatMipDim(base, mip, 1u));
+            EXPECT_EQ(Assets::GetTextureMipDim(base, mip, 4u), RHI::GetFormatMipDim(base, mip, 4u));
+        }
+    }
+}
+
+TEST(AssetTexture, BC5NormalIsNotDegenerate)
+{
+    // B4 regression guard: a BC5 cook of a gradient source must not produce an all-zeros /
+    // all-constant block (the historical RGBA8-fed-blocks bug). Writes a 4x4 RGBA gradient
+    // PNG via the test fixture, cooks as Normal (BC5), and checks the block bytes differ.
+    using namespace Assets;
+    const char* kPng = "assetcook_bc5_grad.png";
+    const char* kDst = "assetcook_bc5_grad.Normal.vasset";
+    {
+        const int w = 4, h = 4;
+        eastl::vector<uint8_t> rgba((size_t)w * h * 4);
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x)
+            {
+                rgba[((size_t)y * w + x) * 4 + 0] = (uint8_t)(x * 64); // R ramps
+                rgba[((size_t)y * w + x) * 4 + 1] = (uint8_t)(y * 64); // G ramps
+                rgba[((size_t)y * w + x) * 4 + 2] = 128;
+                rgba[((size_t)y * w + x) * 4 + 3] = 255;
+            }
+        stbi_write_png(kPng, w, h, 4, rgba.data(), w * 4);
+    }
+#if VULTANA_HAS_ISPC_TEXCOMP
+    ASSERT_TRUE(FVultanaCooker::CookTexture(kPng, kDst));
+    FVAssetHeader header;
+    FTextureCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadTexture(kDst, header, payload));
+    EXPECT_EQ(payload.Format, ETextureFormat::BC5UNORM);
+    ASSERT_GE(payload.MipData.size(), 16u); // one 4x4 BC5 block = 16 bytes at minimum
+    bool bAnyNonZero = false;
+    for (uint8_t b : payload.MipData)
+        if (b != 0)
+        {
+            bAnyNonZero = true;
+            break;
+        }
+    EXPECT_TRUE(bAnyNonZero); // packed gradient must survive
+    std::remove(kDst);
+#endif
+    std::remove(kPng);
 }

@@ -5,6 +5,7 @@
 #include "AssetCooker/Importer.hpp"
 #include "AssetCooker/GLTFImporter.hpp"
 #include "AssetCooker/MeshCooker.hpp"
+#include "AssetCooker/TextureCooker.hpp"
 
 #include "Utilities/Log.hpp"
 
@@ -153,11 +154,58 @@ namespace Assets
 
     bool FVultanaCooker::CookTexture(const eastl::string& srcPath, const eastl::string& dstPath)
     {
-        // TODO
-        (void)srcPath;
-        (void)dstPath;
-        VTNA_LOG_WARN("[Cooker] CookTexture lands in Slice 5");
-        return false;
+        // dstPath is the full product path ("<ContentRoot><rel>.<Usage>.vasset"); the usage and
+        // the Assets-relative source are parsed from it, so the product path is the source of truth.
+        eastl::string srcRel;
+        ETextureUsage usage = ETextureUsage::BaseColor;
+        if (!FAssetPathUtils::ParseTextureProductPath(dstPath, srcRel, usage))
+        {
+            VTNA_LOG_ERROR("[Cooker] {} is not a texture product path (expected <rel>.Usage.vasset)", dstPath);
+            return false;
+        }
+
+        FTextureCookedData payload;
+        if (!FTextureCooker::Cook(srcPath, usage, payload))
+        {
+            VTNA_LOG_ERROR("[Cooker] Failed to cook texture {}", srcPath);
+            return false;
+        }
+
+        FVAssetHeader header;
+        header.Type = EAssetType::Texture;
+        header.SourcePath = FAssetPathUtils::MakeAssetsRelative(srcPath, FAssetPathUtils::GetAssetsRootPath());
+        struct _stat64 st = {};
+        if (_stat64(srcPath.c_str(), &st) == 0)
+        {
+            header.SourceMTime = static_cast<uint64_t>(st.st_mtime);
+            header.SourceSize = static_cast<uint64_t>(st.st_size);
+        }
+        // Texture products have no dependency references.
+
+        if (!ValidateTexture(payload, "CookTexture"))
+        {
+            VTNA_LOG_ERROR("[Cooker] Cooked texture failed validation: {}", srcPath);
+            return false;
+        }
+
+        // Products mirror into a nested Content tree; create the destination directory on demand.
+        const std::filesystem::path dstParent = std::filesystem::path(dstPath.c_str()).parent_path();
+        if (!dstParent.empty())
+        {
+            std::error_code ec;
+            std::filesystem::create_directories(dstParent, ec);
+            if (ec)
+            {
+                VTNA_LOG_ERROR("[Cooker] Failed to create output directory {}: {}", dstParent.string(), ec.message());
+                return false;
+            }
+        }
+        if (!FAssetWriter::Write(dstPath, header, payload))
+        {
+            VTNA_LOG_ERROR("[Cooker] Failed to write {}", dstPath);
+            return false;
+        }
+        return true;
     }
 
     bool FVultanaCooker::IsUpToDate(const eastl::string& srcPath, const eastl::string& dstPath)

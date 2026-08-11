@@ -2,7 +2,6 @@
 #include "AssetCooker/AssetValidate.hpp"
 
 #include <city.h>
-#include "AssetReader.hpp"
 
 namespace
 {
@@ -84,26 +83,31 @@ namespace Assets
         return ReadModelChecked(path, outHeader, outPayload) == EAssetReadResult::Ok;
     }
 
-    bool FAssetReader::ReadTexture(const eastl::string& path, FVAssetHeader& outHeader, FTextureCookedData& outPayload)
+    EAssetReadResult FAssetReader::ReadTextureChecked(const eastl::string& path, FVAssetHeader& outHeader, FTextureCookedData& outPayload)
     {
+        eastl::vector<uint8_t> head;
+        if (!ReadFileHeadToBuffer(path, kAssetHeaderSize, head) || head.size() < kAssetHeaderSize)
+            return EAssetReadResult::NotFound;
+
+        FBinaryReader headReader(head.data(), head.size());
+        uint32_t magic = 0, version = 0, cookerVersion = 0;
+        if (!headReader.ReadU32(magic) || !headReader.ReadU32(version) || !headReader.ReadU32(cookerVersion))
+            return EAssetReadResult::Corrupt;
+        if (magic != FVAssetHeader::MagicConst)
+            return EAssetReadResult::BadMagic;
+        if (version != FVAssetHeader::CurrentVersion || cookerVersion != kAssetCookerVersion)
+            return EAssetReadResult::VersionMismatch;
+
+        // Full read + parse + payload hash + cross-reference validation (mirrors ReadModelChecked).
         eastl::vector<uint8_t> data;
         if (!ReadFileToBuffer(path, data))
-        {
-            return false;
-        }
+            return EAssetReadResult::NotFound;
         FBinaryReader reader(data.data(), data.size());
-        if (!ReadHeaderRegion(reader, outHeader))
-        {
-            return false;
-        }
-        if (outHeader.Type != EAssetType::Texture)
-        {
-            return false;
-        }
+        if (!ReadHeaderRegion(reader, outHeader) || outHeader.Type != EAssetType::Texture)
+            return EAssetReadResult::Corrupt;
+
         if (!reader.Seek(kAssetHeaderSize))
-        {
-            return false;
-        }
+            return EAssetReadResult::Corrupt;
         for (uint32_t i = 0; i < outHeader.SectionCount; i++)
         {
             uint32_t secType = 0, secReserved = 0;
@@ -111,30 +115,39 @@ namespace Assets
             if (!reader.ReadU32(secType) || !reader.ReadU32(secReserved) ||
                 !reader.ReadU64(secOffset) || !reader.ReadU64(secSize))
             {
-                return false;
+                return EAssetReadResult::Corrupt;
             }
             if ((EAssetSection)secType != EAssetSection::Texture)
-            {
                 continue;
-            }
-            if (!reader.Seek((size_t)secOffset))
-            {
-                return false;
-            }
+
+            if (secOffset + secSize > data.size())
+                return EAssetReadResult::Corrupt;
+            const uint64_t actualHash = CityHash64(reinterpret_cast<const char*>(data.data() + secOffset), static_cast<size_t>(secSize));
+            if (actualHash != outHeader.ContentHash)
+                return EAssetReadResult::Corrupt;
+
+            if (!reader.Seek(static_cast<size_t>(secOffset)))
+                return EAssetReadResult::Corrupt;
             uint32_t format = 0, type = 0;
             if (!reader.ReadU32(outPayload.Width) || !reader.ReadU32(outPayload.Height) ||
                 !reader.ReadU32(outPayload.Depth) || !reader.ReadU32(outPayload.MipLevels) ||
                 !reader.ReadU32(outPayload.ArraySize) || !reader.ReadU32(format) || !reader.ReadU32(type) ||
                 !reader.ReadBlob(outPayload.MipData))
             {
-                return false;
+                return EAssetReadResult::Corrupt;
             }
             outPayload.Format = (ETextureFormat)format;
             outPayload.Type = (ETextureType)type;
-
-            return true;
+            if (!ValidateTexture(outPayload, "ReadTextureChecked"))
+                return EAssetReadResult::Corrupt;
+            return EAssetReadResult::Ok;
         }
-        return false;
+        return EAssetReadResult::Corrupt; // no Texture section
+    }
+
+    bool FAssetReader::ReadTexture(const eastl::string& path, FVAssetHeader& outHeader, FTextureCookedData& outPayload)
+    {
+        return ReadTextureChecked(path, outHeader, outPayload) == EAssetReadResult::Ok;
     }
 
     bool FAssetReader::ReadHeaderRegion(FBinaryReader& reader, FVAssetHeader& outHeader)

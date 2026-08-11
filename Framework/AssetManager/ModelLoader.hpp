@@ -61,10 +61,10 @@ namespace Assets
         static FMaterialTextureInfo BuildTextureInfo(const RenderResources::FTexture2D* texture, const FAssetTextureRef& ref);
 
     private:
-        // -------- Slice 3: built from FModelCookedData (no cgltf) -------- //
         void LoadStaticModel(const FModelCookedData& model);
         void LoadSkeletalModel(const FModelCookedData& model);
         void OnModelReady(Assets::FModelLoadResult&& result);
+        void OnModelTexturesReady();
 
         Scene::FStaticMesh* BuildStaticMesh(const FMeshCookedData& cooked, const FAssetMaterial* assetMat, bool bFrontFaceCCW, const float3& pos, const quaternion& rot, const float3& scale);
         Scene::FSkeletalMeshNode* BuildSkeletalNode(const FAssetNode& node, int32_t nodeIndex, const FModelCookedData& model);
@@ -88,6 +88,8 @@ namespace Assets
     private:
         Scene::FWorld* m_pWorld = nullptr;
         eastl::string m_File;
+
+        eastl::shared_ptr<FModelCookedData> m_PendingModel;
 
         float3 m_Position = float3(0.0f);
         quaternion m_Rotation = quaternion(0.0f, 0.0f, 0.0f, 1.0f);

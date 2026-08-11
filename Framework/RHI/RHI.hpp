@@ -17,6 +17,7 @@ namespace RHI
     FRHIDevice* CreateRHIDevice(const FRHIDeviceDesc& desc);
     // Get the row pitch of a format
     uint32_t GetFormatRowPitch(ERHIFormat format, uint32_t width);
+    uint32_t GetFormatMipDim(uint32_t baseDim, uint32_t mip, uint32_t blockSize);
     // Get the block size of a compressed format
     uint32_t GetFormatBlockWidth(ERHIFormat format);
     uint32_t GetFormatBlockHeight(ERHIFormat format);

@@ -1,4 +1,5 @@
 #include "AssetManager/AssetManager.hpp"
+#include "AssetManager/ResourceCache.hpp"
 
 #include "AssetCooker/VultanaCooker.hpp"
 #include "AssetCooker/AssetPathUtils.hpp"
@@ -24,7 +25,7 @@ namespace Assets
 
         void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
         {
-            m_pManager->LoadWorker(eastl::move(m_Request));
+            m_pManager->ModelLoadWorker(eastl::move(m_Request));
         }
 
     private:
@@ -32,11 +33,136 @@ namespace Assets
         FRequest m_Request;
     };
 
+    class FAssetManager::FAsyncTextureLoadTask final : public enki::ITaskSet
+    {
+    public:
+        FAsyncTextureLoadTask(FAssetManager* pManager, FTextureRequest request)
+            : m_pManager(pManager), m_Request(eastl::move(request)) {}
+
+        void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
+        {
+            m_pManager->TextureLoadWorker(eastl::move(m_Request));
+        }
+
+    private:
+        FAssetManager* m_pManager = nullptr;
+        FTextureRequest m_Request;
+    };
+
     FAssetManager::~FAssetManager()
     {
-        for (FAsyncModelLoadTask* task : m_Tasks)
+        for (FAsyncModelLoadTask* task : m_ModelTasks)
             delete task;
-        m_Tasks.clear();
+        for (FAsyncTextureLoadTask* task : m_TextureTasks)
+            delete task;
+        m_ModelTasks.clear();
+        m_TextureTasks.clear();
+    }
+
+    void FAssetManager::RequestTexture(const eastl::string& productPath, FTextureLoadCallback&& callback)
+    {
+        const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(productPath);
+
+        FTextureRequest request;
+        request.ProductPath = productPath;
+        request.NormalizedPath = normalized;
+        request.Callback = eastl::move(callback);
+
+        bool bSpawnWorker = false;
+        {
+            std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+
+            auto cacheIt = m_TextureCache.find(normalized);
+            if (cacheIt != m_TextureCache.end())
+            {
+                // Cache hit
+                FReadyTextureResult ready;
+                ready.NormalizedPath = normalized;
+                ready.Callback = eastl::move(request.Callback);
+                ready.Result.bSuccess = true;
+                ready.Result.SrcPath = productPath;
+                ready.Result.CookedPath = productPath;
+                ready.Result.Payload = cacheIt->second.Payload;
+                cacheIt->second.RefCount++;
+                m_TextureReadyQueue.push_back(eastl::move(ready));
+                ++m_PendingCount;
+                return;
+            }
+            if (m_TextureLoading.find(normalized) != m_TextureLoading.end())
+            {
+                // Already loading, defer callback
+                m_TexturePendingCallbacks[normalized].push_back(eastl::move(request.Callback));
+                ++m_PendingCount;
+                return;
+            }
+            m_TextureLoading.insert(normalized);
+            ++m_PendingCount;
+            bSpawnWorker = true;
+        }
+        if (bSpawnWorker)
+        {
+            SpawnTextureLoadWorker(eastl::move(request));
+        }
+    }
+
+    void FAssetManager::RequestModelTextures(const FModelCookedData& model, eastl::function<void()> onAllReady)
+    {
+        struct FTextureDepGroup
+        {
+            int32_t Pending = 0;
+            eastl::function<void()> OnAllReady;
+        };
+
+        // Unique refs by path (usage is encoded in the path suffix, so path dedup is exact).
+        eastl::hash_set<eastl::string> seen;
+        eastl::vector<eastl::pair<eastl::string, bool>> refs; // (RelativePath, bSRGB)
+        for (const FAssetMaterial& mat : model.Materials)
+        {
+            for (const FAssetTextureRef& ref : mat.Textures)
+            {
+                if (!seen.insert(ref.RelativePath).second)
+                    continue;
+                refs.push_back(eastl::make_pair(ref.RelativePath, ref.bSRGB));
+            }
+        }
+
+        // .dds sources are passthrough (no cook): BuildMaterial resolves them synchronously
+        // through the legacy loader when it builds the material — not counted here.
+        eastl::vector<eastl::pair<eastl::string, bool>> asyncRefs;
+        for (const auto& ref : refs)
+        {
+            const eastl::string srcRel = FAssetPathUtils::GetTextureSourcePath(ref.first);
+            if (FAssetPathUtils::IsDDSSource(srcRel))
+                continue;
+            asyncRefs.push_back(ref);
+        }
+
+        if (asyncRefs.empty())
+        {
+            if (onAllReady)
+                onAllReady();
+            return;
+        }
+
+        auto state = eastl::make_shared<FTextureDepGroup>();
+        state->Pending = static_cast<int32_t>(asyncRefs.size());
+        state->OnAllReady = eastl::move(onAllReady);
+
+        for (const auto& ref : asyncRefs)
+        {
+            const eastl::string productPath = FAssetPathUtils::GetContentRootPath() + ref.first;
+            RequestTexture(productPath, 
+            [state](FTextureLoadResult&& /*result*/)
+            {
+                // All completions land on the main thread (DrainReadyQueue); the last one
+                // fires the group callback (M3: model + textures all Ready).
+                if (--state->Pending == 0 && state->OnAllReady)
+                {
+                    auto onReady = eastl::move(state->OnAllReady);
+                    onReady();
+                } 
+            });
+        }
     }
 
     void FAssetManager::RequestModel(const eastl::string& srcPath, FModelLoadCallback&& callback)
@@ -72,7 +198,7 @@ namespace Assets
             if (m_Loading.find(normalized) != m_Loading.end())
             {
                 // Already loading, defer callback
-                m_PendingCallbacks[normalized].push_back(eastl::move(request.Callback));
+                m_ModelPendingCallbacks[normalized].push_back(eastl::move(request.Callback));
                 ++m_PendingCount;
                 return;
             }
@@ -82,7 +208,7 @@ namespace Assets
         }
         if (bSpawnWorker)
         {
-            SpawnWorker(eastl::move(request));
+            SpawnModelLoadWorker(eastl::move(request));
         }
     }
 
@@ -114,7 +240,19 @@ namespace Assets
                 budgetRemaining -= bytes;
                 bProcessedAny = true;
             }
-            FinishReadyResult(eastl::move(readyResult));
+            FinishReadyModelResult(eastl::move(readyResult));
+        }
+        while (true)
+        {
+            FReadyTextureResult ready;
+            {
+                std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+                if (m_TextureReadyQueue.empty())
+                    break;
+                ready = eastl::move(m_TextureReadyQueue.front());
+                m_TextureReadyQueue.pop_front();
+            }
+            FinishReadyTextureResult(eastl::move(ready));
         }
         if (!deferred.empty())
         {
@@ -122,7 +260,7 @@ namespace Assets
             {
                 FReadyResult first = eastl::move(deferred.front());
                 deferred.erase(deferred.begin());
-                FinishReadyResult(eastl::move(first));
+                FinishReadyModelResult(eastl::move(first));
             }
             // Re-queue the rest (FIFO preserved) for the next frame's Drain.
             std::lock_guard<std::recursive_mutex> lock(m_Mutex);
@@ -195,7 +333,7 @@ namespace Assets
         return true;
     }
 
-    void FAssetManager::LoadWorker(FRequest request)
+    void FAssetManager::ModelLoadWorker(FRequest request)
     {
         FModelLoadResult result;
         result.SrcPath = request.SrcPath;
@@ -211,7 +349,7 @@ namespace Assets
             if (!FVultanaCooker::CookModel(request.SrcPath, cookedPath, /*bSilent=*/true))
             {
                 VTNA_LOG_ERROR("[AssetManager] cook failed for {} (dst {})", request.SrcPath, cookedPath);
-                FinishWorker(eastl::move(request), eastl::move(result));
+                FinishModelLoadWorker(eastl::move(request), eastl::move(result));
                 return;
             }
         }
@@ -220,7 +358,7 @@ namespace Assets
         if (_stat64(cookedPath.c_str(), &st) != 0)
         {
             VTNA_LOG_ERROR("[AssetManager] no cooked asset for {} (cooker disabled by build define)", request.SrcPath);
-            FinishWorker(eastl::move(request), eastl::move(result));
+            FinishModelLoadWorker(eastl::move(request), eastl::move(result));
             return;
         }
 #endif
@@ -244,7 +382,7 @@ namespace Assets
                 VTNA_LOG_ERROR("[AssetManager] failed to read {}", cookedPath);
                 break;
             }
-            FinishWorker(eastl::move(request), eastl::move(result));
+            FinishModelLoadWorker(eastl::move(request), eastl::move(result));
             return;
         }
 
@@ -253,21 +391,21 @@ namespace Assets
         result.UploadBytes = EstimateUploadBytes(*result.Payload);
         VTNA_LOG_INFO("[AssetManager] load {} (cooked={})", request.SrcPath, cookedPath);
 
-        FinishWorker(eastl::move(request), eastl::move(result));
+        FinishModelLoadWorker(eastl::move(request), eastl::move(result));
     }
 
-    void FAssetManager::FinishWorker(FRequest request, FModelLoadResult&& result)
+    void FAssetManager::FinishModelLoadWorker(FRequest request, FModelLoadResult&& result)
     {
         eastl::vector<FModelLoadCallback> deferred;
         {
             std::lock_guard<std::recursive_mutex> lock(m_Mutex);
 
             // Collect deferred callbacks first so the cache refcount below can cover them.
-            auto pendingIt = m_PendingCallbacks.find(request.NormalizedPath);
-            if (pendingIt != m_PendingCallbacks.end())
+            auto pendingIt = m_ModelPendingCallbacks.find(request.NormalizedPath);
+            if (pendingIt != m_ModelPendingCallbacks.end())
             {
                 deferred = eastl::move(pendingIt->second);
-                m_PendingCallbacks.erase(pendingIt);
+                m_ModelPendingCallbacks.erase(pendingIt);
             }
 
             if (result.bSuccess)
@@ -303,7 +441,7 @@ namespace Assets
                 ready.NormalizedPath = request.NormalizedPath;
                 ready.Callback = eastl::move(cb);
                 ready.Result = result; // shared_ptr copy is cheap
-                PushReadyResult(eastl::move(ready));
+                PushReadyModelResult(eastl::move(ready));
             }
         }
         else
@@ -315,30 +453,30 @@ namespace Assets
                 ready.Callback = eastl::move(cb);
                 ready.Result.bSuccess = false;
                 ready.Result.SrcPath = request.SrcPath;
-                PushReadyResult(eastl::move(ready));
+                PushReadyModelResult(eastl::move(ready));
             }
         }
 
-        PushReadyResult({request.NormalizedPath, eastl::move(request.Callback), eastl::move(result)});
+        PushReadyModelResult({request.NormalizedPath, eastl::move(request.Callback), eastl::move(result)});
     }
 
-    void FAssetManager::SpawnWorker(FRequest request)
+    void FAssetManager::SpawnModelLoadWorker(FRequest request)
     {
         auto* pTask = new FAsyncModelLoadTask(this, eastl::move(request));
         {
             std::lock_guard<std::recursive_mutex> lock(m_Mutex);
-            m_Tasks.push_back(pTask);
+            m_ModelTasks.push_back(pTask);
         }
         m_pTaskScheduler->AddTaskSetToPipe(pTask);
     }
 
-    void FAssetManager::PushReadyResult(FReadyResult&& result)
+    void FAssetManager::PushReadyModelResult(FReadyResult&& result)
     {
         std::lock_guard<std::recursive_mutex> lock(m_Mutex);
         m_ReadyQueue.push_back(eastl::move(result));
     }
 
-    void FAssetManager::FinishReadyResult(FReadyResult&& result)
+    void FAssetManager::FinishReadyModelResult(FReadyResult&& result)
     {
         // Fire the callback on the main thread — this is where GPU resources get created
         // (ResourceCache::GetSceneBuffer -> AllocateSceneStaticBuffer -> staging upload).
@@ -378,5 +516,177 @@ namespace Assets
             total += mesh.MeshletVertexData.size();
         }
         return (uint32_t)eastl::min<uint64_t>(total, UINT32_MAX);
+    }
+
+    void FAssetManager::TextureLoadWorker(FTextureRequest request)
+    {
+        FTextureLoadResult result;
+        result.SrcPath = request.ProductPath;
+        result.CookedPath = request.ProductPath;
+
+        eastl::string srcRel;
+        ETextureUsage usage = ETextureUsage::BaseColor;
+        if (!FAssetPathUtils::ParseTextureProductPath(request.ProductPath, srcRel, usage))
+        {
+            VTNA_LOG_ERROR("[AssetManager] {} is not a texture product path", request.ProductPath);
+            FinishTextureLoadWorker(eastl::move(request), eastl::move(result));
+            return;
+        }
+        const eastl::string srcPath = FAssetPathUtils::GetAssetsRootPath() + srcRel;
+
+#if VULTANA_WITH_COOKER
+        // Cook-on-miss: missing / stale / cooker-version mismatch all end up here.
+        if (!FVultanaCooker::IsUpToDate(srcPath, request.ProductPath))
+        {
+            VTNA_LOG_INFO("[AssetManager] cooking texture {} -> {}", srcPath, request.ProductPath);
+            if (!FVultanaCooker::CookTexture(srcPath, request.ProductPath))
+            {
+                VTNA_LOG_ERROR("[AssetManager] texture cook failed for {} (dst {})", srcPath, request.ProductPath);
+                FinishTextureLoadWorker(eastl::move(request), eastl::move(result));
+                return;
+            }
+        }
+#else
+        struct _stat64 st = {};
+        if (_stat64(request.ProductPath.c_str(), &st) != 0)
+        {
+            VTNA_LOG_ERROR("[AssetManager] no cooked texture for {} (cooker disabled by build define)", request.ProductPath);
+            FinishTextureLoadWorker(eastl::move(request), eastl::move(result));
+            return;
+        }
+#endif
+
+        auto payload = eastl::make_shared<FTextureCookedData>();
+        FVAssetHeader header;
+        const EAssetReadResult readResult = FAssetReader::ReadTextureChecked(request.ProductPath, header, *payload);
+        if (readResult != EAssetReadResult::Ok)
+        {
+            VTNA_LOG_ERROR("[AssetManager] failed to read texture {} (result {})", request.ProductPath, (uint32_t)readResult);
+            FinishTextureLoadWorker(eastl::move(request), eastl::move(result));
+            return;
+        }
+        result.bSuccess = true;
+        result.Payload = eastl::move(payload);
+        VTNA_LOG_INFO("[AssetManager] load texture {} (cooked={})", srcPath, request.ProductPath);
+
+        FinishTextureLoadWorker(eastl::move(request), eastl::move(result));
+    }
+
+    void FAssetManager::FinishTextureLoadWorker(FTextureRequest request, FTextureLoadResult&& result)
+    {
+        eastl::vector<FTextureLoadCallback> deferred;
+        {
+            std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+
+            auto pendingIt = m_TexturePendingCallbacks.find(request.NormalizedPath);
+            if (pendingIt != m_TexturePendingCallbacks.end())
+            {
+                deferred = eastl::move(pendingIt->second);
+                m_TexturePendingCallbacks.erase(pendingIt);
+            }
+
+            if (result.bSuccess)
+            {
+                // RefCount covers every ready-result sharing this payload.
+                const int32_t refs = 1 + static_cast<int32_t>(deferred.size());
+                auto it = m_TextureCache.find(request.NormalizedPath);
+                if (it == m_TextureCache.end())
+                {
+                    FTextureCacheEntry entry;
+                    entry.Payload = result.Payload;
+                    entry.RefCount = refs;
+                    m_TextureCache.emplace(request.NormalizedPath, eastl::move(entry));
+                }
+                else
+                {
+                    it->second.RefCount += refs; // defensive: m_TextureLoading dedups
+                }
+            }
+            m_TextureLoading.erase(request.NormalizedPath);
+        }
+
+        if (result.bSuccess)
+        {
+            for (auto& cb : deferred)
+            {
+                FReadyTextureResult ready;
+                ready.NormalizedPath = request.NormalizedPath;
+                ready.Callback = eastl::move(cb);
+                ready.Result = result; // shared_ptr copy is cheap
+                PushReadyTextureResult(eastl::move(ready));
+            }
+        }
+        else
+        {
+            for (auto& cb : deferred)
+            {
+                FReadyTextureResult ready;
+                ready.NormalizedPath = request.NormalizedPath;
+                ready.Callback = eastl::move(cb);
+                ready.Result.bSuccess = false;
+                ready.Result.SrcPath = request.ProductPath;
+                ready.Result.CookedPath = request.ProductPath;
+                PushReadyTextureResult(eastl::move(ready));
+            }
+        }
+        PushReadyTextureResult({request.NormalizedPath, eastl::move(request.Callback), eastl::move(result)});
+    }
+
+    void FAssetManager::SpawnTextureLoadWorker(FTextureRequest request)
+    {
+        auto* pTask = new FAsyncTextureLoadTask(this, eastl::move(request));
+        {
+            std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+            m_TextureTasks.push_back(pTask);
+        }
+        m_pTaskScheduler->AddTaskSetToPipe(pTask);
+    }
+
+    void FAssetManager::PushReadyTextureResult(FReadyTextureResult && result)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+        m_TextureReadyQueue.push_back(eastl::move(result));
+    }
+
+    void FAssetManager::FinishReadyTextureResult(FReadyTextureResult&& result)
+    {
+        // GPU texture creation happens here on the main thread (dedup + refcount via
+        // FResourceCache). Headless guard: tests construct FAssetManager(nullptr, &ts) —
+        // GetEngineInstance() would otherwise construct the engine singleton, whose
+        // destructor re-runs rpmalloc_finalize() at process exit (R1). m_pWorld != nullptr
+        // iff we are inside the engine, where the renderer pointer is safe to fetch.
+        if (result.Result.bSuccess && result.Result.Payload && m_pWorld != nullptr)
+        {
+            Renderer::FRendererBase* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
+            if (pRenderer != nullptr)
+            {
+                FResourceCache::GetInstance()->GetTexture2DProduct(result.Result.CookedPath, *result.Result.Payload);
+            }
+        }
+        else if (result.Result.bSuccess)
+        {
+            VTNA_LOG_WARN("[AssetManager] texture {} delivered without payload", result.Result.CookedPath);
+        }
+
+        if (result.Callback)
+        {
+            result.Callback(eastl::move(result.Result));
+        }
+
+        // Release the cache refcount held by this result; evict at zero.
+        std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+        auto it = m_TextureCache.find(result.NormalizedPath);
+        if (it != m_TextureCache.end())
+        {
+            it->second.RefCount--;
+            if (it->second.RefCount <= 0)
+            {
+                m_TextureCache.erase(it);
+            }
+        }
+        if (m_PendingCount > 0)
+        {
+            --m_PendingCount;
+        }
     }
 } // namespace Assets

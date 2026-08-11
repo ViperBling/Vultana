@@ -242,4 +242,43 @@ namespace Assets
         }
         return true;
     }
+
+    bool Assets::ValidateTexture(const FTextureCookedData& payload, const eastl::string& context)
+    {
+        if (payload.Format == ETextureFormat::Unknown || payload.Format > ETextureFormat::BC7SRGB)
+        {
+            VTNA_LOG_ERROR("[ValidateTexture] {}: invalid format {}", context, (uint32_t)payload.Format);
+            return false;
+        }
+        if (payload.Width == 0 || payload.Height == 0 || payload.Depth == 0 ||
+            payload.MipLevels == 0 || payload.ArraySize == 0)
+        {
+            VTNA_LOG_ERROR("[ValidateTexture] {}: zero dims/levels", context);
+            return false;
+        }
+        // v1 cooker only emits 2D single-slice; 20 mips covers any 1M^2 texture.
+        if (payload.Type != ETextureType::Texture2D || payload.Depth > 1 || payload.ArraySize > 1 ||
+            payload.MipLevels > 20)
+        {
+            VTNA_LOG_ERROR("[ValidateTexture] {}: unsupported type/shape", context);
+            return false;
+        }
+        // MipData must exactly equal the disk-layout size. Mip dims come from the SAME canonical
+        // GetTextureMipDim the cooker uses (payload.Width is the padded base) — cook and check can
+        // never drift, and the dims are always 4-aligned for BC (row-pitch math exact).
+        uint64_t expected = 0;
+        const uint32_t blockW = GetTextureFormatBlockWidth(payload.Format);
+        const uint32_t blockH = GetTextureFormatBlockHeight(payload.Format);
+        for (uint32_t mip = 0; mip < payload.MipLevels; ++mip)
+        {
+            expected += GetTextureFormatMipSize(payload.Format, GetTextureMipDim(payload.Width, mip, blockW), GetTextureMipDim(payload.Height, mip, blockH), payload.Depth);
+        }
+        expected *= payload.ArraySize;
+        if (payload.MipData.size() != expected)
+        {
+            VTNA_LOG_ERROR("[ValidateTexture] {}: mip data {} bytes, expected {}", context, payload.MipData.size(), expected);
+            return false;
+        }
+        return true;
+    }
 }

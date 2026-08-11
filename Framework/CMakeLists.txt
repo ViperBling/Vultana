@@ -82,6 +82,11 @@ target_compile_definitions(FrameworkLib PUBLIC
     VULTANA_WITH_COOKER=1
 )
 
+if(TARGET ispc_texcomp)
+    target_compile_definitions(FrameworkLib PUBLIC VULTANA_HAS_ISPC_TEXCOMP=1)
+    target_link_libraries(FrameworkLib PRIVATE ispc_texcomp)
+endif()
+
 target_link_libraries(FrameworkLib PRIVATE
     # assimp::assimp
     glfw

@@ -25,9 +25,7 @@ namespace Assets
 
     const eastl::string& FAssetPathUtils::GetAssetsRootPath()
     {
-        // Default
-        static eastl::string root = "../Assets/";
-        return root;
+        return GetAssetsRootMutable();
     }
 
     void FAssetPathUtils::SetContentRootPath(const eastl::string& path)
@@ -37,9 +35,7 @@ namespace Assets
 
     const eastl::string& FAssetPathUtils::GetContentRootPath()
     {
-        // Default
-        static eastl::string root = "../Content/";
-        return root;
+        return GetContentRootMutable();
     }
 
     eastl::string FAssetPathUtils::NormalizeAssetPath(const eastl::string& path)
@@ -100,28 +96,70 @@ namespace Assets
 
     eastl::string FAssetPathUtils::MakeCookedTexturePath(const eastl::string& srcPath, ETextureUsage usage)
     {
-        return srcPath + TextureUsageSuffix(usage) + ".vasset";
+        const eastl::string rel = MakeAssetsRelative(srcPath, GetAssetsRootPath());
+        return rel + TextureUsageSuffix(usage) + ".vasset";
     }
 
     eastl::string FAssetPathUtils::GetTextureSourcePath(const eastl::string& cookedPath)
     {
-        // S3-18: match suffixes at the END of the string, not the first occurrence — a source
-        // named "albedo.Normal.png" would otherwise have its ".Normal" truncated by find().
+        eastl::string srcRel;
+        ETextureUsage usage;
+        if (ParseTextureProductPath(cookedPath, srcRel, usage))
+        {
+            return srcRel;
+        }
+        // Caller passed a path without a usage suffix: strip ".vasset" only (old behavior).
         eastl::string result = cookedPath;
         const size_t vasset = result.size() >= 7 ? result.size() - 7 : eastl::string::npos;
         if (vasset != eastl::string::npos && result.compare(vasset, 7, ".vasset") == 0)
             result.erase(vasset);
-        static const char* kSuffixes[] = {".BaseColor", ".MetallicRoughness", ".Normal", ".Emissive",
-                                          ".AmbientOcclusion", ".Diffuse", ".SpecularGlossiness"};
-        for (const char* suffix : kSuffixes)
-        {
-            const size_t suffixLen = strlen(suffix);
-            if (result.size() >= suffixLen && result.compare(result.size() - suffixLen, suffixLen, suffix) == 0)
-            {
-                result.erase(result.size() - suffixLen);
-                break;
-            }
-        }
         return result;
     }
-}
+
+    bool FAssetPathUtils::ParseTextureProductPath(const eastl::string& productPath, eastl::string& outSrcRel, ETextureUsage& outUsage)
+    {
+        eastl::string rel = MakeAssetsRelative(productPath, GetContentRootPath());
+        const size_t vasset = rel.size() >= 7 ? rel.size() - 7 : eastl::string::npos;
+        if (vasset == eastl::string::npos || rel.compare(vasset, 7, ".vasset") != 0)
+            return false;
+        rel.erase(vasset);
+
+        struct FSuffix
+        {
+            const char* Text;
+            ETextureUsage Usage;
+        };
+        static const FSuffix kSuffixes[] = 
+        {
+            {".BaseColor", ETextureUsage::BaseColor},
+            {".MetallicRoughness", ETextureUsage::MetallicRoughness},
+            {".Normal", ETextureUsage::Normal},
+            {".Emissive", ETextureUsage::Emissive},
+            {".AmbientOcclusion", ETextureUsage::AmbientOcclusion},
+            {".Diffuse", ETextureUsage::Diffuse},
+            {".SpecularGlossiness", ETextureUsage::SpecularGlossiness},
+        };
+        for (const FSuffix& suffix : kSuffixes)
+        {
+            const size_t suffixLen = strlen(suffix.Text);
+            if (rel.size() >= suffixLen && rel.compare(rel.size() - suffixLen, suffixLen, suffix.Text) == 0)
+            {
+                rel.erase(rel.size() - suffixLen);
+                outSrcRel = rel;
+                outUsage = suffix.Usage;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool FAssetPathUtils::IsDDSSource(const eastl::string& srcRel)
+    {
+        const size_t pos = srcRel.find_last_of('.');
+        if (pos == eastl::string::npos || srcRel.size() - pos != 4)
+            return false;
+        return (srcRel[pos + 1] == 'd' || srcRel[pos + 1] == 'D') &&
+               (srcRel[pos + 2] == 'd' || srcRel[pos + 2] == 'D') &&
+               (srcRel[pos + 3] == 's' || srcRel[pos + 3] == 'S');
+    }
+} // namespace Assets

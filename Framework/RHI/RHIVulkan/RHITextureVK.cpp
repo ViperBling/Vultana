@@ -124,7 +124,7 @@ namespace RHI
     uint32_t FVulkanTexture::GetRowPitch(uint32_t mipLevel) const
     {
         uint32_t minWidth = GetFormatBlockWidth(m_Desc.Format);
-        uint32_t width = eastl::max(minWidth, m_Desc.Width >> mipLevel);
+        uint32_t width = RHI::GetFormatMipDim(m_Desc.Width, mipLevel, minWidth);
 
         return GetFormatRowPitch(m_Desc.Format, width) * GetFormatBlockHeight(m_Desc.Format);
     }
