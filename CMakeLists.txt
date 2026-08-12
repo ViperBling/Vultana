@@ -13,6 +13,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # MSVC decodes them as the system ANSI code page (936/GBK) and warns C4819.
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/EHsc>")
+
 set (OutputBinary ${CMAKE_CURRENT_SOURCE_DIR}/Binary)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OutputBinary})
 

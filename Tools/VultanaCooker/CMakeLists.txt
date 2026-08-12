@@ -1,3 +1,3 @@
 add_executable(VultanaCooker main.cpp)
-target_link_libraries(VultanaCooker PRIVATE FrameworkLib)
+target_link_libraries(VultanaCooker PRIVATE FrameworkLib CookerLib)
 set_target_properties(VultanaCooker PROPERTIES FOLDER Tools)

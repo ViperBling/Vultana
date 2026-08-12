@@ -153,6 +153,7 @@ namespace Assets
         m_MtxWorld = mul(T, mul(R, S));
     }
 
+#if VULTANA_WITH_COOKER
     void FModelLoader::LoadGLTF(const char *gltfFile)
     {
         eastl::string file = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + (gltfFile ? gltfFile : m_File);
@@ -203,6 +204,14 @@ namespace Assets
         
         cgltf_free(data);
     }
+#else
+    void FModelLoader::LoadGLTF(const char* gltfFile)
+    {
+        (void)gltfFile; 
+        VTNA_LOG_ERROR("[ModelLoader] legacy GLTF loading requires a cook-enabled build (VULTANA_WITH_COOKER). "
+                       "Use the ECS scene backend with cooked assets (Config: SceneBackend = ECS, ModelLoadPath = Asset).");
+    }
+#endif // VULTANA_WITH_COOKER
 
     void FModelLoader::RequestLoad()
     {
@@ -569,6 +578,7 @@ namespace Assets
         return out;
     }
 
+#if VULTANA_WITH_COOKER
     void FModelLoader::LoadStaticMeshNode(const cgltf_data* data, cgltf_node* node, const float4x4& parentMtx)
     {
         float4x4 mtxLocalToParent;
@@ -1177,4 +1187,5 @@ namespace Assets
         auto texture = FResourceCache::GetInstance()->GetTexture2D(texturePath + textureView.texture->image->uri, srgb);
         return texture;
     }
+#endif // VULTANA_WITH_COOKER
 }

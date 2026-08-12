@@ -26,7 +26,8 @@
             "inherits": "vcpkg-base",
             "binaryDir": "${sourceDir}/CMakeBuild/Ninja/Debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "VULTANA_WITH_COOKER": "ON"
             }
         },
         {
@@ -35,7 +36,8 @@
             "inherits": "vcpkg-base",
             "binaryDir": "${sourceDir}/CMakeBuild/Ninja/Release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "VULTANA_WITH_COOKER": "OFF"
             }
         }
     ],
