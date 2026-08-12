@@ -88,7 +88,7 @@ if(TARGET ispc_texcomp)
 endif()
 
 target_link_libraries(FrameworkLib PRIVATE
-    # assimp::assimp
+    assimp::assimp
     glfw
     # glm::glm
     cityhash

@@ -15,7 +15,7 @@ namespace
         printf("Usage:\n");
         printf("  VultanaCooker roundtrip [outPath]             write a synthetic model .vasset, read it back and compare\n");
         printf("  VultanaCooker info <path>                     print asset header + payload summary\n");
-        printf("  VultanaCooker cook <srcPath> [dstPath]        cook a glTF model into a .vasset\n");
+        printf("  VultanaCooker cook <srcPath> [dstPath]        cook a model (glTF/FBX/OBJ/DAE/...) into a .vasset\n");
         printf("  VultanaCooker uptodate <srcPath> [dstPath]    check source vs cooked freshness\n");
         printf("  VultanaCooker cooktex <srcPath> [usage]       cook an image into a texture .vasset (usage: BaseColor|MetallicRoughness|Normal|Emissive|AmbientOcclusion|Diffuse|SpecularGlossiness)\n");
     }

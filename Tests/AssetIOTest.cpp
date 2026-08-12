@@ -3,6 +3,7 @@
 #include "AssetCooker/AssetWriter.hpp"
 #include "AssetCooker/AssetValidate.hpp"
 #include "AssetCooker/VultanaCooker.hpp"
+#include "AssetCooker/AssimpImporter.hpp"
 
 #include "RHI/RHI.hpp"
 
@@ -758,4 +759,326 @@ TEST(AssetTexture, BC5NormalIsNotDegenerate)
     std::remove(kDst);
 #endif
     std::remove(kPng);
+}
+
+namespace
+{
+    using namespace Assets;
+
+    const char* kObjSrc = "assimp_test_cube.obj";
+    const char* kObjMtlSrc = "assimp_test_cube.mtl";
+    const char* kDaeSrc = "assimp_test_tri.dae";
+
+    void WriteObjCube(const char* objPath, const char* mtlPath)
+    {
+        std::ofstream mtl(mtlPath, std::ios::binary | std::ios::trunc);
+        mtl << "newmtl Mat_BaseColor\n";
+        mtl << "Kd 0.8 0.2 0.2\n";
+        mtl << "map_Kd cube_basecolor.png\n";
+        mtl.close();
+
+        // 8 vertices, 24 UVs (each face gets its own 0..1 square so every (pos,uv) pair is
+        // unique -> JoinIdenticalVertices yields exactly 24 vertices, deterministic).
+        std::ofstream obj(objPath, std::ios::binary | std::ios::trunc);
+        obj << "mtllib assimp_test_cube.mtl\n";
+        obj << "o Cube\n";
+        obj << "v -1 -1 1\nv 1 -1 1\nv 1 1 1\nv -1 1 1\n";
+        obj << "v -1 -1 -1\nv 1 -1 -1\nv 1 1 -1\nv -1 1 -1\n";
+        for (int f = 0; f < 6; f++)
+            obj << "vt 0 0\nvt 1 0\nvt 1 1\nvt 0 1\n";
+        obj << "usemtl Mat_BaseColor\n";
+        obj << "f 1/1 2/2 3/3\nf 1/1 3/3 4/4\n";       // +Z
+        obj << "f 5/5 7/7 6/6\nf 5/5 8/8 7/7\n";       // -Z
+        obj << "f 2/9 7/11 6/10\nf 2/9 3/12 7/11\n";   // +X
+        obj << "f 1/13 8/15 5/14\nf 1/13 4/16 8/15\n"; // -X
+        obj << "f 4/17 3/18 7/19\nf 4/17 7/19 8/20\n"; // +Y
+        obj << "f 1/21 6/23 2/22\nf 1/21 5/24 6/23\n"; // -Y
+        obj.close();
+    }
+
+    void WriteDaeTri(const char* daePath)
+    {
+        std::ofstream dae(daePath, std::ios::binary | std::ios::trunc);
+        dae << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+        dae << "<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" version=\"1.4.1\">\n";
+        dae << "  <asset><up_axis>Y_UP</up_axis></asset>\n";
+        dae << "  <library_effects>\n";
+        dae << "    <effect id=\"tri-fx\"><profile_COMMON>\n";
+        dae << "      <newparam sid=\"tri-surface\"><surface type=\"2D\"><init_from>tri-img</init_from></surface></newparam>\n";
+        dae << "      <newparam sid=\"tri-sampler\"><sampler2D><source>tri-surface</source></sampler2D></newparam>\n";
+        dae << "      <technique sid=\"common\"><lambert>\n";
+        dae << "        <diffuse><texture texture=\"tri-sampler\" texcoord=\"UVMap\"/></diffuse>\n";
+        dae << "      </lambert></technique>\n";
+        dae << "    </profile_COMMON></effect>\n";
+        dae << "  </library_effects>\n";
+        dae << "  <library_images>\n";
+        dae << "    <image id=\"tri-img\" name=\"tri-img\"><init_from>tri_diffuse.png</init_from></image>\n";
+        dae << "  </library_images>\n";
+        dae << "  <library_materials>\n";
+        dae << "    <material id=\"tri-mat\" name=\"TriMat\"><instance_effect url=\"#tri-fx\"/></material>\n";
+        dae << "  </library_materials>\n";
+        dae << "  <library_geometries>\n";
+        dae << "    <geometry id=\"tri-geom\" name=\"TriGeom\"><mesh>\n";
+        dae << "      <source id=\"tri-pos\">\n";
+        dae << "        <float_array id=\"tri-pos-array\" count=\"9\">0 0 0 1 0 0 0 1 0</float_array>\n";
+        dae << "        <technique_common><accessor source=\"#tri-pos-array\" count=\"3\" stride=\"3\"><param name=\"X\" type=\"float\"/><param name=\"Y\" type=\"float\"/><param name=\"Z\" type=\"float\"/></accessor></technique_common>\n";
+        dae << "      </source>\n";
+        dae << "      <source id=\"tri-tex\">\n";
+        dae << "        <float_array id=\"tri-tex-array\" count=\"6\">0 0 1 0 0 1</float_array>\n";
+        dae << "        <technique_common><accessor source=\"#tri-tex-array\" count=\"3\" stride=\"2\"><param name=\"S\" type=\"float\"/><param name=\"T\" type=\"float\"/></accessor></technique_common>\n";
+        dae << "      </source>\n";
+        dae << "      <vertices id=\"tri-verts\"><input semantic=\"POSITION\" source=\"#tri-pos\"/></vertices>\n";
+        dae << "      <polylist material=\"tri-mat\" count=\"1\">\n";
+        dae << "        <input semantic=\"VERTEX\" source=\"#tri-verts\" offset=\"0\"/>\n";
+        dae << "        <input semantic=\"TEXCOORD\" source=\"#tri-tex\" offset=\"1\" set=\"0\"/>\n";
+        dae << "        <vcount>3</vcount>\n";
+        dae << "        <p>0 0 1 1 2 2</p>\n";
+        dae << "      </polylist>\n";
+        dae << "    </mesh></geometry>\n";
+        dae << "  </library_geometries>\n";
+        dae << "  <library_animations>\n";
+        dae << "    <animation id=\"tri-anim\" name=\"TriAnim\">\n";
+        dae << "      <source id=\"tri-time\">\n";
+        dae << "        <float_array id=\"tri-time-array\" count=\"2\">0 1</float_array>\n";
+        dae << "        <technique_common><accessor source=\"#tri-time-array\" count=\"2\" stride=\"1\"><param name=\"TIME\" type=\"float\"/></accessor></technique_common>\n";
+        dae << "      </source>\n";
+        dae << "      <source id=\"tri-pos-anim\">\n";
+        dae << "        <float_array id=\"tri-pos-anim-array\" count=\"6\">2 3 4 2 3 8</float_array>\n";
+        dae << "        <technique_common><accessor source=\"#tri-pos-anim-array\" count=\"2\" stride=\"3\"><param name=\"X\" type=\"float\"/><param name=\"Y\" type=\"float\"/><param name=\"Z\" type=\"float\"/></accessor></technique_common>\n";
+        dae << "      </source>\n";
+        dae << "      <sampler id=\"tri-sampler-anim\">\n";
+        dae << "        <input semantic=\"INPUT\" source=\"#tri-time\"/>\n";
+        dae << "        <input semantic=\"OUTPUT\" source=\"#tri-pos-anim\"/>\n";
+        dae << "      </sampler>\n";
+        dae << "      <channel source=\"#tri-sampler-anim\" target=\"tri-node/translation\"/>\n";
+        dae << "    </animation>\n";
+        dae << "  </library_animations>\n";
+        dae << "  <library_visual_scenes>\n";
+        dae << "    <visual_scene id=\"scene\" name=\"scene\">\n";
+        dae << "      <node id=\"tri-node\" name=\"tri-node\" sid=\"tri-node\" type=\"NODE\">\n";
+        dae << "        <translate sid=\"translation\">2 3 4</translate>\n";
+        dae << "        <node id=\"tri-child\" name=\"tri-child\" sid=\"tri-child\" type=\"NODE\">\n";
+        dae << "          <rotate sid=\"rotation\">0 1 0 90</rotate>\n";
+        dae << "          <scale sid=\"scale\">1 2 3</scale>\n";
+        dae << "          <instance_geometry url=\"#tri-geom\">\n";
+        dae << "            <bind_material><technique_common><instance_material symbol=\"tri-mat\" target=\"#tri-mat\"/></technique_common></bind_material>\n";
+        dae << "          </instance_geometry>\n";
+        dae << "        </node>\n";
+        dae << "      </node>\n";
+        dae << "    </visual_scene>\n";
+        dae << "  </library_visual_scenes>\n";
+        dae << "  <scene><instance_visual_scene url=\"#scene\"/></scene>\n";
+        dae << "</COLLADA>\n";
+        dae.close();
+    }
+
+    template <typename T>
+    bool HasStream(const T& mesh, EVertexStreamType type)
+    {
+        for (const auto& s : mesh.Streams)
+        {
+            if (s.Type == type)
+                return true;
+        }
+        return false;
+    }
+} // namespace
+
+TEST(AssetAssimp, CookObjCubeProducesExpectedMesh)
+{
+    using namespace Assets;
+    WriteObjCube(kObjSrc, kObjMtlSrc);
+    ASSERT_TRUE(FVultanaCooker::CookModel(kObjSrc, kCookDst, /*bSilent=*/true));
+
+    FVAssetHeader header;
+    FModelCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadModel(kCookDst, header, payload));
+
+    ASSERT_EQ(payload.Meshes.size(), 1u);
+    EXPECT_EQ(payload.Meshes[0].VertexCount, 24u); // 8 pos x 3 faces share no (pos,uv) pair
+    EXPECT_EQ(payload.Meshes[0].IndexCount, 36u);
+    EXPECT_EQ(payload.Meshes[0].IndexStride, 2u);
+    EXPECT_FALSE(payload.Meshes[0].bSkeletal);
+    EXPECT_GT(payload.Meshes[0].MeshletCount, 0u); // static mesh must have meshlets
+    EXPECT_TRUE(HasStream(payload.Meshes[0], EVertexStreamType::Position));
+    EXPECT_TRUE(HasStream(payload.Meshes[0], EVertexStreamType::TexCoord));
+    EXPECT_TRUE(HasStream(payload.Meshes[0], EVertexStreamType::Normal));
+    EXPECT_TRUE(HasStream(payload.Meshes[0], EVertexStreamType::Tangent));
+    EXPECT_FLOAT_EQ(payload.Meshes[0].Center.x, 0.0f);
+    EXPECT_FLOAT_EQ(payload.Meshes[0].Center.y, 0.0f);
+    EXPECT_FLOAT_EQ(payload.Meshes[0].Center.z, 0.0f);
+    EXPECT_NEAR(payload.Meshes[0].Radius, 1.73205f, 0.01f); // cube half-diagonal
+
+    // Look the material up by name: OBJ importers historically also synthesize a
+    // "DefaultMaterial" slot, so hardcoding index 0 would be brittle.
+    ASSERT_GE(payload.Materials.size(), 1u);
+    const auto* mat = &payload.Materials[0];
+    for (const auto& m : payload.Materials)
+    {
+        if (m.Name == "Mat_BaseColor")
+        {
+            mat = &m;
+            break;
+        }
+    }
+    EXPECT_STREQ(mat->Name.c_str(), "Mat_BaseColor");
+    EXPECT_EQ((int)mat->WorkFlow, (int)EMaterialWorkFlow::PBRMetallicRoughness);
+    EXPECT_FLOAT_EQ(mat->AlbedoColor.x, 0.8f);
+    EXPECT_FLOAT_EQ(mat->AlbedoColor.y, 0.2f);
+    EXPECT_FLOAT_EQ(mat->AlbedoColor.z, 0.2f);
+    ASSERT_EQ(mat->Textures.size(), 1u);
+    EXPECT_EQ((int)mat->Textures[0].Usage, (int)ETextureUsage::BaseColor);
+    EXPECT_TRUE(mat->Textures[0].bSRGB);
+    EXPECT_STREQ(mat->Textures[0].RelativePath.c_str(), "cube_basecolor.png.BaseColor.vasset");
+
+    ASSERT_EQ(payload.RootNodes.size(), 1u);
+    ASSERT_EQ(payload.Nodes.size(), 1u);
+    ASSERT_EQ(payload.Nodes[0].Primitives.size(), 1u);
+    EXPECT_EQ(payload.Nodes[0].Primitives[0], 0);
+    EXPECT_TRUE(payload.Nodes[0].bFrontFaceCCW); // identity world transform, CCW source faces
+
+    std::remove(kObjSrc);
+    std::remove(kObjMtlSrc);
+}
+
+TEST(AssetAssimp, CookDaeHierarchyTransformAndAnimation)
+{
+    using namespace Assets;
+    WriteDaeTri(kDaeSrc);
+    ASSERT_TRUE(FVultanaCooker::CookModel(kDaeSrc, kCookDst, /*bSilent=*/true));
+
+    FVAssetHeader header;
+    FModelCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadModel(kCookDst, header, payload));
+
+    // Geometry: one triangle (Y_UP is the DAE default, so no up-axis conversion is applied).
+    ASSERT_EQ(payload.Meshes.size(), 1u);
+    EXPECT_EQ(payload.Meshes[0].IndexCount, 3u);
+    EXPECT_EQ(payload.Meshes[0].VertexCount, 3u);
+    EXPECT_EQ(payload.Meshes[0].IndexStride, 2u);
+    EXPECT_TRUE(HasStream(payload.Meshes[0], EVertexStreamType::Position));
+    EXPECT_TRUE(HasStream(payload.Meshes[0], EVertexStreamType::TexCoord));
+
+    // Material + texture ref: lambert diffuse -> BaseColor slot.
+    ASSERT_EQ(payload.Materials.size(), 1u);
+    ASSERT_EQ(payload.Materials[0].Textures.size(), 1u);
+    EXPECT_EQ((int)payload.Materials[0].Textures[0].Usage, (int)ETextureUsage::BaseColor);
+    EXPECT_STREQ(payload.Materials[0].Textures[0].RelativePath.c_str(), "tri_diffuse.png.BaseColor.vasset");
+
+    // Two-level hierarchy: tri-node (<translate>) -> tri-child (<rotate> + <scale> +
+    // geometry). This exercises the Parent/Children back edges that AssetValidate checks —
+    // a single-level fixture would silently pass with Children left unpopulated.
+    ASSERT_EQ(payload.RootNodes.size(), 1u);
+    ASSERT_EQ(payload.Nodes.size(), 2u);
+    const FAssetNode* triNode = nullptr;
+    const FAssetNode* triChild = nullptr;
+    for (const FAssetNode& node : payload.Nodes)
+    {
+        if (node.Parent == -1)
+            triNode = &node;
+        else
+            triChild = &node;
+    }
+    ASSERT_NE(triNode, nullptr);
+    ASSERT_NE(triChild, nullptr);
+    ASSERT_EQ(triNode->Children.size(), 1u);
+    ASSERT_EQ(triNode->Children[0], 1); // back edge: tri-child is the only non-root node
+
+    // tri-node: <translate>2 3 4</translate> must cook to (2, 3, -4). This pins the
+    // aiMatrix4x4 (row-major) -> linalg (column-major) conversion end to end.
+    EXPECT_FLOAT_EQ(triNode->Translation.x, 2.0f);
+    EXPECT_FLOAT_EQ(triNode->Translation.y, 3.0f);
+    EXPECT_FLOAT_EQ(triNode->Translation.z, -4.0f);
+
+    // tri-child: identity translation, Y-axis 90-degree rotation + non-uniform scale. The
+    // rotation pins the ToLinalg linear part — a transposed mapping would produce the
+    // inverse rotation (and mis-order the columns), which these values would catch.
+    ASSERT_EQ(triChild->Primitives.size(), 1u);
+    EXPECT_EQ(triChild->Primitives[0], 0);
+    EXPECT_NEAR(triChild->Translation.x, 0.0f, 1e-4f);
+    EXPECT_NEAR(triChild->Translation.y, 0.0f, 1e-4f);
+    EXPECT_NEAR(triChild->Translation.z, 0.0f, 1e-4f);
+    EXPECT_NEAR(triChild->Rotation.x, 0.0f, 1e-3f);
+    EXPECT_NEAR(triChild->Rotation.y, 0.70711f, 1e-3f); // RH Y-90 deg -> (x,y,z,w) = (0, ~.7071, 0, ~.7071)
+    EXPECT_NEAR(triChild->Rotation.z, 0.0f, 1e-3f);
+    EXPECT_NEAR(triChild->Rotation.w, -0.70711f, 1e-3f); // z/w flipped by the RH->LH rule
+    EXPECT_NEAR(triChild->Scale.x, 1.0f, 1e-3f);
+    EXPECT_NEAR(triChild->Scale.y, 2.0f, 1e-3f);
+    EXPECT_NEAR(triChild->Scale.z, 3.0f, 1e-3f);
+    EXPECT_TRUE(triChild->bFrontFaceCCW); // det(R_y(90) * diag(1,2,3)) = +6 > 0
+
+    // Animation: 1 clip, equal-length T/R/S tracks (assimp's ColladaLoader resamples the
+    // full node transform at every key time, so unanimated rotation/scale also get keys),
+    // times in seconds (DAE ms / 1000). Keyframe values stay in the source (RH) convention —
+    // the runtime flips at sample time.
+    ASSERT_EQ(payload.Animations.size(), 1u);
+    ASSERT_EQ(payload.Animations[0].Channels.size(), 3u); // translation + static rotation + static scale
+    const FAssetAnimationChannel* transCh = nullptr;
+    for (const FAssetAnimationChannel& c : payload.Animations[0].Channels)
+    {
+        if (c.Mode == 0u)
+        {
+            transCh = &c;
+            break;
+        }
+    }
+    ASSERT_NE(transCh, nullptr);
+    ASSERT_EQ(transCh->KeyFrames.size(), 2u);
+    EXPECT_FLOAT_EQ(transCh->KeyFrames[0].first, 0.0f);
+    EXPECT_FLOAT_EQ(transCh->KeyFrames[1].first, 1.0f);
+    EXPECT_FLOAT_EQ(transCh->KeyFrames[1].second.x, 2.0f);
+    EXPECT_FLOAT_EQ(transCh->KeyFrames[1].second.y, 3.0f);
+    EXPECT_FLOAT_EQ(transCh->KeyFrames[1].second.z, 8.0f); // no RH->LH flip at cook time
+    EXPECT_FLOAT_EQ(payload.Animations[0].TimeDuration, 1.0f);
+
+    std::remove(kDaeSrc);
+}
+
+TEST(AssetAssimp, CookObjIsDeterministic)
+{
+    using namespace Assets;
+    WriteObjCube(kObjSrc, kObjMtlSrc);
+    // Same byte-compare idiom as AssetCook.CookIsDeterministic: assimp has no fixed pipeline
+    // order documented across versions, so determinism gets an explicit guard.
+    ASSERT_TRUE(FVultanaCooker::CookModel(kObjSrc, kCookDst, /*bSilent=*/true));
+    std::ifstream first(kCookDst, std::ios::binary | std::ios::ate);
+    const size_t size1 = static_cast<size_t>(first.tellg());
+    eastl::vector<uint8_t> buf1(size1);
+    first.seekg(0);
+    first.read(reinterpret_cast<char*>(buf1.data()), size1);
+    first.close();
+
+    ASSERT_TRUE(FVultanaCooker::CookModel(kObjSrc, kCookDst, /*bSilent=*/true));
+    std::ifstream second(kCookDst, std::ios::binary | std::ios::ate);
+    const size_t size2 = static_cast<size_t>(second.tellg());
+    eastl::vector<uint8_t> buf2(size2);
+    second.seekg(0);
+    second.read(reinterpret_cast<char*>(buf2.data()), size2);
+    second.close();
+
+    EXPECT_EQ(size1, size2);
+    if (size1 == size2)
+    {
+        EXPECT_EQ(memcmp(buf1.data(), buf2.data(), size1), 0);
+    }
+}
+
+TEST(AssetAssimp, GLTFPathStillDispatchesToCGLTF)
+{
+    using namespace Assets;
+    // Dispatch regression: .gltf must keep routing to the cgltf importer now that CookModel
+    // dispatches on extension. The asserted topology is the same known-good cgltf output that
+    // AssetCook.CookBoxProducesExpectedTopology pins; the assimp path would emit 1 node for
+    // this file (its identity root is skipped), so Nodes == 2 discriminates the dispatch.
+    ASSERT_TRUE(FVultanaCooker::CookModel(kBoxSrc, kCookDst, /*bSilent=*/true));
+
+    FVAssetHeader header;
+    FModelCookedData payload;
+    ASSERT_TRUE(FAssetReader::ReadModel(kCookDst, header, payload));
+    EXPECT_EQ(payload.Meshes.size(), 1u);
+    EXPECT_EQ(payload.Nodes.size(), 2u);
+    EXPECT_EQ(payload.Materials.size(), 1u);
+    EXPECT_EQ(payload.Meshes[0].MaterialIndex, 0);
+    EXPECT_GT(payload.Meshes[0].MeshletCount, 0u);
+    EXPECT_FALSE(payload.Meshes[0].bSkeletal);
 }

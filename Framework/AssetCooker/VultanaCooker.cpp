@@ -4,6 +4,7 @@
 #include "AssetCooker/AssetWriter.hpp"
 #include "AssetCooker/Importer.hpp"
 #include "AssetCooker/GLTFImporter.hpp"
+#include "AssetCooker/AssimpImporter.hpp"
 #include "AssetCooker/MeshCooker.hpp"
 #include "AssetCooker/TextureCooker.hpp"
 
@@ -11,18 +12,46 @@
 
 #include <EASTL/vector.h>
 #include <EASTL/hash_set.h>
+#include <EASTL/unique_ptr.h>
+#include <EASTL/memory.h>
 
+#include <cctype>
 #include <sys/stat.h>
 #include <filesystem>
 
 namespace Assets
 {
+    bool IsGLTFPath(const eastl::string& srcPath)
+    {
+        const size_t dot = srcPath.find_last_of('.');
+        const size_t slash = srcPath.find_last_of("/\\");
+        if (dot == eastl::string::npos || (slash != eastl::string::npos && slash > dot))
+        {
+            return false; // no extension, or the '.' is inside a directory name
+        }
+        eastl::string ext = srcPath.substr(dot + 1);
+        for (char& c : ext)
+        {
+            c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+        }
+        return ext == "gltf" || ext == "glb";
+    }
+
+    eastl::unique_ptr<IImporter> CreateImporter(const eastl::string& srcPath)
+    {
+        if (IsGLTFPath(srcPath))
+        {
+            return eastl::make_unique<FGLTFImporter>();
+        }
+        return eastl::make_unique<FAssimpImporter>();
+    }
+
     bool Assets::FVultanaCooker::CookModel(const eastl::string& srcPath, const eastl::string& dstPath, bool bSilent, const eastl::string& assetsPath)
     {
         const eastl::string& assetsRoot = assetsPath.empty() ? FAssetPathUtils::GetAssetsRootPath() : assetsPath;
-        FGLTFImporter importer;
+        eastl::unique_ptr<IImporter> importer = CreateImporter(srcPath);
         FImportResult result;
-        if (!importer.Import(srcPath, result))
+        if (!importer->Import(srcPath, result))
         {
             if (!bSilent)
             {
