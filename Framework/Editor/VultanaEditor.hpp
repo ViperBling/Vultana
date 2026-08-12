@@ -36,6 +36,11 @@ namespace Editor
         void ShowRenderGraph();
         void FlushPendingTextureDeletions();
 
+        void DrawAssetManagerPanel();
+        void DrawInspectorModelSection();
+        void ReloadAllModels();
+        void ReloadAllTextures();
+
         void DrawWindow(const eastl::string& window, bool* pOpen);
 
     private:
@@ -52,6 +57,7 @@ namespace Editor
         bool m_bShowWorldOutliner = false;
         bool m_bShowGPUDrivenStats = false;
         bool m_bShowMeshlets = false;
+        bool m_bShowAssetManager = false;
 
         unsigned int m_DockSpace = 0;
 

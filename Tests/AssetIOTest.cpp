@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <filesystem>
 #include <sys/utime.h>
 
 namespace
@@ -1081,4 +1082,266 @@ TEST(AssetAssimp, GLTFPathStillDispatchesToCGLTF)
     EXPECT_EQ(payload.Meshes[0].MaterialIndex, 0);
     EXPECT_GT(payload.Meshes[0].MeshletCount, 0u);
     EXPECT_FALSE(payload.Meshes[0].bSkeletal);
+}
+
+// ---- Slice 7: Hot Reload----
+TEST(AssetAsync, ReloadReCookesAndEvictsCache)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FModelLoadResult first;
+    manager.RequestModel(kAsyncSrc, [&](FModelLoadResult&& r)
+                         { first = eastl::move(r); });
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    ASSERT_TRUE(first.bSuccess);
+    ASSERT_TRUE(first.Payload);
+
+    FModelLoadResult reloaded;
+    manager.RequestModelReload(kAsyncSrc, 
+        [&](FModelLoadResult&& r)
+        { reloaded = eastl::move(r); });
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+
+    EXPECT_TRUE(reloaded.bSuccess);
+    ASSERT_TRUE(reloaded.Payload);
+    EXPECT_EQ(reloaded.Payload->Meshes.size(), 1u);
+
+    EXPECT_NE(reloaded.Payload.get(), first.Payload.get());
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, ReloadWhileLoadingRespawnsForceCook)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc2);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FModelLoadResult load;
+    FModelLoadResult reload;
+    manager.RequestModel(kAsyncSrc2, 
+        [&](FModelLoadResult&& r)
+        { load = eastl::move(r); });
+
+    manager.RequestModelReload(kAsyncSrc2, 
+        [&](FModelLoadResult&& r) 
+        { reload = eastl::move(r); });
+
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+
+    EXPECT_TRUE(load.bSuccess);
+    EXPECT_TRUE(reload.bSuccess);
+    ASSERT_TRUE(load.Payload && reload.Payload);
+    EXPECT_NE(reload.Payload.get(), load.Payload.get());
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, ReloadFailsWhenSourceMissing)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FModelLoadResult first;
+    manager.RequestModel(kAsyncSrc, [&](FModelLoadResult&& r)
+                         { first = eastl::move(r); });
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    ASSERT_TRUE(first.bSuccess);
+
+    std::remove(kAsyncSrc);
+    bool reloadFired = false;
+    bool reloadSuccess = true;
+    manager.RequestModelReload(kAsyncSrc, 
+    [&](FModelLoadResult&& r)
+    {
+        reloadFired = true;
+        reloadSuccess = r.bSuccess; 
+    });
+
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    EXPECT_TRUE(reloadFired);
+    EXPECT_FALSE(reloadSuccess);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, TwoReloadsWhileLoadingDoNotLeakPendingCount)
+{
+    using namespace Assets;
+    CopyBoxSource(kAsyncSrc2);
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FModelLoadResult load, r1, r2;
+    manager.RequestModel(kAsyncSrc2, 
+        [&](FModelLoadResult&& r)
+        { load = eastl::move(r); });
+    manager.RequestModelReload(kAsyncSrc2, 
+        [&](FModelLoadResult&& r)
+        { r1 = eastl::move(r); });
+    manager.RequestModelReload(kAsyncSrc2, 
+        [&](FModelLoadResult&& r)
+        { r2 = eastl::move(r); });
+
+    for (int i = 0; i < 4; ++i)
+    {
+        ts.WaitforAll();
+        manager.DrainReadyQueue();
+    }
+
+    EXPECT_TRUE(load.bSuccess);
+    EXPECT_TRUE(r1.bSuccess);
+    EXPECT_TRUE(r2.bSuccess);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    EXPECT_EQ(manager.GetPendingRequestCount(), 0u);
+    ts.WaitforAll();
+}
+
+// ---- Slice 7 Part B: Texture Hot Reload ----
+TEST(AssetAsync, ReloadTextureReCookesChangedSource)
+{
+    using namespace Assets;
+    const char* kRelSrc = "Models/ReloadTest/tex_reload.png";
+    const eastl::string kSrc = FAssetPathUtils::GetAssetsRootPath() + kRelSrc;
+    const eastl::string kProduct = FAssetPathUtils::GetContentRootPath() + FAssetPathUtils::MakeCookedTexturePath(kRelSrc, ETextureUsage::BaseColor);
+    const eastl::string kSrcDir = FAssetPathUtils::GetAssetsRootPath() + "Models/ReloadTest";
+    const eastl::string kProdDir = FAssetPathUtils::GetContentRootPath() + "Models/ReloadTest";
+    
+    struct FCleanup
+    {
+        eastl::string Src, Product, SrcDir, ProdDir;
+        ~FCleanup()
+        {
+            std::remove(Product.c_str());
+            std::remove(Src.c_str());
+            std::error_code ec;
+            std::filesystem::remove_all(std::filesystem::path(SrcDir.c_str()), ec);
+            std::filesystem::remove_all(std::filesystem::path(ProdDir.c_str()), ec);
+        }
+    } cleanup{kSrc, kProduct, kSrcDir, kProdDir};
+    std::filesystem::create_directories(std::filesystem::path(kSrcDir.c_str()));
+    {
+        const int w = 4, h = 4;
+        unsigned char px[4 * 16];
+        for (int i = 0; i < 16; ++i)
+        {
+            px[i * 4 + 0] = 255;
+            px[i * 4 + 1] = 0;
+            px[i * 4 + 2] = 0;
+            px[i * 4 + 3] = 255;
+        }
+        ASSERT_TRUE(stbi_write_png(kSrc.c_str(), w, h, 4, px, w * 4));
+    }
+    ASSERT_TRUE(FVultanaCooker::CookTexture(kSrc, kProduct));
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FTextureLoadResult first;
+    manager.RequestTexture(kProduct, [&](FTextureLoadResult&& r)
+                           { first = eastl::move(r); });
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+    ASSERT_TRUE(first.bSuccess && first.Payload);
+
+    {
+        const int w = 4, h = 4;
+        unsigned char px[4 * 16];
+        for (int i = 0; i < 16; ++i)
+        {
+            px[i * 4 + 0] = 0;
+            px[i * 4 + 1] = 0;
+            px[i * 4 + 2] = 255;
+            px[i * 4 + 3] = 255;
+        } // v2: 蓝
+        ASSERT_TRUE(stbi_write_png(kSrc.c_str(), w, h, 4, px, w * 4));
+    }
+    FTextureLoadResult reloaded;
+    manager.RequestTextureReload(kProduct, [&](FTextureLoadResult&& r)
+                                 { reloaded = eastl::move(r); });
+    ts.WaitforAll();
+    manager.DrainReadyQueue();
+
+    EXPECT_TRUE(reloaded.bSuccess);
+    ASSERT_TRUE(reloaded.Payload);
+    EXPECT_NE(reloaded.Payload.get(), first.Payload.get());
+
+    EXPECT_NE(reloaded.ContentHash, 0ull);
+    EXPECT_NE(first.ContentHash, 0ull);
+    EXPECT_NE(reloaded.ContentHash, first.ContentHash);
+
+    ASSERT_FALSE(reloaded.Payload->MipData.empty());
+    ASSERT_EQ(reloaded.Payload->MipData.size(), first.Payload->MipData.size());
+    EXPECT_NE(memcmp(reloaded.Payload->MipData.data(), first.Payload->MipData.data(), reloaded.Payload->MipData.size()), 0);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    ts.WaitforAll();
+}
+
+TEST(AssetAsync, TwoTextureReloadsWhileLoadingDoNotLeakPendingCount)
+{
+    using namespace Assets;
+    const char* kRelSrc = "Models/Box/screenshot/screenshot.png";
+    const eastl::string kProduct = FAssetPathUtils::GetContentRootPath() + FAssetPathUtils::MakeCookedTexturePath(kRelSrc, ETextureUsage::Normal);
+    ASSERT_TRUE(FVultanaCooker::CookTexture(FAssetPathUtils::GetAssetsRootPath() + kRelSrc, kProduct));
+
+    enki::TaskScheduler ts;
+    ConfigureAndInitTestScheduler(ts);
+    FAssetManager manager(nullptr, &ts);
+
+    FTextureLoadResult load, t1, t2;
+    manager.RequestTexture(kProduct, [&](FTextureLoadResult&& r)
+                           { load = eastl::move(r); });
+    manager.RequestTextureReload(kProduct, [&](FTextureLoadResult&& r)
+                                 { t1 = eastl::move(r); });
+    manager.RequestTextureReload(kProduct, [&](FTextureLoadResult&& r)
+                                 { t2 = eastl::move(r); });
+
+    for (int i = 0; i < 4; ++i) // 容纳重生 worker 的额外轮次(§R1 建议 3)
+    {
+        ts.WaitforAll();
+        manager.DrainReadyQueue();
+    }
+
+    EXPECT_TRUE(load.bSuccess);
+    EXPECT_TRUE(t1.bSuccess);
+    EXPECT_TRUE(t2.bSuccess);
+    EXPECT_FALSE(manager.HasPendingRequests());
+    EXPECT_EQ(manager.GetPendingRequestCount(), 0u);
+    ts.WaitforAll();
+
+    std::remove(kProduct.c_str());
+}
+
+TEST(AssetPath, MakeEngineAssetPathNormalizesToSchemeForm)
+{
+    using namespace Assets;
+    const eastl::string rel = "Models/Box/glTF-Embedded/Box.gltf";
+    const eastl::string scheme = FAssetPathUtils::GetAssetsRootPath() + rel; // "../Assets/Models/..."
+    const eastl::string abs = std::filesystem::absolute(scheme.c_str()).string().c_str();
+    EXPECT_EQ(FAssetPathUtils::MakeEngineAssetPath(abs), scheme);
+    EXPECT_EQ(FAssetPathUtils::MakeEngineAssetPath(scheme), scheme);
+    const eastl::string outside = FAssetPathUtils::MakeEngineAssetPath("../External/foo.gltf");
+    EXPECT_NE(outside, "External/foo.gltf");
+    EXPECT_TRUE(std::filesystem::path(outside.c_str()).is_absolute());
+    EXPECT_NE(outside.find("/External/foo.gltf"), eastl::string::npos);
 }

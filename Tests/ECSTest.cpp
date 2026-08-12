@@ -1,3 +1,4 @@
+#include "AssetManager/ModelLoaderECS.hpp"
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/ProcessorBase.hpp"
 #include "Scene/ECS/Components.hpp"
@@ -500,4 +501,24 @@ TEST(ECSTest, EntityFactory_CreateModelInstance)
     EXPECT_TRUE(ecs.GetRegistry().valid(root));
     EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FModelInstanceComponent>(root));
     EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FTransformComponent>(root));
+}
+
+TEST(ECSTest, FindModelInstanceRootWalksParentChain)
+{
+    using namespace Assets;
+    FEntitySubsystem ecs;
+    auto& reg = ecs.GetRegistry();
+
+    entt::entity root = ecs.CreateEntity();
+    reg.emplace<FModelInstanceComponent>(root, FModelAssetHandle{0u, 1u}, eastl::string("m.gltf"));
+    entt::entity child = ecs.CreateEntity();
+    ecs.SetParent(child, root);
+    entt::entity mesh = ecs.CreateEntity();
+    reg.emplace<FMeshRendererComponent>(mesh);
+    ecs.SetParent(mesh, child);
+
+    EXPECT_EQ(FModelLoaderECS::FindModelInstanceRoot(reg, mesh), root);
+    EXPECT_EQ(FModelLoaderECS::FindModelInstanceRoot(reg, child), root);
+    EXPECT_EQ(FModelLoaderECS::FindModelInstanceRoot(reg, root), root);
+    EXPECT_TRUE(FModelLoaderECS::FindModelInstanceRoot(reg, ecs.CreateEntity()) == entt::null);
 }

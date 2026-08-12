@@ -48,6 +48,14 @@ namespace Scene::ECS
 
     void FEntityFactory::DestroyModelInstance(entt::entity rootEntity)
     {
+        auto& registry = m_Subsystem.GetRegistry();
+
+        if (auto* meshComp = registry.try_get<FMeshRendererComponent>(rootEntity))
+        {
+            m_Registry.Release(meshComp->MeshHandle);
+            m_Registry.Release(meshComp->MaterialHandle);
+        }
+
         auto children = m_Subsystem.GetChildren(rootEntity);
         for (entt::entity child : children)
         {

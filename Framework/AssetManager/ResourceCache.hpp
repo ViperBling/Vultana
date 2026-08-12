@@ -15,8 +15,9 @@ namespace Assets
         RenderResources::FTexture2D* GetTexture2D(const eastl::string& file, bool srgb = true);
         void ReleaseTexture2D(RenderResources::FTexture2D* texture);
 
-        RenderResources::FTexture2D* GetTexture2DProduct(const eastl::string& productPath, const Assets::FTextureCookedData& payload);
+        RenderResources::FTexture2D* GetTexture2DProduct(const eastl::string& productPath, uint64_t contentHash, const Assets::FTextureCookedData& payload);
         RenderResources::FTexture2D* GetTexture2DProductReady(const eastl::string& productPath);
+        bool IsTexture2DProductResident(const eastl::string& productPath) const;
 
         void ReleaseAllTextures();
 
@@ -35,6 +36,7 @@ namespace Assets
             uint32_t RefCount;
         };
         eastl::hash_map<eastl::string, FResource> m_CachedTexture2D;
+        eastl::hash_map<eastl::string, eastl::string> m_TextureCurrentKey;
         eastl::hash_map<eastl::string, FSceneBuffer> m_CachedSceneBuffer;
     };
 }

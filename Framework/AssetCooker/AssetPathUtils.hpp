@@ -22,6 +22,7 @@ namespace Assets
 
         static bool ParseTextureProductPath(const eastl::string& productPath, eastl::string& outSrcRel, ETextureUsage& outUsage);
         static bool IsDDSSource(const eastl::string& srcRel);
+        static eastl::string MakeEngineAssetPath(const eastl::string& path);
 
     private:
         static eastl::string TextureUsageSuffix(ETextureUsage usage);

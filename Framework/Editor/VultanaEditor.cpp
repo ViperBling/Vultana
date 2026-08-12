@@ -1,4 +1,6 @@
 #include "VultanaEditor.hpp"
+#include "AssetManager/ModelLoaderECS.hpp"
+#include "AssetManager/SceneAssetRegistry.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "Editor/ImGUIImplement.hpp"
 #include "Editor/Commands/ObjectEditableTarget.hpp"
@@ -111,12 +113,19 @@ namespace Editor
         {
             m_pRenderer->GetGPUDrivenStats()->OnGui();
         }
+        if (m_bShowAssetManager)
+        {
+            DrawAssetManagerPanel();
+        }
     }
 
     void FVultanaEditor::Render(RHI::FRHICommandList *pCmdList)
     {
         if (m_bShowInspector)
         {
+            AddGUICommand("Inspector", "Selected Model", 
+                [this]()
+                { DrawInspectorModelSection(); });
             DrawWindow("Inspector", &m_bShowInspector);
         }
         if (m_bShowSettings)
@@ -199,6 +208,11 @@ namespace Editor
                 {
                     ifd::FileDialog::Instance().Open("SceneOpenDialog", "Open Scene", "XML file (*.xml){.xml},.*");
                 }
+                if (ImGui::MenuItem("Open Model"))
+                {
+                    eastl::string modelsDir = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + "Models";
+                    ifd::FileDialog::Instance().Open("ModelOpenDialog", "Open Model",  "Model files (*.gltf;*.glb;*.fbx;*.obj;*.dae){.gltf,.glb,.fbx,.obj,.dae},.*",  /*isMultiselect=*/false, modelsDir.c_str());
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Edit"))
@@ -234,6 +248,14 @@ namespace Editor
                 {
                     m_pRenderer->ReloadShaders();
                 }
+                if (ImGui::MenuItem("Reload Models"))
+                {
+                    ReloadAllModels();
+                }
+                if (ImGui::MenuItem("Reload Textures"))
+                {
+                    ReloadAllTextures();
+                }
 
                 ImGui::EndMenu();   // End Debug Menu
             }
@@ -251,6 +273,7 @@ namespace Editor
                 ImGui::MenuItem("Settings", "", &m_bShowSettings);
                 ImGui::MenuItem("Renderer", "", &m_bShowRenderer);
                 ImGui::MenuItem("WorldOutliner", "", &m_bShowWorldOutliner);
+                ImGui::MenuItem("AssetManager", "", &m_bShowAssetManager);
                 m_bResetLayout = ImGui::MenuItem("Reset Layout");
 
                 ImGui::EndMenu();   // End Window Menu
@@ -265,6 +288,15 @@ namespace Editor
                 eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
                 Core::FVultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
                 m_EditHistory.Clear();
+            }
+            ifd::FileDialog::Instance().Close();
+        }
+        if (ifd::FileDialog::Instance().IsDone("ModelOpenDialog"))
+        {
+            if (ifd::FileDialog::Instance().HasResult())
+            {
+                eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
+                Assets::FModelLoaderECS::LoadModelAtCamera(res);
             }
             ifd::FileDialog::Instance().Close();
         }
@@ -372,6 +404,206 @@ namespace Editor
             ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus);
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
+    }
+
+    void FVultanaEditor::ReloadAllModels()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        if (!pEngine->IsUseECSBackend())
+        {
+            VTNA_LOG_WARN("[Editor] Reload Models requires the ECS scene backend (Config: World/SceneBackend = ECS)");
+            return;
+        }
+
+        auto* pAssetManager = pEngine->GetAssetManager();
+        if (pAssetManager && pAssetManager->HasPendingRequests())
+        {
+            VTNA_LOG_WARN("[Editor] Reload Models: assets still loading; try again when idle");
+            return;
+        }
+        auto* pAssetRegistry = static_cast<Assets::FSceneAssetRegistry*>(pEngine->GetAssetRegistry());
+        if (pAssetRegistry == nullptr)
+            return;
+        eastl::vector<Assets::FSceneAssetRegistry::FModelStatus> models;
+        pAssetRegistry->EnumerateModels(models);
+        for (const auto& m : models)
+            Assets::FModelLoaderECS::ReloadModelAsync(m.ModelPath);
+        VTNA_LOG_INFO("[Editor] Reload Models: {} model(s) reloading", models.size());
+    }
+
+    void FVultanaEditor::ReloadAllTextures()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        if (!pEngine->IsUseECSBackend())
+        {
+            VTNA_LOG_WARN("[Editor] Reload Textures requires the ECS scene backend (Config: World/SceneBackend = ECS)");
+            return;
+        }
+        auto* pAssetManager = pEngine->GetAssetManager();
+        if (pAssetManager && pAssetManager->HasPendingRequests())
+        {
+            VTNA_LOG_WARN("[Editor] Reload Textures: assets still loading; try again when idle");
+            return;
+        }
+        auto* pAssetRegistry = static_cast<Assets::FSceneAssetRegistry*>(pEngine->GetAssetRegistry());
+        if (pAssetRegistry == nullptr)
+            return;
+
+        eastl::vector<Assets::FSceneAssetRegistry::FTextureStatus> textures;
+        pAssetRegistry->EnumerateTextures(textures);
+        uint32_t staleCount = 0;
+        for (const auto& t : textures)
+        {
+            if (!pAssetManager->IsTextureProductStale(t.ProductPath))
+                continue;
+            Assets::FModelLoaderECS::ReloadTextureAsync(t.ProductPath);
+            ++staleCount;
+        }
+        VTNA_LOG_INFO("[Editor] Reload Textures: {}/{} texture(s) stale, reloading", staleCount, (uint32_t)textures.size());
+    }
+
+    void FVultanaEditor::DrawAssetManagerPanel()
+    {
+        if (!ImGui::Begin("Asset Manager", &m_bShowAssetManager))
+        {
+            ImGui::End();
+            return;
+        }
+
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pAssetManager = pEngine->GetAssetManager();
+        auto* pAssetRegistry = static_cast<Assets::FSceneAssetRegistry*>(pEngine->GetAssetRegistry());
+        if (pAssetManager)
+        {
+            ImGui::Text("Pending requests: %u", pAssetManager->GetPendingRequestCount());
+        }
+        ImGui::Separator();
+
+        if (pAssetRegistry)
+        {
+            static const char* kStateNames[] = {"Pending", "Loading", "Ready", "Failed"};
+            eastl::vector<Assets::FSceneAssetRegistry::FModelStatus> models;
+            pAssetRegistry->EnumerateModels(models);
+            if (ImGui::BeginTable("##asset_models", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
+            {
+                ImGui::TableSetupColumn("Model");
+                ImGui::TableSetupColumn("State");
+                ImGui::TableSetupColumn("Meshes");
+                ImGui::TableSetupColumn("Prims");
+                ImGui::TableSetupColumn("Action");
+                ImGui::TableHeadersRow();
+                const bool bBusy = pAssetManager && pAssetManager->HasPendingRequests();
+                for (size_t row = 0; row < models.size(); ++row)
+                {
+                    const auto& m = models[row];
+                    ImGui::PushID(static_cast<int>(row)); // 表格不 push 行 ID,同名按钮会串 ID(§7 R4)
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(m.ModelPath.c_str());
+                    ImGui::TableNextColumn();
+                    const uint32_t state = static_cast<uint32_t>(m.State);
+                    ImGui::TextUnformatted(state < 4 ? kStateNames[state] : "?");
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%u", m.MeshCount);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%u", m.PrimitiveCount);
+                    ImGui::TableNextColumn();
+                    ImGui::BeginDisabled(bBusy); // 加载帧里编辑器仍 Tick,按钮本来是可点的(§7 R1/R2 防线)
+                    if (ImGui::SmallButton("Reload"))
+                    {
+                        Assets::FModelLoaderECS::ReloadModelAsync(m.ModelPath);
+                    }
+                    ImGui::EndDisabled();
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+
+            ImGui::Separator();
+            ImGui::Text("Textures");
+            eastl::vector<Assets::FSceneAssetRegistry::FTextureStatus> textures;
+            pAssetRegistry->EnumerateTextures(textures);
+            if (ImGui::BeginTable("##asset_textures", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
+            {
+                ImGui::TableSetupColumn("Texture");
+                ImGui::TableSetupColumn("GPU");
+                ImGui::TableSetupColumn("Action");
+                ImGui::TableHeadersRow();
+                const bool bBusy = pAssetManager && pAssetManager->HasPendingRequests();
+                for (size_t row = 0; row < textures.size(); ++row)
+                {
+                    const auto& t = textures[row];
+                    ImGui::PushID(static_cast<int>(row));
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(t.ProductPath.c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(t.bResident ? "Ready" : "-");
+                    ImGui::TableNextColumn();
+                    ImGui::BeginDisabled(bBusy);
+                    if (ImGui::SmallButton("Reload"))
+                    {
+                        Assets::FModelLoaderECS::ReloadTextureAsync(t.ProductPath);
+                    }
+                    ImGui::EndDisabled();
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+        }
+        else
+        {
+            ImGui::Text("No asset registry (ECS backend disabled)");
+        }
+
+        ImGui::End();
+    }
+
+    void FVultanaEditor::DrawInspectorModelSection()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        if (pEntitySystem == nullptr)
+            return;
+        if (!pEngine->IsUseECSBackend())
+        {
+            ImGui::TextDisabled("Model reload requires the ECS scene backend");
+            return;
+        }
+
+        const entt::entity picked = pEntitySystem->ResolvePickID(m_pRenderer->GetMouseHitObjectID());
+        if (picked == entt::null || !pEntitySystem->GetRegistry().valid(picked))
+        {
+            ImGui::TextDisabled("No object selected. Click a mesh in the viewport.");
+            return;
+        }
+        const auto& reg = pEntitySystem->GetRegistry();
+        if (reg.try_get<Scene::ECS::FMeshRendererComponent>(picked) == nullptr)
+        {
+            ImGui::TextDisabled("Selected entity is not a mesh; ForceReload unavailable.");
+            return;
+        }
+
+        const entt::entity root = Assets::FModelLoaderECS::FindModelInstanceRoot(reg, picked);
+        if (root == entt::null)
+        {
+            ImGui::TextDisabled("Selected mesh has no model instance (orphan node).");
+            return;
+        }
+        const auto& comp = reg.get<Scene::ECS::FModelInstanceComponent>(root);
+        ImGui::TextWrapped("Model: %s", comp.ModelPath.c_str());
+        ImGui::Spacing();
+
+        const bool bBusy = pEngine->GetAssetManager() && pEngine->GetAssetManager()->HasPendingRequests();
+        ImGui::BeginDisabled(bBusy);
+        if (ImGui::Button("ForceReload"))
+        {
+            Assets::FModelLoaderECS::ReloadModelAsync(comp.ModelPath);
+        }
+        ImGui::EndDisabled();
+        if (bBusy)
+            ImGui::TextDisabled("Assets still loading; try again when idle.");
+        ImGui::TextDisabled("Force re-cooks and reloads all instances of this model.");
     }
 
     void FVultanaEditor::ShowRenderGraph()

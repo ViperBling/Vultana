@@ -52,9 +52,10 @@ namespace Assets
         assert(false);
     }
 
-    RenderResources::FTexture2D* FResourceCache::GetTexture2DProduct(const eastl::string& productPath, const Assets::FTextureCookedData& payload)
+    RenderResources::FTexture2D* FResourceCache::GetTexture2DProduct(const eastl::string& productPath, uint64_t contentHash, const Assets::FTextureCookedData& payload)
     {
-        const eastl::string key = FAssetPathUtils::NormalizeAssetPath(productPath);
+        const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(productPath);
+        const eastl::string key = normalized + "@" + eastl::to_string(contentHash);
         auto iter = m_CachedTexture2D.find(key);
         if (iter != m_CachedTexture2D.end())
         {
@@ -67,19 +68,45 @@ namespace Assets
         texture.Data = pRenderer->CreateTexture2D(payload, key);
         m_CachedTexture2D.insert(eastl::make_pair(key, texture));
 
+        auto prevIt = m_TextureCurrentKey.find(normalized);
+        if (prevIt != m_TextureCurrentKey.end() && prevIt->second != key)
+        {
+            auto staleIt = m_CachedTexture2D.find(prevIt->second);
+            if (staleIt != m_CachedTexture2D.end())
+            {
+                if (staleIt->second.RefCount > 0)
+                    staleIt->second.RefCount--;
+                if (staleIt->second.RefCount == 0)
+                {
+                    delete (RenderResources::FTexture2D*)staleIt->second.Data;
+                    m_CachedTexture2D.erase(staleIt);
+                }
+            }
+        }
+        m_TextureCurrentKey[normalized] = key;
+
         return (RenderResources::FTexture2D*)texture.Data;
     }
 
     RenderResources::FTexture2D* FResourceCache::GetTexture2DProductReady(const eastl::string& productPath)
     {
-        const eastl::string key = FAssetPathUtils::NormalizeAssetPath(productPath);
-        auto iter = m_CachedTexture2D.find(key);
-        if (iter == m_CachedTexture2D.end())
-        {
-            return nullptr;
-        }
+        const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(productPath);
+        auto keyIt = m_TextureCurrentKey.find(normalized);
+        if (keyIt == m_TextureCurrentKey.end()) return nullptr;
+        auto iter = m_CachedTexture2D.find(keyIt->second);
+        if (iter == m_CachedTexture2D.end()) return nullptr;
+        
         iter->second.RefCount++;
         return (RenderResources::FTexture2D*)iter->second.Data;
+    }
+
+    bool FResourceCache::IsTexture2DProductResident(const eastl::string& productPath) const
+    {
+        const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(productPath);
+        auto keyIt = m_TextureCurrentKey.find(normalized);
+        if (keyIt == m_TextureCurrentKey.end())
+            return false;
+        return m_CachedTexture2D.find(keyIt->second) != m_CachedTexture2D.end();
     }
 
     void FResourceCache::ReleaseAllTextures()
@@ -93,6 +120,7 @@ namespace Assets
             delete (RenderResources::FTexture2D*)iter->second.Data;
         }
         m_CachedTexture2D.clear();
+        m_TextureCurrentKey.clear();
     }
 
     OffsetAllocator::Allocation FResourceCache::GetSceneBuffer(const eastl::string &name, const void *data, uint32_t size)

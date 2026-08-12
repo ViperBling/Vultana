@@ -1,11 +1,15 @@
 #include "AssetManager/SceneAssetRegistry.hpp"
 #include "AssetCooker/VAssetTypes.hpp"
+#include "AssetCooker/AssetPathUtils.hpp"
 #include "AssetManager/ResourceCache.hpp"
 #include "AssetManager/MeshMaterial.hpp"
 #include "AssetManager/ModelLoader.hpp"
 
 #include "Common/ModelConstants.hlsli"
 #include "Utilities/Log.hpp"
+
+#include <EASTL/algorithm.h>
+#include <EASTL/hash_set.h>
 
 namespace Assets
 {
@@ -196,7 +200,7 @@ namespace Assets
                 rec.Generation = 0; // invalidate the handle
                 rec.bPendingRelease = false;
             }
-            else
+            else if (pending.Type == FPendingRelease::EType::Material)
             {
                 FMaterialRecord& rec = m_Materials[pending.RecordIndex];
                 if (rec.Material)
@@ -207,8 +211,24 @@ namespace Assets
                 rec.Generation = 0;
                 rec.bPendingRelease = false;
             }
+            else
+            {
+                delete pending.MaterialPtr;
+            }
             m_PendingReleaseQueue.erase_unsorted(m_PendingReleaseQueue.begin() + i);
         }
+    }
+
+    void FSceneAssetRegistry::DeferDeleteMaterial(FMeshMaterial* material)
+    {
+        if (material == nullptr)
+            return;
+        const uint64_t currentFrame = m_pRenderer ? m_pRenderer->GetFrameID() : 0;
+        FPendingRelease pending;
+        pending.Type = FPendingRelease::EType::MaterialObject;
+        pending.MaterialPtr = material;
+        pending.TargetFrame = currentFrame + RHI::RHI_MAX_INFLIGHT_FRAMES;
+        m_PendingReleaseQueue.push_back(pending);
     }
 
     RHI::FRHIPipelineState* FSceneAssetRegistry::GetMeshletPSO(Scene::ECS::FMaterialResourceHandle handle) const
@@ -246,6 +266,11 @@ namespace Assets
         if (asset.Index >= m_Assets.size() || m_Assets[asset.Index].Generation != asset.Generation)
             return;
         FModelAsset& modelAsset = m_Assets[asset.Index];
+        if (modelAsset.State == Scene::ECS::EAssetState::Ready)
+        {
+            VTNA_LOG_INFO("[SceneAssetRegistry] {} already populated; skipping re-populate", modelAsset.ModelPath);
+            return;
+        }
 
         // ---- Node table ----
         modelAsset.Nodes.clear();
@@ -286,9 +311,22 @@ namespace Assets
         modelAsset.MeshHandles.clear();
         modelAsset.MaterialHandles.clear();
         modelAsset.MeshHandles.reserve(model.Meshes.size());
-        modelAsset.MaterialHandles.reserve(model.Meshes.size());
+        modelAsset.MaterialHandles.reserve(model.Materials.size());
 
-        const eastl::string cacheKey = "Model(" + modelAsset.ModelPath + " "; // same key space as the legacy path
+        modelAsset.Materials.clear();
+        modelAsset.TextureRefs.clear();
+        modelAsset.Materials.reserve(model.Materials.size());
+        for (const FAssetMaterial& mat : model.Materials)
+        {
+            modelAsset.Materials.push_back(mat);
+            for (const FAssetTextureRef& ref : mat.Textures)
+            {
+                if (eastl::find(modelAsset.TextureRefs.begin(), modelAsset.TextureRefs.end(), ref.RelativePath) == modelAsset.TextureRefs.end())
+                    modelAsset.TextureRefs.push_back(ref.RelativePath);
+            }
+        }
+
+        const eastl::string cacheKey = "Model(" + modelAsset.ModelPath + ")@" + eastl::to_string(modelAsset.ReloadCount) + " ";     // same key space as the legacy path
         for (size_t i = 0; i < model.Meshes.size(); ++i)
         {
             const FMeshCookedData& cooked = model.Meshes[i];
@@ -303,6 +341,9 @@ namespace Assets
             FMaterialRecord matRecord;
             matRecord.Generation = asset.Generation;
             matRecord.RefCount = 1;
+            matRecord.AssetMaterialIndex = cooked.MaterialIndex;
+            matRecord.bSkeletalAnim = cooked.bSkeletalAnim;
+            matRecord.bFrontFaceCCW = primWinding[i];
             const FAssetMaterial* assetMat =
                 (cooked.MaterialIndex >= 0) ? &model.Materials[static_cast<size_t>(cooked.MaterialIndex)] : nullptr;
             matRecord.Material = FModelLoader::BuildMaterial(assetMat, cooked.bSkeletalAnim, primWinding[i]);
@@ -327,6 +368,153 @@ namespace Assets
     {
         if (asset.Index < m_Assets.size() && m_Assets[asset.Index].Generation == asset.Generation)
             m_Assets[asset.Index].State = Scene::ECS::EAssetState::Failed;
+    }
+
+    bool FSceneAssetRegistry::ReloadModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model)
+    {
+        if (asset.Index >= m_Assets.size() || m_Assets[asset.Index].Generation != asset.Generation)
+            return false;
+        if (model.Meshes.empty())
+        {
+            VTNA_LOG_ERROR("[SceneAssetRegistry] reload: payload for {} has no meshes", m_Assets[asset.Index].ModelPath);
+            m_Assets[asset.Index].State = Scene::ECS::EAssetState::Failed;
+            return false;
+        }
+        FModelAsset& modelAsset = m_Assets[asset.Index];
+        ++modelAsset.ReloadCount;
+
+        // Release base ref.
+        for (const Scene::ECS::FMeshResourceHandle& handle : modelAsset.MeshHandles)
+            Release(handle);
+        for (const Scene::ECS::FMaterialResourceHandle& handle : modelAsset.MaterialHandles)
+            Release(handle);
+        modelAsset.MeshHandles.clear();
+        modelAsset.MaterialHandles.clear();
+
+        modelAsset.State = Scene::ECS::EAssetState::Loading;
+        PopulateModel(asset, model);
+        return modelAsset.State == Scene::ECS::EAssetState::Ready;
+    }
+
+    void FSceneAssetRegistry::EnumerateModels(eastl::vector<FModelStatus>& out) const
+    {
+        for (const FModelAsset& asset : m_Assets)
+        {
+            if (asset.Generation == 0) continue;
+
+            FModelStatus status;
+            status.ModelPath = asset.ModelPath;
+            status.State = asset.State;
+            status.PrimitiveCount = asset.PrimitiveCount;
+            status.MeshCount = asset.MeshCount;
+            status.MaterialCount = asset.MaterialCount;
+            status.ReloadCount = asset.ReloadCount;
+            for (const Scene::ECS::FMeshResourceHandle& handle : asset.MeshHandles)
+            {
+                if (handle.Index < m_Meshes.size())
+                    status.RefCount += m_Meshes[handle.Index].RefCount;
+            }
+            out.push_back(eastl::move(status));
+        }
+    }
+
+    bool FSceneAssetRegistry::FindModelHandle(const eastl::string& modelPath, Scene::ECS::FModelAssetHandle& outHandle) const
+    {
+        for (uint32_t i = 0; i < m_Assets.size(); ++i)
+        {
+            if (m_Assets[i].Generation > 0 && m_Assets[i].ModelPath == modelPath)
+            {
+                outHandle = {i, m_Assets[i].Generation};
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void FSceneAssetRegistry::ReloadTexture(const eastl::string& productPath)
+    {
+        const eastl::string wanted = FAssetPathUtils::NormalizeAssetPath(productPath);
+        auto refToProduct = [](const eastl::string& rel)
+        {
+            return FAssetPathUtils::NormalizeAssetPath(FAssetPathUtils::GetContentRootPath() + rel);
+        };
+
+        for (FModelAsset& a : m_Assets)
+        {
+            if (a.Generation == 0)
+                continue;
+            bool bAssetReferences = false;
+            for (const eastl::string& ref : a.TextureRefs)
+            {
+                if (refToProduct(ref) == wanted)
+                {
+                    bAssetReferences = true;
+                    break;
+                }
+            }
+            if (!bAssetReferences)
+                continue;
+
+            for (const Scene::ECS::FMaterialResourceHandle& h : a.MaterialHandles)
+            {
+                if (h.Index >= m_Materials.size())
+                    continue;
+                FMaterialRecord& rec = m_Materials[h.Index];
+                if (rec.Generation == 0 || rec.bPendingRelease)
+                    continue;
+                const FAssetMaterial* assetMat =
+                    (rec.AssetMaterialIndex >= 0 && static_cast<size_t>(rec.AssetMaterialIndex) < a.Materials.size())
+                        ? &a.Materials[static_cast<size_t>(rec.AssetMaterialIndex)]
+                        : nullptr;
+                if (assetMat == nullptr)
+                    continue;
+
+                bool bMatReferences = false;
+                for (const FAssetTextureRef& ref : assetMat->Textures)
+                {
+                    if (refToProduct(ref.RelativePath) == wanted)
+                    {
+                        bMatReferences = true;
+                        break;
+                    }
+                }
+                if (!bMatReferences)
+                    continue;
+
+                if (rec.Material)
+                {
+                    DeferDeleteMaterial(rec.Material);
+                    rec.Material = nullptr;
+                }
+                rec.Material = FModelLoader::BuildMaterial(assetMat, rec.bSkeletalAnim, rec.bFrontFaceCCW);
+                if (rec.Material)
+                {
+                    rec.Material->UpdateConstants();
+                    const FModelMaterialConstants* constants = rec.Material->GetMaterialConstants();
+                    static_assert(sizeof(FModelMaterialConstants) <= sizeof(rec.GPUData.Data), "material constants no longer fit the GPUData blob (80 uints)");
+                    memcpy(rec.GPUData.Data, constants, sizeof(FModelMaterialConstants));
+                }
+            }
+        }
+    }
+
+    void FSceneAssetRegistry::EnumerateTextures(eastl::vector<FTextureStatus>& out) const
+    {
+        eastl::hash_set<eastl::string> seen;
+        for (const FModelAsset& a : m_Assets)
+        {
+            if (a.Generation == 0)
+                continue;
+            for (const eastl::string& ref : a.TextureRefs)
+            {
+                if (!seen.insert(ref).second)
+                    continue;
+                FTextureStatus status;
+                status.ProductPath = FAssetPathUtils::GetContentRootPath() + ref;
+                status.bResident = FResourceCache::GetInstance()->IsTexture2DProductResident(status.ProductPath);
+                out.push_back(eastl::move(status));
+            }
+        }
     }
 
 } // namespace Assets

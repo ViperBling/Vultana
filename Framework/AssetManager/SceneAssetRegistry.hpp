@@ -28,6 +28,7 @@ namespace Assets
         Scene::ECS::FModelAssetInfo GetModelInfo(Scene::ECS::FModelAssetHandle handle) const override;
         Scene::ECS::EAssetState GetState(Scene::ECS::FModelAssetHandle handle) const override;
         void FrameFencePassed(uint64_t frameID) override;
+        void DeferDeleteMaterial(FMeshMaterial* material);
 
         // PSO resolution (RHI layer, called by ECSRenderBridge; Core interface remains RHI-free)
         RHI::FRHIPipelineState* GetMeshletPSO(Scene::ECS::FMaterialResourceHandle handle) const;
@@ -36,6 +37,30 @@ namespace Assets
 
         void PopulateModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model); 
         void MarkModelFailed(Scene::ECS::FModelAssetHandle asset);
+
+        bool ReloadModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model);
+
+        struct FModelStatus
+        {
+            eastl::string ModelPath;
+            Scene::ECS::EAssetState State = Scene::ECS::EAssetState::Pending;
+            uint32_t PrimitiveCount = 0;
+            uint32_t MeshCount = 0;
+            uint32_t MaterialCount = 0;
+            uint32_t RefCount = 0;
+            uint32_t ReloadCount = 0;
+        };
+
+        void EnumerateModels(eastl::vector<FModelStatus>& out) const;
+        bool FindModelHandle(const eastl::string& modelPath, Scene::ECS::FModelAssetHandle& outHandle) const;
+
+        void ReloadTexture(const eastl::string& productPath);
+        struct FTextureStatus
+        {
+            eastl::string ProductPath;
+            bool bResident = false;
+        };
+        void EnumerateTextures(eastl::vector<FTextureStatus>& out) const;
 
     private:
         struct FMeshRecord
@@ -54,11 +79,15 @@ namespace Assets
             Scene::ECS::FMaterialGPUData GPUData;
             Assets::FMeshMaterial* Material = nullptr;
             bool bPendingRelease = false;
+            int32_t AssetMaterialIndex = -1;
+            bool bSkeletalAnim = false;
+            bool bFrontFaceCCW = false;
         };
 
         struct FModelAsset
         {
             uint32_t Generation = 0;
+            uint32_t ReloadCount = 0;
             eastl::string ModelPath;
             Scene::ECS::EAssetState State = Scene::ECS::EAssetState::Pending;
             eastl::vector<Scene::ECS::FModelNodeInfo> Nodes;
@@ -69,6 +98,8 @@ namespace Assets
             uint32_t MeshCount = 0;
             uint32_t FirstMaterial = UINT32_MAX;
             uint32_t MaterialCount = 0;
+            eastl::vector<FAssetMaterial> Materials;
+            eastl::vector<eastl::string> TextureRefs;
         };
 
         struct FPendingRelease
@@ -76,10 +107,12 @@ namespace Assets
             enum class EType
             {
                 Mesh,
-                Material
+                Material,
+                MaterialObject
             };
             EType Type;
             uint32_t RecordIndex;
+            FMeshMaterial* MaterialPtr = nullptr;
             uint64_t TargetFrame = 0;
         };
 

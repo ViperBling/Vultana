@@ -20,7 +20,7 @@ namespace Assets
     class FAssetManager::FAsyncModelLoadTask final : public enki::ITaskSet
     {
     public:
-        FAsyncModelLoadTask(FAssetManager* pManager, FRequest request)
+        FAsyncModelLoadTask(FAssetManager* pManager, FModelRequest request)
             : m_pManager(pManager), m_Request(eastl::move(request)) {}
 
         void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
@@ -30,7 +30,7 @@ namespace Assets
 
     private:
         FAssetManager* m_pManager = nullptr;
-        FRequest m_Request;
+        FModelRequest m_Request;
     };
 
     class FAssetManager::FAsyncTextureLoadTask final : public enki::ITaskSet
@@ -83,6 +83,7 @@ namespace Assets
                 ready.Result.SrcPath = productPath;
                 ready.Result.CookedPath = productPath;
                 ready.Result.Payload = cacheIt->second.Payload;
+                ready.Result.ContentHash = cacheIt->second.ContentHash;
                 cacheIt->second.RefCount++;
                 m_TextureReadyQueue.push_back(eastl::move(ready));
                 ++m_PendingCount;
@@ -103,6 +104,53 @@ namespace Assets
         {
             SpawnTextureLoadWorker(eastl::move(request));
         }
+    }
+
+    void FAssetManager::RequestTextureReload(const eastl::string& productPath, FTextureLoadCallback&& callback)
+    {
+        const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(productPath);
+
+        FTextureRequest request;
+        request.ProductPath = productPath;
+        request.NormalizedPath = normalized;
+        request.bForceCook = true;
+        request.Callback = eastl::move(callback);
+
+        bool bSpawnWorker = false;
+        {
+            std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+
+            if (m_TextureLoading.find(normalized) != m_TextureLoading.end())
+            {
+                m_TextureReloadCallbacks[normalized].push_back(eastl::move(request.Callback));
+                ++m_PendingCount;
+                return;
+            }
+
+            m_TextureCache.erase(normalized);
+            m_TextureLoading.insert(normalized);
+            ++m_PendingCount;
+            bSpawnWorker = true;
+        }
+        if (bSpawnWorker)
+        {
+            SpawnTextureLoadWorker(eastl::move(request));
+        }
+    }
+
+    bool FAssetManager::IsTextureProductStale(const eastl::string& productPath) const
+    {
+        eastl::string srcRel;
+        ETextureUsage usage;
+        if (!FAssetPathUtils::ParseTextureProductPath(productPath, srcRel, usage))
+            return false;
+        const eastl::string srcPath = FAssetPathUtils::GetAssetsRootPath() + srcRel;
+#if VULTANA_WITH_COOKER
+        return !FVultanaCooker::IsUpToDate(srcPath, productPath);
+#else
+        struct _stat64 st = {};
+        return _stat64(productPath.c_str(), &st) != 0;
+#endif
     }
 
     void FAssetManager::RequestModelTextures(const FModelCookedData& model, eastl::function<void()> onAllReady)
@@ -169,7 +217,7 @@ namespace Assets
     {
         const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(srcPath);
 
-        FRequest request;
+        FModelRequest request;
         request.SrcPath = srcPath;
         request.NormalizedPath = normalized;
         request.Callback = eastl::move(callback);
@@ -182,7 +230,7 @@ namespace Assets
             if (cacheIt != m_ModelCache.end())
             {
                 // Cache hit
-                FReadyResult readyResult;
+                FReadyModelRequest readyResult;
                 readyResult.NormalizedPath = normalized;
                 readyResult.Callback = eastl::move(request.Callback);
                 readyResult.Result.bSuccess = true;
@@ -214,13 +262,13 @@ namespace Assets
 
     void FAssetManager::DrainReadyQueue()
     {
-        eastl::vector<FReadyResult> deferred;
+        eastl::vector<FReadyModelRequest> deferred;
         uint32_t budgetRemaining = kMaxUploadBytesPerFrame;
         bool bProcessedAny = false;
 
         while (true)
         {
-            FReadyResult readyResult;
+            FReadyModelRequest readyResult;
             {
                 std::lock_guard<std::recursive_mutex> lock(m_Mutex);
                 if (m_ReadyQueue.empty())
@@ -258,7 +306,7 @@ namespace Assets
         {
             if (!bProcessedAny || deferred.front().Result.UploadBytes > kMaxUploadBytesPerFrame)
             {
-                FReadyResult first = eastl::move(deferred.front());
+                FReadyModelRequest first = eastl::move(deferred.front());
                 deferred.erase(deferred.begin());
                 FinishReadyModelResult(eastl::move(first));
             }
@@ -333,7 +381,39 @@ namespace Assets
         return true;
     }
 
-    void FAssetManager::ModelLoadWorker(FRequest request)
+    void FAssetManager::RequestModelReload(const eastl::string& srcPath, FModelLoadCallback&& callback)
+    {
+        const eastl::string normalized = FAssetPathUtils::NormalizeAssetPath(srcPath);
+
+        FModelRequest request;
+        request.SrcPath = srcPath;
+        request.NormalizedPath = normalized;
+        request.Callback = eastl::move(callback);
+        request.bForceCook = true;
+
+        bool bSpawnWorker = false;
+        {
+            std::lock_guard<std::recursive_mutex> lock(m_Mutex);
+
+            if (m_Loading.find(normalized) != m_Loading.end())
+            {
+                // Already loading, defer callback
+                m_ModelReloadCallbacks[normalized].push_back(eastl::move(request.Callback));
+                ++m_PendingCount;
+                return;
+            }
+            m_ModelCache.erase(normalized);
+            m_Loading.insert(normalized);
+            ++m_PendingCount;
+            bSpawnWorker = true;
+        }
+        if (bSpawnWorker)
+        {
+            SpawnModelLoadWorker(eastl::move(request));
+        }
+    }
+
+    void FAssetManager::ModelLoadWorker(FModelRequest request)
     {
         FModelLoadResult result;
         result.SrcPath = request.SrcPath;
@@ -343,7 +423,7 @@ namespace Assets
 #if VULTANA_WITH_COOKER
         // Cook-on-miss: missing / stale / cooker-version mismatch all end up here. IsUpToDate
         // compares source mtime+size against the Metadata section.
-        if (!FVultanaCooker::IsUpToDate(request.SrcPath, cookedPath))
+        if (request.bForceCook || !FVultanaCooker::IsUpToDate(request.SrcPath, cookedPath))
         {
             VTNA_LOG_INFO("[AssetManager] cooking {} -> {}", request.SrcPath, cookedPath);
             if (!FVultanaCooker::CookModel(request.SrcPath, cookedPath, /*bSilent=*/true))
@@ -394,9 +474,11 @@ namespace Assets
         FinishModelLoadWorker(eastl::move(request), eastl::move(result));
     }
 
-    void FAssetManager::FinishModelLoadWorker(FRequest request, FModelLoadResult&& result)
+    void FAssetManager::FinishModelLoadWorker(FModelRequest request, FModelLoadResult&& result)
     {
         eastl::vector<FModelLoadCallback> deferred;
+        FModelLoadCallback reloadCallback;
+        bool bSpawnReloadWorker = false;
         {
             std::lock_guard<std::recursive_mutex> lock(m_Mutex);
 
@@ -416,7 +498,7 @@ namespace Assets
                 auto it = m_ModelCache.find(request.NormalizedPath);
                 if (it == m_ModelCache.end())
                 {
-                    FCacheEntry entry;
+                    FModelCacheEntry entry;
                     entry.Payload = result.Payload;
                     entry.Header = result.Header;
                     entry.UploadBytes = result.UploadBytes;
@@ -429,6 +511,29 @@ namespace Assets
                     it->second.RefCount += refs;
                 }
             }
+
+            auto reloadIt = m_ModelReloadCallbacks.find(request.NormalizedPath);
+            if (reloadIt != m_ModelReloadCallbacks.end() && !reloadIt->second.empty())
+            {
+                eastl::vector<FModelLoadCallback> reloadCallbacks = eastl::move(reloadIt->second);
+                m_ModelReloadCallbacks.erase(reloadIt);
+                m_ModelCache.erase(request.NormalizedPath);
+
+                reloadCallback = eastl::move(reloadCallbacks.front());
+                if (reloadCallbacks.size() > 1)
+                {
+                    auto& pending = m_ModelPendingCallbacks[request.NormalizedPath];
+                    for (size_t i = 1; i < reloadCallbacks.size(); ++i)
+                        pending.push_back(eastl::move(reloadCallbacks[i]));
+                }
+                bSpawnReloadWorker = true;
+            }
+            else
+            {
+                if (reloadIt != m_ModelReloadCallbacks.end())
+                    m_ModelReloadCallbacks.erase(reloadIt);
+                m_Loading.erase(request.NormalizedPath);
+            }
             m_Loading.erase(request.NormalizedPath);
         }
 
@@ -437,7 +542,7 @@ namespace Assets
         {
             for (auto& cb : deferred)
             {
-                FReadyResult ready;
+                FReadyModelRequest ready;
                 ready.NormalizedPath = request.NormalizedPath;
                 ready.Callback = eastl::move(cb);
                 ready.Result = result; // shared_ptr copy is cheap
@@ -448,7 +553,7 @@ namespace Assets
         {
             for (auto& cb : deferred)
             {
-                FReadyResult ready;
+                FReadyModelRequest ready;
                 ready.NormalizedPath = request.NormalizedPath;
                 ready.Callback = eastl::move(cb);
                 ready.Result.bSuccess = false;
@@ -458,9 +563,19 @@ namespace Assets
         }
 
         PushReadyModelResult({request.NormalizedPath, eastl::move(request.Callback), eastl::move(result)});
+
+        if (bSpawnReloadWorker)
+        {
+            FModelRequest reloadRequest;
+            reloadRequest.SrcPath = request.SrcPath;
+            reloadRequest.NormalizedPath = request.NormalizedPath;
+            reloadRequest.bForceCook = true;
+            reloadRequest.Callback = eastl::move(reloadCallback);
+            SpawnModelLoadWorker(eastl::move(reloadRequest));
+        }
     }
 
-    void FAssetManager::SpawnModelLoadWorker(FRequest request)
+    void FAssetManager::SpawnModelLoadWorker(FModelRequest request)
     {
         auto* pTask = new FAsyncModelLoadTask(this, eastl::move(request));
         {
@@ -470,13 +585,13 @@ namespace Assets
         m_pTaskScheduler->AddTaskSetToPipe(pTask);
     }
 
-    void FAssetManager::PushReadyModelResult(FReadyResult&& result)
+    void FAssetManager::PushReadyModelResult(FReadyModelRequest&& result)
     {
         std::lock_guard<std::recursive_mutex> lock(m_Mutex);
         m_ReadyQueue.push_back(eastl::move(result));
     }
 
-    void FAssetManager::FinishReadyModelResult(FReadyResult&& result)
+    void FAssetManager::FinishReadyModelResult(FReadyModelRequest&& result)
     {
         // Fire the callback on the main thread — this is where GPU resources get created
         // (ResourceCache::GetSceneBuffer -> AllocateSceneStaticBuffer -> staging upload).
@@ -536,7 +651,7 @@ namespace Assets
 
 #if VULTANA_WITH_COOKER
         // Cook-on-miss: missing / stale / cooker-version mismatch all end up here.
-        if (!FVultanaCooker::IsUpToDate(srcPath, request.ProductPath))
+        if (request.bForceCook || !FVultanaCooker::IsUpToDate(srcPath, request.ProductPath))
         {
             VTNA_LOG_INFO("[AssetManager] cooking texture {} -> {}", srcPath, request.ProductPath);
             if (!FVultanaCooker::CookTexture(srcPath, request.ProductPath))
@@ -567,6 +682,7 @@ namespace Assets
         }
         result.bSuccess = true;
         result.Payload = eastl::move(payload);
+        result.ContentHash = header.ContentHash;
         VTNA_LOG_INFO("[AssetManager] load texture {} (cooked={})", srcPath, request.ProductPath);
 
         FinishTextureLoadWorker(eastl::move(request), eastl::move(result));
@@ -575,6 +691,8 @@ namespace Assets
     void FAssetManager::FinishTextureLoadWorker(FTextureRequest request, FTextureLoadResult&& result)
     {
         eastl::vector<FTextureLoadCallback> deferred;
+        FTextureLoadCallback reloadCallback;
+        bool bSpawnReload = false;
         {
             std::lock_guard<std::recursive_mutex> lock(m_Mutex);
 
@@ -594,6 +712,7 @@ namespace Assets
                 {
                     FTextureCacheEntry entry;
                     entry.Payload = result.Payload;
+                    entry.ContentHash = result.ContentHash;
                     entry.RefCount = refs;
                     m_TextureCache.emplace(request.NormalizedPath, eastl::move(entry));
                 }
@@ -602,7 +721,28 @@ namespace Assets
                     it->second.RefCount += refs; // defensive: m_TextureLoading dedups
                 }
             }
-            m_TextureLoading.erase(request.NormalizedPath);
+
+            auto reloadIt = m_TextureReloadCallbacks.find(request.NormalizedPath);
+            if (reloadIt != m_TextureReloadCallbacks.end() && !reloadIt->second.empty())
+            {
+                eastl::vector<FTextureLoadCallback> reloadCallbacks = eastl::move(reloadIt->second);
+                m_TextureReloadCallbacks.erase(reloadIt);
+                m_TextureCache.erase(request.NormalizedPath);
+                reloadCallback = eastl::move(reloadCallbacks.front());
+                if (reloadCallbacks.size() > 1)
+                {
+                    auto& pending = m_TexturePendingCallbacks[request.NormalizedPath];
+                    for (size_t i = 1; i < reloadCallbacks.size(); ++i)
+                        pending.push_back(eastl::move(reloadCallbacks[i]));
+                }
+                bSpawnReload = true;
+            }
+            else
+            {
+                if (reloadIt != m_TextureReloadCallbacks.end())
+                    m_TextureReloadCallbacks.erase(reloadIt);
+                m_TextureLoading.erase(request.NormalizedPath);
+            }
         }
 
         if (result.bSuccess)
@@ -630,6 +770,16 @@ namespace Assets
             }
         }
         PushReadyTextureResult({request.NormalizedPath, eastl::move(request.Callback), eastl::move(result)});
+
+        if (bSpawnReload)
+        {
+            FTextureRequest reloadRequest;
+            reloadRequest.ProductPath = request.ProductPath;
+            reloadRequest.NormalizedPath = request.NormalizedPath;
+            reloadRequest.bForceCook = true;
+            reloadRequest.Callback = eastl::move(reloadCallback);
+            SpawnTextureLoadWorker(eastl::move(reloadRequest));
+        }
     }
 
     void FAssetManager::SpawnTextureLoadWorker(FTextureRequest request)
@@ -660,7 +810,7 @@ namespace Assets
             Renderer::FRendererBase* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
             if (pRenderer != nullptr)
             {
-                FResourceCache::GetInstance()->GetTexture2DProduct(result.Result.CookedPath, *result.Result.Payload);
+                FResourceCache::GetInstance()->GetTexture2DProduct(result.Result.CookedPath, result.Result.ContentHash, *result.Result.Payload);
             }
         }
         else if (result.Result.bSuccess)

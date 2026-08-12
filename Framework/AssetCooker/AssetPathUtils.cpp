@@ -3,6 +3,7 @@
 #include <EASTL/string.h>
 #include <cassert>
 #include <cstring>
+#include <filesystem>
 
 namespace Assets
 {
@@ -162,4 +163,47 @@ namespace Assets
                (srcRel[pos + 2] == 'd' || srcRel[pos + 2] == 'D') &&
                (srcRel[pos + 3] == 's' || srcRel[pos + 3] == 'S');
     }
+
+    eastl::string FAssetPathUtils::MakeEngineAssetPath(const eastl::string& path)
+    {
+        auto withTrailingSlash = [](eastl::string s)
+        {
+            if (!s.empty() && s.back() != '/')
+                s.push_back('/');
+            return s;
+        };
+        const eastl::string normalized = NormalizeAssetPath(path);
+        const eastl::string assetsRoot = withTrailingSlash(NormalizeAssetPath(FAssetPathUtils::GetAssetsRootPath()));
+
+        if (normalized.compare(0, assetsRoot.size(), assetsRoot) == 0)
+        {
+            eastl::string rel = normalized.substr(assetsRoot.size());
+            while (!rel.empty() && rel[0] == '/')
+                rel.erase(0, 1);
+            return FAssetPathUtils::GetAssetsRootPath() + rel;
+        }
+        
+        std::error_code ec;
+        const eastl::string absAssetsRoot = withTrailingSlash(NormalizeAssetPath(std::filesystem::weakly_canonical(std::filesystem::path(FAssetPathUtils::GetAssetsRootPath().c_str()), ec).string().c_str()));
+        const eastl::string absPath = NormalizeAssetPath(std::filesystem::weakly_canonical(std::filesystem::path(normalized.c_str()), ec).string().c_str());
+        if (!absAssetsRoot.empty() && !absPath.empty() && absPath.compare(0, absAssetsRoot.size(), absAssetsRoot) == 0)
+        {
+            eastl::string rel = absPath.substr(absAssetsRoot.size());
+            while (!rel.empty() && rel[0] == '/')
+                rel.erase(0, 1);
+            return FAssetPathUtils::GetAssetsRootPath() + rel; // "../Assets/<rel>"
+        }
+
+        std::error_code ecAbs;
+        const eastl::string absFallback = NormalizeAssetPath(
+            std::filesystem::absolute(std::filesystem::path(normalized.c_str()), ecAbs).string().c_str());
+        if (!absFallback.empty())
+            return absFallback;
+        eastl::string fallback = path;
+        for (char& c : fallback)
+            if (c == '\\')
+                c = '/';
+        return fallback;
+    }
+
 } // namespace Assets
