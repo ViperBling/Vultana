@@ -81,7 +81,6 @@ namespace Renderer
         },
         [&](const FIDPassData& data, RHI::FRHICommandList* pCmdList)
         {
-            Scene::FWorld* pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
             for (size_t i = 0; i < m_IDPassBatches.size(); i++)
             {
                 DrawBatch(pCmdList, m_IDPassBatches[i]);

@@ -119,6 +119,21 @@ namespace Scene::ECS
                     worldBounds.Center = mul(worldMtx, float4(localBounds->Center, 1.0f)).xyz();
                     worldBounds.Radius = localBounds->Radius * MaxAxisScale(worldMtx);
                 }
+
+                if (const auto* localAABB = registry.try_get<FBoundingBoxComponent>(entry.Entity))
+                {
+                    FWorldBoundingBoxComponent& worldAABB = registry.get_or_emplace<FWorldBoundingBoxComponent>(entry.Entity);
+                    const float3 center = (localAABB->Min + localAABB->Max) * 0.5f;
+                    const float3 half = (localAABB->Max - localAABB->Min) * 0.5f;
+                    const float3 worldCenter = mul(worldMtx, float4(center, 1.0f)).xyz();
+                    // |M3x3| · half; translation column [3] stays out of the half-extents.
+                    const float3 ax = abs(worldMtx[0].xyz());
+                    const float3 ay = abs(worldMtx[1].xyz());
+                    const float3 az = abs(worldMtx[2].xyz());
+                    const float3 worldHalf = ax * half.x + ay * half.y + az * half.z;
+                    worldAABB.Min = worldCenter - worldHalf;
+                    worldAABB.Max = worldCenter + worldHalf;
+                }
             }
 
             if (const auto it = childrenMap.find(entt::to_integral(entry.Entity)); it != childrenMap.end())

@@ -9,9 +9,10 @@
 #include "RenderResources/Texture2D.hpp"
 #include "RenderResources/TypedBuffer.hpp"
 #include "RenderModules/GPUDrivenStats.hpp"
-#include "GPUScene.hpp"
-#include "RenderBatch.hpp"
-#include "StagingBufferAllocator.hpp"
+#include "Renderer/GPUScene.hpp"
+#include "Renderer/SceneRenderState.hpp"
+#include "Renderer/RenderBatch.hpp"
+#include "Renderer/StagingBufferAllocator.hpp"
 
 #include "RHI/RHI.hpp"
 #include "Utilities/Utility.hpp"
@@ -102,6 +103,7 @@ namespace Renderer
         void UploadBuffer(RHI::FRHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
         void SetupGlobalConstants(RHI::FRHICommandList* pCmdList);
+        void SetSceneRenderState(const Renderer::FSceneRenderState& state) { m_SceneRenderState = state; }
 
         FLinearAllocator* GetConstantAllocator() { return m_CBAllocator.get(); }
         FRenderBatch& AddBasePassBatch();
@@ -158,6 +160,7 @@ namespace Renderer
         eastl::unique_ptr<class FShaderCache> m_pShaderCache;
         eastl::unique_ptr<FGPUScene> m_pGPUScene;
         eastl::unique_ptr<RG::FRenderGraph> m_pRenderGraph;
+        Renderer::FSceneRenderState m_SceneRenderState;
 
         uint32_t m_DisplayWidth;
         uint32_t m_DisplayHeight;

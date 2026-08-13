@@ -57,6 +57,7 @@ namespace Core
 
     private:
         ~FVultanaEngine();
+        void UpdateSceneRenderState();
 
     public:
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
@@ -83,6 +84,8 @@ namespace Core
         eastl::unique_ptr<Scene::ECS::ISceneRenderSink> m_pRenderSink;
         eastl::unique_ptr<Scene::ECS::FEntityFactory> m_pEntityFactory;
         bool m_bUseECSBackend = false;
+
+        float4 m_PendingCullingPlanes[6] = {};
     };
 } // namespace Vultana
 

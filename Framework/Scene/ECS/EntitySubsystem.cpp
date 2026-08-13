@@ -74,7 +74,7 @@ namespace Scene::ECS
 
     void FEntitySubsystem::Tick(float deltaTime)
     {
-        FlushPendingDestroy();
+        FlushDeferred();
         for (size_t phase = 0; phase < static_cast<size_t>(EProcessingPhase::Count); ++phase)
         {
             for (auto& processor : m_Processors[phase])
@@ -106,6 +106,18 @@ namespace Scene::ECS
             memcpy(nameData.Name, name->Name, sizeof(nameData.Name));
             snapshot.Name = nameData;
         }
+        auto* parentComp = m_Registry.try_get<FParentComponent>(entity);
+        if (parentComp)
+            snapshot.Parent = FEntitySnapshot::FParentData{ parentComp->Parent };
+        auto* meshComp = m_Registry.try_get<FMeshRendererComponent>(entity);
+        if (meshComp)
+        {
+            FEntitySnapshot::FMeshData meshData;
+            meshData.MeshHandle = meshComp->MeshHandle;
+            meshData.MaterialHandle = meshComp->MaterialHandle;
+            meshData.bSkinned = meshComp->bSkinned;
+            snapshot.Mesh = meshData;
+        }
         return snapshot;
     }
 
@@ -135,6 +147,28 @@ namespace Scene::ECS
                 memcpy(nameComp->Name, snapshot.Name.value().Name, sizeof(nameComp->Name));
             }
         }
+        if (snapshot.Mesh.has_value())
+        {
+            const auto& meshData = snapshot.Mesh.value();
+            m_Registry.emplace_or_replace<FMeshRendererComponent>(entity, meshData.MeshHandle, meshData.MaterialHandle, meshData.bSkinned);
+        }
+        else if (m_Registry.all_of<FMeshRendererComponent>(entity))
+        {
+            m_Registry.remove<FMeshRendererComponent>(entity);
+        }
+        // Restore hierarchy LAST through SetParent: every call re-validates the
+        // ancestor chain, so restoring A->B and B->A in either order cannot leave
+        // a cycle behind (one of the links is always rejected).
+        if (snapshot.Parent.has_value())
+        {
+            SetParent(entity, snapshot.Parent.value().Parent);
+        }
+        else if (m_Registry.all_of<FParentComponent>(entity))
+        {
+            // Snapshot had no parent — restore root state (undo of "attach to parent");
+            // DetachFromParent keeps m_ChildrenMap coherent.
+            DetachFromParent(entity);
+        }
     }
 
     void FEntitySubsystem::ResurrectEntity(entt::entity entity)
@@ -143,10 +177,39 @@ namespace Scene::ECS
         [[maybe_unused]] entt::entity resurrected = m_Registry.create(entity);
     }
 
+    void FEntitySubsystem::FlushDeferred()
+    {
+        FlushPendingDestroy();
+    }
+
     void FEntitySubsystem::SetParent(entt::entity entity, entt::entity parent)
     {
         if (!m_Registry.valid(entity)) return;
         if (entity == parent) return;
+
+        // Reject attaching to any descendant: breaks cycles at the source. The
+        // HierarchyProcessor sweep stays as a last-resort backstop for raw
+        // registry edits, but interactive paths can no longer create cycles.
+        // The depth cap mirrors HierarchyProcessor.cpp's walk: a pre-existing
+        // raw-registry cycle in the ancestor chain must not hang us.
+        constexpr uint32_t MAX_ANCESTOR_DEPTH = 4096;
+        entt::entity anc = parent;
+        for (uint32_t depth = 0; anc != entt::null && depth < MAX_ANCESTOR_DEPTH; ++depth)
+        {
+            if (anc == entity)
+            {
+                VTNA_LOG_WARN("SetParent: rejected cycle-forming parent for entity {}", entt::to_integral(entity));
+                return;
+            }
+            const auto* ancParent = m_Registry.try_get<FParentComponent>(anc);
+            anc = (ancParent != nullptr) ? ancParent->Parent : entt::null;
+        }
+        if (anc != entt::null)
+        {
+            // Depth cap hit => corrupt ancestor chain; refuse to extend it.
+            VTNA_LOG_ERROR("SetParent: ancestor chain exceeds {} levels (corrupt hierarchy), rejecting", MAX_ANCESTOR_DEPTH);
+            return;
+        }
 
         // Remove from old parent's children list
         auto* oldParentComp = m_Registry.try_get<FParentComponent>(entity);
@@ -170,7 +233,8 @@ namespace Scene::ECS
         {
             if (!m_Registry.valid(parent))
             {
-                m_Registry.remove<FParentComponent>(entity);
+                if (m_Registry.all_of<FParentComponent>(entity))
+                    m_Registry.remove<FParentComponent>(entity);
                 return;
             }
             m_Registry.emplace_or_replace<FParentComponent>(entity, parent);

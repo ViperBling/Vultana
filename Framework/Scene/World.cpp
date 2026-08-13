@@ -155,7 +155,7 @@ namespace Scene
         }
     }
 
-    IVisibleObject *FWorld::GetVisibleObject(uint32_t index) const
+    IVisibleObject* FWorld::GetVisibleObject(uint32_t index) const
     {
         if (index >= m_Objects.size())
         {
@@ -164,7 +164,7 @@ namespace Scene
         return m_Objects[index].get();
     }
 
-    ILight *FWorld::GetMainLight()
+    ILight* FWorld::GetMainLight()
     {
         assert(m_pMainLight != nullptr);
         return m_pMainLight;

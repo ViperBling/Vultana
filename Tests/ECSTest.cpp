@@ -370,8 +370,8 @@ TEST(ECSTest, Hierarchy_IsolatedCycle_BrokenAndProcessed)
     FEntitySubsystem ecs;
     entt::entity a = CreateTransformEntity(ecs, float3(1, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
     entt::entity b = CreateTransformEntity(ecs, float3(2, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
-    ecs.SetParent(a, b);
     ecs.SetParent(b, a);
+    ecs.GetRegistry().emplace<FParentComponent>(a, b);
 
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
@@ -391,8 +391,8 @@ TEST(ECSTest, Hierarchy_CycleBreak_BrokenEntityHasIdentityParent)
     FEntitySubsystem ecs;
     entt::entity a = CreateTransformEntity(ecs, float3(1, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
     entt::entity b = CreateTransformEntity(ecs, float3(2, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
-    ecs.SetParent(a, b);   // a->b->a cycle
     ecs.SetParent(b, a);
+    ecs.GetRegistry().emplace<FParentComponent>(a, b);
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
 
     ecs.Tick(0.0f);        // the breaking frame
@@ -751,4 +751,162 @@ TEST(ECSTest, FindModelInstanceRootWalksParentChain)
     EXPECT_EQ(FModelLoaderECS::FindModelInstanceRoot(reg, child), root);
     EXPECT_EQ(FModelLoaderECS::FindModelInstanceRoot(reg, root), root);
     EXPECT_TRUE(FModelLoaderECS::FindModelInstanceRoot(reg, ecs.CreateEntity()) == entt::null);
+}
+
+// ============================================================
+//  Fix F3: cycle rejection at the source + snapshot Parent/Mesh completeness
+// ============================================================
+TEST(ECSTest, SetParent_DescendantRejected)
+{
+    FEntitySubsystem ecs;
+    entt::entity parent = ecs.CreateEntity();
+    entt::entity child = ecs.CreateEntity();
+    ecs.SetParent(child, parent);
+
+    // parent -> child would form parent -> child -> parent cycle; must be rejected.
+    ecs.SetParent(parent, child);
+
+    EXPECT_EQ(ecs.GetRegistry().try_get<FParentComponent>(parent), nullptr);
+    const auto* childComp = ecs.GetRegistry().try_get<FParentComponent>(child);
+    ASSERT_NE(childComp, nullptr);
+    EXPECT_EQ(childComp->Parent, parent);
+}
+
+TEST(ECSTest, Snapshot_Restore_ParentAndMesh_Completeness)
+{
+    FEntitySubsystem ecs;
+    entt::entity parent = ecs.CreateEntity();
+    entt::entity mesh = ecs.CreateEntity();
+    ecs.SetParent(mesh, parent);
+
+    FMeshResourceHandle meshHandle{7, 2};
+    FMaterialResourceHandle matHandle{3, 1};
+    ecs.GetRegistry().emplace<FMeshRendererComponent>(mesh, meshHandle, matHandle, false);
+
+    auto snap = ecs.SnapEntity(mesh);
+    ASSERT_TRUE(snap.Parent.has_value());
+    ASSERT_TRUE(snap.Mesh.has_value());
+    EXPECT_EQ(snap.Mesh.value().MeshHandle, meshHandle);
+    EXPECT_EQ(snap.Mesh.value().MaterialHandle, matHandle);
+
+    ecs.DestroyEntityDeferred(mesh);
+    ecs.FlushDeferred();
+    EXPECT_FALSE(ecs.GetRegistry().valid(mesh));
+
+    ecs.ApplyEntitySnapshot(snap);
+
+    EXPECT_TRUE(ecs.GetRegistry().valid(mesh));
+    const auto* restoredMesh = ecs.GetRegistry().try_get<FMeshRendererComponent>(mesh);
+    ASSERT_NE(restoredMesh, nullptr);
+    EXPECT_EQ(restoredMesh->MeshHandle, meshHandle);
+    EXPECT_EQ(restoredMesh->MaterialHandle, matHandle);
+
+    const auto* restoredParent = ecs.GetRegistry().try_get<FParentComponent>(mesh);
+    ASSERT_NE(restoredParent, nullptr);
+    EXPECT_EQ(restoredParent->Parent, parent);
+
+    // Hierarchy restored through SetParent maintains the parent's child list.
+    const auto* children = ecs.FindChildren(parent);
+    ASSERT_NE(children, nullptr);
+    EXPECT_TRUE(eastl::find(children->begin(), children->end(), mesh) != children->end());
+}
+
+TEST(ECSTest, Snapshot_Restore_CyclicParents_NoCycle)
+{
+    FEntitySubsystem ecs;
+    entt::entity a = ecs.CreateEntity();
+    entt::entity b = ecs.CreateEntity();
+
+    // A <-> B built through raw registry edits, simulating a legacy/deserialization
+    // path where the SetParent guard was bypassed.
+    ecs.GetRegistry().emplace<FParentComponent>(a, b);
+    ecs.GetRegistry().emplace<FParentComponent>(b, a);
+
+    auto snapA = ecs.SnapEntity(a);
+    auto snapB = ecs.SnapEntity(b);
+
+    ecs.DestroyEntityDeferred(a);
+    ecs.DestroyEntityDeferred(b);
+    ecs.FlushDeferred();
+
+    // Restore in arbitrary order; the SetParent ancestor guard must break one link
+    // (and the invalid-parent guard must not crash on the freshly resurrected entity).
+    ecs.ApplyEntitySnapshot(snapA);
+    ecs.ApplyEntitySnapshot(snapB);
+
+    const auto* aParent = ecs.GetRegistry().try_get<FParentComponent>(a);
+    const auto* bParent = ecs.GetRegistry().try_get<FParentComponent>(b);
+    const bool bCycle = (aParent != nullptr && aParent->Parent == b) && (bParent != nullptr && bParent->Parent == a);
+    EXPECT_FALSE(bCycle);
+    // The restored snapshot link survives in at least one direction.
+    EXPECT_TRUE((aParent != nullptr && aParent->Parent == b) || (bParent != nullptr && bParent->Parent == a));
+}
+
+TEST(ECSTest, Snapshot_Restore_DetachParent_RestoresRoot)
+{
+    FEntitySubsystem ecs;
+    entt::entity a = ecs.CreateEntity();
+    entt::entity b = ecs.CreateEntity();
+
+    // Snapshot while isolated (no parent, no mesh).
+    auto snap = ecs.SnapEntity(a);
+    EXPECT_FALSE(snap.Parent.has_value());
+    EXPECT_FALSE(snap.Mesh.has_value());
+
+    // User attaches a to b, then the edit is undone: applying the old snapshot
+    // must detach a again, keeping m_ChildrenMap coherent (symmetric branch of
+    // ApplyEntitySnapshot).
+    ecs.SetParent(a, b);
+    EXPECT_NE(ecs.GetRegistry().try_get<FParentComponent>(a), nullptr);
+
+    ecs.ApplyEntitySnapshot(snap);
+
+    EXPECT_EQ(ecs.GetRegistry().try_get<FParentComponent>(a), nullptr);
+    const auto* bChildren = ecs.FindChildren(b);
+    if (bChildren != nullptr)
+    {
+        EXPECT_TRUE(eastl::find(bChildren->begin(), bChildren->end(), a) == bChildren->end());
+    }
+}
+
+TEST(ECSTest, Hierarchy_AABB_WorldTransform)
+{
+    FEntitySubsystem ecs;
+    entt::entity e = ecs.CreateEntity();
+    // Local [0,1]^3, transform: translate(10,0,0) * scale(2,2,2).
+    ecs.GetRegistry().emplace<FTransformComponent>(e, float3(10, 0, 0), float4(0, 0, 0, 1), float3(2, 2, 2));
+    ecs.GetRegistry().emplace<FBoundingBoxComponent>(e, float3(0, 0, 0), float3(1, 1, 1));
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+    ecs.Tick(0.0f);
+
+    const auto* worldAABB = ecs.GetRegistry().try_get<FWorldBoundingBoxComponent>(e);
+    ASSERT_NE(worldAABB, nullptr);
+    EXPECT_NEAR(worldAABB->Min.x, 10.0f, 0.001f);
+    EXPECT_NEAR(worldAABB->Max.x, 12.0f, 0.001f);
+    EXPECT_NEAR(worldAABB->Min.y, 0.0f, 0.001f); // local min.y = 0, scaled 2×
+    EXPECT_NEAR(worldAABB->Max.y, 2.0f, 0.001f);
+}
+
+TEST(ECSTest, Hierarchy_AABB_Rotation_EnclosesOBB)
+{
+    FEntitySubsystem ecs;
+    entt::entity e = ecs.CreateEntity();
+    // Unit cube centered at origin, rotated 45° about Z (quaternion storage is
+    // (x,y,z,w): k*sin(22.5°), cos(22.5°)). OBB corners push the enclosing AABB
+    // out to ±cos45°=±0.7071 in x/y.
+    const float c = 0.70710678f;
+    // NOTE: float3(0) is ambiguous in linalg (scalar-broadcast vs pointer ctor, C2668) —
+    // the trailing .0f is REQUIRED here and matches repo style (Components.hpp:32-34).
+    ecs.GetRegistry().emplace<FTransformComponent>(e, float3(0.0f), float4(0, 0, 0.3826834f, 0.9238795f), float3(1.0f));
+    ecs.GetRegistry().emplace<FBoundingBoxComponent>(e, float3(-0.5f), float3(0.5f));
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+    ecs.Tick(0.0f);
+
+    const auto* worldAABB = ecs.GetRegistry().try_get<FWorldBoundingBoxComponent>(e);
+    ASSERT_NE(worldAABB, nullptr);
+    EXPECT_NEAR(worldAABB->Max.x, c, 0.001f);
+    EXPECT_NEAR(worldAABB->Max.y, c, 0.001f);
+    EXPECT_NEAR(worldAABB->Min.x, -c, 0.001f);
+    EXPECT_NEAR(worldAABB->Min.y, -c, 0.001f);
+    EXPECT_NEAR(worldAABB->Max.z, 0.5f, 0.001f); // z axis untouched by the rotation
 }

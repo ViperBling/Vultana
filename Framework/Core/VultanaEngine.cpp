@@ -1,4 +1,4 @@
-#include "VultanaEngine.hpp"
+#include "Core/VultanaEngine.hpp"
 
 #include "AssetCooker/AssetPathUtils.hpp"
 #include "AssetManager/AssetManager.hpp"
@@ -8,14 +8,18 @@
 #include "Editor/VultanaEditor.hpp"
 
 #include "Renderer/ECSRenderBridge.hpp"
+#include "Scene/Camera.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
+#include "Scene/SceneComponent/Lights/Light.hpp"
 
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
+#include "Utilities/ParallelFor.hpp"
 
 #include <EASTL/span.h>
+#include <EASTL/string.h>
 #include <rpmalloc/rpmalloc.h>
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -26,9 +30,16 @@
 #include <ImGui/imgui.h>
 #include <SimpleIni.h>
 #include <enkiTS/TaskScheduler.h>
+#include <functional>
 
 namespace Core
 {
+    void ParallelCullingImpl(uint32_t count, const std::function<void(uint32_t)>& func)
+    {
+        // Engine layer owns the parallel implementation; the ECS core stays engine-free.
+        Utilities::ParallelFor(count, func);
+    }
+
     FVultanaEngine *FVultanaEngine::GetEngineInstance()
     {
         static FVultanaEngine engine;
@@ -117,7 +128,7 @@ namespace Core
         if (m_bUseECSBackend)
         {
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FHierarchyProcessor>());
-            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_pWorld->GetCamera()->GetFrustumPlanes(), 6)));
+            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_PendingCullingPlanes, 6), &ParallelCullingImpl));
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(*m_pRenderSink, *m_pAssetRegistry));
         }
 
@@ -175,6 +186,7 @@ namespace Core
             {
                 m_pEditor->Tick();
                 m_pWorld->Tick(m_FrameTime);
+                UpdateSceneRenderState();
                 if (m_bUseECSBackend)
                 {
                     m_pEntitySystem->Tick(m_FrameTime);
@@ -189,4 +201,30 @@ namespace Core
     {
         rpmalloc_finalize();
     }
-}
+
+    void FVultanaEngine::UpdateSceneRenderState()
+    {
+        if (m_pWorld == nullptr) return;
+
+        Scene::FCamera* pCamera = m_pWorld->GetCamera();
+        if (pCamera == nullptr) return;
+
+        memcpy(m_PendingCullingPlanes, pCamera->GetFrustumPlanes(), sizeof(m_PendingCullingPlanes));
+
+        Renderer::FSceneRenderState state;
+        pCamera->SetupCameraCB(state.CameraConstants);
+        state.bCameraValid = true;
+        if (Scene::ILight* pMainLight = m_pWorld->FindMainLight())
+        {
+            state.LightColor = pMainLight->GetLightColor();
+            state.LightDirection = pMainLight->GetLightDirection();
+            state.LightRadius = pMainLight->GetLightRadius();
+            state.bLightValid = true;
+        }
+        else
+        {
+            state.bLightValid = false;
+        }
+        m_pRenderer->SetSceneRenderState(state);
+    }
+} // namespace Core

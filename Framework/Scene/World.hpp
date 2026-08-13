@@ -30,6 +30,7 @@ namespace Scene
 
         IVisibleObject* GetVisibleObject(uint32_t index) const;
         ILight* GetMainLight();
+        ILight* FindMainLight() { return m_pMainLight; }
 
         void SetUseECSBackend(bool enabled) { m_bUseECSBackend = enabled; }
         bool IsUseECSBackend() const { return m_bUseECSBackend; }

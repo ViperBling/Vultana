@@ -468,20 +468,16 @@ namespace Renderer
 
     void FRendererBase::SetupGlobalConstants(RHI::FRHICommandList *pCmdList)
     {
-        Scene::FWorld* pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
-        Scene::FCamera* pCamera = pWorld->GetCamera();
-        Scene::ILight* pMainLight = pWorld->GetMainLight();
-
         FSceneConstants sceneConstants {};
-        pCamera->SetupCameraCB(sceneConstants.CameraCB);
+        sceneConstants.CameraCB = m_SceneRenderState.bCameraValid ? m_SceneRenderState.CameraConstants : FCameraConstants();
         sceneConstants.SceneConstantBufferSRV = m_pGPUScene->GetSceneConstantBufferSRV()->GetHeapIndex();
         sceneConstants.SceneStaticBufferSRV = m_pGPUScene->GetSceneStaticBufferSRV()->GetHeapIndex();
         sceneConstants.SceneAnimationBufferSRV = m_pGPUScene->GetSceneAnimationBufferSRV()->GetHeapIndex();
         sceneConstants.SceneAnimationBufferUAV = m_pGPUScene->GetSceneAnimationBufferUAV()->GetHeapIndex();
         sceneConstants.instanceDataAddress = m_pGPUScene->GetInstanceDataAddress();
-        sceneConstants.LightColor = pMainLight->GetLightColor();
-        sceneConstants.LightDirection = pMainLight->GetLightDirection();
-        sceneConstants.LightRadius = pMainLight->GetLightRadius();
+        sceneConstants.LightColor = m_SceneRenderState.bLightValid ? m_SceneRenderState.LightColor : float3(1.0f);
+        sceneConstants.LightDirection = m_SceneRenderState.bLightValid ? m_SceneRenderState.LightDirection : float3(0.0f, -1.0f, 0.0f);
+        sceneConstants.LightRadius = m_SceneRenderState.bLightValid ? m_SceneRenderState.LightRadius : 0.0f;
 
         sceneConstants.RenderSize = uint2(m_RenderWidth, m_RenderHeight);
         sceneConstants.RenderSizeInv = float2(1.0f / m_RenderWidth, 1.0f / m_RenderHeight);

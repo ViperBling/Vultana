@@ -54,6 +54,20 @@ namespace Scene::ECS
                 char Name[64];
             };
             eastl::optional<FNameData> Name;
+
+            struct FParentData
+            {
+                entt::entity Parent = entt::null;
+            };
+            eastl::optional<FParentData> Parent;
+
+            struct FMeshData
+            {
+                FMeshResourceHandle MeshHandle;
+                FMaterialResourceHandle MaterialHandle;
+                bool bSkinned = false;
+            };
+            eastl::optional<FMeshData> Mesh;
         };
         using FChildrenMap = eastl::hash_map<entt::id_type, eastl::vector<entt::entity>>;
 
@@ -61,6 +75,7 @@ namespace Scene::ECS
         void ApplyEntitySnapshot(const FEntitySnapshot& snapshot);
 
         void ResurrectEntity(entt::entity entity);
+        void FlushDeferred();
 
         // ==== Layer Operations ==== //
         void SetParent(entt::entity entity, entt::entity parent);
