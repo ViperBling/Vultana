@@ -1,7 +1,9 @@
-#include "ECSRenderBridge.hpp"
+#include "Renderer/ECSRenderBridge.hpp"
 #include "AssetManager/SceneAssetRegistry.hpp"
-#include "RHI/RHI.hpp"
 #include "Core/VultanaEngine.hpp"
+#include "RHI/RHI.hpp"
+
+#include "Utilities/Log.hpp"
 
 namespace Renderer
 {
@@ -18,32 +20,34 @@ namespace Renderer
 
     void FECSRenderBridge::AddBasePassBatch(const Scene::ECS::FRenderBatchInput& input)
     {
+        if (m_pAssetRegistry == nullptr) return;
+        RHI::FRHIPipelineState* pso = m_pAssetRegistry->GetMeshletPSO(input.MaterialHandle);
+        if (pso == nullptr)
+        {
+            VTNA_LOG_WARN("[ECSRenderBridge] base pass batch '{}' skipped: no meshlet PSO for material handle {{{}, {}}}", input.Label, input.MaterialHandle.Index, input.MaterialHandle.Generation);
+            return;
+        }
+
         auto& batch = m_pRenderer->AddBasePassBatch();
         batch.Label = input.Label;
         batch.Center = input.Center;
         batch.Radius = input.Radius;
         batch.MeshletCount = input.MeshletCount;
         batch.InstanceIndex = input.InstanceIndex;
-        if (m_pAssetRegistry)
-        {
-            if (RHI::FRHIPipelineState* pso = m_pAssetRegistry->GetMeshletPSO(input.MaterialHandle))
-            {
-                batch.SetPipelineState(pso);
-            }
-        }
+        batch.SetPipelineState(pso);
     }
 
     void FECSRenderBridge::AddObjectIDBatch(const Scene::ECS::FRenderBatchInput& input)
     {
+        if (m_pAssetRegistry == nullptr) return;
+        RHI::FRHIPipelineState* pso = m_pAssetRegistry->GetIDPSO(input.MaterialHandle);
+        if (pso == nullptr) return;
+
         auto& batch = m_pRenderer->AddObjectIDPassBatch();
         batch.Label = input.Label;
         batch.InstanceIndex = input.InstanceIndex;
-
-        if (!m_pAssetRegistry) return;
-        RHI::FRHIPipelineState* pso = m_pAssetRegistry->GetIDPSO(input.MaterialHandle);
-        if (!pso) return;
-
         batch.SetPipelineState(pso);
+
         uint32_t rootConsts[1] = {input.InstanceIndex};
         batch.SetConstantBuffer(0, rootConsts, sizeof(rootConsts));
         batch.SetIndexBuffer(m_pRenderer->GetSceneStaticBuffer(), input.IndexBufferAddress, input.IndexStride == 2 ? RHI::ERHIFormat::R16UI : RHI::ERHIFormat::R32UI);
@@ -52,15 +56,15 @@ namespace Renderer
 
     void FECSRenderBridge::AddOutlineBatch(const Scene::ECS::FRenderBatchInput& input)
     {
+        if (m_pAssetRegistry == nullptr) return;
+        RHI::FRHIPipelineState* pso = m_pAssetRegistry->GetOutlinePSO(input.MaterialHandle);
+        if (pso == nullptr) return;
+
         auto& batch = m_pRenderer->AddOutlinePassBatch();
         batch.Label = input.Label;
         batch.InstanceIndex = input.InstanceIndex;
-
-        if (!m_pAssetRegistry) return;
-        RHI::FRHIPipelineState* pso = m_pAssetRegistry->GetOutlinePSO(input.MaterialHandle);
-        if (!pso) return;
-
         batch.SetPipelineState(pso);
+
         uint32_t rootConsts[1] = {input.InstanceIndex};
         batch.SetConstantBuffer(0, rootConsts, sizeof(rootConsts));
         batch.SetIndexBuffer(m_pRenderer->GetSceneStaticBuffer(), input.IndexBufferAddress, input.IndexStride == 2 ? RHI::ERHIFormat::R16UI : RHI::ERHIFormat::R32UI);

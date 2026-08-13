@@ -2,6 +2,8 @@
 #include "Scene/ECS/Components.hpp"
 #include "Utilities/Log.hpp"
 
+#include <EASTL/fixed_vector.h>
+
 namespace Scene::ECS
 {
     FEntityFactory::FEntityFactory(FEntitySubsystem& subsystem, IAssetRegistry& registry)
@@ -56,7 +58,10 @@ namespace Scene::ECS
             m_Registry.Release(meshComp->MaterialHandle);
         }
 
-        auto children = m_Subsystem.GetChildren(rootEntity);
+        eastl::fixed_vector<entt::entity, 16, true> children;
+        if (const eastl::vector<entt::entity>* pChildren = m_Subsystem.FindChildren(rootEntity))
+            children.assign(pChildren->begin(), pChildren->end());
+
         for (entt::entity child : children)
         {
             DestroyModelInstance(child);
@@ -112,11 +117,17 @@ namespace Scene::ECS
             {
                 Scene::ECS::FMeshResourceHandle meshHandle = m_Registry.AcquireMesh(assetHandle, n, primIdx);
                 Scene::ECS::FMaterialResourceHandle matHandle = m_Registry.AcquireMaterial(assetHandle, n, primIdx);
-                if (!meshHandle.IsValid()) continue;
+                if (!meshHandle.IsValid() || !matHandle.IsValid())
+                {
+                    if (meshHandle.IsValid()) m_Registry.Release(meshHandle);
+                    if (matHandle.IsValid()) m_Registry.Release(matHandle);
+                    VTNA_LOG_WARN("[EntityFactory] node {} primitive {}: mesh/material acquire failed; mesh entity skipped", n, primIdx);
+                    continue;
+                }
 
                 const Scene::ECS::FMeshGPUData meshData = m_Registry.GetMeshData(meshHandle);
                 entt::entity meshEntity = CreateEmpty("Mesh", nodeEntities[n]);
-                registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, meshData.MeshletCount, false);
+                registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, false);
                 registry.emplace<FBoundingSphereComponent>(meshEntity, meshData.Center, meshData.Radius);
                 registry.emplace<FVisibilityComponent>(meshEntity);
             }

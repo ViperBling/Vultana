@@ -46,11 +46,12 @@ Startup scene comes from `[World] SceneFile` in `Config/VultanaEngine.ini`. Two 
 
 ### Tests
 
-There is **no working test target, no lint, and no CI.** Everything in `Tests/CMakeLists.txt` except the `VultanaEngine` executable is commented out (GoogleTest), and `enable_testing()`/`add_test()` are never called, so there is no ctest.
+There are **two active gtest executables** (`Tests/CMakeLists.txt`, with `enable_testing()` at root `CMakeLists.txt:21`; `gtest` comes from vcpkg). Run from `Binary/` (the `add_test` calls set this as working dir):
 
-- `Tests/EngineTest.cpp` — the one real test: a single `TEST(EngineTest, Init)` full-lifecycle smoke test (GLFWindow + Init/Tick/Shutdown, pass = no crash). `Tests/MainTest.cpp` is the gtest main.
-- `ShaderTest` / `RenderGraphTest` appear in the commented CMake but **have no source files** — those blocks cannot be uncommented as-is.
-- To re-enable the real one: uncomment `find_package(GTest CONFIG REQUIRED)`, the `set(GTestLib ...)`/`set(MainFile ...)` lines, and the `EngineTest` block (add `gtest` to `vcpkg.json` first), then run `EngineTest.exe` from `Binary/`. Commented `add_custom_target(RunEngineTest COMMAND EngineTest)` provides a build-system entry point.
+- **`ECSTest.exe`** (`Tests/ECSTest.cpp` + `MainTest.cpp`) — ECS layer: entity subsystem, undo/redo commands, hierarchy/culling processors, asset registry + render bridge (via `Tests/FakeAssetRegistry.hpp`). **37 tests pass** as of the Slice 2.5 review (`cd Binary && ./ECSTest.exe`). Build-tree entry: `RunECSTest`.
+- **`UnitTests.exe`** (`Tests/EditCommandTest.cpp` + `AssetIOTest.cpp`) — editor command + asset IO tests, links `CookerLib`. Build-tree entry: `RunUnitTests`.
+- `Tests/EngineTest.cpp` — full-lifecycle smoke test (GLFWindow + Init/Tick/Shutdown) exists on disk but is **wired into no target** (the `VultanaEngine` exe uses `WinMain.cpp`).
+- **No CI, no lint.** `ctest` is configured but no pipeline runs it.
 
 
 ## Architecture
@@ -72,9 +73,12 @@ wWinMain (Tests/WinMain.cpp)
         │     ├── HiZBuffer                 (hierarchical Z for occlusion culling)
         │     └── GPUDrivenStats / GPUDrivenDebugLine
         ├── Scene::World                    (flat container: camera, objects, lights; XML scene)
+        ├── Scene::FEntitySubsystem         (EnTT 3.16 ECS backend; see "ECS backend" below)
         ├── VultanaEditor                   (ImGui dockspace, ImGuizmo, ImFileDialog)
         └── AssetManager                    (ModelLoader via cgltf, ResourceCache singleton)
 ```
+
+**ECS backend (Slices 1–2, in progress).** `Config/VultanaEngine.ini [World] SceneBackend` selects `ECS` (the default) or `Legacy`. The ECS path (`Framework/Scene/ECS/`) is built on **EnTT 3.16** (`entt` from vcpkg — the engine's ECS is NOT self-written): `FEntitySubsystem` owns the typed storages plus a per-phase processor chain (`HierarchyProcessor` world transforms, `CullingProcessor` frustum cull, `RenderSubmissionProcessor` frame instance/batch submission). Entity edits go through `Editor::Commands` for undo/redo (`FEntityEditableTarget`). Assets: `Scene/ECS/AssetRegistry.hpp` is the zero-RHI registry interface; `Framework/AssetManager/SceneAssetRegistry.hpp/.cpp` (global pool, RefCount, frame-fence deferred release) + `ModelLoaderECS` (async import/reload) implement it; `FECSRenderBridge` (`Framework/Renderer/`) turns per-entity submissions into base-pass/ObjectID/Outline batches, resolving PSOs and material constants. Tests: `Tests/ECSTest.cpp`. Caveats as of Slice 2.5: `World` runs one backend per session, not both; the editor gizmo/transform-undo path still targets the Legacy world (plan in `AIOut/Slice2.5_ECSFixes.md`, Slice 3 wires it).
 
 ### Frame Loop
 
@@ -160,6 +164,10 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 | `Framework/Renderer/RenderModules/HiZBuffer.hpp` | HZB: 3 chains (1st/2nd-phase culling, scene), SPD-based |
 | `Framework/Renderer/ShaderCompiler.hpp` | DXC (`IDxcCompiler3`) HLSL→SPIR-V wrapper |
 | `Framework/Scene/World.hpp` | Flat scene container; XML scene loading; ParallelFor frustum culling |
+| `Framework/Scene/ECS/` | EnTT 3.16 ECS: `Components.hpp`, `EntitySubsystem`, `Processors/` (Hierarchy/Culling/RenderSubmission), zero-RHI `AssetRegistry.hpp` + `RenderSink.hpp`, `EntityFactory` |
+| `Framework/AssetManager/SceneAssetRegistry.hpp/.cpp` + `AssetManager/ModelLoaderECS.hpp/.cpp` | Global asset pool (RefCount, frame-fence deferred release) + async import/reload; implements the zero-RHI `IAssetRegistry` |
+| `Framework/Renderer/ECSRenderBridge.hpp/.cpp` | ECS→render: base-pass/ObjectID/Outline batches, PSO + material-constant resolution |
+| `Tests/ECSTest.cpp` / `Tests/FakeAssetRegistry.hpp` | ECS unit tests (37 passing) / fake registry for tests |
 | `Framework/Editor/VultanaEditor.hpp` | ImGui editor; `AddGUICommand` injection point; Tools → RenderGraph export |
 | `Framework/AssetManager/ModelLoader.hpp` | cgltf GLTF loading + meshopt meshlet generation |
 | `Framework/Utilities/Memory.hpp` / `Log.hpp` / `Math.hpp` | `VTNA_ALLOC` / `VTNA_LOG_*` / math aliases |
@@ -174,18 +182,21 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 
 `docs/superpowers/specs/2026-08-03-realengine-roadmap-design.md` documents the gap analysis vs the RealEngine reference (DX12 Ultimate) and the planned order: P0 (STBN blue noise + shader Print) → A1 (skybox/IBL) → **A2 GBuffer-ization of the meshlet pass (now done)** → A3 clustered deferred lighting → A4 post chain (tonemapper/AE/Bloom/TAA) → B (visibility buffer, meshlet LOD — Vultana's differentiation area) → C (GTAO, RT, ReSTIR GI). Recommended next step is A3 (clustered deferred lighting) on the existing GBuffer.
 
+**ECS track** (separate from the rendering roadmap; docs in `AIOut/Slice*_*.md`): replacing the flat `World` scene container. Slice 1 (core + undo/redo + hierarchy culling) and Slice 2 (asset registry + render bridge) are implemented; Slice 2.5 (`AIOut/Slice2.5_ECSFixes.md`) is the current fix pass (scale/culling bugs, perf, dead code); Slice 3 (camera/light/animation, gizmo wiring) is next. The asset pipeline (Slices 1–8, `AIOut/AssetPipeline_Slice*.md`) is finished.
+
 ## Known Inconsistencies
 
 Do not "fix" these incidentally — they are load-bearing or harmless, and several are traps that look like bugs:
 
 - Namespace closing comments are stale in places (`Core/VultanaEngine.hpp` closes `} // namespace Vultana`, `RendererBase.cpp` closes `} // namespace Vultana::Renderer`) — residue of a namespace rename; actual namespaces are the short forms (`Core`, `Renderer`, `RG`, …).
 - `Assets/Textures/EnvirnomentTex/` — directory name typo exists on disk; use as-is.
-- `AGENTS.md` references `ForwardPath/ForwardBasePass` (renamed to `DeferredPath/DeferredBasePass`, commit `cc969fa`) and vcpkg classic mode (now manifest, commit `4b7199f`).
+- `AGENTS.md` references `ForwardPath/ForwardBasePass` (renamed to `DeferredPath/DeferredBasePass`, commit `cc969fa`), vcpkg classic mode (now manifest, commit `4b7199f`), and predates the ECS work (Slices 1–2) and the active `ECSTest`/`UnitTests` targets.
 - `Framework/Renderer/ForwardPath/` is an **empty directory** left by that rename. `Framework/CMakeLists.txt` also globs a `Framework/Common/` that does not exist (empty glob, harmless).
 - `ShaderCompiler.cpp:185` — the `-O2` branch is `else if (flags & RHIShaderCompileFlagO3)`, a duplicate of the `-O3` condition above it, so `-O2` is unreachable dead code.
 - **Never write `$ENV{ProgramFiles(x86)}` in CMake** — policy `CMP0053` (NEW for any project declaring `cmake_minimum_required(VERSION 3.1+)`, so always active here) rejects `(` in a variable name and turns the whole file into a syntax error. `CMake/VultanaVcpkg.cmake` looks the name up indirectly via `VULTANA_PROGRAM_FILES_X86_VAR`; keep it that way.
 - **Configure trap** — a configure that aborts partway **deletes `<build-dir>/CMakeFiles/rules.ninja`** before failing, which leaves a previously-working tree broken (`cmake --build` then fails with `loading 'CMakeFiles\rules.ninja'`). Recovery is one successful reconfigure. Don't run speculative `cmake --preset` against a build tree you care about.
 - `Framework/CMakeLists.txt:68` sets `CMAKE_MSVC_RUNTIME_LIBRARY` *after* `add_library(FrameworkLib)`, so it never applies — the build is effectively `/MDd`, which is why the runtime DLLs in `Binary/` are required.
-- `vcpkg.json` lists `entt` and `glfw3`, but there is **no ECS in the engine** (no `entt` include anywhere; `AIOut/ECSDesign.md` is an unimplemented design sketch) and GLFW is only used by the commented-out test window.
+- `AIOut/ECSDesign.md` is an early design sketch superseded by the live EnTT-based implementation in `Framework/Scene/ECS/` (Slices 1–2). `vcpkg.json`'s `glfw3` is only used by the un-wired `Tests/EngineTest.cpp`; `entt` (3.16) is load-bearing.
+- The ObjectID pick pass's "miss" clear value is `float 1000000.0f` written into an **R32UI** attachment — the float bit pattern `0x49742400 = 1232348160` is what's actually read back (`RenderFrame.cpp` clear color → `RHICommandListVK.cpp` memcpy into `VkClearColorValue`). The ECS `MAX_PICK_ID = 9999999` never collides with it; fixing it (write the clear value as uint) is a Renderer-layer task.
 - `Framework/RHI/RHID3D/` is 13 headers with no `.cpp` — a stub. Don't extend it; Vulkan is the only backend.
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <EASTL/algorithm.h>
+
 #include <float.h>
 #include <linalg.h>
 #include <hlslpp/hlsl++.h>
@@ -194,6 +196,14 @@ inline void Decompose(const float4x4& matrix, float3& translation, float3& rotat
     Decompose(matrix, translation, q, scale);
 
     rotation = RotationAngles(q);
+}
+
+inline float MaxAxisScale(const float4x4& mtx)
+{
+    const float sx = length(mtx[0].xyz());
+    const float sy = length(mtx[1].xyz());
+    const float sz = length(mtx[2].xyz());
+    return eastl::max(eastl::max(sx, sy), sz);
 }
 
 inline float Sign(float x)

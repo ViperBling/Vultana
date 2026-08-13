@@ -307,6 +307,34 @@ TEST(ECSTest, Hierarchy_NonUniformScale_Bounds)
     EXPECT_NEAR(ecs.GetRegistry().get<FWorldBoundingSphereComponent>(e).Radius, 10.0f, 0.001f);
 }
 
+TEST(ECSTest, Hierarchy_AncestorScale_PropagatesToWorldBounds)
+{
+    FEntitySubsystem ecs;
+    entt::entity root = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(100, 100, 100));
+    entt::entity mesh = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    ecs.SetParent(mesh, root);
+    ecs.GetRegistry().emplace<FBoundingSphereComponent>(mesh, float3(0, 0, 0), 2.0f);
+
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+    ecs.Tick(0.0f);
+
+    // Before the fix: local scale (1,1,1) => radius 2.0 (100x too small).
+    // After: world column length == 100 => radius 200.
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldBoundingSphereComponent>(mesh).Radius, 200.0f, 0.01f);
+}
+
+TEST(ECSTest, Hierarchy_RotatedScale_BoundsRadiusIgnoresRotation)
+{
+    FEntitySubsystem ecs;
+    entt::entity e = CreateTransformEntity(ecs, float3(0, 0, 0), RotationQuat(float3(90, 90, 0)), float3(3, 3, 3));
+    ecs.GetRegistry().emplace<FBoundingSphereComponent>(e, float3(0, 0, 0), 1.0f);
+
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+    ecs.Tick(0.0f);
+
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldBoundingSphereComponent>(e).Radius, 3.0f, 0.001f);
+}
+
 TEST(ECSTest, Hierarchy_InvalidParent_Removed)
 {
     FEntitySubsystem ecs;
@@ -335,6 +363,63 @@ TEST(ECSTest, Hierarchy_ParentDeleted_OrphanBecomesRoot)
     ecs.DestroyEntityDeferred(p);
     ecs.Tick(0.0f);
     EXPECT_EQ(ecs.GetRegistry().try_get<FParentComponent>(c), nullptr);
+}
+
+TEST(ECSTest, Hierarchy_IsolatedCycle_BrokenAndProcessed)
+{
+    FEntitySubsystem ecs;
+    entt::entity a = CreateTransformEntity(ecs, float3(1, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    entt::entity b = CreateTransformEntity(ecs, float3(2, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    ecs.SetParent(a, b);
+    ecs.SetParent(b, a);
+
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+    ecs.Tick(0.0f);
+
+    // The cycle is broken: at least one entity no longer has a parent.
+    const bool aHasParent = ecs.GetRegistry().try_get<FParentComponent>(a) != nullptr;
+    const bool bHasParent = ecs.GetRegistry().try_get<FParentComponent>(b) != nullptr;
+    EXPECT_FALSE(aHasParent && bHasParent);
+
+    // Both entities received a world transform (no more silent disappearance).
+    EXPECT_NE(ecs.GetRegistry().try_get<FWorldTransformComponent>(a), nullptr);
+    EXPECT_NE(ecs.GetRegistry().try_get<FWorldTransformComponent>(b), nullptr);
+}
+
+TEST(ECSTest, Hierarchy_CycleBreak_BrokenEntityHasIdentityParent)
+{
+    FEntitySubsystem ecs;
+    entt::entity a = CreateTransformEntity(ecs, float3(1, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    entt::entity b = CreateTransformEntity(ecs, float3(2, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    ecs.SetParent(a, b);   // a->b->a cycle
+    ecs.SetParent(b, a);
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+
+    ecs.Tick(0.0f);        // the breaking frame
+
+    ASSERT_NE(ecs.GetRegistry().try_get<FWorldTransformComponent>(a), nullptr);
+    ASSERT_NE(ecs.GetRegistry().try_get<FWorldTransformComponent>(b), nullptr);
+    const float aTx = ecs.GetRegistry().get<FWorldTransformComponent>(a).MtxWorld[3].x;
+    const float bTx = ecs.GetRegistry().get<FWorldTransformComponent>(b).MtxWorld[3].x;
+    EXPECT_NEAR(aTx, 1.0f, 0.001f);    // identity*local
+    EXPECT_NEAR(bTx, 3.0f, 0.001f);    // T(b)*T(a)
+}
+
+TEST(ECSTest, Hierarchy_RepeatedTick_IsDeterministic)
+{
+    FEntitySubsystem ecs;
+    entt::entity p = CreateTransformEntity(ecs, float3(10, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    entt::entity c = CreateTransformEntity(ecs, float3(5, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
+    ecs.SetParent(c, p);
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+
+    ecs.Tick(0.0f);
+    const float first = ecs.GetRegistry().get<FWorldTransformComponent>(c).MtxWorld[3].x;
+    for (int i = 0; i < 10; ++i) ecs.Tick(0.0f);
+    const float last = ecs.GetRegistry().get<FWorldTransformComponent>(c).MtxWorld[3].x;
+
+    EXPECT_NEAR(first, 15.0f, 0.001f);
+    EXPECT_NEAR(first, last, 0.0001f);
 }
 
 TEST(ECSTest, Culling_InsideFrustum_Visible)
@@ -392,6 +477,7 @@ class FFakeRenderSink : public Scene::ECS::ISceneRenderSink
 {
 public:
     eastl::vector<uint32_t> AddedInstances;
+    eastl::vector<FInstanceData> AddedInstanceData;
     eastl::vector<Scene::ECS::FRenderBatchInput> BaseBatches;
     uint32_t NextPickID = 0;
     bool bMouseHitTest = false;
@@ -399,6 +485,7 @@ public:
     uint32_t AddInstance(const FInstanceData& instanceData) override
     {
         AddedInstances.push_back(instanceData.ObjectID);
+        AddedInstanceData.push_back(instanceData);
         return static_cast<uint32_t>(AddedInstances.size() - 1);
     }
 
@@ -443,8 +530,9 @@ TEST(ECSTest, AssetRegistry_GetModelInfo)
     EXPECT_EQ(info.ModelPath, "test.gltf");
 }
 
-TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
+TEST(ECSTest, RenderSubmission_NoMeshRenderer_NoInstance)
 {
+    // Entities without FMeshRendererComponent never enter the GPU scene (view mismatch).
     Scene::ECS::FEntitySubsystem ecs;
     FFakeAssetRegistry fakeReg;
     FFakeRenderSink fakeSink;
@@ -452,7 +540,41 @@ TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
     entt::entity e = ecs.CreateEntity();
     ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(e);
     ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(e);
+
+    auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
+    processor->Process(ecs, 0.0f);   // the original test forgot this call, making the assert trivially true
+
     EXPECT_EQ(fakeSink.AddedInstances.size(), 0u);
+    EXPECT_EQ(fakeSink.BaseBatches.size(), 0u);
+}
+
+TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    FFakeRenderSink fakeSink;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+
+    auto makeMesh = [&](bool bVisible)
+    {
+        auto meshHandle = fakeReg.AcquireMesh(model, 0, 0);
+        entt::entity e = ecs.CreateEntity();
+        ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(e);
+        ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(e);
+        ecs.GetRegistry().emplace<Scene::ECS::FVisibilityComponent>(e, bVisible);
+        ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(e, meshHandle, Scene::ECS::FMaterialResourceHandle{}, false);
+        return e;
+    };
+    makeMesh(true);
+    makeMesh(false);
+    makeMesh(true);
+
+    auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
+    processor->Process(ecs, 0.0f);
+
+    EXPECT_EQ(fakeSink.AddedInstances.size(), 3u);   // all entities
+    EXPECT_EQ(fakeSink.BaseBatches.size(), 2u);      // visible ones only
 }
 
 TEST(ECSTest, RenderSubmission_VisibleEntityGetsBaseBatch)
@@ -468,7 +590,7 @@ TEST(ECSTest, RenderSubmission_VisibleEntityGetsBaseBatch)
     ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(e);
     ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(e);
     ecs.GetRegistry().emplace<Scene::ECS::FVisibilityComponent>(e, true);
-    ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(e, meshHandle, Scene::ECS::FMaterialResourceHandle{}, 0u, false);
+    ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(e, meshHandle, Scene::ECS::FMaterialResourceHandle{}, false);
 
     auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
     processor->Process(ecs, 0.0f);
@@ -501,6 +623,114 @@ TEST(ECSTest, EntityFactory_CreateModelInstance)
     EXPECT_TRUE(ecs.GetRegistry().valid(root));
     EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FModelInstanceComponent>(root));
     EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FTransformComponent>(root));
+}
+
+TEST(ECSTest, RenderSubmission_RotatedTransform_ScaleCorrect)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    FFakeRenderSink fakeSink;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    auto meshHandle = fakeReg.AcquireMesh(model, 0, 0);
+
+    const float4x4 T = translation_matrix(float3(0.0f));
+    const float4x4 R = rotation_matrix(RotationQuat(float3(90.0f, 90.0f, 0.0f)));
+    const float4x4 S = scaling_matrix(float3(2.0f, 2.0f, 2.0f));
+    const float4x4 world = mul(T, mul(R, S));
+
+    entt::entity e = ecs.CreateEntity();
+    auto& wt = ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(e);
+    wt.MtxWorld = world;
+    wt.MtxWorldInvTranspose = transpose(inverse(world));
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(e, float3(0, 0, 0), 1.0f);
+    ecs.GetRegistry().emplace<Scene::ECS::FVisibilityComponent>(e, true);
+    ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(e, meshHandle, Scene::ECS::FMaterialResourceHandle{}, false);
+
+    auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
+    processor->Process(ecs, 0.0f);
+
+    ASSERT_EQ(fakeSink.AddedInstanceData.size(), 1u);
+    EXPECT_NEAR(fakeSink.AddedInstanceData[0].Scale, 2.0f, 0.001f);   // ~0 before the fix
+}
+
+TEST(ECSTest, EntityFactory_InvalidMaterialHandle_NoMeshEntity)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    fakeReg.bFailMaterialAcquire = true;
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    entt::entity root = factory.CreateModelInstance(model, "test.gltf");
+
+    Scene::ECS::FModelAssetInfo info;
+    Scene::ECS::FModelNodeInfo node;
+    node.Name = "N0";
+    node.NodeIndex = 0;
+    node.Primitives.push_back(0);
+    info.Nodes.push_back(node);
+
+    factory.CreateModelHierarchy(model, info, root, float3(0.0f), quaternion(0, 0, 0, 1), float3(1.0f));
+
+    // Node entities may exist, but there must be no FMeshRendererComponent at all.
+    int meshCount = 0;
+    for ([[maybe_unused]] auto e : ecs.GetRegistry().view<Scene::ECS::FMeshRendererComponent>())
+        ++meshCount;
+    EXPECT_EQ(meshCount, 0);
+}
+
+TEST(ECSTest, EntityFactory_InvalidMeshHandle_ReleasesMaterial)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    fakeReg.bFailMeshAcquire = true;
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    entt::entity root = factory.CreateModelInstance(model, "test.gltf");
+
+    Scene::ECS::FModelAssetInfo info;
+    Scene::ECS::FModelNodeInfo node;
+    node.Name = "N0";
+    node.NodeIndex = 0;
+    node.Primitives.push_back(0);
+    info.Nodes.push_back(node);
+
+    factory.CreateModelHierarchy(model, info, root, float3(0.0f), quaternion(0, 0, 0, 1), float3(1.0f));
+
+    int meshCount = 0;
+    for ([[maybe_unused]] auto e : ecs.GetRegistry().view<Scene::ECS::FMeshRendererComponent>())
+        ++meshCount;
+    EXPECT_EQ(meshCount, 0);
+    EXPECT_EQ(fakeReg.MaterialReleaseCount, 1);   // acquired once, rolled back once
+    EXPECT_EQ(fakeReg.MeshReleaseCount, 0);       // mesh never acquired, nothing to release
+}
+
+TEST(ECSTest, AssetRegistry_ReacquireAfterRelease_KeepsHandleAlive)
+{
+    FFakeAssetRegistry reg;
+    auto model = reg.ImportModel("test.gltf");
+    auto mesh = reg.AcquireMesh(model, 0, 0);
+    ASSERT_NE(reg.FindMeshData(mesh), nullptr);
+
+    reg.Release(mesh);                                // RefCount 0 -> queued for delayed release
+    auto revived = reg.AcquireMesh(model, 0, 0);      // re-acquired within the window
+    reg.FrameFencePassed(1000);                       // window matures
+
+    EXPECT_NE(reg.FindMeshData(revived), nullptr) << "handle was silently invalidated after re-acquire";
+}
+
+TEST(ECSTest, AssetRegistry_ReleaseWithoutReacquire_InvalidatesHandle)
+{
+    FFakeAssetRegistry reg;
+    auto model = reg.ImportModel("test.gltf");
+    auto mesh = reg.AcquireMesh(model, 0, 0);
+
+    reg.Release(mesh);
+    reg.FrameFencePassed(1000);
+
+    EXPECT_EQ(reg.FindMeshData(mesh), nullptr);
 }
 
 TEST(ECSTest, FindModelInstanceRootWalksParentChain)

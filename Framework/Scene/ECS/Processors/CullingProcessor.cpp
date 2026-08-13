@@ -2,7 +2,6 @@
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/Components.hpp"
 #include "Utilities/ParallelFor.hpp"
-#include "CullingProcessor.hpp"
 
 namespace Scene::ECS
 {
@@ -22,26 +21,25 @@ namespace Scene::ECS
             return;
         auto& registry = subsystem.GetRegistry();
         auto view = registry.view<FWorldBoundingSphereComponent, FVisibilityComponent>();
-        eastl::vector<entt::entity> entities;
-        entities.reserve(view.size_hint());
-        view.each([&entities](entt::entity entity, const FWorldBoundingSphereComponent&, const FVisibilityComponent&)
-        {
-            entities.push_back(entity);
-        });
-        if (entities.empty())
+
+        m_ScratchEntities.clear();
+        m_ScratchEntities.reserve(view.size_hint());
+        view.each([this](entt::entity entity, const FWorldBoundingSphereComponent&, const FVisibilityComponent&)
+                  { m_ScratchEntities.push_back(entity); });
+        if (m_ScratchEntities.empty())
             return;
 
         auto cullFunc = [&](uint32_t i)
         {
-            auto entity = entities[i];
+            auto entity = m_ScratchEntities[i];
             auto& bounds = view.get<FWorldBoundingSphereComponent>(entity);
             auto& visibility = view.get<FVisibilityComponent>(entity);
             visibility.bFrustumVisible = SphereFrustumCull(m_FrustumPlanes, bounds.Center, bounds.Radius);
         };
 
         if (m_ParallelFor)
-            m_ParallelFor(static_cast<uint32_t>(entities.size()), cullFunc);
+            m_ParallelFor(static_cast<uint32_t>(m_ScratchEntities.size()), cullFunc);
         else
-            Utilities::ParallelFor(static_cast<uint32_t>(entities.size()), cullFunc);
+            Utilities::ParallelFor(static_cast<uint32_t>(m_ScratchEntities.size()), cullFunc);
     }
 }

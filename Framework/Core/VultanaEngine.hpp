@@ -46,6 +46,7 @@ namespace Core
         Scene::ECS::ISceneRenderSink* GetRenderSink() const { return m_pRenderSink.get(); }
         Scene::ECS::FEntityFactory* GetEntityFactory() const { return m_pEntityFactory.get(); }
         bool IsUseECSBackend() const { return m_bUseECSBackend; }
+        void SetECSMode(bool enabled) { m_bUseECSBackend = enabled; }
 
         void* GetWindowHandle() const { return m_WndHandle; }
         float GetDeltaTime() const { return m_FrameTime; }

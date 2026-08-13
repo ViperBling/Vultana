@@ -23,8 +23,8 @@ namespace Assets
         Scene::ECS::FMaterialResourceHandle AcquireMaterial(Scene::ECS::FModelAssetHandle asset, uint32_t nodeIdx, uint32_t primitiveIdx) override;
         void Release(Scene::ECS::FMeshResourceHandle handle) override;
         void Release(Scene::ECS::FMaterialResourceHandle handle) override;
-        Scene::ECS::FMeshGPUData GetMeshData(Scene::ECS::FMeshResourceHandle handle) const override;
-        Scene::ECS::FMaterialGPUData GetMaterialData(Scene::ECS::FMaterialResourceHandle handle) const override;
+        const Scene::ECS::FMeshGPUData* FindMeshData(Scene::ECS::FMeshResourceHandle handle) const override;
+        const Scene::ECS::FMaterialGPUData* FindMaterialData(Scene::ECS::FMaterialResourceHandle handle) const override;
         Scene::ECS::FModelAssetInfo GetModelInfo(Scene::ECS::FModelAssetHandle handle) const override;
         Scene::ECS::EAssetState GetState(Scene::ECS::FModelAssetHandle handle) const override;
         void FrameFencePassed(uint64_t frameID) override;

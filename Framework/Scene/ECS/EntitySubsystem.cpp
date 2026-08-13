@@ -1,6 +1,5 @@
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Utilities/Log.hpp"
-#include "EntitySubsystem.hpp"
 
 namespace Scene::ECS
 {
@@ -17,14 +16,10 @@ namespace Scene::ECS
     entt::entity FEntitySubsystem::CreateEntity()
     {
         entt::entity entity = m_Registry.create();
-        uint32_t pickID = m_NextPickID++;
-        if (pickID >= MAX_PICK_ID) 
-        {
-            pickID = 1;
-            m_NextPickID = 2;
-        }
+        const uint32_t pickID = AcquirePickID();
         m_Registry.emplace<FPickIDComponent>(entity, pickID);
-        m_PickIDToEntity[pickID] = entity;
+        if (pickID != 0)
+            m_PickIDToEntity[pickID] = entity;
         return entity;
     }
 
@@ -41,14 +36,10 @@ namespace Scene::ECS
     entt::entity FEntitySubsystem::CreateEntityAt(entt::entity specEntity)
     {
         entt::entity entity = m_Registry.create(specEntity);
-        uint32_t pickID = m_NextPickID++;
-        if (pickID >= MAX_PICK_ID) 
-        {
-            pickID = 1;
-            m_NextPickID = 2;
-        }
+        const uint32_t pickID = AcquirePickID();
         m_Registry.emplace<FPickIDComponent>(entity, pickID);
-        m_PickIDToEntity[pickID] = entity;
+        if (pickID != 0)
+            m_PickIDToEntity[pickID] = entity;
         return entity;
     }
 
@@ -177,7 +168,11 @@ namespace Scene::ECS
         }
         else
         {
-            if (!m_Registry.valid(parent)) return;
+            if (!m_Registry.valid(parent))
+            {
+                m_Registry.remove<FParentComponent>(entity);
+                return;
+            }
             m_Registry.emplace_or_replace<FParentComponent>(entity, parent);
             m_ChildrenMap[entt::to_integral(parent)].push_back(entity);
         }
@@ -197,12 +192,24 @@ namespace Scene::ECS
         }
     }
 
+    void FEntitySubsystem::DetachFromParent(entt::entity entity)
+    {
+        NotifyParentRemoved(entity);
+        m_Registry.remove<FParentComponent>(entity);
+    }
+
     eastl::vector<entt::entity> FEntitySubsystem::GetChildren(entt::entity entity) const
     {
         auto it = m_ChildrenMap.find(entt::to_integral(entity));
         if (it != m_ChildrenMap.end())
             return it->second;
         return {};
+    }
+
+    const eastl::vector<entt::entity>* FEntitySubsystem::FindChildren(entt::entity entity) const
+    {
+        auto it = m_ChildrenMap.find(entt::to_integral(entity));
+        return it != m_ChildrenMap.end() ? &it->second : nullptr;
     }
 
     uint32_t FEntitySubsystem::GetEntityCount() const
@@ -244,4 +251,26 @@ namespace Scene::ECS
         }
         m_PendingDestroy.clear();
     }
-}
+
+    uint32_t FEntitySubsystem::AcquirePickID()
+    {
+        for (uint32_t attempt = 0; attempt < MAX_PICK_ID; ++attempt)
+        {
+            uint32_t pickID = m_NextPickID++;
+            if (m_NextPickID > MAX_PICK_ID)
+                m_NextPickID = 1;
+
+            auto iter = m_PickIDToEntity.find(pickID);
+            if (iter == m_PickIDToEntity.end())
+                return pickID;
+
+            if (!m_Registry.valid(iter->second))
+            {
+                m_PickIDToEntity.erase(iter);
+                return pickID;
+            }
+        }
+        VTNA_LOG_ERROR("FEntitySubsystem: PickID pool exhausted (max {})", MAX_PICK_ID);
+        return 0;
+    }
+} // namespace Scene::ECS

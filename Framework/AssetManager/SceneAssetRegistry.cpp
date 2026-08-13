@@ -147,18 +147,17 @@ namespace Assets
         }
     }
 
-    Scene::ECS::FMeshGPUData FSceneAssetRegistry::GetMeshData(Scene::ECS::FMeshResourceHandle handle) const
+    const Scene::ECS::FMeshGPUData* FSceneAssetRegistry::FindMeshData(Scene::ECS::FMeshResourceHandle handle) const
     {
         if (handle.Index < m_Meshes.size() && m_Meshes[handle.Index].Generation == handle.Generation)
-            return m_Meshes[handle.Index].GPUData;
-        return {};
+            return &m_Meshes[handle.Index].GPUData;
+        return nullptr;
     }
-
-    Scene::ECS::FMaterialGPUData FSceneAssetRegistry::GetMaterialData(Scene::ECS::FMaterialResourceHandle handle) const
+    const Scene::ECS::FMaterialGPUData* FSceneAssetRegistry::FindMaterialData(Scene::ECS::FMaterialResourceHandle handle) const
     {
         if (handle.Index < m_Materials.size() && m_Materials[handle.Index].Generation == handle.Generation)
-            return m_Materials[handle.Index].GPUData;
-        return {};
+            return &m_Materials[handle.Index].GPUData;
+        return nullptr;
     }
 
     Scene::ECS::FModelAssetInfo FSceneAssetRegistry::GetModelInfo(Scene::ECS::FModelAssetHandle handle) const
@@ -194,6 +193,12 @@ namespace Assets
             if (pending.Type == FPendingRelease::EType::Mesh)
             {
                 FMeshRecord& rec = m_Meshes[pending.RecordIndex];
+                if (rec.RefCount > 0)
+                {
+                    rec.bPendingRelease = false;
+                    m_PendingReleaseQueue.erase_unsorted(m_PendingReleaseQueue.begin() + i);
+                    continue;
+                }
                 for (const OffsetAllocator::Allocation& alloc : rec.Allocations)
                     FResourceCache::GetInstance()->ReleaseSceneBuffer(alloc);
                 rec.Allocations.clear();
@@ -203,6 +208,12 @@ namespace Assets
             else if (pending.Type == FPendingRelease::EType::Material)
             {
                 FMaterialRecord& rec = m_Materials[pending.RecordIndex];
+                if (rec.RefCount > 0)
+                {
+                    rec.bPendingRelease = false;
+                    m_PendingReleaseQueue.erase_unsorted(m_PendingReleaseQueue.begin() + i);
+                    continue;
+                }
                 if (rec.Material)
                 {
                     delete rec.Material;

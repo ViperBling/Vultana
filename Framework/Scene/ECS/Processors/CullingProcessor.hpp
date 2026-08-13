@@ -4,6 +4,8 @@
 #include "Utilities/Math.hpp"
 
 #include <EASTL/span.h>
+#include <EASTL/vector.h>
+#include <entt/entt.hpp>
 #include <functional>
 
 namespace Scene::ECS
@@ -25,5 +27,6 @@ namespace Scene::ECS
     private:
         eastl::span<const float4> m_FrustumPlanes;
         FParallelForFunc m_ParallelFor = nullptr;
+        eastl::vector<entt::entity> m_ScratchEntities;
     };
 } // namespace Scene::ECS

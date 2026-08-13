@@ -4,6 +4,7 @@
 #include "Editor/Commands/CommandHistory.hpp"
 #include "Editor/Commands/TransformCommand.hpp"
 
+#include <entt/entt.hpp>
 #include <EASTL/hash_map.h>
 #include <EASTL/functional.h>
 
@@ -31,6 +32,7 @@ namespace Editor
         void DrawToolBar();
         void DrawMenu();
         void DrawGizmo();
+        void DrawGizmoECS();
 
         void DrawFrameStats();
         void ShowRenderGraph();
@@ -87,6 +89,7 @@ namespace Editor
         Editor::Commands::FCommandHistory m_EditHistory;
         bool m_bGizmoDragging = false;
         Scene::IVisibleObject* m_GizmoDragTarget = nullptr;
+        entt::entity m_GizmoDragEntity = entt::null;
         Editor::Commands::FTransformSnapshot m_GizmoDragStart;
     };
 }

@@ -72,8 +72,21 @@ namespace Scene::ECS
         virtual FMaterialResourceHandle AcquireMaterial(FModelAssetHandle asset, uint32_t nodeIdx, uint32_t primitiveIdx) = 0;
         virtual void Release(FMeshResourceHandle handle) = 0;
         virtual void Release(FMaterialResourceHandle handle) = 0;
-        virtual FMeshGPUData GetMeshData(FMeshResourceHandle handle) const = 0;
-        virtual FMaterialGPUData GetMaterialData(FMaterialResourceHandle handle) const = 0;
+
+        virtual const FMeshGPUData* FindMeshData(FMeshResourceHandle handle) const = 0;
+        virtual const FMaterialGPUData* FindMaterialData(FMaterialResourceHandle handle) const = 0;
+
+        FMeshGPUData GetMeshData(FMeshResourceHandle handle) const
+        {
+            const FMeshGPUData* data = FindMeshData(handle);
+            return data ? *data : FMeshGPUData{};
+        }
+        FMaterialGPUData GetMaterialData(FMaterialResourceHandle handle) const
+        {
+            const FMaterialGPUData* data = FindMaterialData(handle);
+            return data ? *data : FMaterialGPUData{};
+        }
+
         virtual FModelAssetInfo GetModelInfo(FModelAssetHandle handle) const = 0;
         virtual EAssetState GetState(FModelAssetHandle handle) const = 0;
         bool IsReady(FModelAssetHandle handle) const { return GetState(handle) == EAssetState::Ready; }

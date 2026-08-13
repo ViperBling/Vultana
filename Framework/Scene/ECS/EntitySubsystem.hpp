@@ -55,6 +55,7 @@ namespace Scene::ECS
             };
             eastl::optional<FNameData> Name;
         };
+        using FChildrenMap = eastl::hash_map<entt::id_type, eastl::vector<entt::entity>>;
 
         FEntitySnapshot SnapEntity(entt::entity entity) const;
         void ApplyEntitySnapshot(const FEntitySnapshot& snapshot);
@@ -64,13 +65,18 @@ namespace Scene::ECS
         // ==== Layer Operations ==== //
         void SetParent(entt::entity entity, entt::entity parent);
         eastl::vector<entt::entity> GetChildren(entt::entity entity) const;
+        const eastl::vector<entt::entity>* FindChildren(entt::entity entity) const;
         void NotifyParentRemoved(entt::entity entity);
+
+        const FChildrenMap& GetChildrenMap() const { return m_ChildrenMap; }
+        void DetachFromParent(entt::entity entity);
 
         // ===== Query Operations ===== //
         uint32_t GetEntityCount() const;
 
     private:
         void FlushPendingDestroy();
+        uint32_t AcquirePickID();
 
     private:
         entt::registry m_Registry;
@@ -79,6 +85,6 @@ namespace Scene::ECS
         uint32_t m_NextPickID = 1;
         static constexpr uint32_t MAX_PICK_ID = 9999999;
         eastl::vector<entt::entity> m_PendingDestroy;
-        eastl::hash_map<entt::id_type, eastl::vector<entt::entity>> m_ChildrenMap;
+        FChildrenMap m_ChildrenMap;
     };
 }

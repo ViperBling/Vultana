@@ -23,6 +23,7 @@ namespace Utilities
     template <typename F>
     inline void ParallelFor(uint32_t count, F func)
     {
+        if (count == 0) return;
         ParallelFor(0, count - 1, func);
     }
 }

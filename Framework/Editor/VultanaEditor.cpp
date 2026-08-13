@@ -1,10 +1,13 @@
-#include "VultanaEditor.hpp"
+#include "Editor/VultanaEditor.hpp"
 #include "AssetManager/ModelLoaderECS.hpp"
 #include "AssetManager/SceneAssetRegistry.hpp"
 #include "Core/VultanaEngine.hpp"
-#include "Editor/ImGUIImplement.hpp"
+#include "Editor/Commands/EntityEditableTarget.hpp"
 #include "Editor/Commands/ObjectEditableTarget.hpp"
+#include "Editor/ImGUIImplement.hpp"
+
 #include "Renderer/RendererBase.hpp"
+#include "Scene/ECS/Components.hpp"
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
 
@@ -309,7 +312,13 @@ namespace Editor
 
     void FVultanaEditor::DrawGizmo()
     {
-        auto pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        if (pEngine->IsUseECSBackend())
+        {
+            DrawGizmoECS();
+            return;
+        }
+        auto pWorld = pEngine->GetWorld();
 
         auto pSelectedObject = pWorld->GetVisibleObject(m_pRenderer->GetMouseHitObjectID());
         if (pSelectedObject == nullptr)
@@ -384,6 +393,86 @@ namespace Editor
                 }
             }
             m_GizmoDragTarget = nullptr;
+        }
+    }
+
+    void FVultanaEditor::DrawGizmoECS()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        auto* pWorld = pEngine->GetWorld();
+        if (pEntitySystem == nullptr || pWorld == nullptr) return;
+
+        auto& reg = pEntitySystem->GetRegistry();
+        const entt::entity picked = pEntitySystem->ResolvePickID(m_pRenderer->GetMouseHitObjectID());
+        const entt::entity target = (picked == entt::null) ? entt::null : Assets::FModelLoaderECS::FindModelInstanceRoot(reg, picked);
+
+        if (target == entt::null || !reg.valid(target) || reg.try_get<Scene::ECS::FTransformComponent>(target) == nullptr)
+        {
+            m_bGizmoDragging = false;
+            m_GizmoDragEntity = entt::null;
+            return;
+        }
+
+        Editor::Commands::FEntityEditableTarget editTarget(*pEntitySystem, target);
+
+        const bool usingGizmo = ImGuizmo::IsUsing();
+        if (usingGizmo && !m_bGizmoDragging)
+        {
+            m_bGizmoDragging = true;
+            m_GizmoDragEntity = target;
+            m_GizmoDragStart = editTarget.GetTransform();
+        }
+
+        Editor::Commands::FTransformSnapshot current = editTarget.GetTransform();
+        float3 position = current.Position;
+        float3 rotation = RotationAngles(current.Rotation);
+        float3 scale = current.Scale;
+
+        float4x4 mtxWorld;
+        ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&mtxWorld);
+
+        ImGuizmo::OPERATION operation;
+        switch (m_SelectEditMode)
+        {
+        case ESelectEditMode::Translate:    operation = ImGuizmo::TRANSLATE; break;
+        case ESelectEditMode::Rotate:       operation = ImGuizmo::ROTATE; break;
+        case ESelectEditMode::Scale:        operation = ImGuizmo::SCALE; break;
+        default: assert(false);             operation = ImGuizmo::TRANSLATE; break;
+        }
+
+        Scene::FCamera* pCamera = pWorld->GetCamera();
+        float4x4 view = pCamera->GetViewMatrix();
+        float4x4 proj = pCamera->GetProjectionMatrix();
+
+        ImGuizmo::AllowAxisFlip(false);
+        const bool bChanged = ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
+        if (bChanged)
+        {
+            ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
+
+            Editor::Commands::FTransformSnapshot next;
+            next.Position = position;
+            next.Rotation = RotationQuat(rotation);
+            next.Scale = scale;
+            editTarget.SetTransform(next);
+        }
+
+        if (m_bGizmoDragging && !usingGizmo)
+        {
+            m_bGizmoDragging = false;
+            if (m_GizmoDragEntity == target)
+            {
+                const Editor::Commands::FTransformSnapshot finalTF = editTarget.GetTransform();
+                if (!Editor::Commands::TransformEqual(m_GizmoDragStart, finalTF))
+                {
+                    m_EditHistory.Push(eastl::make_unique<Editor::Commands::FSetTransformCommand>(
+                        eastl::make_unique<Editor::Commands::FEntityEditableTarget>(*pEntitySystem, target),
+                        m_GizmoDragStart,
+                        finalTF));
+                }
+            }
+            m_GizmoDragEntity = entt::null;
         }
     }
 

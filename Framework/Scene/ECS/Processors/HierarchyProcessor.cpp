@@ -4,6 +4,7 @@
 #include "Utilities/Math.hpp"
 #include "Utilities/Log.hpp"
 
+#include <EASTL/algorithm.h>
 #include <EASTL/vector.h>
 #include <EASTL/hash_map.h>
 #include <EASTL/hash_set.h>
@@ -19,134 +20,112 @@ namespace Scene::ECS
         auto& registry = subsystem.GetRegistry();
 
         // 1. Build adjacency list of parent-child relationships
-        struct FChildList
-        {
-            eastl::vector<entt::entity> Children;
-        };
-        eastl::hash_map<entt::id_type, FChildList> adjacencyList;
+        m_ScratchDetach.clear();
         auto parentView = registry.view<FParentComponent>();
-        for (auto entity : parentView)
+        for (entt::entity entity : parentView)
         {
-            auto& parentComp = parentView.get<FParentComponent>(entity);
-            entt::entity parent = parentComp.Parent;
-            if (parent == entt::null) continue; // Skip if no parent
-            if (!registry.valid(parent))
-            {
-                subsystem.NotifyParentRemoved(entity);
-                registry.remove<FParentComponent>(entity);
-                continue; // Skip if parent is invalid
-            }
-            adjacencyList[entt::to_integral(parent)].Children.push_back(entity);
+            const FParentComponent& parentComp = parentView.get<FParentComponent>(entity);
+            if (parentComp.Parent == entt::null || !registry.valid(parentComp.Parent))
+                m_ScratchDetach.push_back(entity);
         }
+        for (entt::entity entity : m_ScratchDetach)
+            subsystem.DetachFromParent(entity);
 
-        // 2. Detect cycles in the hierarchy using DFS and break them if found
-        using VisitState = eastl::hash_map<entt::id_type, uint8_t>;
-        VisitState visitState;
+        // 2. Process the hierarchy starting from root entities
+        const FEntitySubsystem::FChildrenMap& childrenMap = subsystem.GetChildrenMap();
+        m_VisitedEntities.clear();
+        m_Stack.clear();
+
         auto rootView = registry.view<FTransformComponent>(entt::exclude_t<FParentComponent>());
-
-        std::function<bool(entt::entity, VisitState&, entt::entity&)> detectCycle;
-        detectCycle = [&](entt::entity entity, VisitState& state, entt::entity& cycleRoot) -> bool
-        {
-            auto id = entt::to_integral(entity);
-            auto it = state.find(id);
-            if (it != state.end())
-            {
-                if (it->second == 1)
-                {
-                    cycleRoot = entity;
-                    return true;
-                }
-                return false;
-            }
-            state[id] = 1;
-            auto adjIt = adjacencyList.find(id);
-            if (adjIt != adjacencyList.end())
-                for (entt::entity child : adjIt->second.Children)
-                    if (detectCycle(child, state, cycleRoot))
-                        return true;
-            state[id] = 2;
-            return false;
-        };
-
         for (entt::entity root : rootView)
+            m_Stack.push_back({root, float4x4{identity}});
+
+        ProcessStack(registry, childrenMap);
+
+        // 3. Detect and break cycles in the hierarchy
+        m_ScratchDetach.clear();
+        for (entt::entity seed : registry.view<FTransformComponent>())
         {
-            entt::entity cycleRoot = entt::null;
-            if (detectCycle(root, visitState, cycleRoot))
+            if (m_VisitedEntities.find(entt::to_integral(seed)) != m_VisitedEntities.end())
+                continue;
+
+            m_ScratchWalk.clear();
+            m_ScratchWalk.push_back(seed);
+            entt::entity cur = seed;
+            bool bInCycle = false;
+            for (uint32_t depth = 0; depth < 4096; ++depth)
             {
-                VTNA_LOG_WARN("HierarchyProcessor: cycle detected near entity {}, breaking", entt::to_integral(cycleRoot));
-                eastl::vector<entt::entity> cycleEntities;
-                for (auto en : registry.view<FParentComponent>())
+                const auto* parentComp = registry.try_get<FParentComponent>(cur);
+                if (parentComp == nullptr || parentComp->Parent == entt::null || !registry.valid(parentComp->Parent))
+                    break;
+                cur = parentComp->Parent;
+                if (m_VisitedEntities.find(entt::to_integral(cur)) != m_VisitedEntities.end())
+                    break;
+                if (eastl::find(m_ScratchWalk.begin(), m_ScratchWalk.end(), cur) != m_ScratchWalk.end())
                 {
-                    auto id = entt::to_integral(en);
-                    auto it = visitState.find(id);
-                    if (it != visitState.end() && it->second == 1)
-                        cycleEntities.push_back(en);
+                    bInCycle = true;
+                    break;
                 }
-                if (!cycleEntities.empty())
+                m_ScratchWalk.push_back(cur);
+            }
+            if (bInCycle)
+                m_ScratchDetach.push_back(cur);
+        }
+        if (!m_ScratchDetach.empty())
+        {
+            entt::entity cycleRoot = m_ScratchDetach[0];
+            for (entt::entity e : m_ScratchDetach)
+            {
+                if (entt::to_integral(e) < entt::to_integral(cycleRoot))
+                    cycleRoot = e;
+            }
+            VTNA_LOG_WARN("HierarchyProcessor: cycle detected ({} member(s) on cycle), breaking at entity {}", m_ScratchDetach.size(), entt::to_integral(cycleRoot));
+
+            subsystem.DetachFromParent(cycleRoot);
+
+            m_Stack.clear();
+            m_Stack.push_back({cycleRoot, float4x4{identity}});
+            ProcessStack(registry, childrenMap);
+        }
+    }
+
+    void Scene::ECS::FHierarchyProcessor::ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap)
+    {
+        while (!m_Stack.empty())
+        {
+            const FStackEntry entry = m_Stack.back();
+            m_Stack.pop_back();
+
+            if (!m_VisitedEntities.insert(entt::to_integral(entry.Entity)).second)
+                continue;
+
+            const auto* localTF = registry.try_get<FTransformComponent>(entry.Entity);
+            float4x4 worldMtx = entry.ParentWorldMtx;
+
+            if (localTF != nullptr)
+            {
+                const float4x4 T = translation_matrix(localTF->Position);
+                const float4x4 R = rotation_matrix(quaternion(localTF->Rotation.x, localTF->Rotation.y, localTF->Rotation.z, localTF->Rotation.w));
+                const float4x4 S = scaling_matrix(localTF->Scale);
+                worldMtx = mul(entry.ParentWorldMtx, mul(T, mul(R, S)));
+
+                FWorldTransformComponent& worldTF = registry.get_or_emplace<FWorldTransformComponent>(entry.Entity);
+                worldTF.MtxWorld = worldMtx;
+                worldTF.MtxWorldInvTranspose = transpose(inverse(worldMtx));
+
+                if (const auto* localBounds = registry.try_get<FBoundingSphereComponent>(entry.Entity))
                 {
-                    auto minIt = std::min_element(cycleEntities.begin(), cycleEntities.end(),
-                        [](entt::entity a, entt::entity b)
-                        { return entt::to_integral(a) < entt::to_integral(b); });
-                    for (entt::entity e : cycleEntities)
-                    {
-                        if (e != *minIt)
-                        {
-                            subsystem.NotifyParentRemoved(e);
-                            registry.remove<FParentComponent>(e);
-                        }
-                    }
+                    FWorldBoundingSphereComponent& worldBounds = registry.get_or_emplace<FWorldBoundingSphereComponent>(entry.Entity);
+                    worldBounds.Center = mul(worldMtx, float4(localBounds->Center, 1.0f)).xyz();
+                    worldBounds.Radius = localBounds->Radius * MaxAxisScale(worldMtx);
                 }
+            }
+
+            if (const auto it = childrenMap.find(entt::to_integral(entry.Entity)); it != childrenMap.end())
+            {
+                for (entt::entity child : it->second)
+                    m_Stack.push_back({child, worldMtx});
             }
         }
-
-        // 3. DFS traversal to update MtxWorld and WorldBounds
-        std::function<void(entt::entity, const float4x4&)> processEntity;
-        processEntity = [&](entt::entity entity, const float4x4& parentWorld)
-        {
-            auto* localTF = registry.try_get<FTransformComponent>(entity);
-            if (!localTF)
-            {
-                auto adjIt = adjacencyList.find(entt::to_integral(entity));
-                if (adjIt != adjacencyList.end())
-                    for (entt::entity child : adjIt->second.Children)
-                        processEntity(child, parentWorld);
-                return;
-            }
-            float4x4 T = translation_matrix(localTF->Position);
-            float4x4 R = rotation_matrix(quaternion(localTF->Rotation.x, localTF->Rotation.y, localTF->Rotation.z, localTF->Rotation.w));
-            float4x4 S = scaling_matrix(localTF->Scale);
-            float4x4 localMtx = mul(T, mul(R, S));
-            float4x4 worldMtx = mul(parentWorld, localMtx);
-
-            registry.emplace_or_replace<FWorldTransformComponent>(entity);
-            auto* worldTF = registry.try_get<FWorldTransformComponent>(entity);
-            if (worldTF)
-            {
-                worldTF->MtxWorld = worldMtx;
-                worldTF->MtxWorldInvTranspose = transpose(inverse(worldMtx));
-            }
-
-            auto* localBounds = registry.try_get<FBoundingSphereComponent>(entity);
-            if (localBounds && worldTF)
-            {
-                registry.emplace_or_replace<FWorldBoundingSphereComponent>(entity);
-                auto *worldBounds = registry.try_get<FWorldBoundingSphereComponent>(entity);
-                if (worldBounds)
-                {
-                    float4 centerWS = mul(worldMtx, float4(localBounds->Center, 1.0f));
-                    worldBounds->Center = centerWS.xyz();
-                    float maxScale = eastl::max(eastl::max(Abs(localTF->Scale.x), Abs(localTF->Scale.y)), Abs(localTF->Scale.z));
-                    worldBounds->Radius = localBounds->Radius * maxScale;
-                }
-            }
-
-            auto adjIt = adjacencyList.find(entt::to_integral(entity));
-            if (adjIt != adjacencyList.end())
-                for (entt::entity child : adjIt->second.Children)
-                    processEntity(child, worldMtx);
-        };
-
-        for (entt::entity root : rootView)
-            processEntity(root, float4x4{identity});
     }
 }

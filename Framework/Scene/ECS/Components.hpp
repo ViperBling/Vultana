@@ -119,7 +119,7 @@ namespace Scene::ECS
     {
         FMeshResourceHandle MeshHandle;
         FMaterialResourceHandle MaterialHandle;
-        uint32_t MeshletCount = 0;
+        // uint32_t MeshletCount = 0;
         bool bSkinned = false;
     };
 
