@@ -5,6 +5,10 @@
 
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/EntityFactory.hpp"
+#include "Scene/ECS/SceneLightSnapshot.hpp"
+#include "Scene/ECS/SceneCameraSnapshot.hpp"
+#include "Scene/ECS/Processors/LightProcessor.hpp"
+#include "Scene/ECS/Processors/CameraSyncProcessor.hpp"
 #include "Scene/ECS/AssetRegistry.hpp"
 #include "Scene/ECS/RenderSink.hpp"
 #include "Scene/World.hpp"
@@ -58,6 +62,7 @@ namespace Core
     private:
         ~FVultanaEngine();
         void UpdateSceneRenderState();
+        void UpdateCullingData();
 
     public:
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
@@ -86,6 +91,11 @@ namespace Core
         bool m_bUseECSBackend = false;
 
         float4 m_PendingCullingPlanes[6] = {};
+
+        Scene::ECS::FSceneLightSnapshot m_LightSnapshot;
+        Scene::ECS::FLightProcessor* m_pLightProcessor = nullptr;
+        Scene::ECS::FSceneCameraSnapshot m_CameraSnapshot;
+        Scene::ECS::FCameraSyncProcessor* m_pCameraSyncProcessor = nullptr;
     };
 } // namespace Vultana
 

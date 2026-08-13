@@ -131,6 +131,30 @@ namespace Core
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FHierarchyProcessor>());
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_PendingCullingPlanes, 6), &ParallelCullingImpl));
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(*m_pRenderSink, *m_pAssetRegistry));
+
+            auto pLight = eastl::make_unique<Scene::ECS::FLightProcessor>(&m_LightSnapshot);
+            m_pLightProcessor = pLight.get();
+            auto pCameraSync = eastl::make_unique<Scene::ECS::FCameraSyncProcessor>(&m_CameraSnapshot);
+            m_pCameraSyncProcessor = pCameraSync.get();
+            m_pEntitySystem->RegisterProcessor(eastl::move(pLight));
+            m_pEntitySystem->RegisterProcessor(eastl::move(pCameraSync));
+
+            auto& reg = m_pEntitySystem->GetRegistry();
+
+            entt::entity cameraEntity = m_pEntityFactory->CreateEmpty("MainCamera");
+            reg.emplace<Scene::ECS::FCameraComponent>(cameraEntity);
+            reg.emplace<Scene::ECS::FMainCameraTag>(cameraEntity);
+
+            entt::entity lightEntity = m_pEntityFactory->CreateEmpty("MainLight");
+            Scene::ECS::FLightComponent lightComp; // defaults == ILight defaults
+            if (Scene::ILight* pMainLight = m_pWorld->FindMainLight())
+            {
+                lightComp.Color = pMainLight->GetLightColor();
+                lightComp.Radius = pMainLight->GetLightRadius();
+                lightComp.Direction = pMainLight->GetLightDirection();
+            }
+            reg.emplace<Scene::ECS::FLightComponent>(lightEntity, lightComp);
+            reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);
         }
 
         m_pEditor = eastl::make_unique<Editor::FVultanaEditor>(m_pRenderer.get());
@@ -149,6 +173,9 @@ namespace Core
         m_pRenderSink.reset();
         m_pAssetRegistry.reset();
         m_pEntitySystem.reset();
+
+        m_pLightProcessor = nullptr;
+        m_pCameraSyncProcessor = nullptr;
 
         m_pTaskScheduler.reset();
         m_pAssetManager.reset();
@@ -187,11 +214,12 @@ namespace Core
             {
                 m_pEditor->Tick();
                 m_pWorld->Tick(m_FrameTime);
-                UpdateSceneRenderState();
+                UpdateCullingData();
                 if (m_bUseECSBackend)
                 {
                     m_pEntitySystem->Tick(m_FrameTime);
                 }
+                UpdateSceneRenderState();
                 m_pRenderer->RenderFrame();
             }
             m_pAssetRegistry->FrameFencePassed(m_pRenderer->GetFrameID());
@@ -210,12 +238,19 @@ namespace Core
         Scene::FCamera* pCamera = m_pWorld->GetCamera();
         if (pCamera == nullptr) return;
 
-        memcpy(m_PendingCullingPlanes, pCamera->GetFrustumPlanes(), sizeof(m_PendingCullingPlanes));
-
         Renderer::FSceneRenderState state;
         pCamera->SetupCameraCB(state.CameraConstants);
         state.bCameraValid = true;
-        if (Scene::ILight* pMainLight = m_pWorld->FindMainLight())
+
+        const Scene::ECS::FSceneLightSnapshot* lightSnap = (m_pLightProcessor != nullptr) ? m_pLightProcessor->GetOutput() : nullptr;
+        if (m_bUseECSBackend && lightSnap != nullptr && lightSnap->bValid)
+        {
+            state.LightColor = lightSnap->Color;
+            state.LightDirection = lightSnap->Direction;
+            state.LightRadius = lightSnap->Radius;
+            state.bLightValid = true;
+        }
+        else if (Scene::ILight* pMainLight = m_pWorld->FindMainLight())
         {
             state.LightColor = pMainLight->GetLightColor();
             state.LightDirection = pMainLight->GetLightDirection();
@@ -226,6 +261,38 @@ namespace Core
         {
             state.bLightValid = false;
         }
+
+        const Scene::ECS::FSceneCameraSnapshot* camSnap = (m_pCameraSyncProcessor != nullptr) ? m_pCameraSyncProcessor->GetOutput() : nullptr;
+        if (m_bUseECSBackend && camSnap != nullptr && camSnap->bValid && m_pEntitySystem != nullptr)
+        {
+            auto& reg = m_pEntitySystem->GetRegistry();
+            if (reg.valid(camSnap->CameraEntity))
+            {
+                if (auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(camSnap->CameraEntity))
+                {
+                    tf->Position = pCamera->GetPosition();
+                    tf->Rotation = RotationQuat(pCamera->GetRotation()); // degrees -> quaternion
+                }
+                if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(camSnap->CameraEntity))
+                {
+                    camComp->Fov = pCamera->GetFOV();
+                    camComp->ZNear = pCamera->GetZNear();
+                    camComp->ZFar = pCamera->GetZFar();
+                }
+            }
+        }
+
         m_pRenderer->SetSceneRenderState(state);
     }
+
+    void FVultanaEngine::UpdateCullingData()
+    {
+        if (m_pWorld == nullptr)
+            return;
+        Scene::FCamera* pCamera = m_pWorld->GetCamera();
+        if (pCamera == nullptr)
+            return;
+        memcpy(m_PendingCullingPlanes, pCamera->GetFrustumPlanes(), sizeof(m_PendingCullingPlanes));
+    }
+
 } // namespace Core

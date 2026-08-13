@@ -27,6 +27,7 @@ namespace Scene
         void SetMoveSpeed(float speed) { m_MoveSpeed = speed; }
         bool IsMoved() const { return m_bMoved; }
         float GetZNear() const { return m_Near; }
+        float GetZFar() const { return m_Far; }
         void SetFOV(float fov);
 
         void Tick(float deltaTime);

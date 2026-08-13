@@ -127,4 +127,26 @@ namespace Scene::ECS
         FModelAssetHandle ModelHandle;
         eastl::string ModelPath;
     };
+
+    // ===== Camera ===== //
+    struct FCameraComponent
+    {
+        float Fov = 45.0f;
+        float ZNear = 0.01f;
+        float ZFar = 1000.0f;
+    };
+    struct FMainCameraTag
+    {
+    };
+
+    // ===== Light ===== //
+    struct FLightComponent
+    {
+        float3 Color = float3(1.0f);                 // matches ILight::m_LightColor default
+        float3 Direction = float3(0.0f, 1.0f, 0.0f); // matches ILight::m_LightDirection default
+        float Radius = 0.005f;                       // matches ILight::m_LightRadius default
+    };
+    struct FMainLightTag
+    {
+    };
 }

@@ -5,6 +5,8 @@
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
+#include "Scene/ECS/Processors/LightProcessor.hpp"
+#include "Scene/ECS/Processors/CameraSyncProcessor.hpp"
 #include "Scene/ECS/RenderSink.hpp"
 #include "Scene/ECS/EntityFactory.hpp"
 #include "Editor/Commands/EntityEditableTarget.hpp"
@@ -914,4 +916,79 @@ TEST(ECSTest, Hierarchy_AABB_Rotation_EnclosesOBB)
     EXPECT_NEAR(worldAABB->Min.x, -c, 0.001f);
     EXPECT_NEAR(worldAABB->Min.y, -c, 0.001f);
     EXPECT_NEAR(worldAABB->Max.z, 0.5f, 0.001f); // z axis untouched by the rotation
+}
+
+// ============================================================
+//  Slice 3: FLightProcessor / FCameraSyncProcessor snapshots
+// ============================================================
+TEST(ECSTest, Light_TaggedEntity_ProducesSnapshot)
+{
+    FEntitySubsystem ecs;
+    Scene::ECS::FSceneLightSnapshot out;
+    ecs.RegisterProcessor(eastl::make_unique<FLightProcessor>(&out));
+
+    entt::entity light = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FLightComponent>(light, float3(0.2f, 0.4f, 0.6f), float3(0.0f, -1.0f, 0.0f), 7.0f);
+    ecs.GetRegistry().emplace<FMainLightTag>(light);
+
+    ecs.Tick(0.0f);
+
+    EXPECT_TRUE(out.bValid);
+    EXPECT_NEAR(out.Color.x, 0.2f, 0.001f);
+    EXPECT_NEAR(out.Color.y, 0.4f, 0.001f);
+    EXPECT_NEAR(out.Direction.y, -1.0f, 0.001f);
+    EXPECT_NEAR(out.Radius, 7.0f, 0.001f);
+}
+
+TEST(ECSTest, Light_NoTaggedEntity_Invalid)
+{
+    FEntitySubsystem ecs;
+    Scene::ECS::FSceneLightSnapshot out;
+    out.bValid = true;
+    ecs.RegisterProcessor(eastl::make_unique<FLightProcessor>(&out));
+
+    entt::entity plain = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FLightComponent>(plain, float3(0.9f, 0.9f, 0.9f), float3(0.0f, 1.0f, 0.0f), 1.0f);
+
+    ecs.Tick(0.0f);
+
+    EXPECT_FALSE(out.bValid);
+}
+
+TEST(ECSTest, CameraSync_NoTaggedEntity_Invalid)
+{
+    FEntitySubsystem ecs;
+    Scene::ECS::FSceneCameraSnapshot out;
+    out.bValid = true;
+    ecs.RegisterProcessor(eastl::make_unique<FCameraSyncProcessor>(&out));
+
+    entt::entity plain = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FTransformComponent>(plain, float3(0.0f), float4(0, 0, 0, 1), float3(1.0f));
+    ecs.GetRegistry().emplace<FCameraComponent>(plain, 60.0f, 0.1f, 500.0f);
+
+    ecs.Tick(0.0f);
+
+    EXPECT_FALSE(out.bValid);
+}
+
+TEST(ECSTest, CameraSync_MainCameraEntity_Mirrored)
+{
+    FEntitySubsystem ecs;
+    Scene::ECS::FSceneCameraSnapshot out;
+    ecs.RegisterProcessor(eastl::make_unique<FCameraSyncProcessor>(&out));
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+
+    entt::entity cam = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FTransformComponent>(cam, float3(5, 3, 1), float4(0, 0, 0.3826834f, 0.9238795f), float3(1.0f));
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(cam);
+    ecs.GetRegistry().emplace<FCameraComponent>(cam, 60.0f, 0.1f, 500.0f);
+    ecs.GetRegistry().emplace<FMainCameraTag>(cam);
+
+    ecs.Tick(0.0f);
+
+    ASSERT_TRUE(out.bValid);
+    EXPECT_EQ(out.CameraEntity, cam);
+    EXPECT_NEAR(out.Position.x, 5.0f, 0.001f);
+    EXPECT_NEAR(out.Position.y, 3.0f, 0.001f);
+    EXPECT_NEAR(out.Fov, 60.0f, 0.001f);
 }
