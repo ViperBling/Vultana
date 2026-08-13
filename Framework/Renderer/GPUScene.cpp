@@ -1,7 +1,8 @@
-#include "GPUScene.hpp"
-#include "RendererBase.hpp"
+#include "Renderer/GPUScene.hpp"
+#include "Renderer/RendererBase.hpp"
 
-#define MAX_CONSTANT_BUFFER_SIZE (1024 * 1024 * 8)
+#include "Utilities/Log.hpp"
+
 #define ALLOCATION_ALIGNMENT (4)
 
 namespace Renderer
@@ -20,7 +21,11 @@ namespace Renderer
 
         for (int i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; i++)
         {
-            m_pSceneConstantBuffers[i].reset(pRenderer->CreateRawBuffer(nullptr, MAX_CONSTANT_BUFFER_SIZE, "GPUScene::ConstantBuffer", RHI::ERHIMemoryType::CPUToGPU, false));
+            m_pSceneConstantBuffers[i].reset(pRenderer->CreateRawBuffer(nullptr, MAX_SCENE_CONSTANT_BUFFER_SIZE, "GPUScene::ConstantBuffer", RHI::ERHIMemoryType::CPUToGPU, false));
+            if (m_pSceneConstantBuffers[i])
+            {
+                memset((char*)m_pSceneConstantBuffers[i]->GetBuffer()->GetCPUAddress() + NULL_CONSTANT_ADDRESS, 0, NULL_CONSTANT_REGION_SIZE);
+            }
         }
     }
 
@@ -58,7 +63,17 @@ namespace Renderer
 
     uint32_t FGPUScene::AllocateConstantBuffer(uint32_t size)
     {
-        assert(m_ConstantBufferOffset + size <= MAX_CONSTANT_BUFFER_SIZE);
+        static bool bOverflowWarned = false;
+        if (m_ConstantBufferOffset + size > NULL_CONSTANT_ADDRESS)
+        {
+            if (!bOverflowWarned)
+            {
+                bOverflowWarned = true;
+                VTNA_LOG_ERROR("Constant buffer overflow: offset={} size={} cap={} — degraded to null region", m_ConstantBufferOffset, size, NULL_CONSTANT_ADDRESS);
+            }
+            return NULL_CONSTANT_ADDRESS;
+        }
+
         uint32_t address = m_ConstantBufferOffset;
         m_ConstantBufferOffset += RoundUpPow2(size, ALLOCATION_ALIGNMENT);
         return address;

@@ -30,14 +30,15 @@
 #include <ImGui/imgui.h>
 #include <SimpleIni.h>
 #include <enkiTS/TaskScheduler.h>
-#include <functional>
+#include <EASTL/functional.h>
 
 namespace Core
 {
-    void ParallelCullingImpl(uint32_t count, const std::function<void(uint32_t)>& func)
+    void ParallelCullingImpl(uint32_t count, const eastl::function<void(uint32_t)>& func)
     {
         // Engine layer owns the parallel implementation; the ECS core stays engine-free.
-        Utilities::ParallelFor(count, func);
+        // For now, simple scene culling is not a performance bottleneck, so we can use a small grain size to reduce overhead.
+        Utilities::ParallelFor(count, func, 32);
     }
 
     FVultanaEngine *FVultanaEngine::GetEngineInstance()

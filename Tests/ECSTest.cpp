@@ -39,6 +39,7 @@ static entt::entity CreateTransformEntity(FEntitySubsystem& ecs, float3 pos, flo
 {
     entt::entity e = ecs.CreateEntity();
     ecs.GetRegistry().emplace<FTransformComponent>(e, pos, rot, scale);
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(e);
     return e;
 }
 
@@ -302,6 +303,7 @@ TEST(ECSTest, Hierarchy_NonUniformScale_Bounds)
     FEntitySubsystem ecs;
     entt::entity e = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(2, 1, 1));
     ecs.GetRegistry().emplace<FBoundingSphereComponent>(e, float3(0, 0, 0), 5.0f);
+    ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(e);
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
     EXPECT_NEAR(ecs.GetRegistry().get<FWorldBoundingSphereComponent>(e).Radius, 10.0f, 0.001f);
@@ -314,6 +316,7 @@ TEST(ECSTest, Hierarchy_AncestorScale_PropagatesToWorldBounds)
     entt::entity mesh = CreateTransformEntity(ecs, float3(0, 0, 0), float4(0, 0, 0, 1), float3(1, 1, 1));
     ecs.SetParent(mesh, root);
     ecs.GetRegistry().emplace<FBoundingSphereComponent>(mesh, float3(0, 0, 0), 2.0f);
+    ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(mesh);
 
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
@@ -328,6 +331,7 @@ TEST(ECSTest, Hierarchy_RotatedScale_BoundsRadiusIgnoresRotation)
     FEntitySubsystem ecs;
     entt::entity e = CreateTransformEntity(ecs, float3(0, 0, 0), RotationQuat(float3(90, 90, 0)), float3(3, 3, 3));
     ecs.GetRegistry().emplace<FBoundingSphereComponent>(e, float3(0, 0, 0), 1.0f);
+    ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(e);
 
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
@@ -381,9 +385,8 @@ TEST(ECSTest, Hierarchy_IsolatedCycle_BrokenAndProcessed)
     const bool bHasParent = ecs.GetRegistry().try_get<FParentComponent>(b) != nullptr;
     EXPECT_FALSE(aHasParent && bHasParent);
 
-    // Both entities received a world transform (no more silent disappearance).
-    EXPECT_NE(ecs.GetRegistry().try_get<FWorldTransformComponent>(a), nullptr);
-    EXPECT_NE(ecs.GetRegistry().try_get<FWorldTransformComponent>(b), nullptr);
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformComponent>(a).MtxWorld[3].x, 1.0f, 0.001f);
+    EXPECT_NEAR(ecs.GetRegistry().get<FWorldTransformComponent>(b).MtxWorld[3].x, 3.0f, 0.001f);
 }
 
 TEST(ECSTest, Hierarchy_CycleBreak_BrokenEntityHasIdentityParent)
@@ -875,6 +878,7 @@ TEST(ECSTest, Hierarchy_AABB_WorldTransform)
     entt::entity e = ecs.CreateEntity();
     // Local [0,1]^3, transform: translate(10,0,0) * scale(2,2,2).
     ecs.GetRegistry().emplace<FTransformComponent>(e, float3(10, 0, 0), float4(0, 0, 0, 1), float3(2, 2, 2));
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(e);
     ecs.GetRegistry().emplace<FBoundingBoxComponent>(e, float3(0, 0, 0), float3(1, 1, 1));
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);
@@ -898,6 +902,7 @@ TEST(ECSTest, Hierarchy_AABB_Rotation_EnclosesOBB)
     // NOTE: float3(0) is ambiguous in linalg (scalar-broadcast vs pointer ctor, C2668) —
     // the trailing .0f is REQUIRED here and matches repo style (Components.hpp:32-34).
     ecs.GetRegistry().emplace<FTransformComponent>(e, float3(0.0f), float4(0, 0, 0.3826834f, 0.9238795f), float3(1.0f));
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(e);
     ecs.GetRegistry().emplace<FBoundingBoxComponent>(e, float3(-0.5f), float3(0.5f));
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.Tick(0.0f);

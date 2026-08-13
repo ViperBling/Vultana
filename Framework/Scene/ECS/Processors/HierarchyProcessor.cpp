@@ -7,7 +7,6 @@
 #include <EASTL/algorithm.h>
 #include <EASTL/vector.h>
 #include <EASTL/hash_map.h>
-#include <EASTL/hash_set.h>
 
 #include <cmath>
 #include <algorithm>
@@ -15,7 +14,7 @@
 
 namespace Scene::ECS
 {
-    void Scene::ECS::FHierarchyProcessor::Process(FEntitySubsystem& subsystem, float deltaTime)
+    void FHierarchyProcessor::Process(FEntitySubsystem& subsystem, float deltaTime)
     {
         auto& registry = subsystem.GetRegistry();
 
@@ -33,7 +32,7 @@ namespace Scene::ECS
 
         // 2. Process the hierarchy starting from root entities
         const FEntitySubsystem::FChildrenMap& childrenMap = subsystem.GetChildrenMap();
-        m_VisitedEntities.clear();
+        ResetVisited();
         m_Stack.clear();
 
         auto rootView = registry.view<FTransformComponent>(entt::exclude_t<FParentComponent>());
@@ -46,7 +45,7 @@ namespace Scene::ECS
         m_ScratchDetach.clear();
         for (entt::entity seed : registry.view<FTransformComponent>())
         {
-            if (m_VisitedEntities.find(entt::to_integral(seed)) != m_VisitedEntities.end())
+            if (IsVisited(seed))
                 continue;
 
             m_ScratchWalk.clear();
@@ -59,7 +58,7 @@ namespace Scene::ECS
                 if (parentComp == nullptr || parentComp->Parent == entt::null || !registry.valid(parentComp->Parent))
                     break;
                 cur = parentComp->Parent;
-                if (m_VisitedEntities.find(entt::to_integral(cur)) != m_VisitedEntities.end())
+                if (IsVisited(cur))
                     break;
                 if (eastl::find(m_ScratchWalk.begin(), m_ScratchWalk.end(), cur) != m_ScratchWalk.end())
                 {
@@ -89,15 +88,16 @@ namespace Scene::ECS
         }
     }
 
-    void Scene::ECS::FHierarchyProcessor::ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap)
+    void FHierarchyProcessor::ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap)
     {
         while (!m_Stack.empty())
         {
             const FStackEntry entry = m_Stack.back();
             m_Stack.pop_back();
 
-            if (!m_VisitedEntities.insert(entt::to_integral(entry.Entity)).second)
+            if (IsVisited(entry.Entity))
                 continue;
+            SetVisited(entry.Entity);
 
             const auto* localTF = registry.try_get<FTransformComponent>(entry.Entity);
             float4x4 worldMtx = entry.ParentWorldMtx;
@@ -109,13 +109,13 @@ namespace Scene::ECS
                 const float4x4 S = scaling_matrix(localTF->Scale);
                 worldMtx = mul(entry.ParentWorldMtx, mul(T, mul(R, S)));
 
-                FWorldTransformComponent& worldTF = registry.get_or_emplace<FWorldTransformComponent>(entry.Entity);
+                FWorldTransformComponent& worldTF = registry.get<FWorldTransformComponent>(entry.Entity);
                 worldTF.MtxWorld = worldMtx;
                 worldTF.MtxWorldInvTranspose = transpose(inverse(worldMtx));
 
                 if (const auto* localBounds = registry.try_get<FBoundingSphereComponent>(entry.Entity))
                 {
-                    FWorldBoundingSphereComponent& worldBounds = registry.get_or_emplace<FWorldBoundingSphereComponent>(entry.Entity);
+                    FWorldBoundingSphereComponent& worldBounds = registry.get<FWorldBoundingSphereComponent>(entry.Entity);
                     worldBounds.Center = mul(worldMtx, float4(localBounds->Center, 1.0f)).xyz();
                     worldBounds.Radius = localBounds->Radius * MaxAxisScale(worldMtx);
                 }
@@ -142,5 +142,26 @@ namespace Scene::ECS
                     m_Stack.push_back({child, worldMtx});
             }
         }
+    }
+
+    bool FHierarchyProcessor::IsVisited(entt::entity e) const
+    {
+        const uint32_t idx = entt::to_entity(e);
+        if (m_VisitedBits.size() <= (idx >> 6))
+            return false;
+        return (m_VisitedBits[idx >> 6] & (1ull << (idx & 63))) != 0;
+    }
+
+    void FHierarchyProcessor::SetVisited(entt::entity e)
+    {
+        const uint32_t idx = entt::to_entity(e);
+        if (m_VisitedBits.size() <= (idx >> 6))
+            m_VisitedBits.resize((idx >> 6) + 1, 0);
+        m_VisitedBits[idx >> 6] |= 1ull << (idx & 63);
+    }
+
+    void FHierarchyProcessor::ResetVisited()
+    {
+        eastl::fill(m_VisitedBits.begin(), m_VisitedBits.end(), 0);
     }
 }

@@ -2,6 +2,15 @@
 
 #include "GlobalConstants.hlsli"
 
+// Scene constant buffer region contract: each of the
+// triple-buffered 8MB per-frame buffers reserves its final 1MB as a zeroed "null
+// region". Overflowed allocations and "no material" instances point here, so every
+// GPU read stays in-bounds and returns zeros. GPUScene.cpp uses
+// the same constants — no local #define — and memsets the region once at creation.
+static const uint MAX_SCENE_CONSTANT_BUFFER_SIZE = 1024 * 1024 * 8;
+static const uint NULL_CONSTANT_REGION_SIZE = 1024 * 1024;
+static const uint NULL_CONSTANT_ADDRESS = MAX_SCENE_CONSTANT_BUFFER_SIZE - NULL_CONSTANT_REGION_SIZE;
+
 struct FInstanceData
 {
     uint IndexBufferAddress;

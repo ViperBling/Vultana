@@ -4,7 +4,6 @@
 #include "Scene/ECS/ProcessorBase.hpp"
 #include "Utilities/Math.hpp"
 
-#include <EASTL/hash_set.h>
 #include <EASTL/vector.h>
 
 #include <entt/entt.hpp>
@@ -27,10 +26,13 @@ namespace Scene::ECS
         };
 
         void ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap);
+        bool IsVisited(entt::entity e) const;
+        void SetVisited(entt::entity e);
+        void ResetVisited();
 
     private:
         eastl::vector<FStackEntry> m_Stack;
-        eastl::hash_set<entt::id_type> m_VisitedEntities;
+        eastl::vector<uint64_t> m_VisitedBits;
         eastl::vector<entt::entity> m_ScratchDetach;
         eastl::vector<entt::entity> m_ScratchWalk;
     };

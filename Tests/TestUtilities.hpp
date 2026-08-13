@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 
+#include <EASTL/functional.h>
 #include <enkiTS/TaskScheduler.h>
 
 namespace Tests
@@ -35,7 +35,7 @@ namespace Tests
     }
 
     // Type-erased wrapper matching FCullingProcessor::FParallelForFunc signature
-    inline void ParallelForFunc(uint32_t count, const std::function<void(uint32_t)>& func)
+    inline void ParallelForFunc(uint32_t count, const eastl::function<void(uint32_t)>& func)
     {
         ParallelFor(count, func);
     }

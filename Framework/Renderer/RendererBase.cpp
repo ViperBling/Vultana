@@ -371,7 +371,7 @@ namespace Renderer
     uint32_t FRendererBase::AllocateSceneConstantBuffer(const void *data, uint32_t size)
     {
         uint32_t address = m_pGPUScene->AllocateConstantBuffer(size);
-        if (data)
+        if (data && address != NULL_CONSTANT_ADDRESS)
         {
             void* dst = (char*)m_pGPUScene->GetSceneConstantBuffer()->GetCPUAddress() + address;
             memcpy(dst, data, size);

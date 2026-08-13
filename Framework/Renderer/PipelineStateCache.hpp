@@ -29,7 +29,7 @@ namespace eastl
 
             const size_t stateOffset = offsetof(RHI::FRHIGraphicsPipelineStateDesc, RasterizerState);
             uint64_t stateHash = CityHash64(reinterpret_cast<const char*>(&desc) + stateOffset, sizeof(RHI::FRHIGraphicsPipelineStateDesc) - stateOffset);
-            uint64_t hash = HashCombine64(HashCombine64(vsHash, psHash), stateOffset);
+            uint64_t hash = HashCombine64(HashCombine64(vsHash, psHash), stateHash);
 
             static_assert(sizeof(size_t) == sizeof(uint64_t), "Only supports 64-bit platforms");
             return hash;

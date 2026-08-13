@@ -137,6 +137,7 @@ namespace Scene::ECS
         {
             const auto& transformData = snapshot.Transform.value();
             m_Registry.emplace_or_replace<FTransformComponent>(entity, transformData.Position, transformData.Rotation, transformData.Scale);
+            m_Registry.emplace_or_replace<FWorldTransformComponent>(entity);
         }
         if (snapshot.Name.has_value())
         {

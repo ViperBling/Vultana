@@ -24,6 +24,7 @@ namespace Scene::ECS
                 return;
             
             FInstanceData instanceData = {};
+            instanceData.MaterialDataAddress = NULL_CONSTANT_ADDRESS;
             instanceData.IndexBufferAddress = meshData->IndexBufferAddress;
             instanceData.IndexStride = meshData->IndexStride;
             instanceData.TriangleCount = meshData->IndexCount / 3;
@@ -36,21 +37,23 @@ namespace Scene::ECS
             instanceData.NormalBufferAddress = meshData->NormalBufferAddress;
             instanceData.TangentBufferAddress = meshData->TangentBufferAddress;
             instanceData.bVertexAnimation = meshComp.bSkinned ? 1 : 0;
-            instanceData.ObjectID = subsystem.GetPickID(entity);
+            instanceData.ObjectID = registry.get<FPickIDComponent>(entity).PickID;
             instanceData.Scale = MaxAxisScale(worldTFComp.MtxWorld);
             instanceData.Center = worldBounds.Center;
             instanceData.Radius = worldBounds.Radius;
             instanceData.MtxWorld = worldTFComp.MtxWorld;
             instanceData.MtxWorldInvTranspose = worldTFComp.MtxWorldInvTranspose;
 
-            auto* visibilityComp = registry.try_get<FVisibilityComponent>(entity);
-            const bool bVisible = visibilityComp && visibilityComp->bFrustumVisible;
-
+            const bool bVisible = registry.get<FVisibilityComponent>(entity).bFrustumVisible;
             if (bVisible)
             {
                 if (const FMaterialGPUData* materialData = m_Registry.FindMaterialData(meshComp.MaterialHandle))
                 {
-                    instanceData.MaterialDataAddress = m_Sink.AllocateMaterialConstants(materialData->Data, sizeof(materialData->Data));
+                    const uint32_t addr = m_Sink.AllocateMaterialConstants(materialData->Data, sizeof(materialData->Data));
+                    if (addr != NULL_CONSTANT_ADDRESS)
+                    {
+                        instanceData.MaterialDataAddress = addr;
+                    }
                 }
             }
 

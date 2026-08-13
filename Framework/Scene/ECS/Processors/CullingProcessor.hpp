@@ -14,7 +14,7 @@ namespace Scene::ECS
     class FCullingProcessor final : public FProcessorBase
     {
     public:
-        using FParallelForFunc = void(*)(uint32_t count, const std::function<void(uint32_t)>& func);
+        using FParallelForFunc = void (*)(uint32_t count, const eastl::function<void(uint32_t)>& func);
 
         explicit FCullingProcessor(eastl::span<const float4> frustumPlanes, FParallelForFunc parallelFor = nullptr)
             : m_FrustumPlanes(frustumPlanes), m_ParallelFor(parallelFor) {}

@@ -20,6 +20,7 @@ namespace Scene::ECS
             nameComp->SetName(filePath.c_str());
         }
         registry.emplace<FTransformComponent>(rootEntity);
+        registry.emplace<FWorldTransformComponent>(rootEntity);
         registry.emplace<FModelInstanceComponent>(rootEntity, assetHandle, filePath);
         if (parent != entt::null)
         {
@@ -40,6 +41,7 @@ namespace Scene::ECS
             nameComp->SetName(name);
         }
         registry.emplace<FTransformComponent>(entity);
+        registry.emplace<FWorldTransformComponent>(entity);
         if (parent != entt::null)
         {
             m_Subsystem.SetParent(entity, parent);
@@ -129,6 +131,7 @@ namespace Scene::ECS
                 entt::entity meshEntity = CreateEmpty("Mesh", nodeEntities[n]);
                 registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, false);
                 registry.emplace<FBoundingSphereComponent>(meshEntity, meshData.Center, meshData.Radius);
+                registry.emplace<FWorldBoundingSphereComponent>(meshEntity);
                 registry.emplace<FVisibilityComponent>(meshEntity);
             }
         }
