@@ -76,9 +76,18 @@ namespace Assets
     FSceneAssetRegistry::FSceneAssetRegistry(Renderer::FRendererBase* pRenderer) : m_pRenderer(pRenderer)
     {
         VTNA_LOG_INFO("SceneAssetRegistry created");
+        m_pRenderer->RegisterFrameHook(Renderer::ERenderPhase::AfterEndFrame,
+        [this]() 
+        { 
+            FrameFencePassed(m_pRenderer->GetFrameID()); 
+        });
     }
 
-    FSceneAssetRegistry::~FSceneAssetRegistry() {}
+    FSceneAssetRegistry::~FSceneAssetRegistry()
+    {
+        ReleaseAllModelAssets();
+        FrameFencePassed(UINT64_MAX);
+    }
 
     Scene::ECS::FModelAssetHandle FSceneAssetRegistry::ImportModel(const eastl::string& assetFile)
     {
@@ -616,6 +625,21 @@ namespace Assets
                 status.bResident = FResourceCache::GetInstance()->IsTexture2DProductResident(status.ProductPath);
                 out.push_back(eastl::move(status));
             }
+        }
+    }
+
+    void FSceneAssetRegistry::ReleaseAllModelAssets()
+    {
+        for (FModelAsset& asset : m_Assets)
+        {
+            if (asset.Generation == 0)
+                continue;
+            for (const Scene::ECS::FMeshResourceHandle& handle : asset.MeshHandles)
+                Release(handle);
+            for (const Scene::ECS::FMaterialResourceHandle& handle : asset.MaterialHandles)
+                Release(handle);
+            asset.MeshHandles.clear();
+            asset.MaterialHandles.clear();
         }
     }
 

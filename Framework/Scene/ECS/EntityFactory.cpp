@@ -8,7 +8,12 @@ namespace Scene::ECS
 {
     FEntityFactory::FEntityFactory(FEntitySubsystem& subsystem, IAssetRegistry& registry)
         : m_Subsystem(subsystem), m_Registry(registry) {}
-    
+
+    FEntityFactory::~FEntityFactory()
+    {
+        DestroyAllModelInstances();
+    }
+
     entt::entity FEntityFactory::CreateModelInstance(FModelAssetHandle assetHandle, const eastl::string& filePath, entt::entity parent)
     {
         auto& registry = m_Subsystem.GetRegistry();
@@ -69,6 +74,35 @@ namespace Scene::ECS
             DestroyModelInstance(child);
         }
         m_Subsystem.DestroyEntityDeferred(rootEntity);
+    }
+
+    void FEntityFactory::DestroyAllModelInstances()
+    {
+        auto& registry = m_Subsystem.GetRegistry();
+
+        eastl::vector<entt::entity> roots;
+        for (entt::entity root : registry.view<FModelInstanceComponent>())
+            roots.push_back(root);
+
+        for (entt::entity root : roots)
+        {
+            bool bNested = false;
+            entt::entity cur = root;
+            while (const FParentComponent* parent = registry.try_get<FParentComponent>(cur))
+            {
+                if (parent->Parent == entt::null)
+                    break;
+                cur = parent->Parent;
+                if (registry.all_of<FModelInstanceComponent>(cur))
+                {
+                    bNested = true;
+                    break;
+                }
+            }
+            if (!bNested)
+                DestroyModelInstance(root);
+        }
+        m_Subsystem.FlushDeferred();
     }
 
     void FEntityFactory::CreateModelHierarchy(FModelAssetHandle assetHandle, const FModelAssetInfo& info, entt::entity rootEntity, const float3& position, const quaternion& rotation, const float3& scale)

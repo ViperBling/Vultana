@@ -44,6 +44,7 @@ namespace Assets
         void MarkModelFailed(Scene::ECS::FModelAssetHandle asset);
 
         bool ReloadModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model);
+        void ReleaseAllModelAssets();
 
         struct FModelStatus
         {

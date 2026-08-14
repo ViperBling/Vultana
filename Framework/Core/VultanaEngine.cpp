@@ -176,7 +176,6 @@ namespace Core
 
         m_pWorld.reset();
         m_pEditor.reset();
-
         m_pEntityFactory.reset();
         m_pRenderSink.reset();
         m_pAssetRegistry.reset();
@@ -230,7 +229,6 @@ namespace Core
                 UpdateSceneRenderState();
                 m_pRenderer->RenderFrame();
             }
-            m_pAssetRegistry->FrameFencePassed(m_pRenderer->GetFrameID());
         }
     }
 
@@ -242,6 +240,8 @@ namespace Core
             return;
         }
 
+        if (m_pEntityFactory)
+            m_pEntityFactory->DestroyAllModelInstances();
         m_pEntitySystem->Clear();
         if (m_pEditor)
             m_pEditor->ClearEditHistory();
