@@ -2,12 +2,17 @@
 #include "AssetManager/ModelLoaderECS.hpp"
 #include "AssetManager/SceneAssetRegistry.hpp"
 #include "Core/VultanaEngine.hpp"
+
 #include "Editor/Commands/EntityEditableTarget.hpp"
+#include "Editor/Commands/NameCommand.hpp"
 #include "Editor/Commands/ObjectEditableTarget.hpp"
+#include "Editor/Commands/ParentCommand.hpp"
 #include "Editor/ImGUIImplement.hpp"
 
 #include "Renderer/RendererBase.hpp"
 #include "Scene/ECS/Components.hpp"
+#include "Scene/ECS/SceneSerializer.hpp"
+
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
 
@@ -18,6 +23,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
+
+#include <SimpleIni.h>
 
 namespace Editor
 {
@@ -65,10 +72,27 @@ namespace Editor
         FlushPendingTextureDeletions();
 
         ImGuiIO& io = ImGui::GetIO();
+        auto pEngineInst = Core::FVultanaEngine::GetEngineInstance();
         if (!io.WantCaptureMouse && io.MouseClicked[0])
         {
             ImVec2 mousePos = io.MouseClickedPos[0];
             m_pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
+
+            if (pEngineInst->IsUseECSBackend())
+            {
+                const uint32_t mouseID = m_pRenderer->GetMouseHitObjectID();
+                if (mouseID != m_LastMouseHitID)
+                {
+                    m_LastMouseHitID = mouseID;
+                    if (mouseID != UINT32_MAX)
+                    {
+                        auto* pEntitySystem = pEngineInst->GetEntitySystem();
+                        const entt::entity picked = pEntitySystem->ResolvePickID(mouseID);
+                        if (picked != entt::null)
+                            SelectEntity(picked);
+                    }
+                }
+            }
         }
 
         // Undo/Redo Shortcut: Ctrl + Z / Ctrl + Y / Ctrl + Shift + Z
@@ -108,8 +132,15 @@ namespace Editor
         if (m_bShowWorldOutliner)
         {
             ImGui::Begin("WorldOutliner", &m_bShowWorldOutliner);
-            auto pWorld = Core::FVultanaEngine::GetEngineInstance()->GetWorld();
-            pWorld->OnGUI();
+            if (pEngineInst->IsUseECSBackend())
+            {
+                DrawOutlinerECS();
+            }
+            else
+            {
+                auto pWorld = pEngineInst->GetWorld();
+                pWorld->OnGUI();
+            }
             ImGui::End();
         }
         if (m_bShowGPUDrivenStats)
@@ -126,9 +157,16 @@ namespace Editor
     {
         if (m_bShowInspector)
         {
-            AddGUICommand("Inspector", "Selected Model", 
-                [this]()
-                { DrawInspectorModelSection(); });
+            AddGUICommand("Inspector", "Entity",
+            [this]()
+            { 
+                DrawInspectorECS(); 
+            });
+            AddGUICommand("Inspector", "Selected Model",
+            [this]()
+            { 
+                DrawInspectorModelSection(); 
+            });
             DrawWindow("Inspector", &m_bShowInspector);
         }
         if (m_bShowSettings)
@@ -211,6 +249,10 @@ namespace Editor
                 {
                     ifd::FileDialog::Instance().Open("SceneOpenDialog", "Open Scene", "XML file (*.xml){.xml},.*");
                 }
+                if (ImGui::MenuItem("Save Scene"))
+                {
+                    SaveScene();
+                }
                 if (ImGui::MenuItem("Open Model"))
                 {
                     eastl::string modelsDir = Core::FVultanaEngine::GetEngineInstance()->GetAssetsPath() + "Models";
@@ -288,9 +330,8 @@ namespace Editor
         {
             if (ifd::FileDialog::Instance().HasResult())
             {
-                eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
-                Core::FVultanaEngine::GetEngineInstance()->GetWorld()->LoadScene(res);
-                m_EditHistory.Clear();
+                const eastl::string res = ifd::FileDialog::Instance().GetResult().string().c_str();
+                OpenScene(res);
             }
             ifd::FileDialog::Instance().Close();
         }
@@ -404,8 +445,7 @@ namespace Editor
         if (pEntitySystem == nullptr || pWorld == nullptr) return;
 
         auto& reg = pEntitySystem->GetRegistry();
-        const entt::entity picked = pEntitySystem->ResolvePickID(m_pRenderer->GetMouseHitObjectID());
-        const entt::entity target = (picked == entt::null) ? entt::null : Assets::FModelLoaderECS::FindModelInstanceRoot(reg, picked);
+        const entt::entity target = (m_SelectedEntity == entt::null) ? entt::null : Assets::FModelLoaderECS::FindModelInstanceRoot(reg, m_SelectedEntity);
 
         if (target == entt::null || !reg.valid(target) || reg.try_get<Scene::ECS::FTransformComponent>(target) == nullptr)
         {
@@ -474,6 +514,220 @@ namespace Editor
             }
             m_GizmoDragEntity = entt::null;
         }
+    }
+
+    void FVultanaEditor::DrawOutlinerECS()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        if (pEntitySystem == nullptr)
+            return;
+        auto& reg = pEntitySystem->GetRegistry();
+        auto& childrenMap = pEntitySystem->GetChildrenMap();
+
+        eastl::function<void(entt::entity)> drawNode;
+        drawNode = [&](entt::entity entity)
+        {
+            const char* name = "Entity";
+            if (const auto* nameComp = reg.try_get<Scene::ECS::FNameComponent>(entity))
+                name = nameComp->Name;
+
+            ImGui::PushID(static_cast<int>(entt::to_integral(entity)));
+            const bool bSelected = (entity == m_SelectedEntity);
+            const bool bLeaf = childrenMap.find(entt::to_integral(entity)) == childrenMap.end();
+            const bool bOpen = ImGui::TreeNodeEx(name, ImGuiTreeNodeFlags_OpenOnArrow | (bSelected ? ImGuiTreeNodeFlags_Selected : 0) | (bLeaf ? ImGuiTreeNodeFlags_Leaf : 0));
+            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+                SelectEntity(entity);
+
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+            {
+                ImGui::SetDragDropPayload("ECS_ENTITY", &entity, sizeof(entity));
+                ImGui::Text("Reparent: %s", name);
+                ImGui::EndDragDropSource();
+            }
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ECS_ENTITY"))
+                {
+                    entt::entity src = *static_cast<const entt::entity*>(payload->Data);
+                    if (src != entity && src != entt::null)
+                    {
+                        const auto* parentComp = reg.try_get<Scene::ECS::FParentComponent>(src);
+                        const entt::entity before = parentComp ? parentComp->Parent : entt::null;
+                        m_EditHistory.Push(eastl::make_unique<Editor::Commands::FSetParentCommand>(
+                            *pEntitySystem, src, before, entity));
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            if (bOpen)
+            {
+                if (const auto it = childrenMap.find(entt::to_integral(entity)); it != childrenMap.end())
+                {
+                    for (entt::entity child : it->second)
+                        drawNode(child);
+                }
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        };
+
+        auto rootView = reg.view<Scene::ECS::FTransformComponent>(entt::exclude_t<Scene::ECS::FParentComponent>());
+        for (entt::entity root : rootView)
+            drawNode(root);
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape))
+        {
+            m_SelectedEntity = entt::null;
+            m_pRenderer->SetSelectedObjectID(UINT32_MAX);
+        }
+    }
+
+    void FVultanaEditor::DrawInspectorECS()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        if (pEntitySystem == nullptr)
+            return;
+        if (m_SelectedEntity == entt::null || !pEntitySystem->GetRegistry().valid(m_SelectedEntity))
+        {
+            ImGui::TextDisabled("No entity selected (click in Outliner or viewport).");
+            return;
+        }
+        DrawTransformEditorECS(*pEntitySystem, m_SelectedEntity);
+
+        auto& reg = pEntitySystem->GetRegistry();
+        if (const auto* model = reg.try_get<Scene::ECS::FModelInstanceComponent>(m_SelectedEntity))
+        {
+            ImGui::Separator();
+            ImGui::TextWrapped("Model: %s", model->ModelPath.c_str());
+        }
+        if (reg.all_of<Scene::ECS::FMainCameraTag>(m_SelectedEntity))
+        {
+            ImGui::Separator();
+            ImGui::TextDisabled("Camera entity");
+        }
+        if (reg.all_of<Scene::ECS::FMainLightTag>(m_SelectedEntity))
+        {
+            ImGui::Separator();
+            ImGui::TextDisabled("Light entity");
+        }
+    }
+
+    void FVultanaEditor::DrawTransformEditorECS(Scene::ECS::FEntitySubsystem& entitySubsystem, entt::entity entity)
+    {
+        Editor::Commands::FEntityEditableTarget editTarget(entitySubsystem, entity);
+        const Editor::Commands::FTransformSnapshot current = editTarget.GetTransform();
+
+        if (auto* nameComp = entitySubsystem.GetRegistry().try_get<Scene::ECS::FNameComponent>(entity))
+        {
+            char nameBuf[64];
+            strncpy_s(nameBuf, nameComp->Name, _TRUNCATE);
+            if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf), ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                const eastl::string beforeName(nameComp->Name);
+                nameComp->SetName(nameBuf);
+                m_EditHistory.Push(eastl::make_unique<Editor::Commands::FSetNameCommand>(entitySubsystem, entity, beforeName.c_str(), nameBuf));
+            }
+        }
+
+        float3 p = current.Position;
+        float3 r = RotationAngles(current.Rotation);
+        float3 s = current.Scale;
+
+        bool bChanged = false;
+        bool bActivated = false;
+        bool bReleased = false;
+        bChanged    |= ImGui::DragFloat3("Position", (float*)&p, 0.1f);
+        bActivated  |= ImGui::IsItemActivated();
+        bReleased   |= ImGui::IsItemDeactivatedAfterEdit();
+        bChanged    |= ImGui::DragFloat3("Rotation", (float*)&r, 0.5f);
+        bActivated  |= ImGui::IsItemActivated();
+        bReleased   |= ImGui::IsItemDeactivatedAfterEdit();
+        bChanged    |= ImGui::DragFloat3("Scale", (float*)&s, 0.01f);
+        bActivated  |= ImGui::IsItemActivated();
+        bReleased   |= ImGui::IsItemDeactivatedAfterEdit();
+
+        if (bActivated && !m_bInspectorDragging)
+        {
+            m_bInspectorDragging = true;
+            m_InspectorDragStart = current; // sampled at drag start, not per frame
+        }
+        if (bChanged)
+        {
+            Editor::Commands::FTransformSnapshot next;
+            next.Position = p;
+            next.Rotation = RotationQuat(r);
+            next.Scale = s;
+            editTarget.SetTransform(next); // marks transform dirty → this frame recompute
+        }
+        if (bReleased && m_bInspectorDragging)
+        {
+            m_bInspectorDragging = false;
+            const Editor::Commands::FTransformSnapshot finalTF = editTarget.GetTransform();
+            if (!Editor::Commands::TransformEqual(m_InspectorDragStart, finalTF))
+            {
+                m_EditHistory.Push(eastl::make_unique<Editor::Commands::FSetTransformCommand>(eastl::make_unique<Editor::Commands::FEntityEditableTarget>(entitySubsystem, entity), m_InspectorDragStart, finalTF));
+            }
+        }
+    }
+
+    void FVultanaEditor::SaveScene()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        if (!pEngine->IsUseECSBackend())
+        {
+            VTNA_LOG_WARN("[Editor] Save Scene requires the ECS scene backend");
+            return;
+        }
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        if (pEntitySystem == nullptr)
+            return;
+
+        if (pEngine->GetAssetManager() && pEngine->GetAssetManager()->HasPendingRequests())
+        {
+            VTNA_LOG_WARN("[Editor] Save Scene: assets still loading; try again when idle");
+            return;
+        }
+
+        const bool ok = Scene::ECS::FSceneSerializer::Save(*pEntitySystem, pEngine->GetSceneFilePath(), pEngine->GetAssetsPath());
+        if (ok)
+            VTNA_LOG_INFO("[Editor] Scene saved: {}", pEngine->GetSceneFilePath());
+        else
+            VTNA_LOG_ERROR("[Editor] Scene save failed: {}", pEngine->GetSceneFilePath());
+    }
+
+    void FVultanaEditor::OpenScene(const eastl::string& path)
+    {
+        Core::FVultanaEngine::GetEngineInstance()->LoadSceneFromFile(path);
+    }
+
+    void FVultanaEditor::SelectEntity(entt::entity entity)
+    {
+        m_SelectedEntity = entity;
+        auto* pEntitySystem = Core::FVultanaEngine::GetEngineInstance()->GetEntitySystem();
+
+        entt::entity highlight = entity;
+        auto& reg = pEntitySystem->GetRegistry();
+        if (!reg.all_of<Scene::ECS::FMeshRendererComponent>(highlight))
+        {
+            eastl::vector<entt::entity> stack;
+            if (const auto* children = pEntitySystem->FindChildren(entity))
+                stack = *children;
+            while (!stack.empty())
+            {
+                const entt::entity c = stack.back();
+                stack.pop_back();
+                if (reg.all_of<Scene::ECS::FMeshRendererComponent>(c))
+                {
+                    highlight = c;
+                    break;
+                }
+                if (const auto* ch = pEntitySystem->FindChildren(c))
+                    stack.insert(stack.end(), ch->begin(), ch->end());
+            }
+        }
+        m_pRenderer->SetSelectedObjectID(pEntitySystem->GetPickID(highlight));
     }
 
     void FVultanaEditor::DrawFrameStats()
@@ -585,7 +839,7 @@ namespace Editor
                 for (size_t row = 0; row < models.size(); ++row)
                 {
                     const auto& m = models[row];
-                    ImGui::PushID(static_cast<int>(row)); // 表格不 push 行 ID,同名按钮会串 ID(§7 R4)
+                    ImGui::PushID(static_cast<int>(row));
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(m.ModelPath.c_str());
@@ -597,7 +851,7 @@ namespace Editor
                     ImGui::TableNextColumn();
                     ImGui::Text("%u", m.PrimitiveCount);
                     ImGui::TableNextColumn();
-                    ImGui::BeginDisabled(bBusy); // 加载帧里编辑器仍 Tick,按钮本来是可点的(§7 R1/R2 防线)
+                    ImGui::BeginDisabled(bBusy);
                     if (ImGui::SmallButton("Reload"))
                     {
                         Assets::FModelLoaderECS::ReloadModelAsync(m.ModelPath);
@@ -660,7 +914,7 @@ namespace Editor
             return;
         }
 
-        const entt::entity picked = pEntitySystem->ResolvePickID(m_pRenderer->GetMouseHitObjectID());
+        const entt::entity picked = m_SelectedEntity;
         if (picked == entt::null || !pEntitySystem->GetRegistry().valid(picked))
         {
             ImGui::TextDisabled("No object selected. Click a mesh in the viewport.");

@@ -5,6 +5,7 @@
 #include "Utilities/Math.hpp"
 
 #include <EASTL/vector.h>
+#include <EASTL/algorithm.h>
 
 #include <entt/entt.hpp>
 
@@ -23,17 +24,20 @@ namespace Scene::ECS
         {
             entt::entity Entity;
             float4x4 ParentWorldMtx;
+            bool bParentChanged = false;
         };
 
-        void ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap);
+        void ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap, bool bForceAll);
         bool IsVisited(entt::entity e) const;
         void SetVisited(entt::entity e);
         void ResetVisited();
 
     private:
-        eastl::vector<FStackEntry> m_Stack;
-        eastl::vector<uint64_t> m_VisitedBits;
         eastl::vector<entt::entity> m_ScratchDetach;
         eastl::vector<entt::entity> m_ScratchWalk;
+        eastl::vector<FStackEntry> m_Stack;
+        eastl::vector<uint64_t> m_VisitedBits;
+        eastl::vector<uint32_t> m_VisitedStamp;
+        uint32_t m_VisitedFrame = 0;
     };
 } // namespace Scene::ECS

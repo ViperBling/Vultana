@@ -11,6 +11,10 @@
 namespace Scene 
 {
     class IVisibleObject;
+    namespace ECS
+    {
+        class FEntitySubsystem;
+    }
 }
 
 namespace Editor
@@ -26,6 +30,8 @@ namespace Editor
         void Render(RHI::FRHICommandList* pCmdList);
 
         void AddGUICommand(const eastl::string& window, const eastl::string& section, const eastl::function<void()>& command);
+
+        void ClearEditHistory() { m_EditHistory.Clear(); }
     
     private:
         void BuildDockLayout();
@@ -33,6 +39,12 @@ namespace Editor
         void DrawMenu();
         void DrawGizmo();
         void DrawGizmoECS();
+        void DrawOutlinerECS();
+        void DrawInspectorECS();
+        void DrawTransformEditorECS(Scene::ECS::FEntitySubsystem& entitySubsystem, entt::entity entity);
+        void SaveScene();
+        void OpenScene(const eastl::string& path);
+        void SelectEntity(entt::entity entity);
 
         void DrawFrameStats();
         void ShowRenderGraph();
@@ -91,5 +103,10 @@ namespace Editor
         Scene::IVisibleObject* m_GizmoDragTarget = nullptr;
         entt::entity m_GizmoDragEntity = entt::null;
         Editor::Commands::FTransformSnapshot m_GizmoDragStart;
+
+        entt::entity m_SelectedEntity = entt::null;
+        uint32_t m_LastMouseHitID = UINT32_MAX;
+        bool m_bInspectorDragging = false;
+        Editor::Commands::FTransformSnapshot m_InspectorDragStart;
     };
 }

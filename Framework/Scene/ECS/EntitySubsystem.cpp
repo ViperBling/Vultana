@@ -20,6 +20,7 @@ namespace Scene::ECS
         m_Registry.emplace<FPickIDComponent>(entity, pickID);
         if (pickID != 0)
             m_PickIDToEntity[pickID] = entity;
+        MarkStructureDirty();
         return entity;
     }
 
@@ -40,6 +41,7 @@ namespace Scene::ECS
         m_Registry.emplace<FPickIDComponent>(entity, pickID);
         if (pickID != 0)
             m_PickIDToEntity[pickID] = entity;
+        MarkStructureDirty();
         return entity;
     }
 
@@ -138,6 +140,7 @@ namespace Scene::ECS
             const auto& transformData = snapshot.Transform.value();
             m_Registry.emplace_or_replace<FTransformComponent>(entity, transformData.Position, transformData.Rotation, transformData.Scale);
             m_Registry.emplace_or_replace<FWorldTransformComponent>(entity);
+            MarkTransformDirty(entity);
         }
         if (snapshot.Name.has_value())
         {
@@ -176,6 +179,7 @@ namespace Scene::ECS
     {
         if (m_Registry.valid(entity)) return;
         [[maybe_unused]] entt::entity resurrected = m_Registry.create(entity);
+        MarkStructureDirty();
     }
 
     void FEntitySubsystem::FlushDeferred()
@@ -241,6 +245,7 @@ namespace Scene::ECS
             m_Registry.emplace_or_replace<FParentComponent>(entity, parent);
             m_ChildrenMap[entt::to_integral(parent)].push_back(entity);
         }
+        MarkStructureDirty();
     }
 
     void FEntitySubsystem::NotifyParentRemoved(entt::entity entity)
@@ -255,12 +260,47 @@ namespace Scene::ECS
             if (it->second.empty())
                 m_ChildrenMap.erase(it);
         }
+        MarkStructureDirty();
     }
 
     void FEntitySubsystem::DetachFromParent(entt::entity entity)
     {
         NotifyParentRemoved(entity);
         m_Registry.remove<FParentComponent>(entity);
+        MarkStructureDirty();
+    }
+
+    void FEntitySubsystem::MarkTransformDirty(entt::entity entity)
+    {
+        if (auto* tf = m_Registry.try_get<FTransformComponent>(entity))
+            tf->bLocalDirty = true;
+        m_bTransformDirty = true;
+    }
+
+    bool FEntitySubsystem::ConsumeStructureDirty()
+    {
+        const bool b = m_bStructureDirty;
+        m_bStructureDirty = false;
+        return b;
+    }
+
+    bool FEntitySubsystem::ConsumeTransformDirty()
+    {
+        const bool b = m_bTransformDirty;
+        m_bTransformDirty = false;
+        return b;
+    }
+
+    void FEntitySubsystem::Clear()
+    {
+        auto& storage = m_Registry.storage<entt::entity>();
+        for (auto e : storage)
+            m_PendingDestroy.push_back(e);
+        FlushPendingDestroy();
+        m_PickIDToEntity.clear();
+        m_ChildrenMap.clear();
+        m_NextPickID = 1;
+        MarkStructureDirty();
     }
 
     eastl::vector<entt::entity> FEntitySubsystem::GetChildren(entt::entity entity) const
@@ -285,6 +325,7 @@ namespace Scene::ECS
 
     void FEntitySubsystem::FlushPendingDestroy()
     {
+        if (m_PendingDestroy.empty()) return;
         for (entt::entity entity : m_PendingDestroy)
         {
             if (!m_Registry.valid(entity)) continue;
@@ -314,6 +355,7 @@ namespace Scene::ECS
 
             m_Registry.destroy(entity);
         }
+        MarkStructureDirty();
         m_PendingDestroy.clear();
     }
 

@@ -93,7 +93,7 @@ namespace Renderer
 
     uint32_t FECSRenderBridge::GetSelectedPickID() const
     {
-        return m_pRenderer->GetMouseHitObjectID();
+        return m_pRenderer->GetSelectedObjectID();
     }
 
     bool FECSRenderBridge::IsEnableMouseHitTest() const

@@ -115,6 +115,8 @@ namespace Renderer
         void RequestMouseHitTest(uint32_t x, uint32_t y);
         bool IsEnableMouseHitTest() const { return m_bEnableObjectIDRendering; }
         uint32_t GetMouseHitObjectID() const { return m_MouseHitObjectID; }
+        void SetSelectedObjectID(uint32_t id) { m_SelectedObjectID = id; }
+        uint32_t GetSelectedObjectID() const { return m_SelectedObjectID; }
 
         class FDeferredBasePass* GetDeferredBasePass() { return m_pDeferredBasePass.get(); }
         class FHiZBuffer* GetHiZBuffer() { return m_pHZB.get(); }
@@ -232,6 +234,7 @@ namespace Renderer
         uint32_t m_MouseX = 0;
         uint32_t m_MouseY = 0;
         uint32_t m_MouseHitObjectID = UINT32_MAX;
+        uint32_t m_SelectedObjectID = UINT32_MAX;
         eastl::unique_ptr<RHI::FRHIBuffer> m_pObjectIDBuffer;
         uint32_t m_ObjectIDRowPitch = 0;
 

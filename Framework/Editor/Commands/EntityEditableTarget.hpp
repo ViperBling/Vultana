@@ -30,6 +30,7 @@ namespace Editor::Commands
                 m_Entity, snapshot.Position,
                 float4(snapshot.Rotation.x, snapshot.Rotation.y, snapshot.Rotation.z, snapshot.Rotation.w),
                 snapshot.Scale);
+            m_EntitySubsystem.MarkTransformDirty(m_Entity);
         }
 
         uintptr_t GetTargetId() const override { return static_cast<uintptr_t>(entt::to_integral(m_Entity)); }

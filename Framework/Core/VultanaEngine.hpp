@@ -40,6 +40,9 @@ namespace Core
         void Shutdown();
         void Tick();
 
+        void LoadSceneFromFile(const eastl::string& scenePath);
+
+        const eastl::string& GetSceneFilePath() const { return m_SceneFilePath; }
         Scene::FWorld* GetWorld() const { return m_pWorld.get(); }
         Renderer::FRendererBase* GetRenderer() const { return m_pRenderer.get(); }
         Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
@@ -80,6 +83,7 @@ namespace Core
         uint64_t m_LastFrameTime = 0;
         float m_FrameTime = 0.0f;
 
+        eastl::string m_SceneFilePath;
         eastl::string m_WorkingPath;
         eastl::string m_AssetsPath;
         eastl::string m_ShaderPath;

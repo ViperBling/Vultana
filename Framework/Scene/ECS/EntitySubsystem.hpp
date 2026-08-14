@@ -86,6 +86,13 @@ namespace Scene::ECS
         const FChildrenMap& GetChildrenMap() const { return m_ChildrenMap; }
         void DetachFromParent(entt::entity entity);
 
+        void MarkStructureDirty() { m_bStructureDirty = true; }
+        void MarkTransformDirty() { m_bTransformDirty = true; }
+        void MarkTransformDirty(entt::entity entity);
+        bool ConsumeStructureDirty();
+        bool ConsumeTransformDirty();
+        void Clear();
+
         // ===== Query Operations ===== //
         uint32_t GetEntityCount() const;
 
@@ -101,5 +108,8 @@ namespace Scene::ECS
         static constexpr uint32_t MAX_PICK_ID = 9999999;
         eastl::vector<entt::entity> m_PendingDestroy;
         FChildrenMap m_ChildrenMap;
+
+        bool m_bStructureDirty = true;      // Initial true: first frame builds everything
+        bool m_bTransformDirty = false;
     };
 }

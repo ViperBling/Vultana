@@ -33,6 +33,7 @@ namespace Scene::ECS
         float3 Position = float3(0.0f);
         float4 Rotation = float4(0.0f, 0.0f, 0.0f, 1.0f);
         float3 Scale    = float3(1.0f);
+        bool bLocalDirty = true;
     };
 
     // ===== Parent ===== //
@@ -80,12 +81,6 @@ namespace Scene::ECS
     struct FVisibilityComponent
     {
         bool bFrustumVisible = false;
-    };
-
-    // ===== GUID ===== //
-    struct FSceneGUIDComponent
-    {
-        uint64_t GUID = 0;
     };
 
     // ===== Resource Handle ===== //

@@ -82,7 +82,12 @@ namespace Scene::ECS
                 if (nodeEntity == entt::null || !registry.valid(nodeEntity))
                     continue;
                 if (auto* tf = registry.try_get<FTransformComponent>(nodeEntity))
+                {
                     EvalChannel(channel, anim.CurrentTime, *tf);
+                    tf->bLocalDirty = true;
+                    subsystem.MarkTransformDirty();
+                }
+                    
             }
         });
     }

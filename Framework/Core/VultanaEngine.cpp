@@ -2,6 +2,7 @@
 
 #include "AssetCooker/AssetPathUtils.hpp"
 #include "AssetManager/AssetManager.hpp"
+#include "AssetManager/ModelLoaderECS.hpp"
 #include "AssetManager/ResourceCache.hpp"
 #include "AssetManager/SceneAssetRegistry.hpp"
 
@@ -10,6 +11,7 @@
 #include "Renderer/ECSRenderBridge.hpp"
 
 #include "Scene/Camera.hpp"
+#include "Scene/ECS/SceneSerializer.hpp"
 #include "Scene/ECS/Processors/AnimationProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
@@ -126,7 +128,9 @@ namespace Core
         m_pWorld->SetUseCookedAssets(strcmp(modelLoadPath, "Asset") == 0);
         m_pWorld->SetUseECSBackend(m_bUseECSBackend);
         m_pAssetManager = eastl::make_unique<Assets::FAssetManager>(m_pWorld.get(), m_pTaskScheduler.get());
-        m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
+        // m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
+        m_SceneFilePath = m_AssetsPath + configIni.GetValue("World", "SceneFile");
+        LoadSceneFromFile(m_SceneFilePath);
 
         if (m_bUseECSBackend)
         {
@@ -144,20 +148,21 @@ namespace Core
 
             auto& reg = m_pEntitySystem->GetRegistry();
 
-            entt::entity cameraEntity = m_pEntityFactory->CreateEmpty("MainCamera");
-            reg.emplace<Scene::ECS::FCameraComponent>(cameraEntity);
-            reg.emplace<Scene::ECS::FMainCameraTag>(cameraEntity);
+            const bool bHasCamera = (reg.view<Scene::ECS::FMainCameraTag>().front() != entt::null);
+            const bool bHasLight = (reg.view<Scene::ECS::FMainLightTag>().front() != entt::null);
 
-            entt::entity lightEntity = m_pEntityFactory->CreateEmpty("MainLight");
-            Scene::ECS::FLightComponent lightComp; // defaults == ILight defaults
-            if (Scene::ILight* pMainLight = m_pWorld->FindMainLight())
+            if (!bHasCamera)
             {
-                lightComp.Color = pMainLight->GetLightColor();
-                lightComp.Radius = pMainLight->GetLightRadius();
-                lightComp.Direction = Scene::ECS::ComputeLightDirection(pMainLight->GetRotation());
+                entt::entity cameraEntity = m_pEntityFactory->CreateEmpty("MainCamera");
+                reg.emplace<Scene::ECS::FCameraComponent>(cameraEntity);
+                reg.emplace<Scene::ECS::FMainCameraTag>(cameraEntity);
             }
-            reg.emplace<Scene::ECS::FLightComponent>(lightEntity, lightComp);
-            reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);
+            if (!bHasLight)
+            {
+                entt::entity lightEntity = m_pEntityFactory->CreateEmpty("MainLight");
+                reg.emplace<Scene::ECS::FLightComponent>(lightEntity);
+                reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);
+            }
         }
 
         m_pEditor = eastl::make_unique<Editor::FVultanaEditor>(m_pRenderer.get());
@@ -228,7 +233,39 @@ namespace Core
             m_pAssetRegistry->FrameFencePassed(m_pRenderer->GetFrameID());
         }
     }
-    
+
+    void FVultanaEngine::LoadSceneFromFile(const eastl::string& scenePath)
+    {
+        if (!m_bUseECSBackend)
+        {
+            m_pWorld->LoadScene(scenePath);
+            return;
+        }
+
+        m_pEntitySystem->Clear();
+        if (m_pEditor)
+            m_pEditor->ClearEditHistory();
+
+        Scene::ECS::FSceneLoadResult sceneResult;
+        Scene::ECS::FSceneSerializer::Load(*m_pEntitySystem, *m_pEntityFactory, *m_pAssetRegistry, scenePath, m_AssetsPath, sceneResult);
+        
+        for (const auto& request : sceneResult.Models)
+        {
+            Assets::FModelLoaderECS::LoadModelAsync(request.FilePath, request.Handle, *m_pEntityFactory, request.Root, request.Position, request.Rotation, request.Scale);
+        }
+        if (sceneResult.bHasCamera)
+        {
+            Scene::FCamera* pCamera = m_pWorld->GetCamera();
+            if (pCamera)
+            {
+                pCamera->SetPosition(sceneResult.CameraPosition);
+                pCamera->SetRotation(sceneResult.CameraRotation);
+                pCamera->SetPerspective(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()), sceneResult.CameraFov, sceneResult.CameraZNear);
+            }
+        }
+        m_SceneFilePath = scenePath;
+    }
+
     FVultanaEngine::~FVultanaEngine()
     {
         rpmalloc_finalize();
@@ -276,6 +313,7 @@ namespace Core
                     tf->Position = pCamera->GetPosition();
                     tf->Rotation = RotationQuat(pCamera->GetRotation()); // degrees -> quaternion
                 }
+                m_pEntitySystem->MarkTransformDirty(camSnap->CameraEntity);
                 if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(camSnap->CameraEntity))
                 {
                     camComp->Fov = pCamera->GetFOV();
