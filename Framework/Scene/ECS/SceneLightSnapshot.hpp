@@ -11,4 +11,9 @@ namespace Scene::ECS
         float Radius     = 0.005f;                      // matches ILight default
         bool bValid      = false;
     };
+
+    inline float3 ComputeLightDirection(const quaternion& rotation)
+    {
+        return normalize(mul(rotation_matrix(rotation), float4(0.0f, 1.0f, 0.0f, 0.0f)).xyz());
+    }
 }

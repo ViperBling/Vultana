@@ -28,12 +28,17 @@ namespace Assets
         Scene::ECS::FModelAssetInfo GetModelInfo(Scene::ECS::FModelAssetHandle handle) const override;
         Scene::ECS::EAssetState GetState(Scene::ECS::FModelAssetHandle handle) const override;
         void FrameFencePassed(uint64_t frameID) override;
+        const Scene::ECS::FAnimationClip* FindAnimation(Scene::ECS::FModelAssetHandle asset, uint32_t clipIndex) const override;
+        const Scene::ECS::FSkeletonInfo* GetSkeletonInfo(Scene::ECS::FModelAssetHandle asset) const override;
+        RHI::FRHIPipelineState* GetPSO(Scene::ECS::FMaterialResourceHandle handle) const;
+
         void DeferDeleteMaterial(FMeshMaterial* material);
 
         // PSO resolution (RHI layer, called by ECSRenderBridge; Core interface remains RHI-free)
         RHI::FRHIPipelineState* GetMeshletPSO(Scene::ECS::FMaterialResourceHandle handle) const;
         RHI::FRHIPipelineState* GetIDPSO(Scene::ECS::FMaterialResourceHandle handle) const;
         RHI::FRHIPipelineState* GetOutlinePSO(Scene::ECS::FMaterialResourceHandle handle) const;
+        RHI::FRHIPipelineState* GetSkinningPSO(Scene::ECS::FMaterialResourceHandle handle) const;
 
         void PopulateModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model); 
         void MarkModelFailed(Scene::ECS::FModelAssetHandle asset);
@@ -69,6 +74,7 @@ namespace Assets
             int32_t RefCount     = 0;
             Scene::ECS::FMeshGPUData GPUData;
             eastl::vector<OffsetAllocator::Allocation> Allocations;
+            OffsetAllocator::Allocation AnimAllocations[3] = {};
             bool bPendingRelease = false;
         };
 
@@ -100,6 +106,8 @@ namespace Assets
             uint32_t MaterialCount = 0;
             eastl::vector<FAssetMaterial> Materials;
             eastl::vector<eastl::string> TextureRefs;
+            eastl::vector<Scene::ECS::FAnimationClip> Animations;
+            Scene::ECS::FSkeletonInfo SkeletonInfo;
         };
 
         struct FPendingRelease

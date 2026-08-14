@@ -5,6 +5,7 @@
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
+#include "Scene/ECS/Processors/AnimationProcessor.hpp"
 #include "Scene/ECS/Processors/LightProcessor.hpp"
 #include "Scene/ECS/Processors/CameraSyncProcessor.hpp"
 #include "Scene/ECS/RenderSink.hpp"
@@ -497,10 +498,18 @@ public:
     void AddBasePassBatch(const Scene::ECS::FRenderBatchInput& input) override { BaseBatches.push_back(input); }
     void AddObjectIDBatch(const Scene::ECS::FRenderBatchInput&) override {}
     void AddOutlineBatch(const Scene::ECS::FRenderBatchInput&) override {}
-    uint32_t AllocateMaterialConstants(const void*, uint32_t) override { return 0; }
+    uint32_t AllocateMaterialConstants(const void*, uint32_t) override { return 0x1000u; }
     uint32_t GetSelectedPickID() const override { return NextPickID; }
     bool IsEnableMouseHitTest() const override { return bMouseHitTest; }
-    void AddAnimationBatch(const Scene::ECS::FAnimationBatchInput&) override {}
+    void AddAnimationBatch(const Scene::ECS::FAnimationBatchInput& input) override
+    {
+        ++AnimationBatchCount;
+        LastSkinInput = input;
+    }
+
+public:
+    int AnimationBatchCount = 0;
+    Scene::ECS::FAnimationBatchInput LastSkinInput;
 };
 
 TEST(ECSTest, AssetRegistry_ImportModel)
@@ -991,4 +1000,123 @@ TEST(ECSTest, CameraSync_MainCameraEntity_Mirrored)
     EXPECT_NEAR(out.Position.x, 5.0f, 0.001f);
     EXPECT_NEAR(out.Position.y, 3.0f, 0.001f);
     EXPECT_NEAR(out.Fov, 60.0f, 0.001f);
+}
+
+// ============================================================
+//  Slice 3.5
+// ============================================================
+TEST(ECSTest, Animation_ChannelWritesNodeTransform)
+{
+    FEntitySubsystem ecs;
+    FFakeAssetRegistry fake;
+    fake.AnimClips.emplace_back();
+    fake.AnimClips[0].Channels.push_back({0, Scene::ECS::EAnimChannelMode::Translation, {{0.0f, float4(0, 0, 0, 1)}, {1.0f, float4(10, 0, 0, 1)}}});
+    fake.AnimClips[0].TimeDuration = 1.0f;
+    ecs.RegisterProcessor(eastl::make_unique<FAnimationProcessor>(&fake));
+
+    entt::entity root = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FModelInstanceComponent>(root, FModelAssetHandle{0, 0}, "test");
+    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root); // node table（v3 正交化）
+    entt::entity node0 = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FTransformComponent>(node0);
+    ecs.SetParent(node0, root);
+    ecs.GetRegistry().get<FModelNodeTableComponent>(root).NodeEntities.push_back(node0);
+    ecs.GetRegistry().emplace<FAnimationComponent>(root, 0u, 0.0f, true);
+
+    ecs.Tick(0.5f); // advance-then-evaluate: t advances 0.5 → pos.x = 5
+
+    ASSERT_NE(ecs.GetRegistry().try_get<FTransformComponent>(node0), nullptr);
+    EXPECT_NEAR(ecs.GetRegistry().get<FTransformComponent>(node0).Position.x, 5.0f, 0.001f);
+    EXPECT_NEAR(ecs.GetRegistry().get<FTransformComponent>(node0).Position.y, 0.0f, 0.001f);
+}
+
+TEST(ECSTest, Animation_NoClip_NoCrash)
+{
+    FEntitySubsystem ecs;
+    FFakeAssetRegistry fake; // empty AnimClips
+    ecs.RegisterProcessor(eastl::make_unique<FAnimationProcessor>(&fake));
+    entt::entity root = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FModelInstanceComponent>(root, FModelAssetHandle{0, 0}, "test");
+    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root);
+    ecs.GetRegistry().emplace<FAnimationComponent>(root);
+    ecs.Tick(0.1f); // clip == nullptr → 零求值，不崩
+}
+
+TEST(ECSTest, RenderSubmission_SkinnedEmitsSkinBatch)
+{
+    FEntitySubsystem ecs;
+    FFakeRenderSink sink;
+    FFakeAssetRegistry fake;
+    fake.SkeletonInfo.JointNodeIndices = {0};
+    fake.SkeletonInfo.InverseBindMatrices = {float4x4({identity})};
+
+    // Real handle path（终审 🔴11）：ImportModel + AcquireMesh 才让 FindMeshData 命中
+    // （AcquireMesh 置 MeshletCount=1 → IsValid()）。
+    const auto model = fake.ImportModel("test.gltf");
+    const auto meshHandle = fake.AcquireMesh(model, 0, 0);
+    fake.SetFakeSkinnedMesh(meshHandle, true);
+
+    entt::entity root = ecs.CreateEntity(); // 🔴H: root 必带 Transform/WorldTransform
+    ecs.GetRegistry().emplace<FTransformComponent>(root);
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(root);
+    ecs.GetRegistry().emplace<FModelInstanceComponent>(root, model, "test");
+    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root);
+    entt::entity node0 = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FTransformComponent>(node0);
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(node0); // 🔴-2 (v6): Hierarchy 对带 Transform 实体无条件 get 世界变换
+    ecs.SetParent(node0, root);
+    ecs.GetRegistry().get<FModelNodeTableComponent>(root).NodeEntities.push_back(node0); // 🔴H: 表必须填
+
+    entt::entity mesh = ecs.CreateEntity(); // PickID 由 CreateEntity 自动分配（🔴12：勿再 emplace）
+    ecs.GetRegistry().emplace<FMeshRendererComponent>(mesh, meshHandle, fake.AcquireMaterial(model, 0, 0), true);
+    ecs.GetRegistry().emplace<FTransformComponent>(mesh);
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(mesh);
+    ecs.GetRegistry().emplace<FBoundingSphereComponent>(mesh, float3(0.0f), 1.0f);
+    ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(mesh);
+    ecs.GetRegistry().emplace<FVisibilityComponent>(mesh, true);
+    ecs.GetRegistry().emplace<FSkinnedRootComponent>(mesh, root);
+    ecs.SetParent(mesh, node0); // 🔴H: mesh 挂在 node 下（NodeTable->node 主链路被测到）
+
+    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
+    ecs.RegisterProcessor(eastl::make_unique<FRenderSubmissionProcessor>(sink, fake));
+
+    ecs.Tick(0.0f);
+
+    EXPECT_GE(sink.AnimationBatchCount, 1);
+    EXPECT_NE(sink.LastSkinInput.JointMatricesAddress, 0);
+}
+
+TEST(ECSTest, ComputeLightDirection_MatchesLegacyTick)
+{
+    const quaternion rot = RotationQuat(float3(15.0f, 0.0f, 0.0f));
+    const float3 dir = Scene::ECS::ComputeLightDirection(rot);
+    EXPECT_NEAR(length(dir), 1.0f, 0.001f);
+    EXPECT_NEAR(dir.y, cos(DegreeToRadian(15.0f)), 0.001f);
+    EXPECT_NEAR(dir.z, sin(DegreeToRadian(15.0f)), 0.001f);
+}
+
+TEST(ECSTest, Animation_EvalChannel_ZeroInterval_NoNaN)
+{
+    FEntitySubsystem ecs;
+    FFakeAssetRegistry fake;
+    fake.AnimClips.emplace_back();
+    fake.AnimClips[0].Channels.push_back({0, Scene::ECS::EAnimChannelMode::Translation, {{0.5f, float4(1, 1, 1, 1)}, {0.5f, float4(2, 2, 2, 1)}}}); // duplicate timestamps (D10)
+    fake.AnimClips[0].TimeDuration = 1.0f;
+    ecs.RegisterProcessor(eastl::make_unique<FAnimationProcessor>(&fake));
+
+    entt::entity root = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FModelInstanceComponent>(root, FModelAssetHandle{0, 0}, "test");
+    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root);
+    entt::entity node0 = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FTransformComponent>(node0);
+    ecs.SetParent(node0, root);
+    ecs.GetRegistry().get<FModelNodeTableComponent>(root).NodeEntities.push_back(node0);
+    ecs.GetRegistry().emplace<FAnimationComponent>(root, 0u, 0.0f, true);
+
+    ecs.Tick(0.5f);
+
+    const auto* tf = ecs.GetRegistry().try_get<FTransformComponent>(node0);
+    ASSERT_NE(tf, nullptr);
+    for (float c : {tf->Position.x, tf->Position.y, tf->Position.z})
+        EXPECT_FALSE(std::isnan(c));
 }

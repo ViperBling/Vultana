@@ -136,6 +136,15 @@ public:
         m_PendingMeshReleases.clear();
     }
 
+    const Scene::ECS::FAnimationClip* FindAnimation(Scene::ECS::FModelAssetHandle, uint32_t clipIndex) const override
+    {
+        return (clipIndex < AnimClips.size()) ? &AnimClips[clipIndex] : nullptr;
+    }
+    const Scene::ECS::FSkeletonInfo* GetSkeletonInfo(Scene::ECS::FModelAssetHandle) const override
+    {
+        return &SkeletonInfo;
+    }
+
     Scene::ECS::EAssetState GetState(Scene::ECS::FModelAssetHandle) const override
     {
         return Scene::ECS::EAssetState::Ready;
@@ -148,7 +157,24 @@ public:
         return 0;
     }
 
-private:
+    void SetFakeSkinnedMesh(Scene::ECS::FMeshResourceHandle handle, bool bSkinned)
+    {
+        if (auto* entry = FindMeshEntry(handle))
+        {
+            entry->GPUData.bSkinned = bSkinned;
+            if (bSkinned)
+            {
+                entry->GPUData.IndexCount = 3;
+                entry->GPUData.JointIDBufferAddress = 0x100;
+                entry->GPUData.JointWeightBufferAddress = 0x200;
+                entry->GPUData.AnimPositionBufferAddress = 0x300;
+                entry->GPUData.AnimNormalBufferAddress = 0x400;
+                entry->GPUData.AnimTangentBufferAddress = 0x500;
+            }
+        }
+    }
+
+public:
     const FMeshEntry* FindMeshEntry(Scene::ECS::FMeshResourceHandle handle) const
     {
         for (const auto& model : m_Models)
@@ -174,4 +200,6 @@ private:
     eastl::vector<FModelEntry> m_Models;
     Scene::ECS::FMaterialGPUData m_DefaultMaterial;
     eastl::vector<uint32_t> m_PendingMeshReleases;
+    eastl::vector<Scene::ECS::FAnimationClip> AnimClips;
+    Scene::ECS::FSkeletonInfo SkeletonInfo;
 };

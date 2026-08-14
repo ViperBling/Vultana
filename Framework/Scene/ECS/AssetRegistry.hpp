@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Scene/ECS/AnimationTypes.hpp"
 #include "Scene/ECS/Components.hpp"
 #include "Utilities/Math.hpp"
 
@@ -9,6 +10,8 @@
 
 namespace Scene::ECS
 {
+    static constexpr uint32_t INVALID_ADDRESS = 0xFFFFFFFFu;
+
     // Mesh GPU data
     struct FMeshGPUData
     {
@@ -16,6 +19,14 @@ namespace Scene::ECS
         uint32_t TexCoordBufferAddress      = 0;
         uint32_t NormalBufferAddress        = 0;
         uint32_t TangentBufferAddress       = 0;
+        bool     bSkinned                   = false;
+        uint32_t JointIDBufferAddress       = INVALID_ADDRESS;
+        uint32_t JointWeightBufferAddress   = INVALID_ADDRESS;
+        bool     bHasNormalStream           = false;
+        bool     bHasTangentStream          = false;
+        uint32_t AnimPositionBufferAddress  = INVALID_ADDRESS;
+        uint32_t AnimNormalBufferAddress    = INVALID_ADDRESS;
+        uint32_t AnimTangentBufferAddress   = INVALID_ADDRESS;
         uint32_t MeshletBufferAddress       = 0;
         uint32_t MeshletVertexBufferAddress = 0;
         uint32_t MeshletIndexBufferAddress  = 0;
@@ -53,6 +64,7 @@ namespace Scene::ECS
         eastl::string ModelPath;
         eastl::vector<FModelNodeInfo> Nodes;
         uint32_t PrimitiveCount = 0;
+        uint32_t AnimCount = 0;
     };
 
     enum class EAssetState : uint32_t
@@ -91,5 +103,8 @@ namespace Scene::ECS
         virtual EAssetState GetState(FModelAssetHandle handle) const = 0;
         bool IsReady(FModelAssetHandle handle) const { return GetState(handle) == EAssetState::Ready; }
         virtual void FrameFencePassed(uint64_t frameID) = 0;
+
+        virtual const FAnimationClip* FindAnimation(FModelAssetHandle asset, uint32_t clipIndex) const = 0;
+        virtual const FSkeletonInfo* GetSkeletonInfo(FModelAssetHandle asset) const = 0;
     };
 }

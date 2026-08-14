@@ -17,5 +17,6 @@ namespace Scene::ECS
     private:
         ISceneRenderSink& m_Sink;
         const IAssetRegistry& m_Registry;
+        eastl::vector<float4x4> m_ScratchJointMatrices;
     };
 } // namespace Scene::ECS

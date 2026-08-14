@@ -54,9 +54,21 @@ namespace Assets
             case EVertexStreamType::Tangent:
                 data.TangentBufferAddress = allocBuffer("_TangentBuffer", stream.Data.data(), bytes);
                 break;
+            case EVertexStreamType::Joints:
+                data.JointIDBufferAddress = allocBuffer("_JointIDBuffer", stream.Data.data(), bytes);
+                break;
+            case EVertexStreamType::Weights:
+                data.JointWeightBufferAddress = allocBuffer("_JointWeightBuffer", stream.Data.data(), bytes);
+                break;
             default:
-                break; // Joints/Weights feed compute skinning; ECS path is static-only for Slice 4
+                break;
             }
+        }
+        data.bSkinned = cooked.bSkeletalAnim;
+        for (const FMeshCookedData::FStream& s : cooked.Streams)
+        {
+            if (s.Type == EVertexStreamType::Normal) data.bHasNormalStream = true;
+            if (s.Type == EVertexStreamType::Tangent) data.bHasTangentStream = true;
         }
         return data;
     }
@@ -169,6 +181,7 @@ namespace Assets
             info.ModelPath = a.ModelPath;
             info.Nodes = a.Nodes;
             info.PrimitiveCount = a.PrimitiveCount;
+            info.AnimCount = static_cast<uint32_t>(a.Animations.size());
         }
         return info;
     }
@@ -202,6 +215,12 @@ namespace Assets
                 for (const OffsetAllocator::Allocation& alloc : rec.Allocations)
                     FResourceCache::GetInstance()->ReleaseSceneBuffer(alloc);
                 rec.Allocations.clear();
+                for (int ai = 0; ai < 3; ++ai)
+                {
+                    if (rec.AnimAllocations[ai].offset != OffsetAllocator::Allocation::NO_SPACE)
+                        m_pRenderer->FreeSceneAnimationBuffer(rec.AnimAllocations[ai]);
+                    rec.AnimAllocations[ai] = {};
+                }
                 rec.Generation = 0; // invalidate the handle
                 rec.bPendingRelease = false;
             }
@@ -228,6 +247,29 @@ namespace Assets
             }
             m_PendingReleaseQueue.erase_unsorted(m_PendingReleaseQueue.begin() + i);
         }
+    }
+
+    const Scene::ECS::FAnimationClip* FSceneAssetRegistry::FindAnimation(Scene::ECS::FModelAssetHandle asset, uint32_t clipIndex) const
+    {
+        if (asset.Index >= m_Assets.size() || m_Assets[asset.Index].Generation != asset.Generation)
+            return nullptr;
+        const auto& clips = m_Assets[asset.Index].Animations;
+        return clipIndex < clips.size() ? &clips[clipIndex] : nullptr;
+    }
+
+    const Scene::ECS::FSkeletonInfo* FSceneAssetRegistry::GetSkeletonInfo(Scene::ECS::FModelAssetHandle asset) const
+    {
+        if (asset.Index >= m_Assets.size() || m_Assets[asset.Index].Generation != asset.Generation)
+            return nullptr;
+        return &m_Assets[asset.Index].SkeletonInfo;
+    }
+
+    RHI::FRHIPipelineState* FSceneAssetRegistry::GetPSO(Scene::ECS::FMaterialResourceHandle handle) const
+    {
+        if (handle.Index >= m_Materials.size() || m_Materials[handle.Index].Generation != handle.Generation)
+            return nullptr;
+        FMeshMaterial* mat = m_Materials[handle.Index].Material;
+        return mat ? mat->GetPSO() : nullptr;
     }
 
     void FSceneAssetRegistry::DeferDeleteMaterial(FMeshMaterial* material)
@@ -271,7 +313,15 @@ namespace Assets
         }
         return nullptr;
     }
-    
+
+    RHI::FRHIPipelineState* FSceneAssetRegistry::GetSkinningPSO(Scene::ECS::FMaterialResourceHandle handle) const
+    {
+        if (handle.Index >= m_Materials.size() || m_Materials[handle.Index].Generation != handle.Generation)
+            return nullptr;
+        FMeshMaterial* mat = m_Materials[handle.Index].Material;
+        return mat ? mat->GetVertexSkinningPSO() : nullptr;
+    }
+
     void FSceneAssetRegistry::PopulateModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model)
     {
         if (asset.Index >= m_Assets.size() || m_Assets[asset.Index].Generation != asset.Generation)
@@ -303,6 +353,26 @@ namespace Assets
             modelAsset.Nodes.push_back(eastl::move(node));
         }
         modelAsset.PrimitiveCount = static_cast<uint32_t>(model.Meshes.size());
+
+        modelAsset.Animations.clear();
+        modelAsset.SkeletonInfo.JointNodeIndices = model.Skeleton.Joints;
+        modelAsset.SkeletonInfo.InverseBindMatrices = model.Skeleton.InverseBindMatrices;
+        modelAsset.Animations.reserve(model.Animations.size());
+        for (const Assets::FAssetAnimation& src : model.Animations)
+        {
+            Scene::ECS::FAnimationClip clip;
+            clip.Name = src.Name;
+            clip.TimeDuration = src.TimeDuration;
+            for (const Assets::FAssetAnimationChannel& ch : src.Channels)
+            {
+                Scene::ECS::FAnimationClipChannel out;
+                out.TargetNode = ch.TargetNode;
+                out.Mode = static_cast<Scene::ECS::EAnimChannelMode>(ch.Mode);
+                out.KeyFrames = ch.KeyFrames;
+                clip.Channels.push_back(eastl::move(out));
+            }
+            modelAsset.Animations.push_back(eastl::move(clip));
+        }
 
         // Per-primitive front-face winding from the first referencing node (mirror flips winding;
         // a primitive shared by nodes with different windings is a degenerate case — last wins).
@@ -344,8 +414,29 @@ namespace Assets
 
             FMeshRecord meshRecord;
             meshRecord.Generation = asset.Generation;
-            meshRecord.RefCount = 1; // 基础引用归资产(FModelAsset)所有;AcquireMesh 每次 +1,实体释放回落
+            meshRecord.RefCount = 1;
             meshRecord.GPUData = BuildMeshGPUData(cacheKey + cooked.Name + ")", cooked, meshRecord.Allocations);
+            if (meshRecord.GPUData.bSkinned && m_pRenderer != nullptr)
+            {
+                auto allocAnim = [&](uint32_t elementBytes, uint32_t& outAddress, OffsetAllocator::Allocation& outAlloc)
+                {
+                    if (elementBytes == 0)
+                        return;
+                    const OffsetAllocator::Allocation a = m_pRenderer->AllocateSceneAnimationBuffer(elementBytes);
+                    if (a.offset == OffsetAllocator::Allocation::NO_SPACE)
+                        return;
+                    outAlloc = a;
+                    outAddress = a.offset;
+                };
+                const uint32_t posBytes = static_cast<uint32_t>(meshRecord.GPUData.VertexCount * sizeof(float3));
+                const uint32_t tanBytes = static_cast<uint32_t>(meshRecord.GPUData.VertexCount * sizeof(float4));
+                allocAnim(posBytes, meshRecord.GPUData.AnimPositionBufferAddress, meshRecord.AnimAllocations[0]);
+                if (meshRecord.GPUData.bHasNormalStream)
+                    allocAnim(posBytes, meshRecord.GPUData.AnimNormalBufferAddress, meshRecord.AnimAllocations[1]);
+                if (meshRecord.GPUData.bHasTangentStream)
+                    allocAnim(tanBytes, meshRecord.GPUData.AnimTangentBufferAddress, meshRecord.AnimAllocations[2]);
+            }
+
             m_Meshes.push_back(eastl::move(meshRecord));
             modelAsset.MeshHandles.push_back({modelAsset.FirstMesh + static_cast<uint32_t>(i), asset.Generation});
 

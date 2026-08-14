@@ -116,8 +116,15 @@ namespace Scene::ECS
                 if (const auto* localBounds = registry.try_get<FBoundingSphereComponent>(entry.Entity))
                 {
                     FWorldBoundingSphereComponent& worldBounds = registry.get<FWorldBoundingSphereComponent>(entry.Entity);
-                    worldBounds.Center = mul(worldMtx, float4(localBounds->Center, 1.0f)).xyz();
-                    worldBounds.Radius = localBounds->Radius * MaxAxisScale(worldMtx);
+                    float4x4 boundsMtx = worldMtx;
+                    if (const auto* skinned = registry.try_get<FSkinnedRootComponent>(entry.Entity))
+                    {
+                        const auto* rootWorld = registry.try_get<FWorldTransformComponent>(skinned->Root);
+                        if (rootWorld != nullptr)
+                            boundsMtx = rootWorld->MtxWorld;
+                    }
+                    worldBounds.Center = mul(boundsMtx, float4(localBounds->Center, 1.0f)).xyz();
+                    worldBounds.Radius = localBounds->Radius * MaxAxisScale(boundsMtx);
                 }
 
                 if (const auto* localAABB = registry.try_get<FBoundingBoxComponent>(entry.Entity))

@@ -132,9 +132,16 @@ namespace Scene::ECS
                 registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, false);
                 registry.emplace<FBoundingSphereComponent>(meshEntity, meshData.Center, meshData.Radius);
                 registry.emplace<FWorldBoundingSphereComponent>(meshEntity);
-                registry.emplace<FVisibilityComponent>(meshEntity);
+                registry.emplace<FVisibilityComponent>(meshEntity, true);
+                if (meshData.bSkinned)
+                    registry.emplace<FSkinnedRootComponent>(meshEntity, rootEntity);
             }
         }
+        if (!nodeEntities.empty())
+            registry.emplace<FModelNodeTableComponent>(rootEntity, eastl::move(nodeEntities));
+        // Animation component only for models that own clips (plays clip 0).
+        if (info.AnimCount > 0)
+            registry.emplace<FAnimationComponent>(rootEntity, 0u, 0.0f, true);
     }
 
 } // namespace Scene::ECS

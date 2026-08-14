@@ -25,10 +25,18 @@ namespace Scene::ECS
 
     struct FAnimationBatchInput
     {
-        uint32_t SkinningBufferAddress = 0;
-        uint32_t VertexCount           = 0;
-        uint32_t IndexCount            = 0;
-        const char* Label              = "";
+        FMaterialResourceHandle MaterialHandle;
+        uint32_t VertexCount                 = 0;
+        uint32_t StaticPositionBufferAddress = 0;
+        uint32_t StaticNormalBufferAddress   = 0;
+        uint32_t StaticTangentBufferAddress  = 0;
+        uint32_t AnimPositionBufferAddress   = 0;
+        uint32_t AnimNormalBufferAddress     = 0;
+        uint32_t AnimTangentBufferAddress    = 0;
+        uint32_t JointIDBufferAddress        = 0;
+        uint32_t JointWeightBufferAddress    = 0;
+        uint32_t JointMatricesAddress        = 0;
+        const char* Label = "";
     };
 
     class ISceneRenderSink

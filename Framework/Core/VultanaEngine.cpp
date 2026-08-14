@@ -8,7 +8,9 @@
 #include "Editor/VultanaEditor.hpp"
 
 #include "Renderer/ECSRenderBridge.hpp"
+
 #include "Scene/Camera.hpp"
+#include "Scene/ECS/Processors/AnimationProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
@@ -128,6 +130,7 @@ namespace Core
 
         if (m_bUseECSBackend)
         {
+            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FAnimationProcessor>(m_pAssetRegistry.get()));
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FHierarchyProcessor>());
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_PendingCullingPlanes, 6), &ParallelCullingImpl));
             m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(*m_pRenderSink, *m_pAssetRegistry));
@@ -151,7 +154,7 @@ namespace Core
             {
                 lightComp.Color = pMainLight->GetLightColor();
                 lightComp.Radius = pMainLight->GetLightRadius();
-                lightComp.Direction = pMainLight->GetLightDirection();
+                lightComp.Direction = Scene::ECS::ComputeLightDirection(pMainLight->GetRotation());
             }
             reg.emplace<Scene::ECS::FLightComponent>(lightEntity, lightComp);
             reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);

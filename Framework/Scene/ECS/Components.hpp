@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <EASTL/string.h>
+#include <EASTL/vector.h>
 #include <entt/entt.hpp>
 
 namespace Scene::ECS
@@ -148,5 +149,24 @@ namespace Scene::ECS
     };
     struct FMainLightTag
     {
+    };
+
+    // ===== Animation ===== //
+    struct FAnimationComponent
+    {
+        uint32_t ClipIndex = 0;
+        float CurrentTime = 0.0f;
+        bool bPlaying = true;
+    };
+
+    struct FModelNodeTableComponent
+    {
+        eastl::vector<entt::entity> NodeEntities;
+    };
+
+    // ===== Skinned Mesh ===== //
+    struct FSkinnedRootComponent
+    {
+        entt::entity Root = entt::null;
     };
 }
