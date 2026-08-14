@@ -129,7 +129,7 @@ namespace Scene::ECS
 
                 const Scene::ECS::FMeshGPUData meshData = m_Registry.GetMeshData(meshHandle);
                 entt::entity meshEntity = CreateEmpty("Mesh", nodeEntities[n]);
-                registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, false);
+                registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, meshData.bSkinned);
                 registry.emplace<FBoundingSphereComponent>(meshEntity, meshData.Center, meshData.Radius);
                 registry.emplace<FWorldBoundingSphereComponent>(meshEntity);
                 registry.emplace<FVisibilityComponent>(meshEntity, true);
