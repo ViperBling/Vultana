@@ -42,7 +42,7 @@ namespace Core
     {
         // Engine layer owns the parallel implementation; the ECS core stays engine-free.
         // For now, simple scene culling is not a performance bottleneck, so we can use a small grain size to reduce overhead.
-        Utilities::ParallelFor(count, func, 32);
+        Utilities::ParallelFor(count, func, 512);
     }
 
     FVultanaEngine *FVultanaEngine::GetEngineInstance()
@@ -310,10 +310,15 @@ namespace Core
             {
                 if (auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(camSnap->CameraEntity))
                 {
-                    tf->Position = pCamera->GetPosition();
-                    tf->Rotation = RotationQuat(pCamera->GetRotation()); // degrees -> quaternion
+                    const float3 newPosition = pCamera->GetPosition();
+                    const float4 newRotation = RotationQuat(pCamera->GetRotation()); // degrees -> quaternion
+                    if (tf->Position != newPosition || tf->Rotation != newRotation)
+                    {
+                        tf->Position = newPosition;
+                        tf->Rotation = newRotation;
+                        m_pEntitySystem->MarkTransformDirty(camSnap->CameraEntity);
+                    }
                 }
-                m_pEntitySystem->MarkTransformDirty(camSnap->CameraEntity);
                 if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(camSnap->CameraEntity))
                 {
                     camComp->Fov = pCamera->GetFOV();

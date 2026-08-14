@@ -73,6 +73,8 @@ namespace Scene::ECS
             }
             if (clip == nullptr)
                 return;
+            if (!anim.bPlaying)
+                return;
 
             for (const FAnimationClipChannel& channel : clip->Channels)
             {

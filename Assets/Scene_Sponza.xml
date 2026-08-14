@@ -1,8 +1,8 @@
-<Scene>
-    <Model File = "Models/Sponza/glTF/Sponza.gltf" Position = "0.0, 0.0, 0.0" Scale = "1, 1, 1" />
-    <Model File = "Models/CornellBox/CornellBox.gltf" Position = "0.0, 0.0, 100.0" Rotation = "90, 90, 0" Scale = "100, 100, 100" />
-    <Model File = "Models/BusterDrone/busterDrone.gltf" Position = "0.0, 50.0, -20.0" Rotation = "0, 90, 0" Scale = "50, 50, 50" />
-    <Model File = "Models/MechDrone/scene.gltf" Position = "0.0, 0.0, -140.0" Rotation = "0, -90, 0" Scale = "300, 300, 300" />
-    <Camera Position = "-200, 20, 0" Rotation = "0, 90, 0" Fov = "60.0" ZNear = "0.01" ZFar = "1000.0"/>
-    <Light Type = "Directional" IsMainLight = "true" Rotation = "15.000, 0.000, 0.000" Intensity = "3.0"/>
-</Scene>
+<ECSScene Version="1">
+    <Entity Name="MainLight" Type="Light" Color="1.000000, 1.000000, 1.000000" Radius="0.0049999999" Position="0.000000, 0.000000, 0.000000" RotationQuat="0.130526, 0.000000, 0.000000, 0.991445" Scale="1.000000, 1.000000, 1.000000"/>
+    <Entity Name="MainCamera" Type="Camera" Fov="60" ZNear="0.0099999998" ZFar="1000" Position="-200.000000, 20.000000, 0.000000" RotationQuat="0.000000, 0.706985, 0.000000, 0.707229" Scale="1.000000, 1.000000, 1.000000"/>
+    <Entity Name="../Assets/Models/MechDrone/scene.gltf" Type="Model" File="Models/MechDrone/scene.gltf" Position="0.000000, 0.000000, -140.000000" RotationQuat="0.000000, -0.707107, 0.000000, 0.707107" Scale="300.000000, 300.000000, 300.000000"/>
+    <Entity Name="../Assets/Models/BusterDrone/busterDrone.gltf" Type="Model" File="Models/BusterDrone/busterDrone.gltf" Position="0.000000, 50.000000, -20.000000" RotationQuat="0.000000, 0.707107, 0.000000, 0.707107" Scale="50.000000, 50.000000, 50.000000"/>
+    <Entity Name="../Assets/Models/CornellBox/CornellBox.gltf" Type="Model" File="Models/CornellBox/CornellBox.gltf" Position="0.000000, 0.000000, 100.000000" RotationQuat="0.500000, 0.500000, -0.500000, 0.500000" Scale="100.000000, 100.000000, 100.000000"/>
+    <Entity Name="../Assets/Models/Sponza/glTF/Sponza.gltf" Type="Model" File="Models/Sponza/glTF/Sponza.gltf" Position="0.000000, 0.000000, 0.000000" RotationQuat="0.000000, 0.000000, 0.000000, 1.000000" Scale="1.000000, 1.000000, 1.000000"/>
+</ECSScene>

@@ -77,20 +77,20 @@ namespace Editor
         {
             ImVec2 mousePos = io.MouseClickedPos[0];
             m_pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
+        }
 
-            if (pEngineInst->IsUseECSBackend())
+        if (pEngineInst->IsUseECSBackend())
+        {
+            const uint32_t mouseID = m_pRenderer->GetMouseHitObjectID();
+            if (mouseID != m_LastMouseHitID)
             {
-                const uint32_t mouseID = m_pRenderer->GetMouseHitObjectID();
-                if (mouseID != m_LastMouseHitID)
+                m_LastMouseHitID = mouseID;
+                if (mouseID != UINT32_MAX)
                 {
-                    m_LastMouseHitID = mouseID;
-                    if (mouseID != UINT32_MAX)
-                    {
-                        auto* pEntitySystem = pEngineInst->GetEntitySystem();
-                        const entt::entity picked = pEntitySystem->ResolvePickID(mouseID);
-                        if (picked != entt::null)
-                            SelectEntity(picked);
-                    }
+                    auto* pEntitySystem = pEngineInst->GetEntitySystem();
+                    const entt::entity picked = pEntitySystem->ResolvePickID(mouseID);
+                    if (picked != entt::null)
+                        SelectEntity(picked);
                 }
             }
         }
@@ -580,6 +580,7 @@ namespace Editor
         {
             m_SelectedEntity = entt::null;
             m_pRenderer->SetSelectedObjectID(UINT32_MAX);
+            m_LastMouseHitID = UINT32_MAX;   // so clicking the same object re-selects it
         }
     }
 

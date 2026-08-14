@@ -26,13 +26,24 @@ namespace Scene::ECS
         return eastl::string(buf);
     }
 
-    // New <ECSScene> stores the rotation as the raw quaternion: FTransform
-    // is a float4, zero-loss. Euler degrees are only decoded on the legacy
-    // <Scene> read path.
+    float4 ParseFloat4(const char* value)
+    {
+        float x = 0.0f, y = 0.0f, z = 0.0f, w = 1.0f;
+        sscanf(value, "%f, %f, %f, %f", &x, &y, &z, &w);
+        return float4(x, y, z, w);
+    }
+
+    eastl::string Float4ToString(const float4& v)
+    {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%.6f, %.6f, %.6f, %.6f", v.x, v.y, v.z, v.w);
+        return eastl::string(buf);
+    }
+
     void WriteTransform(tinyxml2::XMLElement* el, const FTransformComponent& tf)
     {
         el->SetAttribute("Position", Float3ToString(tf.Position).c_str());
-        el->SetAttribute("RotationQuat", Float3ToString(float3(tf.Rotation.x, tf.Rotation.y, tf.Rotation.z)).c_str());
+        el->SetAttribute("RotationQuat", Float4ToString(tf.Rotation).c_str());
         el->SetAttribute("Scale", Float3ToString(tf.Scale).c_str());
     }
 
@@ -41,9 +52,7 @@ namespace Scene::ECS
         if (const char* pos = el->Attribute("Position")) tf.Position = ParseFloat3(pos);
         if (const char* q = el->Attribute("RotationQuat"))
         {
-            const float3 v = ParseFloat3(q);
-            const float w = el->Attribute("RotationW") ? el->FloatAttribute("RotationW") : 1.0f;
-            tf.Rotation = float4(v.x, v.y, v.z, w);
+            tf.Rotation = ParseFloat4(q);
         }
         else if (const char* rot = el->Attribute("Rotation")) // legacy euler degrees
         {
@@ -93,7 +102,9 @@ namespace Scene::ECS
         parseElement = [&](const tinyxml2::XMLElement* el, entt::entity parent) -> entt::entity
         {
             const char* typeAttr = el->Attribute("Type");
-            const eastl::string type = (typeAttr != nullptr) ? eastl::string(typeAttr) : eastl::string(el->Name());
+            const bool bTaggedEntity = (strcmp(el->Name(), "Entity") == 0);
+            const eastl::string type = (bTaggedEntity && typeAttr != nullptr) ? eastl::string(typeAttr)
+                                                                              : eastl::string(el->Name());
             const char* nameAttr = el->Attribute("Name");
             entt::entity created = entt::null;
 
@@ -110,6 +121,11 @@ namespace Scene::ECS
                     return entt::null;
                 }
                 created = factory.CreateModelInstance(assetHandle, fullPath);
+                if (nameAttr != nullptr)
+                {
+                    if (auto* nameComp = subsystem.GetRegistry().try_get<FNameComponent>(created))
+                        nameComp->SetName(nameAttr);
+                }
 
                 FModelLoadRequest request;
                 request.Handle = assetHandle;
@@ -157,16 +173,18 @@ namespace Scene::ECS
                 FLightComponent lightComp;
                 if (const char* color = el->Attribute("Color"))
                     lightComp.Color = ParseFloat3(color);
-
-                if (const char* rot = el->Attribute("Rotation"))
-                    lightComp.Direction = ComputeLightDirection(RotationQuat(ParseFloat3(rot)));
                 if (el->Attribute("Radius"))
                     lightComp.Radius = el->FloatAttribute("Radius");
 
+                if (auto* tf = reg.try_get<FTransformComponent>(created))
+                {
+                    ReadTransform(el, *tf);
+                    const quaternion q(tf->Rotation.x, tf->Rotation.y, tf->Rotation.z, tf->Rotation.w);
+                    lightComp.Direction = ComputeLightDirection(q);
+                }
+
                 reg.emplace<FLightComponent>(created, lightComp);
                 reg.emplace<FMainLightTag>(created);
-                if (auto* tf = reg.try_get<FTransformComponent>(created))
-                    ReadTransform(el, *tf);
             }
             else
             {
