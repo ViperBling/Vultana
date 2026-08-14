@@ -47,6 +47,7 @@ namespace Editor
         void SelectEntity(entt::entity entity);
 
         void DrawFrameStats();
+        void DrawProcessorTimings();
         void ShowRenderGraph();
         void FlushPendingTextureDeletions();
 
@@ -71,6 +72,7 @@ namespace Editor
         bool m_bShowWorldOutliner = false;
         bool m_bShowGPUDrivenStats = false;
         bool m_bShowMeshlets = false;
+        bool m_bShowProcessorTimings = false;
         bool m_bShowAssetManager = false;
 
         unsigned int m_DockSpace = 0;

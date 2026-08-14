@@ -4,6 +4,8 @@
 #include "Scene/ECS/AssetRegistry.hpp"
 #include "Utilities/Math.hpp"
 
+#include <EASTL/algorithm.h>
+
 #include <cmath>
 #include <algorithm>
 #include "AnimationProcessor.hpp"
@@ -19,15 +21,24 @@ namespace Scene::ECS
         float t = 0.0f;
         const eastl::pair<float, float4>* lower = &frames[0];
         const eastl::pair<float, float4>* upper = lower;
-        for (size_t f = 0; f + 1 < frames.size(); ++f)
+        auto it = eastl::lower_bound(frames.begin(), frames.end(), animTime,
+        [](const eastl::pair<float, float4>& a, float time) 
+        { 
+            return a.first < time; 
+        });
+        if (it == frames.begin())
         {
-            if (frames[f].first <= animTime && frames[f + 1].first >= animTime)
-            {
-                lower = &frames[f];
-                upper = &frames[f + 1];
-                t = (animTime - lower->first) / eastl::max_alt(upper->first - lower->first, 1e-8f);
-                break;
-            }
+            lower = upper = &frames.front();   // animTime precedes the first keyframe
+        }
+        else if (it == frames.end())
+        {
+            lower = upper = &frames.back();    // animTime past the last keyframe
+        }
+        else
+        {
+            upper = &(*it);
+            lower = &*(it - 1);
+            t = (animTime - lower->first) / eastl::max_alt(upper->first - lower->first, 1e-8f);
         }
 
         switch (channel.Mode)

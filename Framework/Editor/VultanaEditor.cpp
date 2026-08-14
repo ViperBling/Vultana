@@ -147,6 +147,10 @@ namespace Editor
         {
             m_pRenderer->GetGPUDrivenStats()->OnGui();
         }
+        if (m_bShowProcessorTimings)
+        {
+            DrawProcessorTimings();
+        }
         if (m_bShowAssetManager)
         {
             DrawAssetManagerPanel();
@@ -283,6 +287,8 @@ namespace Editor
                 {
                     m_pRenderer->SetShowMeshletsEnabled(m_bShowMeshlets);
                 }
+
+                ImGui::MenuItem("Show ECS Processor Timings", "", &m_bShowProcessorTimings);
 
                 if (ImGui::MenuItem("VSync", "", &m_bVSync))
                 {
@@ -743,10 +749,49 @@ namespace Editor
 
         ImGui::SetNextWindowPos(windowPos);
         ImGui::SetNextWindowSize(ImVec2(200.0f, 50.0f));
-        ImGui::Begin("Frame Stats", nullptr, 
-            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | 
-            ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus);
+        ImGui::Begin("Frame Stats", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus);
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+    }
+
+    void FVultanaEditor::DrawProcessorTimings()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        if (!pEngine->IsUseECSBackend())
+            return;
+
+        ImGui::Begin("ECS Processor Timings", &m_bShowProcessorTimings);
+        const auto* pEntitySystem = pEngine->GetEntitySystem();
+        if (pEntitySystem == nullptr)
+        {
+            ImGui::End();
+            return;
+        }
+
+        const auto& times = pEntitySystem->GetProcessorDebugTimes();
+        if (times.empty())
+        {
+            ImGui::TextDisabled("No processor timing data.");
+            ImGui::End();
+            return;
+        }
+
+        if (ImGui::BeginTable("##ProcessorTimings", 2,
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
+        {
+            ImGui::TableSetupColumn("Processor");
+            ImGui::TableSetupColumn("ms/frame");
+            ImGui::TableHeadersRow();
+            for (const auto& entry : times)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%s", entry.Name);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%.4f", entry.LastFrameMs);
+            }
+            ImGui::EndTable();
+        }
         ImGui::End();
     }
 

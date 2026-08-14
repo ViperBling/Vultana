@@ -1,6 +1,8 @@
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Utilities/Log.hpp"
 
+#include <chrono>
+
 namespace Scene::ECS
 {
     FEntitySubsystem::FEntitySubsystem()
@@ -77,11 +79,17 @@ namespace Scene::ECS
     void FEntitySubsystem::Tick(float deltaTime)
     {
         FlushDeferred();
+        // Debug: per-processor last-frame timing (steady_clock, no platform dep).
+        m_DebugProcessorTimes.clear();
         for (size_t phase = 0; phase < static_cast<size_t>(EProcessingPhase::Count); ++phase)
         {
             for (auto& processor : m_Processors[phase])
             {
+                const auto start = std::chrono::steady_clock::now();
                 processor->Process(*this, deltaTime);
+                const auto end = std::chrono::steady_clock::now();
+                const float ms = std::chrono::duration<float, std::milli>(end - start).count();
+                m_DebugProcessorTimes.push_back({ processor->GetName(), ms });
             }
         }
     }

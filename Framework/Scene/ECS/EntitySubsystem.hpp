@@ -96,6 +96,16 @@ namespace Scene::ECS
         // ===== Query Operations ===== //
         uint32_t GetEntityCount() const;
 
+        // ===== Debug Profiling ===== //
+        // Per-processor last-frame CPU cost, accumulated in Tick. Read-only debug
+        // aid for locating per-pass hotspots; not part of the public ECS API.
+        struct FProcessorDebugEntry
+        {
+            const char* Name;
+            float LastFrameMs;
+        };
+        const eastl::vector<FProcessorDebugEntry>& GetProcessorDebugTimes() const { return m_DebugProcessorTimes; }
+
     private:
         void FlushPendingDestroy();
         uint32_t AcquirePickID();
@@ -111,5 +121,6 @@ namespace Scene::ECS
 
         bool m_bStructureDirty = true;      // Initial true: first frame builds everything
         bool m_bTransformDirty = false;
+        eastl::vector<FProcessorDebugEntry> m_DebugProcessorTimes;
     };
 }
