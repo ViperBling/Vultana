@@ -25,10 +25,9 @@ public:
         uint32_t ImportCount = 0;
         eastl::vector<FMeshEntry> Meshes;
         eastl::vector<FMaterialEntry> Materials;
+        eastl::vector<Scene::ECS::FModelNodeInfo> Nodes;
     };
 
-    // Slice2.5 T3 (B3 regression): simulated acquisition failures + release counters
-    // so EntityFactory's rollback path can be asserted.
     bool bFailMaterialAcquire = false;
     bool bFailMeshAcquire = false;
     int32_t MeshReleaseCount = 0;
@@ -117,7 +116,14 @@ public:
     {
         Scene::ECS::FModelAssetInfo info;
         if (handle.Index < m_Models.size())
+        {
             info.ModelPath = m_Models[handle.Index].ModelPath;
+            info.Nodes = m_Models[handle.Index].Nodes;
+            uint32_t primCount = 0;
+            for (const auto& n : info.Nodes)
+                primCount += static_cast<uint32_t>(n.Primitives.size());
+            info.PrimitiveCount = primCount;
+        }
         return info;
     }
 
@@ -172,6 +178,17 @@ public:
                 entry->GPUData.AnimTangentBufferAddress = 0x500;
             }
         }
+    }
+
+    void SetFakeModelNodes(Scene::ECS::FModelAssetHandle h, const eastl::vector<Scene::ECS::FModelNodeInfo>& nodes)
+    {
+        if (h.Index < m_Models.size())
+            m_Models[h.Index].Nodes = nodes;
+    }
+
+    uint32_t GetMaterialConstantAddress(Scene::ECS::FMaterialResourceHandle handle) const override
+    {
+        return Scene::ECS::INVALID_ADDRESS;
     }
 
 public:

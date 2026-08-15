@@ -247,6 +247,12 @@ namespace Assets
                     delete rec.Material;
                     rec.Material = nullptr;
                 }
+                if (rec.ConstantAddress != Scene::ECS::INVALID_ADDRESS)
+                {
+                    m_pRenderer->FreePersistentSceneConstantBuffer(rec.PersistentAllocation);
+                    rec.PersistentAllocation = {};
+                    rec.ConstantAddress = Scene::ECS::INVALID_ADDRESS;
+                }
                 rec.Generation = 0;
                 rec.bPendingRelease = false;
             }
@@ -462,9 +468,10 @@ namespace Assets
             {
                 matRecord.Material->UpdateConstants();
                 const FModelMaterialConstants* constants = matRecord.Material->GetMaterialConstants();
-                static_assert(sizeof(FModelMaterialConstants) <= sizeof(matRecord.GPUData.Data),
-                              "material constants no longer fit the GPUData blob (80 uints)");
+                static_assert(sizeof(FModelMaterialConstants) <= sizeof(matRecord.GPUData.Data), "material constants no longer fit the GPUData blob (80 uints)");
                 memcpy(matRecord.GPUData.Data, constants, sizeof(FModelMaterialConstants));
+                matRecord.PersistentAllocation = m_pRenderer->AllocatePersistentSceneConstantBuffer(constants, sizeof(FModelMaterialConstants));
+                matRecord.ConstantAddress = matRecord.PersistentAllocation.offset;
             }
             m_Materials.push_back(eastl::move(matRecord));
             modelAsset.MaterialHandles.push_back({modelAsset.FirstMaterial + static_cast<uint32_t>(i), asset.Generation});
@@ -505,6 +512,28 @@ namespace Assets
         modelAsset.State = Scene::ECS::EAssetState::Loading;
         PopulateModel(asset, model);
         return modelAsset.State == Scene::ECS::EAssetState::Ready;
+    }
+
+    void FSceneAssetRegistry::ReleaseAllModelAssets()
+    {
+        for (FModelAsset& asset : m_Assets)
+        {
+            if (asset.Generation == 0)
+                continue;
+            for (const Scene::ECS::FMeshResourceHandle& handle : asset.MeshHandles)
+                Release(handle);
+            for (const Scene::ECS::FMaterialResourceHandle& handle : asset.MaterialHandles)
+                Release(handle);
+            asset.MeshHandles.clear();
+            asset.MaterialHandles.clear();
+        }
+    }
+
+    uint32_t FSceneAssetRegistry::GetMaterialConstantAddress(Scene::ECS::FMaterialResourceHandle handle) const
+    {
+        if (handle.Index >= m_Materials.size() || m_Materials[handle.Index].Generation != handle.Generation)
+            return Scene::ECS::INVALID_ADDRESS;
+        return m_Materials[handle.Index].ConstantAddress;
     }
 
     void FSceneAssetRegistry::EnumerateModels(eastl::vector<FModelStatus>& out) const
@@ -604,6 +633,16 @@ namespace Assets
                     const FModelMaterialConstants* constants = rec.Material->GetMaterialConstants();
                     static_assert(sizeof(FModelMaterialConstants) <= sizeof(rec.GPUData.Data), "material constants no longer fit the GPUData blob (80 uints)");
                     memcpy(rec.GPUData.Data, constants, sizeof(FModelMaterialConstants));
+
+                    if (rec.ConstantAddress != Scene::ECS::INVALID_ADDRESS)
+                    {
+                        m_pRenderer->WritePersistentSceneConstantBuffer(rec.PersistentAllocation, constants, sizeof(FModelMaterialConstants));
+                    }
+                    else
+                    {
+                        rec.PersistentAllocation = m_pRenderer->AllocatePersistentSceneConstantBuffer(constants, sizeof(FModelMaterialConstants));
+                        rec.ConstantAddress = rec.PersistentAllocation.offset;
+                    }
                 }
             }
         }
@@ -627,20 +666,4 @@ namespace Assets
             }
         }
     }
-
-    void FSceneAssetRegistry::ReleaseAllModelAssets()
-    {
-        for (FModelAsset& asset : m_Assets)
-        {
-            if (asset.Generation == 0)
-                continue;
-            for (const Scene::ECS::FMeshResourceHandle& handle : asset.MeshHandles)
-                Release(handle);
-            for (const Scene::ECS::FMaterialResourceHandle& handle : asset.MaterialHandles)
-                Release(handle);
-            asset.MeshHandles.clear();
-            asset.MaterialHandles.clear();
-        }
-    }
-
 } // namespace Assets

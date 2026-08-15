@@ -23,6 +23,11 @@ namespace Renderer
 
         uint32_t AllocateConstantBuffer(uint32_t size);
 
+        OffsetAllocator::Allocation AllocatePersistentConstantBuffer(const void* data, uint32_t size);
+        void WritePersistentConstantBuffer(OffsetAllocator::Allocation allocation, const void* data, uint32_t size);
+        void FreePersistentConstantBuffer(OffsetAllocator::Allocation allocation);
+        uint32_t GetPersistentConstantAddress(OffsetAllocator::Allocation allocation) const { return allocation.offset; }
+
         uint32_t AddInstance(const FInstanceData& instanceData);
         uint32_t GetInstanceCount() const { return (uint32_t)m_InstanceData.size(); }
 
@@ -57,6 +62,8 @@ namespace Renderer
         eastl::unique_ptr<OffsetAllocator::Allocator> m_pSceneAnimationBufferAllocator;
 
         eastl::unique_ptr<RenderResources::FRawBuffer> m_pSceneConstantBuffers[RHI::RHI_MAX_INFLIGHT_FRAMES];
-        uint32_t m_ConstantBufferOffset = 0;
+        uint32_t m_ConstantBufferOffset = PERSISTENT_CONSTANT_REGION_SIZE;
+
+        eastl::unique_ptr<OffsetAllocator::Allocator> m_pPersistentConstantAllocator;
     };
 }

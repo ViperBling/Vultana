@@ -19,7 +19,7 @@ find_package(VulkanHeaders CONFIG)
 find_path(TCB_SPAN_INCLUDE_DIRS "tcb/span.hpp")
 find_path(LINALG_INCLUDE_DIRS "linalg.h")
 find_path(SIGSLOT_INCLUDE_DIRS "sigslot.h")
-find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
+find_path(SIMPLEINI_INCLUDE_DIRS "SimpleIni.h")
 
 set(VULTANA_WITH_COOKER 1 CACHE BOOL "Enable in-engine cook-on-miss (links CookerLib; OFF = offline cook only)")
 

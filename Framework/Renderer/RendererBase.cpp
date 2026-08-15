@@ -1,8 +1,8 @@
-#include "RendererBase.hpp"
-#include "GPUScene.hpp"
-#include "PipelineStateCache.hpp"
-#include "ShaderCompiler.hpp"
-#include "ShaderCache.hpp"
+#include "Renderer/RendererBase.hpp"
+#include "Renderer/GPUScene.hpp"
+#include "Renderer/PipelineStateCache.hpp"
+#include "Renderer/ShaderCompiler.hpp"
+#include "Renderer/ShaderCache.hpp"
 #include "RHI/RHI.hpp"
 #include "Core/VultanaEngine.hpp"
 #include "Editor/ImGUIImplement.hpp"
@@ -382,6 +382,21 @@ namespace Renderer
     uint32_t FRendererBase::AddInstance(const FInstanceData &instanceData)
     {
         return m_pGPUScene->AddInstance(instanceData);
+    }
+
+    OffsetAllocator::Allocation FRendererBase::AllocatePersistentSceneConstantBuffer(const void* data, uint32_t size)
+    {
+        return m_pGPUScene->AllocatePersistentConstantBuffer(data, size);
+    }
+
+    void FRendererBase::WritePersistentSceneConstantBuffer(OffsetAllocator::Allocation allocation, const void* data, uint32_t size)
+    {
+        m_pGPUScene->WritePersistentConstantBuffer(allocation, data, size);
+    }
+
+    void FRendererBase::FreePersistentSceneConstantBuffer(OffsetAllocator::Allocation allocation)
+    {
+        m_pGPUScene->FreePersistentConstantBuffer(allocation);
     }
 
     inline void imageCopy(char* srcData, char* dstData, uint32_t srcRowPitch, uint32_t dstRowPitch, uint32_t rowNum, uint32_t d)

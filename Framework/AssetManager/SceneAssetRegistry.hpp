@@ -46,6 +46,8 @@ namespace Assets
         bool ReloadModel(Scene::ECS::FModelAssetHandle asset, const FModelCookedData& model);
         void ReleaseAllModelAssets();
 
+        uint32_t GetMaterialConstantAddress(Scene::ECS::FMaterialResourceHandle handle) const override;
+
         struct FModelStatus
         {
             eastl::string ModelPath;
@@ -89,6 +91,8 @@ namespace Assets
             int32_t AssetMaterialIndex = -1;
             bool bSkeletalAnim = false;
             bool bFrontFaceCCW = false;
+            OffsetAllocator::Allocation PersistentAllocation = {};
+            uint32_t ConstantAddress = Scene::ECS::INVALID_ADDRESS;
         };
 
         struct FModelAsset

@@ -79,17 +79,9 @@ namespace Scene::ECS
             instanceData.MtxWorldInvTranspose = (skinnedRoot != nullptr) ? transpose(inverse(instanceWorld)) : worldTFComp.MtxWorldInvTranspose;
 
             const bool bVisible = registry.get<FVisibilityComponent>(entity).bFrustumVisible;
-            if (bVisible)
-            {
-                if (const FMaterialGPUData* materialData = m_Registry.FindMaterialData(meshComp.MaterialHandle))
-                {
-                    const uint32_t addr = m_Sink.AllocateMaterialConstants(materialData->Data, sizeof(materialData->Data));
-                    if (addr != NULL_CONSTANT_ADDRESS)
-                    {
-                        instanceData.MaterialDataAddress = addr;
-                    }
-                }
-            }
+            instanceData.MaterialDataAddress = m_Registry.GetMaterialConstantAddress(meshComp.MaterialHandle);
+            if (instanceData.MaterialDataAddress == Scene::ECS::INVALID_ADDRESS)
+                instanceData.MaterialDataAddress = NULL_CONSTANT_ADDRESS;
 
             uint32_t instanceIndex = m_Sink.AddInstance(instanceData);
 

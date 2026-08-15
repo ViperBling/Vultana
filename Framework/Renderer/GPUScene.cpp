@@ -7,6 +7,9 @@
 
 namespace Renderer
 {
+    static_assert(OffsetAllocator::Allocation::NO_SPACE == 0xFFFFFFFFu, "Relies on NO_SPACE matching INVALID_ADDRESS (Scene/ECS/AssetRegistry.hpp)");
+    static_assert(PERSISTENT_CONSTANT_REGION_SIZE < NULL_CONSTANT_ADDRESS, "persistent region must fit below the transient/null boundary");
+
     FGPUScene::FGPUScene(FRendererBase *pRenderer)
     {
         m_pRenderer = pRenderer;
@@ -27,6 +30,8 @@ namespace Renderer
                 memset((char*)m_pSceneConstantBuffers[i]->GetBuffer()->GetCPUAddress() + NULL_CONSTANT_ADDRESS, 0, NULL_CONSTANT_REGION_SIZE);
             }
         }
+
+        m_pPersistentConstantAllocator = eastl::make_unique<OffsetAllocator::Allocator>(PERSISTENT_CONSTANT_REGION_SIZE, 4096);
     }
 
     FGPUScene::~FGPUScene()
@@ -79,7 +84,46 @@ namespace Renderer
         return address;
     }
 
-    uint32_t FGPUScene::AddInstance(const FInstanceData &instanceData)
+    OffsetAllocator::Allocation FGPUScene::AllocatePersistentConstantBuffer(const void* data, uint32_t size)
+    {
+        OffsetAllocator::Allocation allocation = m_pPersistentConstantAllocator->allocate(RoundUpPow2(size, ALLOCATION_ALIGNMENT));
+        if (allocation.offset == OffsetAllocator::Allocation::NO_SPACE)
+        {
+            static bool bPersistentOverflowWarned = false;
+            if (!bPersistentOverflowWarned)
+            {
+                bPersistentOverflowWarned = true;
+                VTNA_LOG_ERROR("Persistent constant buffer overflow: size={} cap={} — degraded to null region", size, PERSISTENT_CONSTANT_REGION_SIZE);
+            }
+            return {};
+        }
+        for (int i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; ++i)
+        {
+            void* dst = (char*)m_pSceneConstantBuffers[i]->GetBuffer()->GetCPUAddress() + allocation.offset;
+            memcpy(dst, data, size);
+        }
+        return allocation;
+    }
+
+    void FGPUScene::WritePersistentConstantBuffer(OffsetAllocator::Allocation allocation, const void* data, uint32_t size)
+    {
+        if (allocation.offset == OffsetAllocator::Allocation::NO_SPACE)
+            return;
+        for (int i = 0; i < RHI::RHI_MAX_INFLIGHT_FRAMES; ++i)
+        {
+            void* dst = (char*)m_pSceneConstantBuffers[i]->GetBuffer()->GetCPUAddress() + allocation.offset;
+            memcpy(dst, data, size);
+        }
+    }
+
+    void FGPUScene::FreePersistentConstantBuffer(OffsetAllocator::Allocation allocation)
+    {
+        if (allocation.offset == OffsetAllocator::Allocation::NO_SPACE)
+            return;
+        m_pPersistentConstantAllocator->free(allocation);
+    }
+
+    uint32_t FGPUScene::AddInstance(const FInstanceData& instanceData)
     {
         m_InstanceData.push_back(instanceData);
         uint32_t instanceID = (uint32_t)m_InstanceData.size() - 1;
@@ -105,7 +149,7 @@ namespace Renderer
     void FGPUScene::ResetFrameData()
     {
         m_InstanceData.clear();
-        m_ConstantBufferOffset = 0;
+        m_ConstantBufferOffset = PERSISTENT_CONSTANT_REGION_SIZE;
     }
 
     RHI::FRHIBuffer *FGPUScene::GetSceneConstantBuffer() const

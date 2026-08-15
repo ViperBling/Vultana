@@ -106,5 +106,7 @@ namespace Scene::ECS
 
         virtual const FAnimationClip* FindAnimation(FModelAssetHandle asset, uint32_t clipIndex) const = 0;
         virtual const FSkeletonInfo* GetSkeletonInfo(FModelAssetHandle asset) const = 0;
+
+        virtual uint32_t GetMaterialConstantAddress(FMaterialResourceHandle handle) const = 0;
     };
 }

@@ -99,6 +99,10 @@ namespace Renderer
         uint32_t AddInstance(const FInstanceData& instanceData);
         uint32_t GetInstanceCount() const { return m_pGPUScene->GetInstanceCount(); }
 
+        OffsetAllocator::Allocation AllocatePersistentSceneConstantBuffer(const void* data, uint32_t size);
+        void WritePersistentSceneConstantBuffer(OffsetAllocator::Allocation allocation, const void* data, uint32_t size);
+        void FreePersistentSceneConstantBuffer(OffsetAllocator::Allocation allocation);
+
         void UploadTexture(RHI::FRHITexture* pTexture, const void* pData);
         void UploadBuffer(RHI::FRHIBuffer* pBuffer, const void* pData, uint32_t offset, uint32_t dataSize);
 
