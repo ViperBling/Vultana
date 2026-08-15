@@ -50,6 +50,7 @@ namespace Editor
 
         void DrawFrameStats();
         void DrawProcessorTimings();
+        void DrawMeshPicker();
         void ShowRenderGraph();
         void FlushPendingTextureDeletions();
 
@@ -76,6 +77,7 @@ namespace Editor
         bool m_bShowMeshlets = false;
         bool m_bShowProcessorTimings = false;
         bool m_bShowAssetManager = false;
+        bool m_bShowMeshPicker = false;
 
         unsigned int m_DockSpace = 0;
 

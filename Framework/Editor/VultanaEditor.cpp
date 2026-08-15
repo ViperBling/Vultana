@@ -6,6 +6,7 @@
 #include "Editor/Commands/EntityDeleteCommand.hpp"
 #include "Editor/Commands/EntityDuplicateCommand.hpp"
 #include "Editor/Commands/EntityEditableTarget.hpp"
+#include "Editor/Commands/MeshCommand.hpp"
 #include "Editor/Commands/NameCommand.hpp"
 #include "Editor/Commands/ObjectEditableTarget.hpp"
 #include "Editor/Commands/ParentCommand.hpp"
@@ -168,6 +169,10 @@ namespace Editor
         if (m_bShowAssetManager)
         {
             DrawAssetManagerPanel();
+        }
+        if (m_bShowMeshPicker)
+        {
+            DrawMeshPicker();
         }
     }
 
@@ -473,7 +478,13 @@ namespace Editor
         if (pEntitySystem == nullptr || pWorld == nullptr) return;
 
         auto& reg = pEntitySystem->GetRegistry();
-        const entt::entity target = (m_SelectedEntity == entt::null) ? entt::null : Assets::FModelLoaderECS::FindModelInstanceRoot(reg, m_SelectedEntity);
+        entt::entity target = m_SelectedEntity;
+
+        if (const auto* skinned = reg.try_get<Scene::ECS::FSkinnedRootComponent>(target))
+        {
+            if (skinned->Root != entt::null && reg.valid(skinned->Root))
+                target = skinned->Root;
+        }
 
         if (target == entt::null || !reg.valid(target) || reg.try_get<Scene::ECS::FTransformComponent>(target) == nullptr)
         {
@@ -497,8 +508,24 @@ namespace Editor
         float3 rotation = RotationAngles(current.Rotation);
         float3 scale = current.Scale;
 
-        float4x4 mtxWorld;
-        ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&mtxWorld);
+        float4x4 parentWorld = float4x4{identity};
+        if (const auto* parentComp = reg.try_get<Scene::ECS::FParentComponent>(target))
+        {
+            if (parentComp->Parent != entt::null && reg.valid(parentComp->Parent))
+            {
+                if (const auto* parentWorldComp = reg.try_get<Scene::ECS::FWorldTransformComponent>(parentComp->Parent))
+                    parentWorld = parentWorldComp->MtxWorld;
+            }
+        }
+
+        float3 pivotOffset = float3(0.0f);
+        if (const auto* localBounds = reg.try_get<Scene::ECS::FBoundingSphereComponent>(target))
+            pivotOffset = localBounds->Center;
+
+        float4x4 localMtx;
+        ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&localMtx);
+        const float4x4 pivotMtx = translation_matrix(pivotOffset);
+        float4x4 mtxWorld = mul(parentWorld, mul(localMtx, pivotMtx));
 
         ImGuizmo::OPERATION operation;
         switch (m_SelectEditMode)
@@ -517,7 +544,8 @@ namespace Editor
         const bool bChanged = ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
         if (bChanged)
         {
-            ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
+            const float4x4 newLocal = mul(inverse(parentWorld), mul(mtxWorld, inverse(pivotMtx)));
+            ImGuizmo::DecomposeMatrixToComponents((const float*)&newLocal, (float*)&position, (float*)&rotation, (float*)&scale);
 
             Editor::Commands::FTransformSnapshot next;
             next.Position = position;
@@ -641,6 +669,14 @@ namespace Editor
             ImGui::Separator();
             ImGui::TextDisabled("Light entity");
         }
+        if (reg.all_of<Scene::ECS::FMeshRendererComponent>(m_SelectedEntity))
+        {
+            ImGui::Separator();
+            if (ImGui::Button("Change Mesh..."))
+            {
+                m_bShowMeshPicker = true;
+            }
+        }
     }
 
     void FVultanaEditor::DrawTransformEditorECS(Scene::ECS::FEntitySubsystem& entitySubsystem, entt::entity entity)
@@ -733,11 +769,22 @@ namespace Editor
 
     void FVultanaEditor::SelectEntity(entt::entity entity)
     {
-        m_SelectedEntity = entity;
         auto* pEntitySystem = Core::FVultanaEngine::GetEngineInstance()->GetEntitySystem();
+        if (pEntitySystem == nullptr)
+        {
+            m_SelectedEntity = entt::null;
+            return;
+        }
+
+        auto& reg = pEntitySystem->GetRegistry();
+        if (const auto* skinned = reg.try_get<Scene::ECS::FSkinnedRootComponent>(entity))
+        {
+            if (skinned->Root != entt::null && reg.valid(skinned->Root))
+                entity = skinned->Root;
+        }
+        m_SelectedEntity = entity;
 
         entt::entity highlight = entity;
-        auto& reg = pEntitySystem->GetRegistry();
         if (!reg.all_of<Scene::ECS::FMeshRendererComponent>(highlight))
         {
             eastl::vector<entt::entity> stack;
@@ -874,6 +921,76 @@ namespace Editor
                 ImGui::Text("%.4f", entry.LastFrameMs);
             }
             ImGui::EndTable();
+        }
+        ImGui::End();
+    }
+
+    void FVultanaEditor::DrawMeshPicker()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        if (!pEngine->IsUseECSBackend())
+            return;
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        if (pEntitySystem == nullptr || m_SelectedEntity == entt::null || !pEntitySystem->GetRegistry().valid(m_SelectedEntity))
+        {
+            m_bShowMeshPicker = false;
+            return;
+        }
+        auto* mc = pEntitySystem->GetRegistry().try_get<Scene::ECS::FMeshRendererComponent>(m_SelectedEntity);
+        if (mc == nullptr)
+        {
+            m_bShowMeshPicker = false;
+            return;
+        }
+
+        ImGui::Begin("Mesh Picker", &m_bShowMeshPicker);
+        ImGui::TextUnformatted("Assign a mesh to the selected entity:");
+
+        auto* pAssetRegistry = static_cast<Assets::FSceneAssetRegistry*>(pEngine->GetAssetRegistry());
+        eastl::vector<Assets::FSceneAssetRegistry::FModelStatus> models;
+        pAssetRegistry->EnumerateModels(models);
+        for (const auto& model : models)
+        {
+            if (model.State != Scene::ECS::EAssetState::Ready)
+                continue;
+            if (!ImGui::TreeNode(model.ModelPath.c_str()))
+                continue;
+            Scene::ECS::FModelAssetHandle handle;
+            if (!pAssetRegistry->FindModelHandle(model.ModelPath, handle))
+            {
+                ImGui::TreePop();
+                continue;
+            }
+            const Scene::ECS::FModelAssetInfo info = pAssetRegistry->GetModelInfo(handle);
+            for (uint32_t n = 0; n < (uint32_t)info.Nodes.size(); ++n)
+            {
+                const Scene::ECS::FModelNodeInfo& node = info.Nodes[n];
+                for (uint32_t primIdx : node.Primitives)
+                {
+                    ImGui::PushID(static_cast<int>(n));
+                    ImGui::PushID(static_cast<int>(primIdx));
+                    const eastl::string label = node.Name + " [prim " + eastl::to_string(primIdx) + "]";
+                    if (ImGui::Selectable(label.c_str()))
+                    {
+                        Editor::Commands::FSetMeshCommand::FKey before;
+                        before.Asset = mc->Asset;
+                        before.NodeIndex = mc->NodeIndex;
+                        before.PrimitiveIndex = mc->PrimitiveIndex;
+                        Editor::Commands::FSetMeshCommand::FKey after;
+                        after.Asset = handle;
+                        after.NodeIndex = static_cast<int32_t>(n);
+                        after.PrimitiveIndex = static_cast<int32_t>(primIdx);
+                        auto command = eastl::make_unique<Editor::Commands::FSetMeshCommand>(
+                            *pEntitySystem, *pEngine->GetAssetRegistry(), m_SelectedEntity, before, after);
+                        command->Redo();   // apply now (Push does not redo)
+                        m_EditHistory.Push(eastl::move(command));
+                        m_bShowMeshPicker = false;
+                    }
+                    ImGui::PopID();
+                    ImGui::PopID();
+                }
+            }
+            ImGui::TreePop();
         }
         ImGui::End();
     }
