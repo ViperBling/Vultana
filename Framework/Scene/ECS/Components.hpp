@@ -116,6 +116,9 @@ namespace Scene::ECS
         FMeshResourceHandle MeshHandle;
         FMaterialResourceHandle MaterialHandle;
         bool bSkinned = false;
+        FModelAssetHandle Asset;
+        int32_t NodeIndex = -1;
+        int32_t PrimitiveIndex = -1;
     };
 
     struct FModelInstanceComponent

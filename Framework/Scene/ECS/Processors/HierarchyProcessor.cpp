@@ -90,11 +90,55 @@ namespace Scene::ECS
 
         // 2. Root set = entities with a transform and no parent.
         m_Stack.clear();
-        auto rootView = registry.view<FTransformComponent>(entt::exclude_t<FParentComponent>());
-        for (entt::entity root : rootView)
-            m_Stack.push_back({root, float4x4{identity}, bStructureDirty});
-
+        if (bStructureDirty)
+        {
+            auto rootView = registry.view<FTransformComponent>(entt::exclude_t<FParentComponent>());
+            for (entt::entity root : rootView)
+                m_Stack.push_back({root, float4x4{identity}, true});
+        }
+        else
+        {
+            ResetVisited();
+            for (entt::entity seed : subsystem.GetDirtyTransforms())
+            {
+                if (!registry.valid(seed) || IsVisited(seed))
+                    continue;
+                SetVisited(seed);
+                if (HasDirtyAncestor(registry, seed))
+                    continue;
+                float4x4 parentWorld = float4x4{identity};
+                if (const auto* parentComp = registry.try_get<FParentComponent>(seed))
+                {
+                    if (parentComp->Parent != entt::null && registry.valid(parentComp->Parent))
+                    {
+                        if (const auto* parentWorldComp = registry.try_get<FWorldTransformComponent>(parentComp->Parent))
+                            parentWorld = parentWorldComp->MtxWorld;
+                    }
+                }
+                m_Stack.push_back({seed, parentWorld, false});
+            }
+        }
         ProcessStack(registry, subsystem.GetChildrenMap(), bStructureDirty);
+        subsystem.ClearDirtyTransforms();
+    }
+
+    bool FHierarchyProcessor::HasDirtyAncestor(const entt::registry& registry, entt::entity entity) const
+    {
+        constexpr uint32_t kMaxAncestorDepth = 4096;
+        entt::entity cur = entity;
+        for (uint32_t depth = 0; depth < kMaxAncestorDepth; ++depth)
+        {
+            const FParentComponent* parent = registry.try_get<FParentComponent>(cur);
+            if (parent == nullptr || parent->Parent == entt::null || !registry.valid(parent->Parent))
+                break;
+            cur = parent->Parent;
+            if (const auto* tf = registry.try_get<FTransformComponent>(cur))
+            {
+                if (tf->bLocalDirty)
+                    return true;
+            }
+        }
+        return false;
     }
 
     void FHierarchyProcessor::ProcessStack(entt::registry& registry, const FEntitySubsystem::FChildrenMap& childrenMap, bool bForceAll)

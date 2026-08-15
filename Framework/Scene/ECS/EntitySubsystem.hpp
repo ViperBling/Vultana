@@ -66,6 +66,9 @@ namespace Scene::ECS
                 FMeshResourceHandle MeshHandle;
                 FMaterialResourceHandle MaterialHandle;
                 bool bSkinned = false;
+                FModelAssetHandle Asset;
+                int32_t NodeIndex = -1;
+                int32_t PrimitiveIndex = -1;
             };
             eastl::optional<FMeshData> Mesh;
         };
@@ -87,10 +90,12 @@ namespace Scene::ECS
         void DetachFromParent(entt::entity entity);
 
         void MarkStructureDirty() { m_bStructureDirty = true; }
-        void MarkTransformDirty() { m_bTransformDirty = true; }
         void MarkTransformDirty(entt::entity entity);
         bool ConsumeStructureDirty();
         bool ConsumeTransformDirty();
+        const eastl::vector<entt::entity>& GetDirtyTransforms() const { return m_DirtyTransforms; }
+        void ClearDirtyTransforms() { m_DirtyTransforms.clear(); }
+
         void Clear();
 
         // ===== Query Operations ===== //
@@ -117,6 +122,7 @@ namespace Scene::ECS
         uint32_t m_NextPickID = 1;
         static constexpr uint32_t MAX_PICK_ID = 9999999;
         eastl::vector<entt::entity> m_PendingDestroy;
+        eastl::vector<entt::entity> m_DirtyTransforms;
         FChildrenMap m_ChildrenMap;
 
         bool m_bStructureDirty = true;      // Initial true: first frame builds everything

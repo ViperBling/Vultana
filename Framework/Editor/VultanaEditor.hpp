@@ -45,6 +45,8 @@ namespace Editor
         void SaveScene();
         void OpenScene(const eastl::string& path);
         void SelectEntity(entt::entity entity);
+        void DeleteSelectedEntity();
+        void DuplicateSelectedEntity();
 
         void DrawFrameStats();
         void DrawProcessorTimings();

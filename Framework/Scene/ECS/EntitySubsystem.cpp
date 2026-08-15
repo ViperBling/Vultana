@@ -126,6 +126,9 @@ namespace Scene::ECS
             meshData.MeshHandle = meshComp->MeshHandle;
             meshData.MaterialHandle = meshComp->MaterialHandle;
             meshData.bSkinned = meshComp->bSkinned;
+            meshData.Asset = meshComp->Asset;
+            meshData.NodeIndex = meshComp->NodeIndex;
+            meshData.PrimitiveIndex = meshComp->PrimitiveIndex;
             snapshot.Mesh = meshData;
         }
         return snapshot;
@@ -137,6 +140,11 @@ namespace Scene::ECS
         if (!m_Registry.valid(entity))
         {
             ResurrectEntity(entity);
+            if (!m_Registry.valid(entity))
+            {
+                VTNA_LOG_ERROR("ApplyEntitySnapshot: entity {} id was recycled; cannot restore", entt::to_integral(entity));
+                return;
+            }
             if (snapshot.PickID > 0)
             {
                 m_Registry.emplace<FPickIDComponent>(entity, snapshot.PickID);
@@ -281,7 +289,10 @@ namespace Scene::ECS
     void FEntitySubsystem::MarkTransformDirty(entt::entity entity)
     {
         if (auto* tf = m_Registry.try_get<FTransformComponent>(entity))
+        {
             tf->bLocalDirty = true;
+            m_DirtyTransforms.push_back(entity);
+        }
         m_bTransformDirty = true;
     }
 
@@ -308,6 +319,7 @@ namespace Scene::ECS
         m_PickIDToEntity.clear();
         m_ChildrenMap.clear();
         m_NextPickID = 1;
+        m_DirtyTransforms.clear();
         MarkStructureDirty();
     }
 

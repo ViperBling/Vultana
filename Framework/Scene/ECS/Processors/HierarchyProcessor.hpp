@@ -18,6 +18,7 @@ namespace Scene::ECS
         EProcessingPhase GetProcessingPhase() const override { return EProcessingPhase::PreUpdate; }
         const char* GetName() const override { return "HierarchyProcessor"; }
         void Process(FEntitySubsystem& subsystem, float deltaTime) override;
+        bool HasDirtyAncestor(const entt::registry& registry, entt::entity entity) const;
 
     private:
         struct FStackEntry

@@ -3,6 +3,8 @@
 #include "AssetManager/SceneAssetRegistry.hpp"
 #include "Core/VultanaEngine.hpp"
 
+#include "Editor/Commands/EntityDeleteCommand.hpp"
+#include "Editor/Commands/EntityDuplicateCommand.hpp"
 #include "Editor/Commands/EntityEditableTarget.hpp"
 #include "Editor/Commands/NameCommand.hpp"
 #include "Editor/Commands/ObjectEditableTarget.hpp"
@@ -92,6 +94,18 @@ namespace Editor
                     if (picked != entt::null)
                         SelectEntity(picked);
                 }
+            }
+        }
+
+        if (pEngineInst->IsUseECSBackend() && !io.WantCaptureKeyboard && !m_bGizmoDragging && m_SelectedEntity != entt::null)
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+            {
+                DeleteSelectedEntity();
+            }
+            else if ((ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)) && ImGui::IsKeyPressed(ImGuiKey_D, false))
+            {
+                DuplicateSelectedEntity();
             }
         }
 
@@ -273,6 +287,14 @@ namespace Editor
                 if (ImGui::MenuItem("Redo", "Ctrl+Y", false, m_EditHistory.GetRedoCount() > 0))
                 {
                     m_EditHistory.Redo();
+                }
+                if (ImGui::MenuItem("Delete", "Delete", false, m_SelectedEntity != entt::null))
+                {
+                    DeleteSelectedEntity();
+                }
+                if (ImGui::MenuItem("Duplicate", "Ctrl+D", false, m_SelectedEntity != entt::null))
+                {
+                    DuplicateSelectedEntity();
                 }
                 ImGui::EndMenu();
             }
@@ -735,6 +757,67 @@ namespace Editor
             }
         }
         m_pRenderer->SetSelectedObjectID(pEntitySystem->GetPickID(highlight));
+    }
+
+    void FVultanaEditor::DeleteSelectedEntity()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        auto* pEntityFactory = pEngine->GetEntityFactory();
+        if (pEntitySystem == nullptr || pEntityFactory == nullptr)
+            return;
+        if (m_SelectedEntity == entt::null || !pEntitySystem->GetRegistry().valid(m_SelectedEntity))
+            return;
+
+        auto& registry = pEntitySystem->GetRegistry();
+        entt::entity target = m_SelectedEntity;
+        const entt::entity root = Assets::FModelLoaderECS::FindModelInstanceRoot(registry, m_SelectedEntity);
+        if (root != entt::null)
+            target = root;
+
+        if (!registry.all_of<Scene::ECS::FModelInstanceComponent>(target) && 
+            (registry.any_of<Scene::ECS::FMainCameraTag, Scene::ECS::FMainLightTag, 
+                             Scene::ECS::FCameraComponent, Scene::ECS::FLightComponent>(target) || pEntitySystem->FindChildren(target) != nullptr))
+        {
+            VTNA_LOG_WARN("[Editor] Delete: entity {} is not snapshot-restorable; refused", entt::to_integral(target));
+            return;
+        }
+        auto command = eastl::make_unique<Editor::Commands::FDeleteEntityCommand>(*pEntitySystem, *pEntityFactory, *pEngine->GetAssetRegistry(), target);
+        command->Redo();
+        m_EditHistory.Push(eastl::move(command));
+        
+        m_SelectedEntity = entt::null;
+        m_pRenderer->SetSelectedObjectID(UINT32_MAX);
+        m_LastMouseHitID = UINT32_MAX;
+    }
+
+    void FVultanaEditor::DuplicateSelectedEntity()
+    {
+        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pEntitySystem = pEngine->GetEntitySystem();
+        auto* pEntityFactory = pEngine->GetEntityFactory();
+        if (pEntitySystem == nullptr || pEntityFactory == nullptr)
+            return;
+        if (m_SelectedEntity == entt::null || !pEntitySystem->GetRegistry().valid(m_SelectedEntity))
+            return;
+
+        auto& registry = pEntitySystem->GetRegistry();
+        entt::entity target = m_SelectedEntity;
+        const entt::entity root = Assets::FModelLoaderECS::FindModelInstanceRoot(registry, m_SelectedEntity);
+        if (root != entt::null)
+            target = root;
+
+        if (!registry.all_of<Scene::ECS::FModelInstanceComponent>(target) &&
+            (registry.any_of<Scene::ECS::FMainCameraTag, Scene::ECS::FMainLightTag,
+                             Scene::ECS::FCameraComponent, Scene::ECS::FLightComponent>(target) ||
+             pEntitySystem->FindChildren(target) != nullptr))
+        {
+            VTNA_LOG_WARN("[Editor] Duplicate: entity {} is not snapshot-restorable; refused", entt::to_integral(target));
+            return;
+        }
+        auto command = eastl::make_unique<Editor::Commands::FDuplicateCommand>(*pEntitySystem, *pEntityFactory, *pEngine->GetAssetRegistry(), target);
+        command->Redo();
+        m_EditHistory.Push(eastl::move(command));
     }
 
     void FVultanaEditor::DrawFrameStats()

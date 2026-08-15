@@ -97,8 +97,7 @@ namespace Scene::ECS
                 if (auto* tf = registry.try_get<FTransformComponent>(nodeEntity))
                 {
                     EvalChannel(channel, anim.CurrentTime, *tf);
-                    tf->bLocalDirty = true;
-                    subsystem.MarkTransformDirty();
+                    subsystem.MarkTransformDirty(nodeEntity);
                 }
                     
             }
