@@ -2,6 +2,7 @@
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/ProcessorBase.hpp"
 #include "Scene/ECS/Components.hpp"
+#include "Scene/ECS/SceneSerializer.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
@@ -19,6 +20,7 @@
 
 #include <gtest/gtest.h>
 #include <entt/entt.hpp>
+#include <cstdio>
 
 using namespace Scene::ECS;
 
@@ -1229,4 +1231,81 @@ TEST(ECSTest, EntityFactory_SetMeshRenderer_InstallsDerivedComponents)
     EXPECT_NEAR(reg.get<Scene::ECS::FBoundingSphereComponent>(e).Radius, 4.0f, 0.001f);
     EXPECT_TRUE(reg.get<Scene::ECS::FVisibilityComponent>(e).bFrustumVisible);
     EXPECT_EQ(reg.get<Scene::ECS::FSkinnedRootComponent>(e).Root, root);
+}
+
+TEST(ECSTest, EntityFactory_ApplyMeshKey_PreservesSourceIdentity)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    const Scene::ECS::FMeshResourceHandle mesh0 = fakeReg.AcquireMesh(model, 0, 0);
+    const Scene::ECS::FMaterialResourceHandle mat0 = fakeReg.AcquireMaterial(model, 0, 0);
+    fakeReg.AcquireMesh(model, 0, 1);   // second primitive available for the swap
+    fakeReg.AcquireMaterial(model, 0, 1);
+
+    Scene::ECS::FMeshGPUData md = fakeReg.GetMeshData(mesh0);
+    entt::entity e = ecs.CreateEntity();
+    Scene::ECS::FEntityFactory::SetMeshRenderer(ecs.GetRegistry(), e, mesh0, mat0, md, model, 0, 0);
+
+    EXPECT_TRUE(Scene::ECS::FEntityFactory::ApplyMeshKey(ecs, fakeReg, e, model, 0, 1));
+
+    const auto& mc = ecs.GetRegistry().get<Scene::ECS::FMeshRendererComponent>(e);
+    EXPECT_EQ(mc.NodeIndex, 1);
+    EXPECT_EQ(mc.PrimitiveIndex, 1);
+    EXPECT_TRUE(mc.SourceAsset == model);
+    EXPECT_EQ(mc.SourceNodeIndex, 0);
+    EXPECT_EQ(mc.SourcePrimitiveIndex, 0);
+}
+
+TEST(ECSTest, SceneSerializer_SaveLoad_MeshOverrideRoundtrip)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    Scene::ECS::FModelNodeInfo node;
+    node.Name = "Node0";
+    node.NodeIndex = 0;
+    node.Primitives.push_back(0);
+    eastl::vector<Scene::ECS::FModelNodeInfo> nodes;
+    nodes.push_back(node);
+    fakeReg.SetFakeModelNodes(model, nodes);
+
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+    const Scene::ECS::FModelAssetInfo info = fakeReg.GetModelInfo(model);
+    entt::entity root = factory.CreateModelInstance(model, "test.gltf");
+    factory.CreateModelHierarchy(model, info, root, float3(0.0f), quaternion(0.0f, 0.0f, 0.0f, 1.0f), float3(1.0f));
+
+    auto& reg = ecs.GetRegistry();
+    const auto& table = reg.get<Scene::ECS::FModelNodeTableComponent>(root);
+    ASSERT_FALSE(table.NodeEntities.empty());
+    const auto* children = ecs.FindChildren(table.NodeEntities[0]);
+    ASSERT_NE(children, nullptr);
+    entt::entity meshEntity = entt::null;
+    for (entt::entity c : *children)
+    {
+        if (reg.all_of<Scene::ECS::FMeshRendererComponent>(c)) { meshEntity = c; break; }
+    }
+    ASSERT_TRUE(meshEntity != entt::null);
+    fakeReg.AcquireMesh(model, 0, 1);
+    fakeReg.AcquireMaterial(model, 0, 1);
+    EXPECT_TRUE(Scene::ECS::FEntityFactory::ApplyMeshKey(ecs, fakeReg, meshEntity, model, 0, 1));
+
+    const char* path = "ECSTest_TmpMeshOverride.xml";
+    EXPECT_TRUE(Scene::ECS::FSceneSerializer::Save(ecs, fakeReg, path, ""));
+
+    Scene::ECS::FEntitySubsystem ecs2;
+    FFakeAssetRegistry fakeReg2;
+    Scene::ECS::FEntityFactory factory2(ecs2, fakeReg2);
+    Scene::ECS::FSceneLoadResult result;
+    EXPECT_TRUE(Scene::ECS::FSceneSerializer::Load(ecs2, factory2, fakeReg2, path, "", result));
+    ASSERT_EQ(result.Models.size(), 1u);
+    ASSERT_EQ(result.MeshOverrides.size(), 1u);
+    EXPECT_EQ(result.MeshOverrides[0].SourceNodeIndex, 0);
+    EXPECT_EQ(result.MeshOverrides[0].SourcePrimitiveIndex, 0);
+    EXPECT_EQ(result.MeshOverrides[0].TargetNodeIndex, 0);
+    EXPECT_EQ(result.MeshOverrides[0].TargetPrimitiveIndex, 1);
+
+    remove(path);
 }

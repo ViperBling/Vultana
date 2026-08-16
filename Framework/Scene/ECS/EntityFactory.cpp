@@ -3,7 +3,6 @@
 #include "Utilities/Log.hpp"
 
 #include <EASTL/fixed_vector.h>
-#include "EntityFactory.hpp"
 
 namespace Scene::ECS
 {
@@ -177,6 +176,16 @@ namespace Scene::ECS
 
     void FEntityFactory::SetMeshRenderer(entt::registry& registry, entt::entity entity, FMeshResourceHandle meshHandle, FMaterialResourceHandle materialHandle, const FMeshGPUData& meshData, FModelAssetHandle asset, int32_t nodeIndex, int32_t primitiveIndex, entt::entity skinnedRoot)
     {
+        FModelAssetHandle sourceAsset;
+        int32_t sourceNodeIndex = -1;
+        int32_t sourcePrimitiveIndex = -1;
+        if (const auto* previous = registry.try_get<FMeshRendererComponent>(entity))
+        {
+            sourceAsset = previous->SourceAsset;
+            sourceNodeIndex = previous->SourceNodeIndex;
+            sourcePrimitiveIndex = previous->SourcePrimitiveIndex;
+        }
+
         registry.emplace_or_replace<FMeshRendererComponent>(entity, meshHandle, materialHandle, meshData.bSkinned);
         registry.emplace_or_replace<FBoundingSphereComponent>(entity, meshData.Center, meshData.Radius);
         registry.emplace_or_replace<FWorldBoundingSphereComponent>(entity);
@@ -189,6 +198,85 @@ namespace Scene::ECS
             meshComp->Asset = asset;
             meshComp->NodeIndex = nodeIndex;
             meshComp->PrimitiveIndex = primitiveIndex;
+            if (sourceAsset.IsValid() && sourceNodeIndex >= 0 && sourcePrimitiveIndex >= 0)
+            {
+                meshComp->SourceAsset = sourceAsset;
+                meshComp->SourceNodeIndex = sourceNodeIndex;
+                meshComp->SourcePrimitiveIndex = sourcePrimitiveIndex;
+            }
+            else
+            {
+                meshComp->SourceAsset = asset;
+                meshComp->SourceNodeIndex = nodeIndex;
+                meshComp->SourcePrimitiveIndex = primitiveIndex;
+            }
         }
+    }
+
+    bool FEntityFactory::ApplyMeshKey(FEntitySubsystem& subsystem, IAssetRegistry& registry, entt::entity entity, FModelAssetHandle asset, int32_t nodeIndex, int32_t primitiveIndex)
+    {
+        auto& reg = subsystem.GetRegistry();
+        const FMeshRendererComponent* mc = reg.try_get<FMeshRendererComponent>(entity);
+        if (mc == nullptr || !asset.IsValid() || nodeIndex < 0 || primitiveIndex < 0)
+            return false;
+
+        const FMeshResourceHandle mh = registry.AcquireMesh(asset, static_cast<uint32_t>(nodeIndex), static_cast<uint32_t>(primitiveIndex));
+        const FMaterialResourceHandle mat = registry.AcquireMaterial(asset, static_cast<uint32_t>(nodeIndex), static_cast<uint32_t>(primitiveIndex));
+        if (!mh.IsValid() || !mat.IsValid())
+        {
+            if (mh.IsValid()) registry.Release(mh);
+            if (mat.IsValid()) registry.Release(mat);
+            return false;
+        }
+
+        const FMeshGPUData md = registry.GetMeshData(mh);
+        if (md.bSkinned != mc->bSkinned || (md.bSkinned && !(asset == mc->Asset)))
+        {
+            registry.Release(mh);
+            registry.Release(mat);
+            VTNA_LOG_WARN("[EntityFactory] mesh swap rejected: skinned/static or cross-asset skinned (entity {})", entt::to_integral(entity));
+            return false;
+        }
+
+        registry.Release(mc->MeshHandle);
+        registry.Release(mc->MaterialHandle);
+        SetMeshRenderer(reg, entity, mh, mat, md, asset, nodeIndex, primitiveIndex);
+        subsystem.MarkTransformDirty(entity);
+        return true;
+    }
+
+    bool FEntityFactory::ApplyMeshOverride(const FMeshOverride& meshOverride)
+    {
+        auto& reg = m_Subsystem.GetRegistry();
+        if (meshOverride.SourceRoot == entt::null || !reg.valid(meshOverride.SourceRoot) ||
+            meshOverride.SourceNodeIndex < 0 || meshOverride.SourcePrimitiveIndex < 0)
+            return false;
+
+        const FModelNodeTableComponent* table = reg.try_get<FModelNodeTableComponent>(meshOverride.SourceRoot);
+        if (table == nullptr || static_cast<uint32_t>(meshOverride.SourceNodeIndex) >= table->NodeEntities.size())
+            return false;
+
+        const entt::entity nodeEntity = table->NodeEntities[static_cast<uint32_t>(meshOverride.SourceNodeIndex)];
+        if (nodeEntity == entt::null || !reg.valid(nodeEntity))
+            return false;
+
+        const eastl::vector<entt::entity>* children = m_Subsystem.FindChildren(nodeEntity);
+        if (children == nullptr)
+            return false;
+
+        for (entt::entity child : *children)
+        {
+            const FMeshRendererComponent* mc = reg.try_get<FMeshRendererComponent>(child);
+            if (mc == nullptr)
+                continue;
+            if (mc->SourceAsset == meshOverride.SourceAsset &&
+                mc->SourceNodeIndex == meshOverride.SourceNodeIndex &&
+                mc->SourcePrimitiveIndex == meshOverride.SourcePrimitiveIndex)
+            {
+                return ApplyMeshKey(m_Subsystem, m_Registry, child, meshOverride.TargetAsset, meshOverride.TargetNodeIndex, meshOverride.TargetPrimitiveIndex);
+            }
+        }
+        VTNA_LOG_WARN("[EntityFactory] mesh override target not found (model {}, node {}, prim {})", meshOverride.SourceAsset.Index, meshOverride.SourceNodeIndex, meshOverride.SourcePrimitiveIndex);
+        return false;
     }
 } // namespace Scene::ECS

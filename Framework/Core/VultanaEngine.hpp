@@ -66,6 +66,7 @@ namespace Core
         ~FVultanaEngine();
         void UpdateSceneRenderState();
         void UpdateCullingData();
+        void ApplyPendingMeshOverrides();
 
     public:
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
@@ -92,6 +93,7 @@ namespace Core
         eastl::unique_ptr<Scene::ECS::IAssetRegistry> m_pAssetRegistry;
         eastl::unique_ptr<Scene::ECS::ISceneRenderSink> m_pRenderSink;
         eastl::unique_ptr<Scene::ECS::FEntityFactory> m_pEntityFactory;
+        eastl::vector<Scene::ECS::FMeshOverride> m_PendingMeshOverrides;
         bool m_bUseECSBackend = false;
 
         float4 m_PendingCullingPlanes[6] = {};

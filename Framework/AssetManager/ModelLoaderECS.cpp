@@ -52,6 +52,34 @@ namespace Assets
         });
     }
 
+    void FModelLoaderECS::PreloadModelAsync(const eastl::string& filePath, Scene::ECS::FModelAssetHandle assetHandle)
+    {
+        auto* pEngine = Core::FVultanaEngine::GetEngineInstance();
+        auto* pAssetManager = pEngine->GetAssetManager();
+        if (pAssetManager == nullptr)
+        {
+            VTNA_LOG_ERROR("[ModelLoaderECS] preload: no asset manager; cannot preload {}", filePath);
+            return;
+        }
+        pAssetManager->RequestModel(filePath,
+        [pEngine, assetHandle](FModelLoadResult&& result)
+        {
+            auto* registry = static_cast<FSceneAssetRegistry*>(pEngine->GetAssetRegistry());
+            if (!result.bSuccess || !result.Payload)
+            {
+                VTNA_LOG_ERROR("[ModelLoaderECS] preload failed for {}", result.SrcPath);
+                registry->MarkModelFailed(assetHandle);
+                return;
+            }
+            auto payload = result.Payload;
+            pEngine->GetAssetManager()->RequestModelTextures(*payload,
+            [registry, assetHandle, payload]()
+            {
+                registry->PopulateModel(assetHandle, *payload);
+            });
+        });
+    }
+
     void FModelLoaderECS::ReloadModelAsync(const eastl::string& filePath)
     {
         auto* pEngine = Core::FVultanaEngine::GetEngineInstance();

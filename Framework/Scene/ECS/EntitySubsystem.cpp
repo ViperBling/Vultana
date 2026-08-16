@@ -129,6 +129,9 @@ namespace Scene::ECS
             meshData.Asset = meshComp->Asset;
             meshData.NodeIndex = meshComp->NodeIndex;
             meshData.PrimitiveIndex = meshComp->PrimitiveIndex;
+            meshData.SourceAsset = meshComp->SourceAsset;
+            meshData.SourceNodeIndex = meshComp->SourceNodeIndex;
+            meshData.SourcePrimitiveIndex = meshComp->SourcePrimitiveIndex;
             snapshot.Mesh = meshData;
         }
         return snapshot;
@@ -174,7 +177,13 @@ namespace Scene::ECS
             // Derived components are intentionally NOT re-created; callers must
             // complete the entity via FEntityFactory::SetMeshRenderer (Delete /
             // Duplicate ReacquireMesh does).
-            m_Registry.emplace_or_replace<FMeshRendererComponent>(entity, meshData.MeshHandle, meshData.MaterialHandle, meshData.bSkinned);
+            m_Registry.emplace_or_replace<FMeshRendererComponent>(entity, meshData.MeshHandle, meshData.MaterialHandle, meshData.bSkinned, meshData.Asset, meshData.NodeIndex, meshData.PrimitiveIndex);
+            if (auto* meshComp = m_Registry.try_get<FMeshRendererComponent>(entity))
+            {
+                meshComp->SourceAsset = meshData.SourceAsset;
+                meshComp->SourceNodeIndex = meshData.SourceNodeIndex;
+                meshComp->SourcePrimitiveIndex = meshData.SourcePrimitiveIndex;
+            }
         }
         else if (m_Registry.all_of<FMeshRendererComponent>(entity))
         {

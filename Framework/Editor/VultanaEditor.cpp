@@ -792,7 +792,7 @@ namespace Editor
             return;
         }
 
-        const bool ok = Scene::ECS::FSceneSerializer::Save(*pEntitySystem, pEngine->GetSceneFilePath(), pEngine->GetAssetsPath());
+        const bool ok = Scene::ECS::FSceneSerializer::Save(*pEntitySystem, *pEngine->GetAssetRegistry(), pEngine->GetSceneFilePath(), pEngine->GetAssetsPath());
         if (ok)
             VTNA_LOG_INFO("[Editor] Scene saved: {}", pEngine->GetSceneFilePath());
         else

@@ -119,6 +119,9 @@ namespace Scene::ECS
         FModelAssetHandle Asset;
         int32_t NodeIndex = -1;
         int32_t PrimitiveIndex = -1;
+        FModelAssetHandle SourceAsset;
+        int32_t SourceNodeIndex = -1;
+        int32_t SourcePrimitiveIndex = -1;
     };
 
     struct FModelInstanceComponent

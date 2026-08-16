@@ -19,6 +19,12 @@ namespace Scene::ECS
         float3 Scale = float3(1.0f);
     };
 
+    struct FModelPreloadRequest
+    {
+        FModelAssetHandle Handle;
+        eastl::string FilePath;
+    };
+
     struct FSceneLoadResult
     {
         bool bHasCamera = false;
@@ -27,6 +33,8 @@ namespace Scene::ECS
         float CameraFov = 60.0f;
         float CameraZNear = 0.01f;
         eastl::vector<FModelLoadRequest> Models;
+        eastl::vector<FModelPreloadRequest> ModelPreloads;
+        eastl::vector<FMeshOverride> MeshOverrides;
     };
 
     class FSceneSerializer
@@ -36,6 +44,6 @@ namespace Scene::ECS
         // + camera/light entities. Async model fills are returned as requests.
         static bool Load(FEntitySubsystem& subsystem, FEntityFactory& factory, IAssetRegistry& assetRegistry, const eastl::string& filePath, const eastl::string& assetsPath, FSceneLoadResult& outResult);
         // Writes the current user-editable entity tree to <ECSScene>.
-        static bool Save(FEntitySubsystem& subsystem, const eastl::string& filePath, const eastl::string& assetsPath);
+        static bool Save(FEntitySubsystem& subsystem, IAssetRegistry& assetRegistry, const eastl::string& filePath, const eastl::string& assetsPath);
     };
 }

@@ -222,6 +222,10 @@ namespace Core
                 m_pEditor->Tick();
                 m_pWorld->Tick(m_FrameTime);
                 UpdateCullingData();
+                if (m_bUseECSBackend && !m_PendingMeshOverrides.empty())
+                {
+                    ApplyPendingMeshOverrides();
+                }
                 if (m_bUseECSBackend)
                 {
                     m_pEntitySystem->Tick(m_FrameTime);
@@ -245,6 +249,7 @@ namespace Core
         m_pEntitySystem->Clear();
         if (m_pEditor)
             m_pEditor->ClearEditHistory();
+        m_PendingMeshOverrides.clear();
 
         Scene::ECS::FSceneLoadResult sceneResult;
         Scene::ECS::FSceneSerializer::Load(*m_pEntitySystem, *m_pEntityFactory, *m_pAssetRegistry, scenePath, m_AssetsPath, sceneResult);
@@ -253,6 +258,24 @@ namespace Core
         {
             Assets::FModelLoaderECS::LoadModelAsync(request.FilePath, request.Handle, *m_pEntityFactory, request.Root, request.Position, request.Rotation, request.Scale);
         }
+
+        eastl::vector<Scene::ECS::FModelAssetHandle> scheduledHandles;
+        for (const auto& request : sceneResult.Models)
+            scheduledHandles.push_back(request.Handle);
+        for (const auto& preload : sceneResult.ModelPreloads)
+        {
+            bool bAlreadyScheduled = false;
+            for (const Scene::ECS::FModelAssetHandle& handle : scheduledHandles)
+            {
+                if (handle == preload.Handle) { bAlreadyScheduled = true; break; }
+            }
+            if (!bAlreadyScheduled)
+            {
+                scheduledHandles.push_back(preload.Handle);
+                Assets::FModelLoaderECS::PreloadModelAsync(preload.FilePath, preload.Handle);
+            }
+        }
+        m_PendingMeshOverrides = sceneResult.MeshOverrides;
         if (sceneResult.bHasCamera)
         {
             Scene::FCamera* pCamera = m_pWorld->GetCamera();
@@ -339,6 +362,18 @@ namespace Core
         if (pCamera == nullptr)
             return;
         memcpy(m_PendingCullingPlanes, pCamera->GetFrustumPlanes(), sizeof(m_PendingCullingPlanes));
+    }
+
+    void FVultanaEngine::ApplyPendingMeshOverrides()
+    {
+        if (m_pEntityFactory == nullptr || m_pEntitySystem == nullptr)
+        {
+            m_PendingMeshOverrides.clear();
+            return;
+        }
+        for (const Scene::ECS::FMeshOverride& meshOverride : m_PendingMeshOverrides)
+            m_pEntityFactory->ApplyMeshOverride(meshOverride);
+        m_PendingMeshOverrides.clear();
     }
 
 } // namespace Core
