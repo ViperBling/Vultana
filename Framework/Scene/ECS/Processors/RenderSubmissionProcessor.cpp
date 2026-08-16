@@ -21,6 +21,9 @@ namespace Scene::ECS
 
         view.each([&](entt::entity entity, FMeshRendererComponent& meshComp, FWorldTransformComponent& worldTFComp, FWorldBoundingSphereComponent& worldBounds, const FPickIDComponent& pickIDComp, const FVisibilityComponent& visibilityComp)
         {
+            if (!visibilityComp.bFrustumVisible)
+                return;
+
             const FMeshGPUData* meshData = m_Registry.FindMeshData(meshComp.MeshHandle);
             if (meshData == nullptr)
                 return;
@@ -78,74 +81,71 @@ namespace Scene::ECS
             instanceData.MtxWorld = instanceWorld;
             instanceData.MtxWorldInvTranspose = (skinnedRoot != nullptr) ? transpose(inverse(instanceWorld)) : worldTFComp.MtxWorldInvTranspose;
 
-            const bool bVisible = visibilityComp.bFrustumVisible;
             instanceData.MaterialDataAddress = m_Registry.GetMaterialConstantAddress(meshComp.MaterialHandle);
             if (instanceData.MaterialDataAddress == Scene::ECS::INVALID_ADDRESS)
                 instanceData.MaterialDataAddress = NULL_CONSTANT_ADDRESS;
 
             uint32_t instanceIndex = m_Sink.AddInstance(instanceData);
 
-            if (bVisible)
+            if (meshComp.bSkinned && skinnedRoot != nullptr)
             {
-                if (meshComp.bSkinned && skinnedRoot != nullptr)
+                const FModelInstanceComponent* modelComp = registry.try_get<FModelInstanceComponent>(skinnedRoot->Root);
+                const FSkeletonInfo* skeleton = (modelComp != nullptr) ? m_Registry.GetSkeletonInfo(modelComp->ModelHandle) : nullptr;
+                const FModelNodeTableComponent* nodeTable = registry.try_get<FModelNodeTableComponent>(skinnedRoot->Root);
+                if (modelComp != nullptr && skeleton != nullptr && nodeTable != nullptr && !skeleton->JointNodeIndices.empty() &&  skeleton->JointNodeIndices.size() == skeleton->InverseBindMatrices.size())
                 {
-                    const FModelInstanceComponent* modelComp = registry.try_get<FModelInstanceComponent>(skinnedRoot->Root);
-                    const FSkeletonInfo* skeleton = (modelComp != nullptr) ? m_Registry.GetSkeletonInfo(modelComp->ModelHandle) : nullptr;
-                    const FModelNodeTableComponent* nodeTable = registry.try_get<FModelNodeTableComponent>(skinnedRoot->Root);
-                    if (modelComp != nullptr && skeleton != nullptr && nodeTable != nullptr && !skeleton->JointNodeIndices.empty() &&  skeleton->JointNodeIndices.size() == skeleton->InverseBindMatrices.size())
+                    m_ScratchJointMatrices.clear();
+                    m_ScratchJointMatrices.resize(skeleton->JointNodeIndices.size());
+                    const float4x4 rootInv = inverse(instanceWorld);
+                    for (size_t j = 0; j < m_ScratchJointMatrices.size(); ++j)
                     {
-                        m_ScratchJointMatrices.clear();
-                        m_ScratchJointMatrices.resize(skeleton->JointNodeIndices.size());
-                        const float4x4 rootInv = inverse(instanceWorld);
-                        for (size_t j = 0; j < m_ScratchJointMatrices.size(); ++j)
+                        float4x4 m = skeleton->InverseBindMatrices[j];
+                        const uint32_t nodeIdx = static_cast<uint32_t>(skeleton->JointNodeIndices[j]);
+                        if (nodeIdx < nodeTable->NodeEntities.size())
                         {
-                            float4x4 m = skeleton->InverseBindMatrices[j];
-                            const uint32_t nodeIdx = static_cast<uint32_t>(skeleton->JointNodeIndices[j]);
-                            if (nodeIdx < nodeTable->NodeEntities.size())
-                            {
-                                const entt::entity nodeEntity = nodeTable->NodeEntities[nodeIdx];
-                                if (nodeEntity != entt::null && registry.valid(nodeEntity))
-                                    if (const auto* nodeWorld = registry.try_get<FWorldTransformComponent>(nodeEntity))
-                                        m = mul(mul(rootInv, nodeWorld->MtxWorld), m); // model-space (D2)
-                            }
-                            m_ScratchJointMatrices[j] = m;
+                            const entt::entity nodeEntity = nodeTable->NodeEntities[nodeIdx];
+                            if (nodeEntity != entt::null && registry.valid(nodeEntity))
+                                if (const auto* nodeWorld = registry.try_get<FWorldTransformComponent>(nodeEntity))
+                                    m = mul(mul(rootInv, nodeWorld->MtxWorld), m); // model-space (D2)
                         }
-                        const uint32_t jointAddr = m_Sink.AllocateMaterialConstants(
-                            m_ScratchJointMatrices.data(), static_cast<uint32_t>(m_ScratchJointMatrices.size() * sizeof(float4x4)));
-                        if (jointAddr == NULL_CONSTANT_ADDRESS)
-                            return;
-
-                        FAnimationBatchInput bin;
-                        bin.MaterialHandle = meshComp.MaterialHandle;
-                        bin.VertexCount = meshData->VertexCount;
-                        bin.StaticPositionBufferAddress = meshData->PositionBufferAddress;
-                        bin.AnimPositionBufferAddress = meshData->AnimPositionBufferAddress;
-                        bin.AnimNormalBufferAddress = meshData->AnimNormalBufferAddress;
-                        bin.AnimTangentBufferAddress = meshData->AnimTangentBufferAddress;
-                        bin.StaticNormalBufferAddress = meshData->bHasNormalStream ? meshData->NormalBufferAddress : 0xFFFFFFFFu;
-                        bin.StaticTangentBufferAddress = meshData->bHasTangentStream ? meshData->TangentBufferAddress : 0xFFFFFFFFu;
-                        bin.JointIDBufferAddress = meshData->JointIDBufferAddress;
-                        bin.JointWeightBufferAddress = meshData->JointWeightBufferAddress;
-                        bin.JointMatricesAddress = jointAddr;
-                        bin.Label = "ECS_Skin";
-                        m_Sink.AddAnimationBatch(bin);
+                        m_ScratchJointMatrices[j] = m;
                     }
-                }
+                    const uint32_t jointAddr = m_Sink.AllocateMaterialConstants(
+                        m_ScratchJointMatrices.data(), static_cast<uint32_t>(m_ScratchJointMatrices.size() * sizeof(float4x4)));
+                    if (jointAddr == NULL_CONSTANT_ADDRESS)
+                        return;
 
-                FRenderBatchInput bin;
-                bin.InstanceIndex = instanceIndex;
-                bin.MeshletCount = meshData->MeshletCount;
-                bin.Center = worldBounds.Center;
-                bin.Radius = worldBounds.Radius;
-                bin.MaterialHandle = meshComp.MaterialHandle;
-                bin.IndexBufferAddress = meshData->IndexBufferAddress;
-                bin.IndexStride = meshData->IndexStride;
-                bin.IndexCount = meshData->IndexCount;
-                bin.Label = "ECS_Mesh";
-                m_Sink.AddBasePassBatch(bin);
-                
-                if (m_Sink.IsEnableMouseHitTest()) m_Sink.AddObjectIDBatch(bin);
-                if (instanceData.ObjectID == selectedPickID) m_Sink.AddOutlineBatch(bin);
-            } });
+                    FAnimationBatchInput bin;
+                    bin.MaterialHandle = meshComp.MaterialHandle;
+                    bin.VertexCount = meshData->VertexCount;
+                    bin.StaticPositionBufferAddress = meshData->PositionBufferAddress;
+                    bin.AnimPositionBufferAddress = meshData->AnimPositionBufferAddress;
+                    bin.AnimNormalBufferAddress = meshData->AnimNormalBufferAddress;
+                    bin.AnimTangentBufferAddress = meshData->AnimTangentBufferAddress;
+                    bin.StaticNormalBufferAddress = meshData->bHasNormalStream ? meshData->NormalBufferAddress : 0xFFFFFFFFu;
+                    bin.StaticTangentBufferAddress = meshData->bHasTangentStream ? meshData->TangentBufferAddress : 0xFFFFFFFFu;
+                    bin.JointIDBufferAddress = meshData->JointIDBufferAddress;
+                    bin.JointWeightBufferAddress = meshData->JointWeightBufferAddress;
+                    bin.JointMatricesAddress = jointAddr;
+                    bin.Label = "ECS_Skin";
+                    m_Sink.AddAnimationBatch(bin);
+                }
+            }
+
+            FRenderBatchInput bin;
+            bin.InstanceIndex = instanceIndex;
+            bin.MeshletCount = meshData->MeshletCount;
+            bin.Center = worldBounds.Center;
+            bin.Radius = worldBounds.Radius;
+            bin.MaterialHandle = meshComp.MaterialHandle;
+            bin.IndexBufferAddress = meshData->IndexBufferAddress;
+            bin.IndexStride = meshData->IndexStride;
+            bin.IndexCount = meshData->IndexCount;
+            bin.Label = "ECS_Mesh";
+            m_Sink.AddBasePassBatch(bin);
+
+            if (m_Sink.IsEnableMouseHitTest()) m_Sink.AddObjectIDBatch(bin);
+            if (instanceData.ObjectID == selectedPickID) m_Sink.AddOutlineBatch(bin);
+        });
     }
 }

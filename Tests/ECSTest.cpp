@@ -562,7 +562,7 @@ TEST(ECSTest, RenderSubmission_NoMeshRenderer_NoInstance)
     EXPECT_EQ(fakeSink.BaseBatches.size(), 0u);
 }
 
-TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
+TEST(ECSTest, RenderSubmission_VisibleOnlyAddInstance)
 {
     Scene::ECS::FEntitySubsystem ecs;
     FFakeAssetRegistry fakeReg;
@@ -587,7 +587,7 @@ TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
     auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
     processor->Process(ecs, 0.0f);
 
-    EXPECT_EQ(fakeSink.AddedInstances.size(), 3u);   // all entities
+    EXPECT_EQ(fakeSink.AddedInstances.size(), 2u);   // visible entities only
     EXPECT_EQ(fakeSink.BaseBatches.size(), 2u);      // visible ones only
 }
 
