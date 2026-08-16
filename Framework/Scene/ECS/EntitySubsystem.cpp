@@ -170,6 +170,10 @@ namespace Scene::ECS
         if (snapshot.Mesh.has_value())
         {
             const auto& meshData = snapshot.Mesh.value();
+            // Low-level snapshot replay: only the mesh component is restored here.
+            // Derived components are intentionally NOT re-created; callers must
+            // complete the entity via FEntityFactory::SetMeshRenderer (Delete /
+            // Duplicate ReacquireMesh does).
             m_Registry.emplace_or_replace<FMeshRendererComponent>(entity, meshData.MeshHandle, meshData.MaterialHandle, meshData.bSkinned);
         }
         else if (m_Registry.all_of<FMeshRendererComponent>(entity))

@@ -1,4 +1,5 @@
 #include "Editor/Commands/MeshCommand.hpp"
+#include "Scene/ECS/EntityFactory.hpp"
 
 namespace Editor::Commands
 {
@@ -41,16 +42,7 @@ namespace Editor::Commands
         }
         m_Registry.Release(mc->MeshHandle);
         m_Registry.Release(mc->MaterialHandle);
-        reg.emplace_or_replace<Scene::ECS::FMeshRendererComponent>(m_Entity, mh, mat, md.bSkinned);
-        reg.emplace_or_replace<Scene::ECS::FBoundingSphereComponent>(m_Entity, md.Center, md.Radius);
-        reg.emplace_or_replace<Scene::ECS::FWorldBoundingSphereComponent>(m_Entity);
-
-        if (auto* mc2 = reg.try_get<Scene::ECS::FMeshRendererComponent>(m_Entity))
-        {
-            mc2->Asset = key.Asset;
-            mc2->NodeIndex = key.NodeIndex;
-            mc2->PrimitiveIndex = key.PrimitiveIndex;
-        }
+        Scene::ECS::FEntityFactory::SetMeshRenderer(reg, m_Entity, mh, mat, md, key.Asset, key.NodeIndex, key.PrimitiveIndex);
         m_Subsystem.MarkTransformDirty(m_Entity);
     }
 }

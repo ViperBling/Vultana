@@ -111,21 +111,7 @@ namespace Editor::Commands
         }
 
         const Scene::ECS::FMeshGPUData md = m_Registry.GetMeshData(mh);
-        reg.emplace_or_replace<Scene::ECS::FMeshRendererComponent>(m_Entity, mh, mat, md.bSkinned);
-        reg.emplace_or_replace<Scene::ECS::FBoundingSphereComponent>(m_Entity, md.Center, md.Radius);
-        reg.emplace_or_replace<Scene::ECS::FWorldBoundingSphereComponent>(m_Entity);
-        reg.emplace_or_replace<Scene::ECS::FVisibilityComponent>(m_Entity, true);
-        if (md.bSkinned)
-        {
-            const entt::entity root = Assets::FModelLoaderECS::FindModelInstanceRoot(reg, m_Entity);
-            if (root != entt::null)
-                reg.emplace_or_replace<Scene::ECS::FSkinnedRootComponent>(m_Entity, root);
-        }
-        if (auto* mc = reg.try_get<Scene::ECS::FMeshRendererComponent>(m_Entity))
-        {
-            mc->Asset = mesh.Asset;
-            mc->NodeIndex = mesh.NodeIndex;
-            mc->PrimitiveIndex = mesh.PrimitiveIndex;
-        }
+        const entt::entity root = md.bSkinned ? Assets::FModelLoaderECS::FindModelInstanceRoot(reg, m_Entity) : entt::null;
+        Scene::ECS::FEntityFactory::SetMeshRenderer(reg, m_Entity, mh, mat, md, mesh.Asset, mesh.NodeIndex, mesh.PrimitiveIndex, root);
     }
 } // namespace Editor::Commands

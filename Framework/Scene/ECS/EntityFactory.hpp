@@ -15,6 +15,7 @@ namespace Scene::ECS
         void DestroyModelInstance(entt::entity rootEntity);
         void DestroyAllModelInstances();
         void CreateModelHierarchy(FModelAssetHandle assetHandle, const FModelAssetInfo& info, entt::entity rootEntity, const float3& position, const quaternion& rotation, const float3& scale);
+        static void SetMeshRenderer(entt::registry& registry, entt::entity entity, FMeshResourceHandle meshHandle, FMaterialResourceHandle materialHandle, const FMeshGPUData& meshData, FModelAssetHandle asset, int32_t nodeIndex, int32_t primitiveIndex, entt::entity skinnedRoot = entt::null);
 
     private:
         FEntitySubsystem& m_Subsystem;

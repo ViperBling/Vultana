@@ -1164,3 +1164,42 @@ TEST(ECSTest, Animation_EvalChannel_ZeroInterval_NoNaN)
     for (float c : {tf->Position.x, tf->Position.y, tf->Position.z})
         EXPECT_FALSE(std::isnan(c));
 }
+
+TEST(ECSTest, EntityFactory_SetMeshRenderer_InstallsDerivedComponents)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    const Scene::ECS::FMeshResourceHandle mesh = fakeReg.AcquireMesh(model, 0, 0);
+    const Scene::ECS::FMaterialResourceHandle mat = fakeReg.AcquireMaterial(model, 0, 0);
+
+    Scene::ECS::FMeshGPUData md = fakeReg.GetMeshData(mesh);
+    md.Center = float3(1.0f, 2.0f, 3.0f);
+    md.Radius = 4.0f;
+    md.bSkinned = true;
+
+    entt::entity e = ecs.CreateEntity();
+    entt::entity root = ecs.CreateEntity();
+    Scene::ECS::FEntityFactory::SetMeshRenderer(ecs.GetRegistry(), e, mesh, mat, md, model, 2, 5, root);
+
+    auto& reg = ecs.GetRegistry();
+    EXPECT_TRUE(reg.all_of<Scene::ECS::FMeshRendererComponent>(e));
+    EXPECT_TRUE(reg.all_of<Scene::ECS::FBoundingSphereComponent>(e));
+    EXPECT_TRUE(reg.all_of<Scene::ECS::FWorldBoundingSphereComponent>(e));
+    EXPECT_TRUE(reg.all_of<Scene::ECS::FVisibilityComponent>(e));
+    EXPECT_TRUE(reg.all_of<Scene::ECS::FSkinnedRootComponent>(e));
+
+    const auto& mc = reg.get<Scene::ECS::FMeshRendererComponent>(e);
+    EXPECT_EQ(mc.MeshHandle, mesh);
+    EXPECT_EQ(mc.MaterialHandle, mat);
+    EXPECT_TRUE(mc.Asset == model);
+    EXPECT_EQ(mc.NodeIndex, 2);
+    EXPECT_EQ(mc.PrimitiveIndex, 5);
+    EXPECT_TRUE(mc.bSkinned);
+
+    EXPECT_NEAR(reg.get<Scene::ECS::FBoundingSphereComponent>(e).Center.x, 1.0f, 0.001f);
+    EXPECT_NEAR(reg.get<Scene::ECS::FBoundingSphereComponent>(e).Radius, 4.0f, 0.001f);
+    EXPECT_TRUE(reg.get<Scene::ECS::FVisibilityComponent>(e).bFrustumVisible);
+    EXPECT_EQ(reg.get<Scene::ECS::FSkinnedRootComponent>(e).Root, root);
+}

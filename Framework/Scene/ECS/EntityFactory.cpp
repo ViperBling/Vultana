@@ -3,6 +3,7 @@
 #include "Utilities/Log.hpp"
 
 #include <EASTL/fixed_vector.h>
+#include "EntityFactory.hpp"
 
 namespace Scene::ECS
 {
@@ -163,18 +164,7 @@ namespace Scene::ECS
 
                 const Scene::ECS::FMeshGPUData meshData = m_Registry.GetMeshData(meshHandle);
                 entt::entity meshEntity = CreateEmpty("Mesh", nodeEntities[n]);
-                registry.emplace<FMeshRendererComponent>(meshEntity, meshHandle, matHandle, meshData.bSkinned);
-                if (auto* meshComp = registry.try_get<FMeshRendererComponent>(meshEntity))
-                {
-                    meshComp->Asset = assetHandle;
-                    meshComp->NodeIndex = static_cast<int32_t>(n);
-                    meshComp->PrimitiveIndex = static_cast<int32_t>(primIdx);
-                }
-                registry.emplace<FBoundingSphereComponent>(meshEntity, meshData.Center, meshData.Radius);
-                registry.emplace<FWorldBoundingSphereComponent>(meshEntity);
-                registry.emplace<FVisibilityComponent>(meshEntity, true);
-                if (meshData.bSkinned)
-                    registry.emplace<FSkinnedRootComponent>(meshEntity, rootEntity);
+                SetMeshRenderer(registry, meshEntity, meshHandle, matHandle, meshData, assetHandle, static_cast<int32_t>(n), static_cast<int32_t>(primIdx), meshData.bSkinned ? rootEntity : entt::null);
             }
         }
         if (!nodeEntities.empty())
@@ -185,4 +175,20 @@ namespace Scene::ECS
             registry.emplace<FAnimationComponent>(rootEntity);
     }
 
+    void FEntityFactory::SetMeshRenderer(entt::registry& registry, entt::entity entity, FMeshResourceHandle meshHandle, FMaterialResourceHandle materialHandle, const FMeshGPUData& meshData, FModelAssetHandle asset, int32_t nodeIndex, int32_t primitiveIndex, entt::entity skinnedRoot)
+    {
+        registry.emplace_or_replace<FMeshRendererComponent>(entity, meshHandle, materialHandle, meshData.bSkinned);
+        registry.emplace_or_replace<FBoundingSphereComponent>(entity, meshData.Center, meshData.Radius);
+        registry.emplace_or_replace<FWorldBoundingSphereComponent>(entity);
+        registry.emplace_or_replace<FVisibilityComponent>(entity, true);
+        if (skinnedRoot != entt::null)
+            registry.emplace_or_replace<FSkinnedRootComponent>(entity, skinnedRoot);
+
+        if (auto* meshComp = registry.try_get<FMeshRendererComponent>(entity))
+        {
+            meshComp->Asset = asset;
+            meshComp->NodeIndex = nodeIndex;
+            meshComp->PrimitiveIndex = primitiveIndex;
+        }
+    }
 } // namespace Scene::ECS
