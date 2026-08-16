@@ -659,6 +659,15 @@ namespace Editor
             ImGui::Separator();
             ImGui::TextWrapped("Model: %s", model->ModelPath.c_str());
         }
+        const entt::entity animEntity = Assets::FModelLoaderECS::FindModelInstanceRoot(reg, m_SelectedEntity);
+        if (animEntity != entt::null && reg.valid(animEntity))
+        {
+            if (auto* anim = reg.try_get<Scene::ECS::FAnimationComponent>(animEntity))
+            {
+                ImGui::Separator();
+                ImGui::Checkbox("Play Animation", &anim->bPlaying);
+            }
+        }
         if (reg.all_of<Scene::ECS::FMainCameraTag>(m_SelectedEntity))
         {
             ImGui::Separator();

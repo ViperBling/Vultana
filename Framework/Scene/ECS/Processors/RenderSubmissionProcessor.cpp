@@ -16,10 +16,10 @@ namespace Scene::ECS
     void FRenderSubmissionProcessor::Process(FEntitySubsystem& subsystem, float deltaTime)
     {
         auto& registry = subsystem.GetRegistry();
-        auto view = registry.view<FMeshRendererComponent, FWorldTransformComponent, FWorldBoundingSphereComponent>();
+        auto view = registry.view<FMeshRendererComponent, FWorldTransformComponent, FWorldBoundingSphereComponent, FPickIDComponent, FVisibilityComponent>();
         const uint32_t selectedPickID = m_Sink.GetSelectedPickID();
 
-        view.each([&](entt::entity entity, FMeshRendererComponent& meshComp, FWorldTransformComponent& worldTFComp, FWorldBoundingSphereComponent& worldBounds)
+        view.each([&](entt::entity entity, FMeshRendererComponent& meshComp, FWorldTransformComponent& worldTFComp, FWorldBoundingSphereComponent& worldBounds, const FPickIDComponent& pickIDComp, const FVisibilityComponent& visibilityComp)
         {
             const FMeshGPUData* meshData = m_Registry.FindMeshData(meshComp.MeshHandle);
             if (meshData == nullptr)
@@ -62,7 +62,7 @@ namespace Scene::ECS
             instanceData.NormalBufferAddress = meshData->NormalBufferAddress;
             instanceData.TangentBufferAddress = meshData->TangentBufferAddress;
             instanceData.bVertexAnimation = (meshComp.bSkinned && meshData->AnimPositionBufferAddress != Scene::ECS::INVALID_ADDRESS) ? 1 : 0;
-            instanceData.ObjectID = registry.get<FPickIDComponent>(entity).PickID;
+            instanceData.ObjectID = pickIDComp.PickID;
             if (meshComp.bSkinned)
             {
                 if (meshData->AnimPositionBufferAddress != Scene::ECS::INVALID_ADDRESS)
@@ -78,7 +78,7 @@ namespace Scene::ECS
             instanceData.MtxWorld = instanceWorld;
             instanceData.MtxWorldInvTranspose = (skinnedRoot != nullptr) ? transpose(inverse(instanceWorld)) : worldTFComp.MtxWorldInvTranspose;
 
-            const bool bVisible = registry.get<FVisibilityComponent>(entity).bFrustumVisible;
+            const bool bVisible = visibilityComp.bFrustumVisible;
             instanceData.MaterialDataAddress = m_Registry.GetMaterialConstantAddress(meshComp.MaterialHandle);
             if (instanceData.MaterialDataAddress == Scene::ECS::INVALID_ADDRESS)
                 instanceData.MaterialDataAddress = NULL_CONSTANT_ADDRESS;
@@ -146,7 +146,6 @@ namespace Scene::ECS
                 
                 if (m_Sink.IsEnableMouseHitTest()) m_Sink.AddObjectIDBatch(bin);
                 if (instanceData.ObjectID == selectedPickID) m_Sink.AddOutlineBatch(bin);
-            } 
-        });
+            } });
     }
 }

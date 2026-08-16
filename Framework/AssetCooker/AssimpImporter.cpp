@@ -21,7 +21,6 @@
 
 #include <cfloat>
 #include <cstring>
-#include "AssimpImporter.hpp"
 
 namespace Assets
 {

@@ -180,8 +180,9 @@ namespace Scene::ECS
         if (!nodeEntities.empty())
             registry.emplace<FModelNodeTableComponent>(rootEntity, eastl::move(nodeEntities));
         // Animation component only for models that own clips (plays clip 0).
+        // It starts paused; the inspector toggles FAnimationComponent::bPlaying.
         if (info.AnimCount > 0)
-            registry.emplace<FAnimationComponent>(rootEntity, 0u, 0.0f, true);
+            registry.emplace<FAnimationComponent>(rootEntity);
     }
 
 } // namespace Scene::ECS

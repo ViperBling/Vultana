@@ -154,7 +154,7 @@ namespace Scene::ECS
     {
         uint32_t ClipIndex = 0;
         float CurrentTime = 0.0f;
-        bool bPlaying = true;
+        bool bPlaying = false;   // paused until the inspector enables it (matches the legacy path)
     };
 
     struct FModelNodeTableComponent

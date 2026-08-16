@@ -591,6 +591,34 @@ TEST(ECSTest, RenderSubmission_AllEntitiesAddInstance)
     EXPECT_EQ(fakeSink.BaseBatches.size(), 2u);      // visible ones only
 }
 
+TEST(ECSTest, RenderSubmission_MissingRequiredComponents_Excluded)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    FFakeRenderSink fakeSink;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    auto meshHandle = fakeReg.AcquireMesh(model, 0, 0);
+
+    entt::entity eNoPick = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(eNoPick);
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(eNoPick);
+    ecs.GetRegistry().emplace<Scene::ECS::FVisibilityComponent>(eNoPick, true);
+    ecs.GetRegistry().remove<Scene::ECS::FPickIDComponent>(eNoPick);
+    ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(eNoPick, meshHandle, Scene::ECS::FMaterialResourceHandle{}, false);
+
+    entt::entity eNoVisibility = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(eNoVisibility);
+    ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(eNoVisibility);
+    ecs.GetRegistry().emplace<Scene::ECS::FMeshRendererComponent>(eNoVisibility, meshHandle, Scene::ECS::FMaterialResourceHandle{}, false);
+
+    auto processor = eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(fakeSink, fakeReg);
+    processor->Process(ecs, 0.0f);
+
+    EXPECT_EQ(fakeSink.AddedInstances.size(), 0u);
+    EXPECT_EQ(fakeSink.BaseBatches.size(), 0u);
+}
+
 TEST(ECSTest, RenderSubmission_VisibleEntityGetsBaseBatch)
 {
     Scene::ECS::FEntitySubsystem ecs;
@@ -637,6 +665,24 @@ TEST(ECSTest, EntityFactory_CreateModelInstance)
     EXPECT_TRUE(ecs.GetRegistry().valid(root));
     EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FModelInstanceComponent>(root));
     EXPECT_TRUE(ecs.GetRegistry().all_of<Scene::ECS::FTransformComponent>(root));
+}
+
+TEST(ECSTest, EntityFactory_AnimationDefaultsToPaused)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+    fakeReg.AnimClips.emplace_back();
+
+    auto model = fakeReg.ImportModel("anim.gltf");
+    const Scene::ECS::FModelAssetInfo info = fakeReg.GetModelInfo(model);
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+
+    entt::entity root = factory.CreateModelInstance(model, "anim.gltf");
+    factory.CreateModelHierarchy(model, info, root, float3(0.0f), quaternion(0.0f, 0.0f, 0.0f, 1.0f), float3(1.0f));
+
+    const auto* anim = ecs.GetRegistry().try_get<Scene::ECS::FAnimationComponent>(root);
+    ASSERT_NE(anim, nullptr);
+    EXPECT_FALSE(anim->bPlaying);
 }
 
 TEST(ECSTest, RenderSubmission_RotatedTransform_ScaleCorrect)
@@ -730,7 +776,7 @@ TEST(ECSTest, AssetRegistry_ReacquireAfterRelease_KeepsHandleAlive)
 
     reg.Release(mesh);                                // RefCount 0 -> queued for delayed release
     auto revived = reg.AcquireMesh(model, 0, 0);      // re-acquired within the window
-    reg.FrameFencePassed(1000);                       // window matures
+    reg.FrameFencePassed(1000);                               // window matures
 
     EXPECT_NE(reg.FindMeshData(revived), nullptr) << "handle was silently invalidated after re-acquire";
 }
@@ -1016,7 +1062,7 @@ TEST(ECSTest, Animation_ChannelWritesNodeTransform)
 
     entt::entity root = ecs.CreateEntity();
     ecs.GetRegistry().emplace<FModelInstanceComponent>(root, FModelAssetHandle{0, 0}, "test");
-    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root); // node table（v3 正交化）
+    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root);
     entt::entity node0 = ecs.CreateEntity();
     ecs.GetRegistry().emplace<FTransformComponent>(node0);
     ecs.SetParent(node0, root);
@@ -1050,24 +1096,22 @@ TEST(ECSTest, RenderSubmission_SkinnedEmitsSkinBatch)
     fake.SkeletonInfo.JointNodeIndices = {0};
     fake.SkeletonInfo.InverseBindMatrices = {float4x4({identity})};
 
-    // Real handle path（终审 🔴11）：ImportModel + AcquireMesh 才让 FindMeshData 命中
-    // （AcquireMesh 置 MeshletCount=1 → IsValid()）。
     const auto model = fake.ImportModel("test.gltf");
     const auto meshHandle = fake.AcquireMesh(model, 0, 0);
     fake.SetFakeSkinnedMesh(meshHandle, true);
 
-    entt::entity root = ecs.CreateEntity(); // 🔴H: root 必带 Transform/WorldTransform
+    entt::entity root = ecs.CreateEntity();
     ecs.GetRegistry().emplace<FTransformComponent>(root);
     ecs.GetRegistry().emplace<FWorldTransformComponent>(root);
     ecs.GetRegistry().emplace<FModelInstanceComponent>(root, model, "test");
     ecs.GetRegistry().emplace<FModelNodeTableComponent>(root);
     entt::entity node0 = ecs.CreateEntity();
     ecs.GetRegistry().emplace<FTransformComponent>(node0);
-    ecs.GetRegistry().emplace<FWorldTransformComponent>(node0); // 🔴-2 (v6): Hierarchy 对带 Transform 实体无条件 get 世界变换
+    ecs.GetRegistry().emplace<FWorldTransformComponent>(node0);
     ecs.SetParent(node0, root);
-    ecs.GetRegistry().get<FModelNodeTableComponent>(root).NodeEntities.push_back(node0); // 🔴H: 表必须填
+    ecs.GetRegistry().get<FModelNodeTableComponent>(root).NodeEntities.push_back(node0);
 
-    entt::entity mesh = ecs.CreateEntity(); // PickID 由 CreateEntity 自动分配（🔴12：勿再 emplace）
+    entt::entity mesh = ecs.CreateEntity();
     ecs.GetRegistry().emplace<FMeshRendererComponent>(mesh, meshHandle, fake.AcquireMaterial(model, 0, 0), true);
     ecs.GetRegistry().emplace<FTransformComponent>(mesh);
     ecs.GetRegistry().emplace<FWorldTransformComponent>(mesh);
@@ -1075,7 +1119,7 @@ TEST(ECSTest, RenderSubmission_SkinnedEmitsSkinBatch)
     ecs.GetRegistry().emplace<FWorldBoundingSphereComponent>(mesh);
     ecs.GetRegistry().emplace<FVisibilityComponent>(mesh, true);
     ecs.GetRegistry().emplace<FSkinnedRootComponent>(mesh, root);
-    ecs.SetParent(mesh, node0); // 🔴H: mesh 挂在 node 下（NodeTable->node 主链路被测到）
+    ecs.SetParent(mesh, node0);
 
     ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
     ecs.RegisterProcessor(eastl::make_unique<FRenderSubmissionProcessor>(sink, fake));

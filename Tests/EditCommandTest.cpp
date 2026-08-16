@@ -8,7 +8,6 @@
 
 namespace
 {
-    // Scene::IVisibleObject 最小桩：Create/Tick 是纯虚必须实现，其余继承默认行为
     class FTestVisibleObject : public Scene::IVisibleObject
     {
     public:
@@ -68,14 +67,14 @@ TEST(UndoTest, PushClearsRedoStack)
     };
 
     push(float3(1.0f, 0.0f, 0.0f));
-    push(float3(2.0f, 0.0f, 0.0f)); // 不同 before → 不合并，两条命令
+    push(float3(2.0f, 0.0f, 0.0f));
     ASSERT_EQ(history.GetUndoCount(), 2u);
 
     ASSERT_TRUE(history.Undo());
     EXPECT_TRUE(object.GetPosition() == float3(1.0f, 0.0f, 0.0f));
     ASSERT_EQ(history.GetRedoCount(), 1u);
 
-    push(float3(3.0f, 0.0f, 0.0f)); // 新编辑 → redo 栈被清空
+    push(float3(3.0f, 0.0f, 0.0f));
     EXPECT_EQ(history.GetRedoCount(), 0u);
     EXPECT_EQ(history.GetUndoCount(), 2u);
 }
@@ -112,16 +111,16 @@ TEST(UndoTest, SameTargetSameBeforeMerges)
     object.SetPosition(float3(9.0f, 0.0f, 0.0f));
     Editor::Commands::FTransformSnapshot after2 = Editor::Commands::FObjectEditableTarget(object).GetTransform();
     history.Push(eastl::make_unique<Editor::Commands::FSetTransformCommand>(
-        eastl::make_unique<Editor::Commands::FObjectEditableTarget>(object), before, after2)); // 同 before → 合并
+        eastl::make_unique<Editor::Commands::FObjectEditableTarget>(object), before, after2));
 
-    ASSERT_EQ(history.GetUndoCount(), 1u); // 合并为一条
+    ASSERT_EQ(history.GetUndoCount(), 1u);
 
     ASSERT_TRUE(history.Undo());
-    EXPECT_TRUE(object.GetPosition() == before.Position); // 回到 before
+    EXPECT_TRUE(object.GetPosition() == before.Position);
     EXPECT_EQ(history.GetUndoCount(), 0u);
 
     ASSERT_TRUE(history.Redo());
-    EXPECT_TRUE(object.GetPosition() == after2.Position); // 合并后的 after 生效
+    EXPECT_TRUE(object.GetPosition() == after2.Position);
 }
 
 TEST(UndoTest, ObjectEditableTargetRoundTrips)

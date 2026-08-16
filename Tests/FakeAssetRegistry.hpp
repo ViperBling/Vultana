@@ -123,6 +123,7 @@ public:
             for (const auto& n : info.Nodes)
                 primCount += static_cast<uint32_t>(n.Primitives.size());
             info.PrimitiveCount = primCount;
+            info.AnimCount = static_cast<uint32_t>(AnimClips.size());
         }
         return info;
     }

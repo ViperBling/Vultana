@@ -6,7 +6,7 @@
 #include <EASTL/span.h>
 #include <EASTL/vector.h>
 #include <entt/entt.hpp>
-#include <functional>
+#include <EASTL/functional.h>
 
 namespace Scene::ECS
 {

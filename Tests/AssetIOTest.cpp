@@ -123,11 +123,6 @@ TEST(AssetIO, ForgedHugeCount)
 
 TEST(AssetIO, RoundtripPreservesMaterialWorkFlow)
 {
-    // P0 regression: ReadModelPayload's missing { return false; } braces made the
-    // material WorkFlow assignment the body of the bounds check — on a VALID file the
-    // condition is false, so WorkFlow was never read and every material silently
-    // degraded to PBRMetallicRoughness (the default zero-init). A SpecularGlossiness
-    // source must come back as SpecularGlossiness.
     FModelCookedData src;
     FMeshCookedData mesh;
     mesh.Name = "T";
@@ -244,9 +239,6 @@ TEST(AssetCook, CookSkeletalHasNoMeshlets)
 
 TEST(AssetCook, CookAnimationHasDuration)
 {
-    // P1 regression: the per-channel TimeDuration update was left commented out, so every
-    // cooked animation carried duration 0 and FAnimation::Update never wrapped the play
-    // head — animation froze at the first frame after one pass (MechDrone/BusterDrone).
     using namespace Assets;
     ASSERT_TRUE(FVultanaCooker::CookModel(kMechDroneSrc, kCookDst, /*bSilent=*/true));
 
@@ -709,8 +701,6 @@ TEST(AssetAsync, FailedTextureLoadReportsFailure)
 
 TEST(AssetTexture, MipDimSyncsWithRHI)
 {
-    // Pins Assets::GetTextureMipDim (cook/validate) byte-identical to RHI::GetFormatMipDim
-    // (UploadTexture/GetRowPitch) — the two must never drift (B9).
     for (uint32_t base = 1; base <= 4096; base += 7)
     {
         for (uint32_t mip = 0; mip < 12; ++mip)
@@ -723,9 +713,6 @@ TEST(AssetTexture, MipDimSyncsWithRHI)
 
 TEST(AssetTexture, BC5NormalIsNotDegenerate)
 {
-    // B4 regression guard: a BC5 cook of a gradient source must not produce an all-zeros /
-    // all-constant block (the historical RGBA8-fed-blocks bug). Writes a 4x4 RGBA gradient
-    // PNG via the test fixture, cooks as Normal (BC5), and checks the block bytes differ.
     using namespace Assets;
     const char* kPng = "assetcook_bc5_grad.png";
     const char* kDst = "assetcook_bc5_grad.Normal.vasset";
@@ -1067,10 +1054,6 @@ TEST(AssetAssimp, CookObjIsDeterministic)
 TEST(AssetAssimp, GLTFPathStillDispatchesToCGLTF)
 {
     using namespace Assets;
-    // Dispatch regression: .gltf must keep routing to the cgltf importer now that CookModel
-    // dispatches on extension. The asserted topology is the same known-good cgltf output that
-    // AssetCook.CookBoxProducesExpectedTopology pins; the assimp path would emit 1 node for
-    // this file (its identity root is skipped), so Nodes == 2 discriminates the dispatch.
     ASSERT_TRUE(FVultanaCooker::CookModel(kBoxSrc, kCookDst, /*bSilent=*/true));
 
     FVAssetHeader header;
@@ -1316,7 +1299,7 @@ TEST(AssetAsync, TwoTextureReloadsWhileLoadingDoNotLeakPendingCount)
     manager.RequestTextureReload(kProduct, [&](FTextureLoadResult&& r)
                                  { t2 = eastl::move(r); });
 
-    for (int i = 0; i < 4; ++i) // 容纳重生 worker 的额外轮次(§R1 建议 3)
+    for (int i = 0; i < 4; ++i)
     {
         ts.WaitforAll();
         manager.DrainReadyQueue();

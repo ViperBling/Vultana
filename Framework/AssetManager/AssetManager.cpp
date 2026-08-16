@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <EASTL/algorithm.h>
 #include <EASTL/utility.h>
-#include "AssetManager.hpp"
 
 namespace Assets
 {
