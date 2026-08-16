@@ -147,6 +147,12 @@ public:
     {
         return (clipIndex < AnimClips.size()) ? &AnimClips[clipIndex] : nullptr;
     }
+
+    uint32_t GetAnimationCount(Scene::ECS::FModelAssetHandle) const override
+    {
+        return static_cast<uint32_t>(AnimClips.size());
+    }
+    
     const Scene::ECS::FSkeletonInfo* GetSkeletonInfo(Scene::ECS::FModelAssetHandle) const override
     {
         return &SkeletonInfo;

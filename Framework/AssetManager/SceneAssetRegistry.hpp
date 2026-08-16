@@ -29,6 +29,7 @@ namespace Assets
         Scene::ECS::EAssetState GetState(Scene::ECS::FModelAssetHandle handle) const override;
         void FrameFencePassed(uint64_t frameID) override;
         const Scene::ECS::FAnimationClip* FindAnimation(Scene::ECS::FModelAssetHandle asset, uint32_t clipIndex) const override;
+        uint32_t GetAnimationCount(Scene::ECS::FModelAssetHandle asset) const override;
         const Scene::ECS::FSkeletonInfo* GetSkeletonInfo(Scene::ECS::FModelAssetHandle asset) const override;
         RHI::FRHIPipelineState* GetPSO(Scene::ECS::FMaterialResourceHandle handle) const;
 

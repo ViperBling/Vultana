@@ -1076,6 +1076,33 @@ TEST(ECSTest, Animation_ChannelWritesNodeTransform)
     EXPECT_NEAR(ecs.GetRegistry().get<FTransformComponent>(node0).Position.y, 0.0f, 0.001f);
 }
 
+TEST(ECSTest, Animation_ClipIndexSelectsRequestedClip)
+{
+    FEntitySubsystem ecs;
+    FFakeAssetRegistry fake;
+
+    fake.AnimClips.emplace_back();
+    fake.AnimClips[0].Channels.push_back({0, Scene::ECS::EAnimChannelMode::Translation, {{0.0f, float4(0.0f, 0.0f, 0.0f, 1.0f)}, {1.0f, float4(10.0f, 0.0f, 0.0f, 1.0f)}}});
+    fake.AnimClips[0].TimeDuration = 1.0f;
+    fake.AnimClips.emplace_back();
+    fake.AnimClips[1].Channels.push_back({0, Scene::ECS::EAnimChannelMode::Translation, {{0.0f, float4(0.0f, 0.0f, 0.0f, 1.0f)}, {1.0f, float4(20.0f, 0.0f, 0.0f, 1.0f)}}});
+    fake.AnimClips[1].TimeDuration = 1.0f;
+
+    ecs.RegisterProcessor(eastl::make_unique<FAnimationProcessor>(&fake));
+    entt::entity root = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FModelInstanceComponent>(root, FModelAssetHandle{0, 0}, "test");
+    ecs.GetRegistry().emplace<FModelNodeTableComponent>(root);
+    entt::entity node0 = ecs.CreateEntity();
+    ecs.GetRegistry().emplace<FTransformComponent>(node0);
+    ecs.SetParent(node0, root);
+    ecs.GetRegistry().get<FModelNodeTableComponent>(root).NodeEntities.push_back(node0);
+    ecs.GetRegistry().emplace<FAnimationComponent>(root, 1u, 0.0f, true); // play clip 1
+
+    ecs.Tick(0.5f);
+
+    EXPECT_NEAR(ecs.GetRegistry().get<FTransformComponent>(node0).Position.x, 10.0f, 0.001f);
+}
+
 TEST(ECSTest, Animation_NoClip_NoCrash)
 {
     FEntitySubsystem ecs;

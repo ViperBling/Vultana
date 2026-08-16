@@ -666,8 +666,36 @@ namespace Editor
             {
                 ImGui::Separator();
                 ImGui::Checkbox("Play Animation", &anim->bPlaying);
+
+                const Scene::ECS::FModelInstanceComponent* modelComp = reg.try_get<Scene::ECS::FModelInstanceComponent>(animEntity);
+                Scene::ECS::IAssetRegistry* pAssetRegistry = pEngine->GetAssetRegistry();
+                if (modelComp != nullptr && pAssetRegistry != nullptr)
+                {
+                    const uint32_t clipCount = pAssetRegistry->GetAnimationCount(modelComp->ModelHandle);
+                    if (clipCount > 1)
+                    {
+                        int current = static_cast<int>(anim->ClipIndex);
+                        const Scene::ECS::FAnimationClip* currentClip = pAssetRegistry->FindAnimation(modelComp->ModelHandle, anim->ClipIndex);
+                        const char* preview = (currentClip != nullptr && !currentClip->Name.empty()) ? currentClip->Name.c_str() : "Clip";
+                        if (ImGui::BeginCombo("Animation Clip", preview))
+                        {
+                            for (uint32_t i = 0; i < clipCount; ++i)
+                            {
+                                const Scene::ECS::FAnimationClip* clip = pAssetRegistry->FindAnimation(modelComp->ModelHandle, i);
+                                const char* label = (clip != nullptr && !clip->Name.empty()) ? clip->Name.c_str() : "Unnamed";
+                                if (ImGui::Selectable(label, static_cast<uint32_t>(current) == i))
+                                {
+                                    anim->ClipIndex = i;
+                                    anim->CurrentTime = 0.0f; // switch resets the timeline
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+                    }
+                }
             }
         }
+
         if (reg.all_of<Scene::ECS::FMainCameraTag>(m_SelectedEntity))
         {
             ImGui::Separator();

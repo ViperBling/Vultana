@@ -10,6 +10,7 @@
 
 #include <EASTL/algorithm.h>
 #include <EASTL/hash_set.h>
+#include "SceneAssetRegistry.hpp"
 
 namespace Assets
 {
@@ -270,6 +271,13 @@ namespace Assets
             return nullptr;
         const auto& clips = m_Assets[asset.Index].Animations;
         return clipIndex < clips.size() ? &clips[clipIndex] : nullptr;
+    }
+
+    uint32_t FSceneAssetRegistry::GetAnimationCount(Scene::ECS::FModelAssetHandle asset) const
+    {
+        if (asset.Index >= m_Assets.size() || m_Assets[asset.Index].Generation != asset.Generation)
+            return 0;
+        return static_cast<uint32_t>(m_Assets[asset.Index].Animations.size());
     }
 
     const Scene::ECS::FSkeletonInfo* FSceneAssetRegistry::GetSkeletonInfo(Scene::ECS::FModelAssetHandle asset) const
