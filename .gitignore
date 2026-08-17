@@ -40,6 +40,7 @@ Generated
 /Tools/GraphViz/RenderGraph.html
 
 # AIOut
+AIOut/
 .codegraph
 /docs
 # Cooked asset products (mirror tree, regenerated on demand)
