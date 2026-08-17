@@ -8,9 +8,8 @@
 #include <EASTL/hash_map.h>
 #include <EASTL/functional.h>
 
-namespace Scene 
+namespace Scene
 {
-    class IVisibleObject;
     namespace ECS
     {
         class FEntitySubsystem;
@@ -106,7 +105,6 @@ namespace Editor
         // ---- Undo/Redo(Editor::Commands)----
         Editor::Commands::FCommandHistory m_EditHistory;
         bool m_bGizmoDragging = false;
-        Scene::IVisibleObject* m_GizmoDragTarget = nullptr;
         entt::entity m_GizmoDragEntity = entt::null;
         Editor::Commands::FTransformSnapshot m_GizmoDragStart;
 

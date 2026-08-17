@@ -428,7 +428,7 @@ TEST(AssetAsync, LoadsModelOnWorkerAndDrainsOnMainThread)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     bool fired = false;
     bool success = false;
@@ -457,7 +457,7 @@ TEST(AssetAsync, DeferredInFlightRequestSharesPayload)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FModelLoadResult r1;
     FModelLoadResult r2;
@@ -483,7 +483,7 @@ TEST(AssetAsync, CacheHitCompletesWithoutWorker)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FModelLoadResult r1;
     FModelLoadResult r2;
@@ -507,7 +507,7 @@ TEST(AssetAsync, FailedLoadReportsFailure)
     using namespace Assets;
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     bool fired = false;
     bool success = true;
@@ -649,7 +649,7 @@ TEST(AssetAsync, TextureLoadsOnWorkerAndDrainsOnMainThread)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     bool fired = false;
     bool success = false;
@@ -680,7 +680,7 @@ TEST(AssetAsync, FailedTextureLoadReportsFailure)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     bool fired = false;
     bool success = true;
@@ -1075,7 +1075,7 @@ TEST(AssetAsync, ReloadReCookesAndEvictsCache)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FModelLoadResult first;
     manager.RequestModel(kAsyncSrc, [&](FModelLoadResult&& r)
@@ -1108,7 +1108,7 @@ TEST(AssetAsync, ReloadWhileLoadingRespawnsForceCook)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FModelLoadResult load;
     FModelLoadResult reload;
@@ -1138,7 +1138,7 @@ TEST(AssetAsync, ReloadFailsWhenSourceMissing)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FModelLoadResult first;
     manager.RequestModel(kAsyncSrc, [&](FModelLoadResult&& r)
@@ -1172,7 +1172,7 @@ TEST(AssetAsync, TwoReloadsWhileLoadingDoNotLeakPendingCount)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FModelLoadResult load, r1, r2;
     manager.RequestModel(kAsyncSrc2, 
@@ -1238,7 +1238,7 @@ TEST(AssetAsync, ReloadTextureReCookesChangedSource)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FTextureLoadResult first;
     manager.RequestTexture(kProduct, [&](FTextureLoadResult&& r)
@@ -1289,7 +1289,7 @@ TEST(AssetAsync, TwoTextureReloadsWhileLoadingDoNotLeakPendingCount)
 
     enki::TaskScheduler ts;
     ConfigureAndInitTestScheduler(ts);
-    FAssetManager manager(nullptr, &ts);
+    FAssetManager manager(&ts);
 
     FTextureLoadResult load, t1, t2;
     manager.RequestTexture(kProduct, [&](FTextureLoadResult&& r)

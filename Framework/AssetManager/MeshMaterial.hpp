@@ -4,11 +4,6 @@
 #include "Common/ModelConstants.hlsli"
 #include "Common/ShadingModel.hlsli"
 
-namespace Scene
-{
-    class FWorld;
-}
-
 namespace Assets
 {
     enum class MaterialWorkFlow
@@ -19,7 +14,6 @@ namespace Assets
 
     class FMeshMaterial
     {
-        friend class Scene::FWorld;
         friend class FModelLoader;
 
     public:

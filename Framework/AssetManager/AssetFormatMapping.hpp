@@ -2,7 +2,6 @@
 
 #include "AssetCooker/VAssetTypes.hpp"
 #include "AssetManager/MeshMaterial.hpp"
-#include "Scene/SceneComponent/Animation.hpp"
 #include "RHI/RHICommon.hpp"
 
 namespace Assets
@@ -23,10 +22,5 @@ namespace Assets
     inline RHI::ERHIFormat ToIndexFormat(uint32_t stride)
     {
         return stride == 4 ? RHI::ERHIFormat::R32UI : RHI::ERHIFormat::R16UI;
-    }
-
-    inline Scene::EAnimationChannelMode ToChannelMode(uint32_t diskMode)
-    {
-        return static_cast<Scene::EAnimationChannelMode>(diskMode);
     }
 }

@@ -800,11 +800,11 @@ namespace Assets
     void FAssetManager::FinishReadyTextureResult(FReadyTextureResult&& result)
     {
         // GPU texture creation happens here on the main thread (dedup + refcount via
-        // FResourceCache). Headless guard: tests construct FAssetManager(nullptr, &ts) —
-        // GetEngineInstance() would otherwise construct the engine singleton, whose
-        // destructor re-runs rpmalloc_finalize() at process exit (R1). m_pWorld != nullptr
-        // iff we are inside the engine, where the renderer pointer is safe to fetch.
-        if (result.Result.bSuccess && result.Result.Payload && m_pWorld != nullptr)
+        // FResourceCache). Headless guard: tests construct FAssetManager(&ts) with
+        // bEngineOwned=false — GetEngineInstance() would otherwise construct the engine
+        // singleton, whose destructor re-runs rpmalloc_finalize() at process exit (R1).
+        // m_bEngineOwned is true only inside the engine, where the renderer is safe to fetch.
+        if (result.Result.bSuccess && result.Result.Payload && m_bEngineOwned)
         {
             Renderer::FRendererBase* pRenderer = Core::FVultanaEngine::GetEngineInstance()->GetRenderer();
             if (pRenderer != nullptr)

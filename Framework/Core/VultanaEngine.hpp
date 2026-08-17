@@ -8,12 +8,9 @@
 #include "Scene/ECS/EntitySubsystem.hpp"
 #include "Scene/ECS/EntityFactory.hpp"
 #include "Scene/ECS/SceneLightSnapshot.hpp"
-#include "Scene/ECS/SceneCameraSnapshot.hpp"
 #include "Scene/ECS/Processors/LightProcessor.hpp"
-#include "Scene/ECS/Processors/CameraSyncProcessor.hpp"
 #include "Scene/ECS/AssetRegistry.hpp"
 #include "Scene/ECS/RenderSink.hpp"
-#include "Scene/World.hpp"
 
 #include "Renderer/RendererBase.hpp"
 #include "Renderer/ECSRenderBridge.hpp"
@@ -45,7 +42,6 @@ namespace Core
         void LoadSceneFromFile(const eastl::string& scenePath);
 
         const eastl::string& GetSceneFilePath() const { return m_SceneFilePath; }
-        Scene::FWorld* GetWorld() const { return m_pWorld.get(); }
         Renderer::FRendererBase* GetRenderer() const { return m_pRenderer.get(); }
         Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
@@ -55,8 +51,7 @@ namespace Core
         Scene::ECS::IAssetRegistry* GetAssetRegistry() const { return m_pAssetRegistry.get(); }
         Scene::ECS::ISceneRenderSink* GetRenderSink() const { return m_pRenderSink.get(); }
         Scene::ECS::FEntityFactory* GetEntityFactory() const { return m_pEntityFactory.get(); }
-        bool IsUseECSBackend() const { return m_bUseECSBackend; }
-        void SetECSMode(bool enabled) { m_bUseECSBackend = enabled; }
+        bool IsUseECSBackend() const { return true; }   // C3 removes callers then this stub
 
         void* GetWindowHandle() const { return m_WndHandle; }
         float GetDeltaTime() const { return m_FrameTime; }
@@ -75,7 +70,6 @@ namespace Core
         sigslot::signal<void*, uint32_t, uint32_t> OnWindowResizeSignal;
 
     private:
-        eastl::unique_ptr<Scene::FWorld> m_pWorld;
         eastl::unique_ptr<Renderer::FRendererBase> m_pRenderer;
         eastl::unique_ptr<Editor::FVultanaEditor> m_pEditor;
 
@@ -98,14 +92,11 @@ namespace Core
         eastl::unique_ptr<Scene::ECS::ISceneRenderSink> m_pRenderSink;
         eastl::unique_ptr<Scene::ECS::FEntityFactory> m_pEntityFactory;
         eastl::vector<Scene::ECS::FMeshOverride> m_PendingMeshOverrides;
-        bool m_bUseECSBackend = false;
 
         float4 m_PendingCullingPlanes[6] = {};
 
         Scene::ECS::FSceneLightSnapshot m_LightSnapshot;
         Scene::ECS::FLightProcessor* m_pLightProcessor = nullptr;
-        Scene::ECS::FSceneCameraSnapshot m_CameraSnapshot;
-        Scene::ECS::FCameraSyncProcessor* m_pCameraSyncProcessor = nullptr;
     };
 } // namespace Vultana
 

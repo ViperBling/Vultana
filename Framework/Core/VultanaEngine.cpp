@@ -10,13 +10,11 @@
 
 #include "Renderer/ECSRenderBridge.hpp"
 
-#include "Scene/Camera.hpp"
 #include "Scene/ECS/SceneSerializer.hpp"
 #include "Scene/ECS/Processors/AnimationProcessor.hpp"
 #include "Scene/ECS/Processors/CullingProcessor.hpp"
 #include "Scene/ECS/Processors/HierarchyProcessor.hpp"
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
-#include "Scene/SceneComponent/Lights/Light.hpp"
 
 #include "Utilities/Log.hpp"
 #include "Utilities/String.hpp"
@@ -100,8 +98,6 @@ namespace Core
 
         m_AssetsPath = configIni.GetValue("Vultana", "AssetsPath");
         m_ShaderPath = configIni.GetValue("Vultana", "ShaderPath");
-        const char* sceneBackend = configIni.GetValue("World", "SceneBackend", "Legacy");
-        m_bUseECSBackend = (strcmp(sceneBackend, "ECS") == 0);
 
         Assets::FAssetPathUtils::SetAssetsRootPath(m_AssetsPath);
         Assets::FAssetPathUtils::SetContentRootPath(configIni.GetValue("Vultana", "ContentPath", "../Content/"));
@@ -123,48 +119,37 @@ namespace Core
         m_pRenderSink = eastl::make_unique<Renderer::FECSRenderBridge>(m_pRenderer.get(), static_cast<Assets::FSceneAssetRegistry*>(m_pAssetRegistry.get()));
         m_pEntityFactory = eastl::make_unique<Scene::ECS::FEntityFactory>(*m_pEntitySystem, *m_pAssetRegistry);
 
-        m_pWorld = eastl::make_unique<Scene::FWorld>();
-        const char* modelLoadPath = configIni.GetValue("World", "ModelLoadPath", "Asset");
-        m_pWorld->SetUseCookedAssets(strcmp(modelLoadPath, "Asset") == 0);
-        m_pWorld->SetUseECSBackend(m_bUseECSBackend);
-        m_pAssetManager = eastl::make_unique<Assets::FAssetManager>(m_pWorld.get(), m_pTaskScheduler.get());
-        // m_pWorld->LoadScene(m_AssetsPath + configIni.GetValue("World", "SceneFile"));
+        m_pAssetManager = eastl::make_unique<Assets::FAssetManager>(m_pTaskScheduler.get(), true);
         m_SceneFilePath = m_AssetsPath + configIni.GetValue("World", "SceneFile");
         LoadSceneFromFile(m_SceneFilePath);
 
-        if (m_bUseECSBackend)
+        m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FAnimationProcessor>(m_pAssetRegistry.get()));
+        m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FHierarchyProcessor>());
+        m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_PendingCullingPlanes, 6), &ParallelCullingImpl));
+        m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(*m_pRenderSink, *m_pAssetRegistry));
+
+        auto pLight = eastl::make_unique<Scene::ECS::FLightProcessor>(&m_LightSnapshot);
+        m_pLightProcessor = pLight.get();
+        m_pEntitySystem->RegisterProcessor(eastl::move(pLight));
+
+        auto& reg = m_pEntitySystem->GetRegistry();
+
+        const bool bHasCamera = (reg.view<Scene::ECS::FMainCameraTag>().front() != entt::null);
+        const bool bHasLight = (reg.view<Scene::ECS::FMainLightTag>().front() != entt::null);
+
+        if (!bHasCamera)
         {
-            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FAnimationProcessor>(m_pAssetRegistry.get()));
-            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FHierarchyProcessor>());
-            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FCullingProcessor>(eastl::span<const float4>(m_PendingCullingPlanes, 6), &ParallelCullingImpl));
-            m_pEntitySystem->RegisterProcessor(eastl::make_unique<Scene::ECS::FRenderSubmissionProcessor>(*m_pRenderSink, *m_pAssetRegistry));
-
-            auto pLight = eastl::make_unique<Scene::ECS::FLightProcessor>(&m_LightSnapshot);
-            m_pLightProcessor = pLight.get();
-            auto pCameraSync = eastl::make_unique<Scene::ECS::FCameraSyncProcessor>(&m_CameraSnapshot);
-            m_pCameraSyncProcessor = pCameraSync.get();
-            m_pEntitySystem->RegisterProcessor(eastl::move(pLight));
-            m_pEntitySystem->RegisterProcessor(eastl::move(pCameraSync));
-
-            auto& reg = m_pEntitySystem->GetRegistry();
-
-            const bool bHasCamera = (reg.view<Scene::ECS::FMainCameraTag>().front() != entt::null);
-            const bool bHasLight = (reg.view<Scene::ECS::FMainLightTag>().front() != entt::null);
-
-            if (!bHasCamera)
-            {
-                entt::entity cameraEntity = m_pEntityFactory->CreateEmpty("MainCamera");
-                reg.emplace<Scene::ECS::FCameraComponent>(cameraEntity);
-                reg.emplace<Scene::ECS::FMainCameraTag>(cameraEntity);
-            }
-            if (!bHasLight)
-            {
-                entt::entity lightEntity = m_pEntityFactory->CreateEmpty("MainLight");
-                reg.emplace<Scene::ECS::FLightComponent>(lightEntity);
-                reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);
-            }
-            m_pECSCameraController = eastl::make_unique<FCameraController>();
+            entt::entity cameraEntity = m_pEntityFactory->CreateEmpty("MainCamera");
+            reg.emplace<Scene::ECS::FCameraComponent>(cameraEntity);
+            reg.emplace<Scene::ECS::FMainCameraTag>(cameraEntity);
         }
+        if (!bHasLight)
+        {
+            entt::entity lightEntity = m_pEntityFactory->CreateEmpty("MainLight");
+            reg.emplace<Scene::ECS::FLightComponent>(lightEntity);
+            reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);
+        }
+        m_pECSCameraController = eastl::make_unique<FCameraController>();
 
         m_pEditor = eastl::make_unique<Editor::FVultanaEditor>(m_pRenderer.get());
 
@@ -175,15 +160,11 @@ namespace Core
     {
         m_pTaskScheduler->WaitforAll();
 
-        m_pWorld.reset();
         m_pEditor.reset();
         m_pEntityFactory.reset();
         m_pRenderSink.reset();
         m_pAssetRegistry.reset();
         m_pEntitySystem.reset();
-
-        m_pLightProcessor = nullptr;
-        m_pCameraSyncProcessor = nullptr;
 
         m_pTaskScheduler.reset();
         m_pAssetManager.reset();
@@ -222,24 +203,14 @@ namespace Core
             else
             {
                 m_pEditor->Tick();
-                if (m_bUseECSBackend)
-                {
-                    m_pECSCameraController->SetAspect(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()));
-                    m_pECSCameraController->Tick(m_FrameTime, *m_pEntitySystem);
-                }
-                else
-                {
-                    m_pWorld->Tick(m_FrameTime);
-                }
+                m_pECSCameraController->SetAspect(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()));
+                m_pECSCameraController->Tick(m_FrameTime, *m_pEntitySystem);
                 UpdateCullingData();
-                if (m_bUseECSBackend && !m_PendingMeshOverrides.empty())
+                if (!m_PendingMeshOverrides.empty())
                 {
                     ApplyPendingMeshOverrides();
                 }
-                if (m_bUseECSBackend)
-                {
-                    m_pEntitySystem->Tick(m_FrameTime);
-                }
+                m_pEntitySystem->Tick(m_FrameTime);
                 UpdateSceneRenderState();
                 m_pRenderer->RenderFrame();
             }
@@ -248,12 +219,6 @@ namespace Core
 
     void FVultanaEngine::LoadSceneFromFile(const eastl::string& scenePath)
     {
-        if (!m_bUseECSBackend)
-        {
-            m_pWorld->LoadScene(scenePath);
-            return;
-        }
-
         if (m_pEntityFactory)
             m_pEntityFactory->DestroyAllModelInstances();
         m_pEntitySystem->Clear();
@@ -263,7 +228,7 @@ namespace Core
 
         Scene::ECS::FSceneLoadResult sceneResult;
         Scene::ECS::FSceneSerializer::Load(*m_pEntitySystem, *m_pEntityFactory, *m_pAssetRegistry, scenePath, m_AssetsPath, sceneResult);
-        
+
         for (const auto& request : sceneResult.Models)
         {
             Assets::FModelLoaderECS::LoadModelAsync(request.FilePath, request.Handle, *m_pEntityFactory, request.Root, request.Position, request.Rotation, request.Scale);
@@ -286,40 +251,29 @@ namespace Core
             }
         }
         m_PendingMeshOverrides = sceneResult.MeshOverrides;
+
         if (sceneResult.bHasCamera)
         {
-            if (m_bUseECSBackend)
+            auto& reg = m_pEntitySystem->GetRegistry();
+            auto cameraView = reg.view<Scene::ECS::FTransformComponent, Scene::ECS::FCameraComponent, Scene::ECS::FMainCameraTag>();
+            if (const entt::entity cam = cameraView.front(); cam != entt::null)
             {
-                auto& reg = m_pEntitySystem->GetRegistry();
-                auto cameraView = reg.view<Scene::ECS::FTransformComponent, Scene::ECS::FCameraComponent, Scene::ECS::FMainCameraTag>();
-                if (const entt::entity cam = cameraView.front(); cam != entt::null)
+                if (auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(cam))
                 {
-                    auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(cam);
-                    if (tf)
-                    {
-                        tf->Position = sceneResult.CameraPosition;
-                        tf->Rotation = RotationQuat(sceneResult.CameraRotation);
-                        m_pEntitySystem->MarkTransformDirty(cam);
-                    }
-                    if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(cam))
-                    {
-                        camComp->Fov = sceneResult.CameraFov;
-                        camComp->ZNear = sceneResult.CameraZNear;
-                    }
+                    tf->Position = sceneResult.CameraPosition;
+                    tf->Rotation = RotationQuat(sceneResult.CameraRotation);
+                    m_pEntitySystem->MarkTransformDirty(cam);
+                }
+                if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(cam))
+                {
+                    camComp->Fov = sceneResult.CameraFov;
+                    camComp->ZNear = sceneResult.CameraZNear;
                 }
             }
-            else 
-            {
-                Scene::FCamera* pCamera = m_pWorld->GetCamera();
-                if (pCamera)
-                {
-                    pCamera->SetPosition(sceneResult.CameraPosition);
-                    pCamera->SetRotation(sceneResult.CameraRotation);
-                    pCamera->SetPerspective(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()), sceneResult.CameraFov, sceneResult.CameraZNear);
-                }
-            }
-            
         }
+
+        // Camera fallback (review C1-6, same as C1.6): Clear() destroyed every entity, so a
+        // scene without a camera must get one here or the ECS would permanently lose it.
         if (m_pEntityFactory != nullptr)
         {
             auto& reg = m_pEntitySystem->GetRegistry();
@@ -340,67 +294,37 @@ namespace Core
 
     void FVultanaEngine::UpdateSceneRenderState()
     {
-        if (m_pWorld == nullptr) return;
-
-        Scene::FCamera* pCamera = m_pWorld->GetCamera();
-        if (pCamera == nullptr) return;
-
         Renderer::FSceneRenderState state;
-        if (m_bUseECSBackend)
+        // IsValid() guard: with no bound camera entity, FillCameraConstants would feed
+        // Inverse(zero) NaN/Inf matrices and zero planes would make culling reject nothing.
+        if (m_pECSCameraController != nullptr && m_pECSCameraController->IsValid())
         {
-            if (m_pECSCameraController != nullptr && m_pECSCameraController->IsValid())
-            {
-                Renderer::FillCameraConstants(m_pECSCameraController->GetState(), state.CameraConstants);
-                state.bCameraValid = true;
-            }
-        }
-        else
-        {
-            Scene::FCamera* pCamera = m_pWorld->GetCamera();
-            if (pCamera == nullptr) return;
-            pCamera->SetupCameraCB(state.CameraConstants);
+            Renderer::FillCameraConstants(m_pECSCameraController->GetState(), state.CameraConstants);
             state.bCameraValid = true;
         }
 
         const Scene::ECS::FSceneLightSnapshot* lightSnap = (m_pLightProcessor != nullptr) ? m_pLightProcessor->GetOutput() : nullptr;
-        if (m_bUseECSBackend && lightSnap != nullptr && lightSnap->bValid)
+        if (lightSnap != nullptr && lightSnap->bValid)
         {
             state.LightColor = lightSnap->Color;
             state.LightDirection = lightSnap->Direction;
             state.LightRadius = lightSnap->Radius;
             state.bLightValid = true;
         }
-        else if (Scene::ILight* pMainLight = m_pWorld->FindMainLight())
-        {
-            state.LightColor = pMainLight->GetLightColor();
-            state.LightDirection = pMainLight->GetLightDirection();
-            state.LightRadius = pMainLight->GetLightRadius();
-            state.bLightValid = true;
-        }
         else
         {
             state.bLightValid = false;
         }
+
         m_pRenderer->SetSceneRenderState(state);
     }
 
     void FVultanaEngine::UpdateCullingData()
     {
-        if (m_bUseECSBackend)
-        {
-            if (m_pECSCameraController != nullptr)
-            {
-                const Renderer::FCameraMathState& cameraState = m_pECSCameraController->GetState();
-                memcpy(m_PendingCullingPlanes, cameraState.FrustumPlanes, sizeof(m_PendingCullingPlanes));
-            }
+        if (m_pECSCameraController == nullptr)
             return;
-        }
-        if (m_pWorld == nullptr)
-            return;
-        Scene::FCamera* pCamera = m_pWorld->GetCamera();
-        if (pCamera == nullptr)
-            return;
-        memcpy(m_PendingCullingPlanes, pCamera->GetFrustumPlanes(), sizeof(m_PendingCullingPlanes));
+        const Renderer::FCameraMathState& cameraState = m_pECSCameraController->GetState();
+        memcpy(m_PendingCullingPlanes, cameraState.FrustumPlanes, sizeof(m_PendingCullingPlanes));
     }
 
     void FVultanaEngine::ApplyPendingMeshOverrides()

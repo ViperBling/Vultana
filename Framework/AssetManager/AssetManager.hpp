@@ -15,11 +15,6 @@
 #include <mutex>
 #include <cstdint>
 
-namespace Scene
-{
-    class FWorld;
-}
-
 namespace enki
 {
     class TaskScheduler;
@@ -51,7 +46,8 @@ namespace Assets
     class FAssetManager
     {
     public:
-        explicit FAssetManager(Scene::FWorld* inWorld, enki::TaskScheduler* pTaskScheduler) : m_pWorld(inWorld), m_pTaskScheduler(pTaskScheduler) {}
+        explicit FAssetManager(enki::TaskScheduler* pTaskScheduler, bool bEngineOwned = false)
+            : m_pTaskScheduler(pTaskScheduler), m_bEngineOwned(bEngineOwned) {}
         ~FAssetManager();
 
         using FModelLoadCallback = eastl::function<void(FModelLoadResult&&)>;
@@ -134,7 +130,7 @@ namespace Assets
         class FAsyncModelLoadTask;
         class FAsyncTextureLoadTask;
 
-        Scene::FWorld* m_pWorld = nullptr;
+        bool m_bEngineOwned = false;   // true only inside the engine (tests leave it false)
         enki::TaskScheduler* m_pTaskScheduler = nullptr;
         mutable std::recursive_mutex m_Mutex;                                                           // Mutable: const accessors (HasPendingLoads/GetPendingCount) lock it
         eastl::deque<FReadyModelRequest> m_ReadyQueue;                                                  // Worker -> main ("ready" queue)

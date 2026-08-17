@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RHI/RHI.hpp"
-#include "Scene/Camera.hpp"
+#include "Utilities/Math.hpp"   // float3 / linalg (replaces the deleted legacy camera header)
 #include "Utilities/LinearAllocator.hpp"
 
 #include <functional>

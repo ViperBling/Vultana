@@ -8,7 +8,6 @@
 #include "Editor/Commands/EntityEditableTarget.hpp"
 #include "Editor/Commands/MeshCommand.hpp"
 #include "Editor/Commands/NameCommand.hpp"
-#include "Editor/Commands/ObjectEditableTarget.hpp"
 #include "Editor/Commands/ParentCommand.hpp"
 #include "Editor/ImGUIImplement.hpp"
 
@@ -147,15 +146,7 @@ namespace Editor
         if (m_bShowWorldOutliner)
         {
             ImGui::Begin("WorldOutliner", &m_bShowWorldOutliner);
-            if (pEngineInst->IsUseECSBackend())
-            {
-                DrawOutlinerECS();
-            }
-            else
-            {
-                auto pWorld = pEngineInst->GetWorld();
-                pWorld->OnGUI();
-            }
+            DrawOutlinerECS();
             ImGui::End();
         }
         if (m_bShowGPUDrivenStats)
@@ -386,88 +377,7 @@ namespace Editor
 
     void FVultanaEditor::DrawGizmo()
     {
-        auto pEngine = Core::FVultanaEngine::GetEngineInstance();
-        if (pEngine->IsUseECSBackend())
-        {
-            DrawGizmoECS();
-            return;
-        }
-        auto pWorld = pEngine->GetWorld();
-
-        auto pSelectedObject = pWorld->GetVisibleObject(m_pRenderer->GetMouseHitObjectID());
-        if (pSelectedObject == nullptr)
-        {
-            m_bGizmoDragging = false;
-            m_GizmoDragTarget = nullptr;
-            return;
-        }
-
-        const bool usingGizmo = ImGuizmo::IsUsing();
-        if (usingGizmo && !m_bGizmoDragging)
-        {
-            m_bGizmoDragging = true;
-            m_GizmoDragTarget = pSelectedObject;
-            m_GizmoDragStart = Editor::Commands::FObjectEditableTarget(*pSelectedObject).GetTransform();
-        }
-
-        float3 position = pSelectedObject->GetPosition();
-        float3 rotation = RotationAngles(pSelectedObject->GetRotation());
-
-        float3 scale = pSelectedObject->GetScale();
-
-        float4x4 mtxWorld;
-        ImGuizmo::RecomposeMatrixFromComponents((const float*)&position, (const float*)&rotation, (const float*)&scale, (float*)&mtxWorld);
-
-        ImGuizmo::OPERATION operation;
-        switch (m_SelectEditMode)
-        {
-        case ESelectEditMode::Translate:
-            operation = ImGuizmo::TRANSLATE;
-            break;
-        case ESelectEditMode::Rotate:
-            operation = ImGuizmo::ROTATE;
-            break;
-        case ESelectEditMode::Scale:
-            operation = ImGuizmo::SCALE;
-            break;
-        default:
-            assert(false);
-            break;
-        }
-
-        Scene::FCamera* pCamera = pWorld->GetCamera();
-        float4x4 view = pCamera->GetViewMatrix();
-        float4x4 proj = pCamera->GetProjectionMatrix();
-
-        ImGuizmo::AllowAxisFlip(false);
-        ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);
-
-        ImGuizmo::DecomposeMatrixToComponents((const float*)&mtxWorld, (float*)&position, (float*)&rotation, (float*)&scale);
-
-        pSelectedObject->SetPosition(position);
-        pSelectedObject->SetRotation(RotationQuat(rotation));
-        pSelectedObject->SetScale(scale);
-
-        pSelectedObject->OnGUI();
-
-        if (m_bGizmoDragging && !usingGizmo)
-        {
-            // Dragging ended → push command to history
-            m_bGizmoDragging = false;
-            if (m_GizmoDragTarget == pSelectedObject)
-            {
-                Editor::Commands::FObjectEditableTarget finalTarget(*m_GizmoDragTarget);
-                // Click handle but no change → do not push command
-                if (!Editor::Commands::TransformEqual(m_GizmoDragStart, finalTarget.GetTransform()))
-                {
-                    m_EditHistory.Push(eastl::make_unique<Editor::Commands::FSetTransformCommand>(
-                        eastl::make_unique<Editor::Commands::FObjectEditableTarget>(*m_GizmoDragTarget),
-                        m_GizmoDragStart,
-                        finalTarget.GetTransform()));
-                }
-            }
-            m_GizmoDragTarget = nullptr;
-        }
+        DrawGizmoECS();
     }
 
     void FVultanaEditor::DrawGizmoECS()
