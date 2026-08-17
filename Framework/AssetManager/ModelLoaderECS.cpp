@@ -219,11 +219,6 @@ namespace Assets
             VTNA_LOG_ERROR("[ModelLoaderECS] load-at-camera: subsystem missing (no ECS camera)");
             return;
         }
-        if (!pEngine->IsUseECSBackend())
-        {
-            VTNA_LOG_WARN("[ModelLoaderECS] load-at-camera requires the ECS scene backend (Config: World/SceneBackend = ECS)");
-            return;
-        }
 
         const eastl::string canonical = FAssetPathUtils::MakeEngineAssetPath(filePath);
         if (canonical.empty())

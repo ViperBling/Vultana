@@ -72,17 +72,17 @@ wWinMain (Tests/WinMain.cpp)
         │     ├── DeferredBasePass          (GPU-driven meshlet pass, writes GBuffer)
         │     ├── HiZBuffer                 (hierarchical Z for occlusion culling)
         │     └── GPUDrivenStats / GPUDrivenDebugLine
-        ├── Scene::World                    (flat container: camera, objects, lights; XML scene)
-        ├── Scene::FEntitySubsystem         (EnTT 3.16 ECS backend; see "ECS backend" below)
+        ├── Scene::FEntitySubsystem         (EnTT 3.16 ECS; the only scene backend, see "ECS backend" below)
+        ├── Core::FCameraController         (camera authority; writes the ECS camera entity)
         ├── VultanaEditor                   (ImGui dockspace, ImGuizmo, ImFileDialog)
-        └── AssetManager                    (ModelLoader via cgltf, ResourceCache singleton)
+        └── AssetManager                    (ModelLoaderECS via cgltf, ResourceCache singleton)
 ```
 
-**ECS backend (Slices 1–2, in progress).** `Config/VultanaEngine.ini [World] SceneBackend` selects `ECS` (the default) or `Legacy`. The ECS path (`Framework/Scene/ECS/`) is built on **EnTT 3.16** (`entt` from vcpkg — the engine's ECS is NOT self-written): `FEntitySubsystem` owns the typed storages plus a per-phase processor chain (`HierarchyProcessor` world transforms, `CullingProcessor` frustum cull, `RenderSubmissionProcessor` frame instance/batch submission). Entity edits go through `Editor::Commands` for undo/redo (`FEntityEditableTarget`). Assets: `Scene/ECS/AssetRegistry.hpp` is the zero-RHI registry interface; `Framework/AssetManager/SceneAssetRegistry.hpp/.cpp` (global pool, RefCount, frame-fence deferred release) + `ModelLoaderECS` (async import/reload) implement it; `FECSRenderBridge` (`Framework/Renderer/`) turns per-entity submissions into base-pass/ObjectID/Outline batches, resolving PSOs and material constants. Tests: `Tests/ECSTest.cpp`. Caveats as of Slice 2.5: `World` runs one backend per session, not both; the editor gizmo/transform-undo path still targets the Legacy world (plan in `AIOut/Slice2.5_ECSFixes.md`, Slice 3 wires it).
+**ECS backend (complete; the legacy `Scene::World` has been removed).** The engine is fully ECS-only — there is no `SceneBackend` switch and no legacy scene-object path anymore. The ECS layer (`Framework/Scene/ECS/`) is built on **EnTT 3.16** (`entt` from vcpkg — the engine's ECS is NOT self-written): `FEntitySubsystem` owns the typed storages plus a per-phase processor chain (`HierarchyProcessor` world transforms, `CullingProcessor` frustum cull, `RenderSubmissionProcessor` frame instance/batch submission, `AnimationProcessor`, `LightProcessor`). Camera authority lives in `Core::FCameraController` (`Framework/Core/ECSCameraController.*`), which reads ImGui input and writes the main camera entity's transform/camera settings every frame; `Renderer::CameraMath` (`Framework/Renderer/CameraMath.*`) is the pure matrix/frustum/CB math both the controller and the renderer read. Entity edits go through `Editor::Commands` for undo/redo (`FEntityEditableTarget`). Assets: `Scene/ECS/AssetRegistry.hpp` is the zero-RHI registry interface; `Framework/AssetManager/SceneAssetRegistry.hpp/.cpp` (global pool, RefCount, frame-fence deferred release) + `ModelLoaderECS` (async import/reload) implement it; `FECSRenderBridge` (`Framework/Renderer/`) turns per-entity submissions into base-pass/ObjectID/Outline batches, resolving PSOs and material constants. Tests: `Tests/ECSTest.cpp`.
 
 ### Frame Loop
 
-`VultanaEngine::Tick()` → `Editor::NewFrame` → `Editor::Tick` → `World::Tick` (camera, frustum cull via `ParallelFor`) → `RendererBase::RenderFrame`:
+`VultanaEngine::Tick()` → `Editor::NewFrame` → `Editor::Tick` → `FCameraController::Tick` (writes the camera entity) → `FEntitySystem::Tick` (hierarchy/culling/render-submission processors) → `UpdateCullingData`/`UpdateSceneRenderState` → `RendererBase::RenderFrame`:
 
 `GPUScene::Update` → `BuildRenderGraph` → `BeginFrame` (fence wait, allocator reset) → `UploadResource` (staging→GPU copies on copy queue) → `Render` (debug line/stats clear → SetupGlobalConstants → FlushComputePass (skinning) → `RenderGraph::Execute` → stats readback → backbuffer copy + ImGui draw) → `EndFrame` (present, fence signal, reset staging/CB allocators).
 
@@ -163,13 +163,13 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 | `Framework/Renderer/GPUScene.hpp` | GPU scene buffers (OffsetAllocator static buffer, animation buffer, per-frame CBs) |
 | `Framework/Renderer/RenderModules/HiZBuffer.hpp` | HZB: 3 chains (1st/2nd-phase culling, scene), SPD-based |
 | `Framework/Renderer/ShaderCompiler.hpp` | DXC (`IDxcCompiler3`) HLSL→SPIR-V wrapper |
-| `Framework/Scene/World.hpp` | Flat scene container; XML scene loading; ParallelFor frustum culling |
-| `Framework/Scene/ECS/` | EnTT 3.16 ECS: `Components.hpp`, `EntitySubsystem`, `Processors/` (Hierarchy/Culling/RenderSubmission), zero-RHI `AssetRegistry.hpp` + `RenderSink.hpp`, `EntityFactory` |
+| `Framework/Core/ECSCameraController.hpp/.cpp` + `Framework/Renderer/CameraMath.hpp/.cpp` | Camera authority (reads ImGui input, writes the ECS camera entity) + pure camera matrix/frustum math |
+| `Framework/Scene/ECS/` | EnTT 3.16 ECS (the only scene backend): `Components.hpp`, `EntitySubsystem`, `Processors/` (Hierarchy/Culling/RenderSubmission/Animation/Light), zero-RHI `AssetRegistry.hpp` + `RenderSink.hpp`, `EntityFactory` |
 | `Framework/AssetManager/SceneAssetRegistry.hpp/.cpp` + `AssetManager/ModelLoaderECS.hpp/.cpp` | Global asset pool (RefCount, frame-fence deferred release) + async import/reload; implements the zero-RHI `IAssetRegistry` |
 | `Framework/Renderer/ECSRenderBridge.hpp/.cpp` | ECS→render: base-pass/ObjectID/Outline batches, PSO + material-constant resolution |
-| `Tests/ECSTest.cpp` / `Tests/FakeAssetRegistry.hpp` | ECS unit tests (37 passing) / fake registry for tests |
+| `Tests/ECSTest.cpp` / `Tests/FakeAssetRegistry.hpp` | ECS unit tests (69 passing as of the migration) / fake registry for tests |
 | `Framework/Editor/VultanaEditor.hpp` | ImGui editor; `AddGUICommand` injection point; Tools → RenderGraph export |
-| `Framework/AssetManager/ModelLoader.hpp` | cgltf GLTF loading + meshopt meshlet generation |
+| `Framework/AssetManager/ModelLoader.hpp` | Material helpers (`BuildMaterial`/`BuildTextureInfo`), used by the ECS asset registry |
 | `Framework/Utilities/Memory.hpp` / `Log.hpp` / `Math.hpp` | `VTNA_ALLOC` / `VTNA_LOG_*` / math aliases |
 | `Shaders/Common/GlobalConstants.hlsli` | `FSceneConstants`, `SceneCB : register(b2)` |
 | `Shaders/Common/GPUScene.hlsli` | `FInstanceData`, templated bindless buffer accessors |
@@ -182,7 +182,7 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 
 `docs/superpowers/specs/2026-08-03-realengine-roadmap-design.md` documents the gap analysis vs the RealEngine reference (DX12 Ultimate) and the planned order: P0 (STBN blue noise + shader Print) → A1 (skybox/IBL) → **A2 GBuffer-ization of the meshlet pass (now done)** → A3 clustered deferred lighting → A4 post chain (tonemapper/AE/Bloom/TAA) → B (visibility buffer, meshlet LOD — Vultana's differentiation area) → C (GTAO, RT, ReSTIR GI). Recommended next step is A3 (clustered deferred lighting) on the existing GBuffer.
 
-**ECS track** (separate from the rendering roadmap; docs in `AIOut/Slice*_*.md`): replacing the flat `World` scene container. Slice 1 (core + undo/redo + hierarchy culling) and Slice 2 (asset registry + render bridge) are implemented; Slice 2.5 (`AIOut/Slice2.5_ECSFixes.md`) is the current fix pass (scale/culling bugs, perf, dead code); Slice 3 (camera/light/animation, gizmo wiring) is next. The asset pipeline (Slices 1–8, `AIOut/AssetPipeline_Slice*.md`) is finished.
+**ECS track** (separate from the rendering roadmap; docs in `AIOut/*.md`): the flat `Scene::World` container has been fully replaced by the ECS backend (Slices 1–3 + the final migration `AIOut/ECS_FinalMigration.md` — camera authority, legacy removal, and SceneBackend retirement). `Config/VultanaEngine.ini` no longer has a `SceneBackend` option; the ECS is the only scene backend. The asset pipeline (Slices 1–8, `AIOut/AssetPipeline_Slice*.md`) is finished.
 
 ## Known Inconsistencies
 

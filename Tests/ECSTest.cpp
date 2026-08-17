@@ -8,7 +8,6 @@
 #include "Scene/ECS/Processors/RenderSubmissionProcessor.hpp"
 #include "Scene/ECS/Processors/AnimationProcessor.hpp"
 #include "Scene/ECS/Processors/LightProcessor.hpp"
-#include "Scene/ECS/Processors/CameraSyncProcessor.hpp"
 #include "Scene/ECS/RenderSink.hpp"
 #include "Scene/ECS/EntityFactory.hpp"
 #include "Editor/Commands/EntityEditableTarget.hpp"
@@ -980,7 +979,7 @@ TEST(ECSTest, Hierarchy_AABB_Rotation_EnclosesOBB)
 }
 
 // ============================================================
-//  Slice 3: FLightProcessor / FCameraSyncProcessor snapshots
+//  Slice 3: FLightProcessor snapshots
 // ============================================================
 TEST(ECSTest, Light_TaggedEntity_ProducesSnapshot)
 {
@@ -1014,44 +1013,6 @@ TEST(ECSTest, Light_NoTaggedEntity_Invalid)
     ecs.Tick(0.0f);
 
     EXPECT_FALSE(out.bValid);
-}
-
-TEST(ECSTest, CameraSync_NoTaggedEntity_Invalid)
-{
-    FEntitySubsystem ecs;
-    Scene::ECS::FSceneCameraSnapshot out;
-    out.bValid = true;
-    ecs.RegisterProcessor(eastl::make_unique<FCameraSyncProcessor>(&out));
-
-    entt::entity plain = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FTransformComponent>(plain, float3(0.0f), float4(0, 0, 0, 1), float3(1.0f));
-    ecs.GetRegistry().emplace<FCameraComponent>(plain, 60.0f, 0.1f, 500.0f);
-
-    ecs.Tick(0.0f);
-
-    EXPECT_FALSE(out.bValid);
-}
-
-TEST(ECSTest, CameraSync_MainCameraEntity_Mirrored)
-{
-    FEntitySubsystem ecs;
-    Scene::ECS::FSceneCameraSnapshot out;
-    ecs.RegisterProcessor(eastl::make_unique<FCameraSyncProcessor>(&out));
-    ecs.RegisterProcessor(eastl::make_unique<FHierarchyProcessor>());
-
-    entt::entity cam = ecs.CreateEntity();
-    ecs.GetRegistry().emplace<FTransformComponent>(cam, float3(5, 3, 1), float4(0, 0, 0.3826834f, 0.9238795f), float3(1.0f));
-    ecs.GetRegistry().emplace<FWorldTransformComponent>(cam);
-    ecs.GetRegistry().emplace<FCameraComponent>(cam, 60.0f, 0.1f, 500.0f);
-    ecs.GetRegistry().emplace<FMainCameraTag>(cam);
-
-    ecs.Tick(0.0f);
-
-    ASSERT_TRUE(out.bValid);
-    EXPECT_EQ(out.CameraEntity, cam);
-    EXPECT_NEAR(out.Position.x, 5.0f, 0.001f);
-    EXPECT_NEAR(out.Position.y, 3.0f, 0.001f);
-    EXPECT_NEAR(out.Fov, 60.0f, 0.001f);
 }
 
 // ============================================================

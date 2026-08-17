@@ -51,7 +51,6 @@ namespace Core
         Scene::ECS::IAssetRegistry* GetAssetRegistry() const { return m_pAssetRegistry.get(); }
         Scene::ECS::ISceneRenderSink* GetRenderSink() const { return m_pRenderSink.get(); }
         Scene::ECS::FEntityFactory* GetEntityFactory() const { return m_pEntityFactory.get(); }
-        bool IsUseECSBackend() const { return true; }   // C3 removes callers then this stub
 
         void* GetWindowHandle() const { return m_WndHandle; }
         float GetDeltaTime() const { return m_FrameTime; }

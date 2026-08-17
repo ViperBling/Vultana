@@ -26,14 +26,15 @@ wWinMain (Tests/WinMain.cpp)
         │     ├── ForwardBasePass               (GPU-driven meshlet pipeline, active)
         │     ├── HiZBuffer                     (hierarchical Z for occlusion culling)
         │     └── GPUDrivenStats / GPUDrivenDebugLine
-        ├── Scene::World                        (flat container: camera, objects, lights; XML scene)
+        ├── Scene::FEntitySubsystem            (EnTT 3.16 ECS; the only scene backend)
+        ├── Core::FCameraController            (camera authority; writes the ECS camera entity)
         ├── VultanaEditor                       (ImGui dockspace, ImGuizmo, ImFileDialog)
-        └── AssetManager                        (ModelLoader via cgltf, ResourceCache singleton)
+        └── AssetManager                        (ModelLoaderECS via cgltf, ResourceCache singleton)
 ```
 
 ### Frame Loop
 
-`VultanaEngine::Tick()` → `Editor::NewFrame` → `Editor::Tick` → `World::Tick` (camera, frustum cull via ParallelFor) → `RendererBase::RenderFrame`:
+`VultanaEngine::Tick()` → `Editor::NewFrame` → `Editor::Tick` → `FCameraController::Tick` (writes the camera entity) → `FEntitySubsystem::Tick` (hierarchy/culling/render-submission processors) → `UpdateCullingData`/`UpdateSceneRenderState` → `RendererBase::RenderFrame`:
 
 ```
 RenderFrame: GPUScene::Update → BuildRenderGraph → BeginFrame (fence wait, allocator reset)
@@ -73,7 +74,7 @@ RenderFrame: GPUScene::Update → BuildRenderGraph → BeginFrame (fence wait, a
 | `Framework/Renderer/DeferredPath/` | Deferred pass (exists, not wired into `RendererBase`) |
 | `Framework/Renderer/RenderModules/` | HiZBuffer, GPUDrivenStats, debug line rendering |
 | `Framework/Renderer/RenderResources/` | Typed resource wrappers (Texture2D, RawBuffer, StructuredBuffer, ConstantBuffer…) |
-| `Framework/Scene/` | World container, camera, meshes, skeletal animation, lights |
+| `Framework/Scene/ECS/` | EnTT 3.16 ECS: components, entity subsystem, processors, asset registry, serializer |
 | `Framework/Editor/` | ImGui editor (dockspace, gizmo, panels, `AddGUICommand`) |
 | `Framework/AssetManager/` | GLTF loading (cgltf + meshoptimizer), texture loading, ResourceCache, materials |
 | `Framework/Window/` | Win32Window (used by exe) and GLFWindow (GLFW, used by tests) |
@@ -218,9 +219,9 @@ GUICommand("Window Name", [this]() { /* ImGui calls */ });
 | `Framework/RHI/RHICommon.hpp` | All RHI enums/structs; `RHI_MAX_INFLIGHT_FRAMES = 3` |
 | `Framework/RHI/RHI.hpp` / `RHI.cpp` | RHI umbrella header + `CreateRHIDevice` factory |
 | `Framework/RHI/RHIVulkan/RHIDeviceVK.hpp` | Vulkan device: VMA, descriptor-buffer heaps, 3 queues, deletion queue |
-| `Framework/Scene/World.hpp` | Flat scene container; XML scene loading; ParallelFor frustum culling |
+| `Framework/Core/ECSCameraController.hpp/.cpp` + `Framework/Renderer/CameraMath.hpp/.cpp` | Camera authority (reads ImGui input, writes the ECS camera entity) + pure camera matrix/frustum math |
 | `Framework/Editor/VultanaEditor.hpp` | ImGui editor; `AddGUICommand` injection point; Tools → RenderGraph export |
-| `Framework/AssetManager/ModelLoader.hpp` | cgltf GLTF loading + meshopt meshlet generation |
+| `Framework/AssetManager/ModelLoader.hpp` | Material helpers (`BuildMaterial`/`BuildTextureInfo`), used by the ECS asset registry |
 | `Framework/Utilities/Memory.hpp` / `Log.hpp` / `Math.hpp` | `VTNA_ALLOC` / `VTNA_LOG_*` / math aliases |
 | `Shaders/Common/GlobalConstants.hlsli` | `FSceneConstants`, `SceneCB : register(b2)` |
 | `Shaders/Common/GPUScene.hlsli` | `FInstanceData`, templated bindless buffer accessors |

@@ -81,23 +81,20 @@ namespace Editor
             m_pRenderer->RequestMouseHitTest((uint32_t)mousePos.x, (uint32_t)mousePos.y);
         }
 
-        if (pEngineInst->IsUseECSBackend())
+        const uint32_t mouseID = m_pRenderer->GetMouseHitObjectID();
+        if (mouseID != m_LastMouseHitID)
         {
-            const uint32_t mouseID = m_pRenderer->GetMouseHitObjectID();
-            if (mouseID != m_LastMouseHitID)
+            m_LastMouseHitID = mouseID;
+            if (mouseID != UINT32_MAX)
             {
-                m_LastMouseHitID = mouseID;
-                if (mouseID != UINT32_MAX)
-                {
-                    auto* pEntitySystem = pEngineInst->GetEntitySystem();
-                    const entt::entity picked = pEntitySystem->ResolvePickID(mouseID);
-                    if (picked != entt::null)
-                        SelectEntity(picked);
-                }
+                auto* pEntitySystem = pEngineInst->GetEntitySystem();
+                const entt::entity picked = pEntitySystem->ResolvePickID(mouseID);
+                if (picked != entt::null)
+                    SelectEntity(picked);
             }
         }
 
-        if (pEngineInst->IsUseECSBackend() && !io.WantCaptureKeyboard && !m_bGizmoDragging && m_SelectedEntity != entt::null)
+        if (!io.WantCaptureKeyboard && !m_bGizmoDragging && m_SelectedEntity != entt::null)
         {
             if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
             {
@@ -688,11 +685,6 @@ namespace Editor
     void FVultanaEditor::SaveScene()
     {
         auto pEngine = Core::FVultanaEngine::GetEngineInstance();
-        if (!pEngine->IsUseECSBackend())
-        {
-            VTNA_LOG_WARN("[Editor] Save Scene requires the ECS scene backend");
-            return;
-        }
         auto* pEntitySystem = pEngine->GetEntitySystem();
         if (pEntitySystem == nullptr)
             return;
@@ -835,8 +827,6 @@ namespace Editor
     void FVultanaEditor::DrawProcessorTimings()
     {
         auto pEngine = Core::FVultanaEngine::GetEngineInstance();
-        if (!pEngine->IsUseECSBackend())
-            return;
 
         ImGui::Begin("ECS Processor Timings", &m_bShowProcessorTimings);
         const auto* pEntitySystem = pEngine->GetEntitySystem();
@@ -876,8 +866,6 @@ namespace Editor
     void FVultanaEditor::DrawMeshPicker()
     {
         auto pEngine = Core::FVultanaEngine::GetEngineInstance();
-        if (!pEngine->IsUseECSBackend())
-            return;
         auto* pEntitySystem = pEngine->GetEntitySystem();
         if (pEntitySystem == nullptr || m_SelectedEntity == entt::null || !pEntitySystem->GetRegistry().valid(m_SelectedEntity))
         {
@@ -946,11 +934,6 @@ namespace Editor
     void FVultanaEditor::ReloadAllModels()
     {
         auto pEngine = Core::FVultanaEngine::GetEngineInstance();
-        if (!pEngine->IsUseECSBackend())
-        {
-            VTNA_LOG_WARN("[Editor] Reload Models requires the ECS scene backend (Config: World/SceneBackend = ECS)");
-            return;
-        }
 
         auto* pAssetManager = pEngine->GetAssetManager();
         if (pAssetManager && pAssetManager->HasPendingRequests())
@@ -971,11 +954,6 @@ namespace Editor
     void FVultanaEditor::ReloadAllTextures()
     {
         auto pEngine = Core::FVultanaEngine::GetEngineInstance();
-        if (!pEngine->IsUseECSBackend())
-        {
-            VTNA_LOG_WARN("[Editor] Reload Textures requires the ECS scene backend (Config: World/SceneBackend = ECS)");
-            return;
-        }
         auto* pAssetManager = pEngine->GetAssetManager();
         if (pAssetManager && pAssetManager->HasPendingRequests())
         {
@@ -1102,11 +1080,6 @@ namespace Editor
         auto* pEntitySystem = pEngine->GetEntitySystem();
         if (pEntitySystem == nullptr)
             return;
-        if (!pEngine->IsUseECSBackend())
-        {
-            ImGui::TextDisabled("Model reload requires the ECS scene backend");
-            return;
-        }
 
         const entt::entity picked = m_SelectedEntity;
         if (picked == entt::null || !pEntitySystem->GetRegistry().valid(picked))
