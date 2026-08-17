@@ -474,8 +474,8 @@ namespace Editor
     {
         auto pEngine = Core::FVultanaEngine::GetEngineInstance();
         auto* pEntitySystem = pEngine->GetEntitySystem();
-        auto* pWorld = pEngine->GetWorld();
-        if (pEntitySystem == nullptr || pWorld == nullptr) return;
+        const Renderer::FCameraMathState* camState = pEngine->GetCameraMathState();
+        if (pEntitySystem == nullptr || camState == nullptr) return;
 
         auto& reg = pEntitySystem->GetRegistry();
         entt::entity target = m_SelectedEntity;
@@ -536,9 +536,8 @@ namespace Editor
         default: assert(false);             operation = ImGuizmo::TRANSLATE; break;
         }
 
-        Scene::FCamera* pCamera = pWorld->GetCamera();
-        float4x4 view = pCamera->GetViewMatrix();
-        float4x4 proj = pCamera->GetProjectionMatrix();
+        float4x4 view = camState->View;
+        float4x4 proj = camState->Projection;
 
         ImGuizmo::AllowAxisFlip(false);
         const bool bChanged = ImGuizmo::Manipulate((const float*)&view, (const float*)&proj, operation, ImGuizmo::WORLD, (float*)&mtxWorld);

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "AssetManager/AssetManager.hpp"
+#include "Core/ECSCameraController.hpp"
+
 #include "Editor/VultanaEditor.hpp"
 
 #include "Scene/ECS/EntitySubsystem.hpp"
@@ -48,7 +50,8 @@ namespace Core
         Editor::FVultanaEditor* GetEditor() const { return m_pEditor.get(); }
         enki::TaskScheduler* GetTaskScheduler() const { return m_pTaskScheduler.get(); }
         Assets::FAssetManager* GetAssetManager() const { return m_pAssetManager.get(); }
-        Scene::ECS::FEntitySubsystem *GetEntitySystem() const { return m_pEntitySystem.get(); }
+        const Renderer::FCameraMathState* GetCameraMathState() const { return (m_pECSCameraController != nullptr) ? &m_pECSCameraController->GetState() : nullptr; }
+        Scene::ECS::FEntitySubsystem* GetEntitySystem() const { return m_pEntitySystem.get(); }
         Scene::ECS::IAssetRegistry* GetAssetRegistry() const { return m_pAssetRegistry.get(); }
         Scene::ECS::ISceneRenderSink* GetRenderSink() const { return m_pRenderSink.get(); }
         Scene::ECS::FEntityFactory* GetEntityFactory() const { return m_pEntityFactory.get(); }
@@ -78,6 +81,7 @@ namespace Core
 
         eastl::unique_ptr<class enki::TaskScheduler> m_pTaskScheduler;
         eastl::unique_ptr<Assets::FAssetManager> m_pAssetManager;
+        eastl::unique_ptr<FCameraController> m_pECSCameraController;
 
         void* m_WndHandle = nullptr;
 

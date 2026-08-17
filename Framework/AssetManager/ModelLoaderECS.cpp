@@ -211,12 +211,12 @@ namespace Assets
     void FModelLoaderECS::LoadModelAtCamera(const eastl::string& filePath)
     {
         auto* pEngine = Core::FVultanaEngine::GetEngineInstance();
-        auto* pWorld = pEngine->GetWorld();
         auto* factory = pEngine->GetEntityFactory();
         auto* registry = pEngine->GetAssetRegistry();
-        if (pWorld == nullptr || factory == nullptr || registry == nullptr)
+        const Renderer::FCameraMathState* camState = pEngine->GetCameraMathState();
+        if (factory == nullptr || registry == nullptr || camState == nullptr)
         {
-            VTNA_LOG_ERROR("[ModelLoaderECS] load-at-camera: subsystem missing");
+            VTNA_LOG_ERROR("[ModelLoaderECS] load-at-camera: subsystem missing (no ECS camera)");
             return;
         }
         if (!pEngine->IsUseECSBackend())
@@ -232,13 +232,7 @@ namespace Assets
             return;
         }
 
-        Scene::FCamera* pCamera = pWorld->GetCamera();
-        if (pCamera == nullptr)
-        {
-            VTNA_LOG_ERROR("[ModelLoaderECS] load-at-camera: no camera");
-            return;
-        }
-        const float3 spawnPos = pCamera->GetPosition() + pCamera->GetForward() * kLoadSpawnDistance;
+        const float3 spawnPos = camState->Position + camState->World[2].xyz() * kLoadSpawnDistance;
         const quaternion spawnRot(0.0f, 0.0f, 0.0f, 1.0f);
         const float3 spawnScale(1.0f);
 

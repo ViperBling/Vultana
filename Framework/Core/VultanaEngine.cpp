@@ -163,6 +163,7 @@ namespace Core
                 reg.emplace<Scene::ECS::FLightComponent>(lightEntity);
                 reg.emplace<Scene::ECS::FMainLightTag>(lightEntity);
             }
+            m_pECSCameraController = eastl::make_unique<FCameraController>();
         }
 
         m_pEditor = eastl::make_unique<Editor::FVultanaEditor>(m_pRenderer.get());
@@ -186,6 +187,7 @@ namespace Core
 
         m_pTaskScheduler.reset();
         m_pAssetManager.reset();
+        m_pECSCameraController.reset();
 
         Assets::FResourceCache::GetInstance()->ReleaseAllTextures();
 
@@ -220,7 +222,15 @@ namespace Core
             else
             {
                 m_pEditor->Tick();
-                m_pWorld->Tick(m_FrameTime);
+                if (m_bUseECSBackend)
+                {
+                    m_pECSCameraController->SetAspect(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()));
+                    m_pECSCameraController->Tick(m_FrameTime, *m_pEntitySystem);
+                }
+                else
+                {
+                    m_pWorld->Tick(m_FrameTime);
+                }
                 UpdateCullingData();
                 if (m_bUseECSBackend && !m_PendingMeshOverrides.empty())
                 {
@@ -278,12 +288,46 @@ namespace Core
         m_PendingMeshOverrides = sceneResult.MeshOverrides;
         if (sceneResult.bHasCamera)
         {
-            Scene::FCamera* pCamera = m_pWorld->GetCamera();
-            if (pCamera)
+            if (m_bUseECSBackend)
             {
-                pCamera->SetPosition(sceneResult.CameraPosition);
-                pCamera->SetRotation(sceneResult.CameraRotation);
-                pCamera->SetPerspective(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()), sceneResult.CameraFov, sceneResult.CameraZNear);
+                auto& reg = m_pEntitySystem->GetRegistry();
+                auto cameraView = reg.view<Scene::ECS::FTransformComponent, Scene::ECS::FCameraComponent, Scene::ECS::FMainCameraTag>();
+                if (const entt::entity cam = cameraView.front(); cam != entt::null)
+                {
+                    auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(cam);
+                    if (tf)
+                    {
+                        tf->Position = sceneResult.CameraPosition;
+                        tf->Rotation = RotationQuat(sceneResult.CameraRotation);
+                        m_pEntitySystem->MarkTransformDirty(cam);
+                    }
+                    if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(cam))
+                    {
+                        camComp->Fov = sceneResult.CameraFov;
+                        camComp->ZNear = sceneResult.CameraZNear;
+                    }
+                }
+            }
+            else 
+            {
+                Scene::FCamera* pCamera = m_pWorld->GetCamera();
+                if (pCamera)
+                {
+                    pCamera->SetPosition(sceneResult.CameraPosition);
+                    pCamera->SetRotation(sceneResult.CameraRotation);
+                    pCamera->SetPerspective(static_cast<float>(m_pRenderer->GetRenderWidth()) / static_cast<float>(m_pRenderer->GetRenderHeight()), sceneResult.CameraFov, sceneResult.CameraZNear);
+                }
+            }
+            
+        }
+        if (m_pEntityFactory != nullptr)
+        {
+            auto& reg = m_pEntitySystem->GetRegistry();
+            if (reg.view<Scene::ECS::FMainCameraTag>().front() == entt::null)
+            {
+                entt::entity cameraEntity = m_pEntityFactory->CreateEmpty("MainCamera");
+                reg.emplace<Scene::ECS::FCameraComponent>(cameraEntity);
+                reg.emplace<Scene::ECS::FMainCameraTag>(cameraEntity);
             }
         }
         m_SceneFilePath = scenePath;
@@ -302,8 +346,21 @@ namespace Core
         if (pCamera == nullptr) return;
 
         Renderer::FSceneRenderState state;
-        pCamera->SetupCameraCB(state.CameraConstants);
-        state.bCameraValid = true;
+        if (m_bUseECSBackend)
+        {
+            if (m_pECSCameraController != nullptr && m_pECSCameraController->IsValid())
+            {
+                Renderer::FillCameraConstants(m_pECSCameraController->GetState(), state.CameraConstants);
+                state.bCameraValid = true;
+            }
+        }
+        else
+        {
+            Scene::FCamera* pCamera = m_pWorld->GetCamera();
+            if (pCamera == nullptr) return;
+            pCamera->SetupCameraCB(state.CameraConstants);
+            state.bCameraValid = true;
+        }
 
         const Scene::ECS::FSceneLightSnapshot* lightSnap = (m_pLightProcessor != nullptr) ? m_pLightProcessor->GetOutput() : nullptr;
         if (m_bUseECSBackend && lightSnap != nullptr && lightSnap->bValid)
@@ -324,38 +381,20 @@ namespace Core
         {
             state.bLightValid = false;
         }
-
-        const Scene::ECS::FSceneCameraSnapshot* camSnap = (m_pCameraSyncProcessor != nullptr) ? m_pCameraSyncProcessor->GetOutput() : nullptr;
-        if (m_bUseECSBackend && camSnap != nullptr && camSnap->bValid && m_pEntitySystem != nullptr)
-        {
-            auto& reg = m_pEntitySystem->GetRegistry();
-            if (reg.valid(camSnap->CameraEntity))
-            {
-                if (auto* tf = reg.try_get<Scene::ECS::FTransformComponent>(camSnap->CameraEntity))
-                {
-                    const float3 newPosition = pCamera->GetPosition();
-                    const float4 newRotation = RotationQuat(pCamera->GetRotation()); // degrees -> quaternion
-                    if (tf->Position != newPosition || tf->Rotation != newRotation)
-                    {
-                        tf->Position = newPosition;
-                        tf->Rotation = newRotation;
-                        m_pEntitySystem->MarkTransformDirty(camSnap->CameraEntity);
-                    }
-                }
-                if (auto* camComp = reg.try_get<Scene::ECS::FCameraComponent>(camSnap->CameraEntity))
-                {
-                    camComp->Fov = pCamera->GetFOV();
-                    camComp->ZNear = pCamera->GetZNear();
-                    camComp->ZFar = pCamera->GetZFar();
-                }
-            }
-        }
-
         m_pRenderer->SetSceneRenderState(state);
     }
 
     void FVultanaEngine::UpdateCullingData()
     {
+        if (m_bUseECSBackend)
+        {
+            if (m_pECSCameraController != nullptr)
+            {
+                const Renderer::FCameraMathState& cameraState = m_pECSCameraController->GetState();
+                memcpy(m_PendingCullingPlanes, cameraState.FrustumPlanes, sizeof(m_PendingCullingPlanes));
+            }
+            return;
+        }
         if (m_pWorld == nullptr)
             return;
         Scene::FCamera* pCamera = m_pWorld->GetCamera();
