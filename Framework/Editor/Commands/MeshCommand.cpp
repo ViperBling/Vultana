@@ -18,14 +18,9 @@ namespace Editor::Commands
 
     void FSetMeshCommand::Apply(const FKey& key)
     {
-        auto& reg = m_Subsystem.GetRegistry();
-        auto* mc = reg.try_get<Scene::ECS::FMeshRendererComponent>(m_Entity);
-        if (mc == nullptr || !key.IsValid())
-            return;
-
-        // Shared with the persisted scene-override path (EntityFactory::ApplyMeshOverride):
-        // acquire first, validate skinned guards, release old handles, install the
-        // full component set and mark dirty.
-        Scene::ECS::FEntityFactory::ApplyMeshKey(m_Subsystem, m_Registry, m_Entity, key.Asset, key.NodeIndex, key.PrimitiveIndex);
+        if (!Scene::ECS::FEntityFactory::ApplyMeshKey(m_Subsystem, m_Registry, m_Entity, key.Asset, key.NodeIndex, key.PrimitiveIndex))
+        {
+            VTNA_LOG_WARN("[FSetMeshCommand] apply rejected (entity {}, node {}, prim {})", entt::to_integral(m_Entity), key.NodeIndex, key.PrimitiveIndex);
+        }
     }
 }

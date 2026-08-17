@@ -176,41 +176,22 @@ namespace Scene::ECS
 
     void FEntityFactory::SetMeshRenderer(entt::registry& registry, entt::entity entity, FMeshResourceHandle meshHandle, FMaterialResourceHandle materialHandle, const FMeshGPUData& meshData, FModelAssetHandle asset, int32_t nodeIndex, int32_t primitiveIndex, entt::entity skinnedRoot)
     {
-        FModelAssetHandle sourceAsset;
-        int32_t sourceNodeIndex = -1;
-        int32_t sourcePrimitiveIndex = -1;
-        if (const auto* previous = registry.try_get<FMeshRendererComponent>(entity))
+        FModelAssetHandle sourceAsset = asset;
+        int32_t sourceNodeIndex = nodeIndex;
+        int32_t sourcePrimitiveIndex = primitiveIndex;
+        if (const auto* previous = registry.try_get<FMeshRendererComponent>(entity); previous != nullptr && previous->SourceAsset.IsValid() && previous->SourceNodeIndex >= 0 && previous->SourcePrimitiveIndex >= 0)
         {
             sourceAsset = previous->SourceAsset;
             sourceNodeIndex = previous->SourceNodeIndex;
             sourcePrimitiveIndex = previous->SourcePrimitiveIndex;
         }
 
-        registry.emplace_or_replace<FMeshRendererComponent>(entity, meshHandle, materialHandle, meshData.bSkinned);
+        registry.emplace_or_replace<FMeshRendererComponent>(entity, meshHandle, materialHandle, meshData.bSkinned, asset, nodeIndex, primitiveIndex, sourceAsset, sourceNodeIndex, sourcePrimitiveIndex);
         registry.emplace_or_replace<FBoundingSphereComponent>(entity, meshData.Center, meshData.Radius);
         registry.emplace_or_replace<FWorldBoundingSphereComponent>(entity);
         registry.emplace_or_replace<FVisibilityComponent>(entity, true);
         if (skinnedRoot != entt::null)
             registry.emplace_or_replace<FSkinnedRootComponent>(entity, skinnedRoot);
-
-        if (auto* meshComp = registry.try_get<FMeshRendererComponent>(entity))
-        {
-            meshComp->Asset = asset;
-            meshComp->NodeIndex = nodeIndex;
-            meshComp->PrimitiveIndex = primitiveIndex;
-            if (sourceAsset.IsValid() && sourceNodeIndex >= 0 && sourcePrimitiveIndex >= 0)
-            {
-                meshComp->SourceAsset = sourceAsset;
-                meshComp->SourceNodeIndex = sourceNodeIndex;
-                meshComp->SourcePrimitiveIndex = sourcePrimitiveIndex;
-            }
-            else
-            {
-                meshComp->SourceAsset = asset;
-                meshComp->SourceNodeIndex = nodeIndex;
-                meshComp->SourcePrimitiveIndex = primitiveIndex;
-            }
-        }
     }
 
     bool FEntityFactory::ApplyMeshKey(FEntitySubsystem& subsystem, IAssetRegistry& registry, entt::entity entity, FModelAssetHandle asset, int32_t nodeIndex, int32_t primitiveIndex)

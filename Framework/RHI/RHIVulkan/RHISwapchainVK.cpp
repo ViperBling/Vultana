@@ -74,7 +74,7 @@ namespace RHI
 
     vk::Semaphore FVulkanSwapchain::GetPresentSemaphore()
     {
-        return m_PresentSemaphores[m_FrameSemaphoreIndex];
+        return m_PresentSemaphores[m_CurrentBackBuffer % m_PresentSemaphores.size()];
     }
 
     void FVulkanSwapchain::AcquireNextBackBuffer()
@@ -244,7 +244,8 @@ namespace RHI
             m_AcquireSemaphores.push_back(semaphore);
         }
 
-        for (uint32_t i = 0; i < m_Desc.BufferCount; i++)
+        const uint32_t presentSemaphoreCount = static_cast<uint32_t>(m_BackBuffers.size());
+        for (uint32_t i = 0; i < presentSemaphoreCount; i++)
         {
             vk::Semaphore semaphore;
 

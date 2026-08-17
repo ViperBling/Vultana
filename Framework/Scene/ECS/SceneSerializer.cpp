@@ -5,6 +5,7 @@
 #include "Utilities/Log.hpp"
 
 #include <EASTL/hash_set.h>
+#include <EASTL/hash_map.h>
 #include <EASTL/functional.h>
 
 #include <tinyxml2/tinyxml2.h>
@@ -147,13 +148,13 @@ namespace Scene::ECS
                     const int32_t srcPrim = ovEl->IntAttribute("SourcePrimitive", -1);
                     const int32_t tgtNode = ovEl->IntAttribute("Node", -1);
                     const int32_t tgtPrim = ovEl->IntAttribute("Primitive", -1);
-                    const char* fileAttr = ovEl->Attribute("File");
-                    if (srcNode < 0 || srcPrim < 0 || tgtNode < 0 || tgtPrim < 0 || fileAttr == nullptr)
+                    const char* overrideFileAttr = ovEl->Attribute("File");
+                    if (srcNode < 0 || srcPrim < 0 || tgtNode < 0 || tgtPrim < 0 || overrideFileAttr == nullptr)
                     {
                         VTNA_LOG_WARN("[SceneSerializer] malformed MeshOverride under model {}; skipped", fullPath);
                         continue;
                     }
-                    const eastl::string targetPath = assetsPath + fileAttr;
+                    const eastl::string targetPath = assetsPath + overrideFileAttr;
                     const FModelAssetHandle targetHandle = assetRegistry.ImportModel(targetPath);
                     if (!targetHandle.IsValid())
                     {
@@ -271,6 +272,28 @@ namespace Scene::ECS
             }
         });
 
+        constexpr uint32_t MAX_ANCESTOR_DEPTH = 4096;
+        eastl::hash_map<entt::id_type, eastl::vector<entt::entity>> editedMeshesByModel;
+        registry.view<FMeshRendererComponent>().each([&](entt::entity meshEntity, const FMeshRendererComponent& mc)
+        {
+            if (mc.Asset == mc.SourceAsset && mc.NodeIndex == mc.SourceNodeIndex && mc.PrimitiveIndex == mc.SourcePrimitiveIndex)
+                return;   // not edited
+            entt::entity owner = entt::null;
+            entt::entity cur = meshEntity;
+            for (uint32_t depth = 0; cur != entt::null && registry.valid(cur) && depth < MAX_ANCESTOR_DEPTH; ++depth)
+            {
+                if (registry.all_of<FModelInstanceComponent>(cur)) { owner = cur; break; }
+                const auto* parentComp = registry.try_get<FParentComponent>(cur);
+                cur = (parentComp != nullptr) ? parentComp->Parent : entt::null;
+            }
+            if (owner == entt::null)
+            {
+                VTNA_LOG_WARN("[SceneSerializer] edited mesh entity {} has no model instance ancestor; override not saved", entt::to_integral(meshEntity));
+                return;
+            }
+            editedMeshesByModel[entt::to_integral(owner)].push_back(meshEntity);
+        });
+
         tinyxml2::XMLDocument doc;
         tinyxml2::XMLElement* root = doc.NewElement("ECSScene");
         root->SetAttribute("Version", 1);
@@ -314,40 +337,31 @@ namespace Scene::ECS
                 element->SetAttribute("File", ToRelativePath(model->ModelPath, assetsPath).c_str());
                 if (tf) WriteTransform(element, *tf);
 
-                registry.view<FMeshRendererComponent>().each(
-                [&](entt::entity meshEntity, const FMeshRendererComponent& mc)
+                if (const auto editedIt = editedMeshesByModel.find(entt::to_integral(e)); editedIt != editedMeshesByModel.end())
                 {
-                    entt::entity cur = meshEntity;
-                    while (cur != entt::null && registry.valid(cur) && cur != e)
+                    for (entt::entity meshEntity : editedIt->second)
                     {
-                        const auto* parentComp = registry.try_get<FParentComponent>(cur);
-                        cur = (parentComp != nullptr) ? parentComp->Parent : entt::null;
+                        const FMeshRendererComponent& mc = registry.get<FMeshRendererComponent>(meshEntity);
+                        if (!mc.Asset.IsValid())
+                        {
+                            VTNA_LOG_WARN("[SceneSerializer] mesh override with invalid target asset skipped (entity {})", entt::to_integral(meshEntity));
+                            continue;
+                        }
+                        const FModelAssetInfo targetInfo = assetRegistry.GetModelInfo(mc.Asset);
+                        if (targetInfo.ModelPath.empty())
+                        {
+                            VTNA_LOG_WARN("[SceneSerializer] mesh override target path empty; skipped (entity {})", entt::to_integral(meshEntity));
+                            continue;
+                        }
+                        auto* ovEl = doc.NewElement("MeshOverride");
+                        ovEl->SetAttribute("SourceNode", mc.SourceNodeIndex);
+                        ovEl->SetAttribute("SourcePrimitive", mc.SourcePrimitiveIndex);
+                        ovEl->SetAttribute("File", ToRelativePath(targetInfo.ModelPath, assetsPath).c_str());
+                        ovEl->SetAttribute("Node", mc.NodeIndex);
+                        ovEl->SetAttribute("Primitive", mc.PrimitiveIndex);
+                        element->InsertEndChild(ovEl);
                     }
-                    if (cur != e)
-                        return;   // mesh entity belongs to another model instance
-
-                    if (mc.Asset == mc.SourceAsset && mc.NodeIndex == mc.SourceNodeIndex && mc.PrimitiveIndex == mc.SourcePrimitiveIndex)
-                        return;   // not edited
-
-                    if (!mc.Asset.IsValid())
-                    {
-                        VTNA_LOG_WARN("[SceneSerializer] mesh override with invalid target asset skipped (entity {})", entt::to_integral(meshEntity));
-                        return;
-                    }
-                    const FModelAssetInfo targetInfo = assetRegistry.GetModelInfo(mc.Asset);
-                    if (targetInfo.ModelPath.empty())
-                    {
-                        VTNA_LOG_WARN("[SceneSerializer] mesh override target path empty; skipped (entity {})", entt::to_integral(meshEntity));
-                        return;
-                    }
-                    auto* ovEl = doc.NewElement("MeshOverride");
-                    ovEl->SetAttribute("SourceNode", mc.SourceNodeIndex);
-                    ovEl->SetAttribute("SourcePrimitive", mc.SourcePrimitiveIndex);
-                    ovEl->SetAttribute("File", ToRelativePath(targetInfo.ModelPath, assetsPath).c_str());
-                    ovEl->SetAttribute("Node", mc.NodeIndex);
-                    ovEl->SetAttribute("Primitive", mc.PrimitiveIndex);
-                    element->InsertEndChild(ovEl);
-                });
+                }
             }
             else
             {

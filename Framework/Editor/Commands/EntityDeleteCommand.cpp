@@ -90,16 +90,17 @@ namespace Editor::Commands
         if (!m_Snapshot.Mesh.has_value())
             return;
 
-        const auto& mesh = m_Snapshot.Mesh.value();
         auto& reg = m_Subsystem.GetRegistry();
+        if (!reg.valid(m_Entity))
+            return;
+
+        const auto& mesh = m_Snapshot.Mesh.value();
         if (!mesh.Asset.IsValid() || mesh.NodeIndex < 0 || mesh.PrimitiveIndex < 0)
         {
             reg.remove<Scene::ECS::FMeshRendererComponent>(m_Entity);
             return;
         }
 
-        if (!reg.valid(m_Entity))
-            return;
         const Scene::ECS::FMeshResourceHandle mh = m_Registry.AcquireMesh(mesh.Asset, static_cast<uint32_t>(mesh.NodeIndex), static_cast<uint32_t>(mesh.PrimitiveIndex));
         const Scene::ECS::FMaterialResourceHandle mat = m_Registry.AcquireMaterial(mesh.Asset, static_cast<uint32_t>(mesh.NodeIndex), static_cast<uint32_t>(mesh.PrimitiveIndex));
         

@@ -590,7 +590,9 @@ TEST(ECSTest, RenderSubmission_VisibleOnlyAddInstance)
     processor->Process(ecs, 0.0f);
 
     EXPECT_EQ(fakeSink.AddedInstances.size(), 2u);   // visible entities only
-    EXPECT_EQ(fakeSink.BaseBatches.size(), 2u);      // visible ones only
+    ASSERT_EQ(fakeSink.BaseBatches.size(), 2u);      // visible ones only
+    for (size_t i = 0; i < fakeSink.BaseBatches.size(); ++i)
+        EXPECT_EQ(fakeSink.BaseBatches[i].InstanceIndex, static_cast<uint32_t>(i));
 }
 
 TEST(ECSTest, RenderSubmission_MissingRequiredComponents_Excluded)
@@ -602,6 +604,8 @@ TEST(ECSTest, RenderSubmission_MissingRequiredComponents_Excluded)
     auto model = fakeReg.ImportModel("test.gltf");
     auto meshHandle = fakeReg.AcquireMesh(model, 0, 0);
 
+    // F8: the submission view now requires PickID + Visibility. Malformed
+    // entities are excluded by view semantics instead of tripping registry.get.
     entt::entity eNoPick = ecs.CreateEntity();
     ecs.GetRegistry().emplace<Scene::ECS::FWorldTransformComponent>(eNoPick);
     ecs.GetRegistry().emplace<Scene::ECS::FWorldBoundingSphereComponent>(eNoPick);
@@ -1251,10 +1255,38 @@ TEST(ECSTest, EntityFactory_ApplyMeshKey_PreservesSourceIdentity)
     EXPECT_TRUE(Scene::ECS::FEntityFactory::ApplyMeshKey(ecs, fakeReg, e, model, 0, 1));
 
     const auto& mc = ecs.GetRegistry().get<Scene::ECS::FMeshRendererComponent>(e);
-    EXPECT_EQ(mc.NodeIndex, 1);
+    EXPECT_EQ(mc.NodeIndex, 0);
     EXPECT_EQ(mc.PrimitiveIndex, 1);
     EXPECT_TRUE(mc.SourceAsset == model);
     EXPECT_EQ(mc.SourceNodeIndex, 0);
+    EXPECT_EQ(mc.SourcePrimitiveIndex, 0);
+}
+
+TEST(ECSTest, EntityFactory_SetMeshRenderer_NullRootKeepsExistingSkinnedRoot)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    const Scene::ECS::FMeshResourceHandle mesh = fakeReg.AcquireMesh(model, 0, 0);
+    const Scene::ECS::FMaterialResourceHandle mat = fakeReg.AcquireMaterial(model, 0, 0);
+
+    Scene::ECS::FMeshGPUData md = fakeReg.GetMeshData(mesh);
+    md.bSkinned = true;
+
+    auto& reg = ecs.GetRegistry();
+    entt::entity e = ecs.CreateEntity();
+    entt::entity root = ecs.CreateEntity();
+    Scene::ECS::FEntityFactory::SetMeshRenderer(reg, e, mesh, mat, md, model, 0, 0, root);
+
+    // Same-asset skinned swap: skinnedRoot is null on purpose and the previously
+    // resolved root must survive, while Source* keeps the original key.
+    Scene::ECS::FEntityFactory::SetMeshRenderer(reg, e, mesh, mat, md, model, 0, 1, entt::null);
+
+    ASSERT_TRUE(reg.all_of<Scene::ECS::FSkinnedRootComponent>(e));
+    EXPECT_EQ(reg.get<Scene::ECS::FSkinnedRootComponent>(e).Root, root);
+    const auto& mc = reg.get<Scene::ECS::FMeshRendererComponent>(e);
+    EXPECT_EQ(mc.PrimitiveIndex, 1);
     EXPECT_EQ(mc.SourcePrimitiveIndex, 0);
 }
 
@@ -1308,4 +1340,65 @@ TEST(ECSTest, SceneSerializer_SaveLoad_MeshOverrideRoundtrip)
     EXPECT_EQ(result.MeshOverrides[0].TargetPrimitiveIndex, 1);
 
     remove(path);
+}
+
+TEST(ECSTest, SceneSerializer_Save_NestedModelInstance_OverrideOnlyOnOwner)
+{
+    Scene::ECS::FEntitySubsystem ecs;
+    FFakeAssetRegistry fakeReg;
+
+    auto model = fakeReg.ImportModel("test.gltf");
+    Scene::ECS::FModelNodeInfo node;
+    node.Name = "Node0";
+    node.NodeIndex = 0;
+    node.Primitives.push_back(0);
+    eastl::vector<Scene::ECS::FModelNodeInfo> nodes;
+    nodes.push_back(node);
+    fakeReg.SetFakeModelNodes(model, nodes);
+
+    Scene::ECS::FEntityFactory factory(ecs, fakeReg);
+    const Scene::ECS::FModelAssetInfo info = fakeReg.GetModelInfo(model);
+    entt::entity rootA = factory.CreateModelInstance(model, "test.gltf");
+    factory.CreateModelHierarchy(model, info, rootA, float3(0.0f), quaternion(0.0f, 0.0f, 0.0f, 1.0f), float3(1.0f));
+    entt::entity rootB = factory.CreateModelInstance(model, "test.gltf");
+    factory.CreateModelHierarchy(model, info, rootB, float3(0.0f), quaternion(0.0f, 0.0f, 0.0f, 1.0f), float3(1.0f));
+    ecs.SetParent(rootB, rootA);   // nested model instance
+
+    // Edit only B's mesh entity (prim 0 -> 1).
+    auto& reg = ecs.GetRegistry();
+    const auto& tableB = reg.get<Scene::ECS::FModelNodeTableComponent>(rootB);
+    ASSERT_FALSE(tableB.NodeEntities.empty());
+    const auto* childrenB = ecs.FindChildren(tableB.NodeEntities[0]);
+    ASSERT_NE(childrenB, nullptr);
+    entt::entity meshB = entt::null;
+    for (entt::entity c : *childrenB)
+    {
+        if (reg.all_of<Scene::ECS::FMeshRendererComponent>(c)) { meshB = c; break; }
+    }
+    ASSERT_TRUE(meshB != entt::null);
+    fakeReg.AcquireMesh(model, 0, 1);
+    fakeReg.AcquireMaterial(model, 0, 1);
+    EXPECT_TRUE(Scene::ECS::FEntityFactory::ApplyMeshKey(ecs, fakeReg, meshB, model, 0, 1));
+
+    const char* path = "ECSTest_TmpNestedOverride.xml";
+    EXPECT_TRUE(Scene::ECS::FSceneSerializer::Save(ecs, fakeReg, path, ""));
+
+    Scene::ECS::FEntitySubsystem ecs2;
+    FFakeAssetRegistry fakeReg2;
+    Scene::ECS::FEntityFactory factory2(ecs2, fakeReg2);
+    Scene::ECS::FSceneLoadResult result;
+    EXPECT_TRUE(Scene::ECS::FSceneSerializer::Load(ecs2, factory2, fakeReg2, path, "", result));
+    remove(path);
+
+    ASSERT_EQ(result.MeshOverrides.size(), 1u);
+    bool bOwnedByB = false;
+    for (const auto& m : result.Models)
+    {
+        if (m.Root == result.MeshOverrides[0].SourceRoot) { bOwnedByB = true; break; }
+    }
+    EXPECT_TRUE(bOwnedByB);
+    EXPECT_EQ(result.MeshOverrides[0].SourceNodeIndex, 0);
+    EXPECT_EQ(result.MeshOverrides[0].SourcePrimitiveIndex, 0);
+    EXPECT_EQ(result.MeshOverrides[0].TargetNodeIndex, 0);
+    EXPECT_EQ(result.MeshOverrides[0].TargetPrimitiveIndex, 1);
 }

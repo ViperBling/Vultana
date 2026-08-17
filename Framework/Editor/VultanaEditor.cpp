@@ -681,6 +681,7 @@ namespace Editor
                         {
                             for (uint32_t i = 0; i < clipCount; ++i)
                             {
+                                ImGui::PushID(static_cast<int>(i));   // clip names may repeat / be empty
                                 const Scene::ECS::FAnimationClip* clip = pAssetRegistry->FindAnimation(modelComp->ModelHandle, i);
                                 const char* label = (clip != nullptr && !clip->Name.empty()) ? clip->Name.c_str() : "Unnamed";
                                 if (ImGui::Selectable(label, static_cast<uint32_t>(current) == i))
@@ -688,6 +689,7 @@ namespace Editor
                                     anim->ClipIndex = i;
                                     anim->CurrentTime = 0.0f; // switch resets the timeline
                                 }
+                                ImGui::PopID();
                             }
                             ImGui::EndCombo();
                         }
